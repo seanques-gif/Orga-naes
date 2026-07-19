@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Orga-naes</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orga-naes">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -1945,7 +1950,7 @@
     loadToday();
   }
 
-  function scheduleSave() { if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const res = await safeSet(STORE_KEY, JSON.stringify(projects), false); if (res) { saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
+  function scheduleSave() { if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const res = await safeSet(STORE_KEY, JSON.stringify(projects), false); if (res) { localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
   function addProject(category) { snapshot(); const p = { id: uid(), title: 'New project', status: 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: null, completedAt: null, category: category || null, subtasks: [] }; projects.push(p); logActivity('Created project "New project"' + (category ? ' in ' + category : '')); scheduleSave(); autoArrangeProjects(true); if (listViewActive) { splitSelectedId = p.id; renderSplitList(); renderSplitDetail(); } focusEl('[data-title-id="' + p.id + '"]'); }
   const ARCHIVE_KEY = 'project-flow-archive';
   let archive = [];
@@ -2070,7 +2075,7 @@
     showToast('"' + sub.title + '" promoted to project', false, true);
   }
 
-  function focusEl(selector) { requestAnimationFrame(() => { const el = canvas.querySelector(selector); if (el) { const range = document.createRange(); range.selectNodeContents(el); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); el.focus(); } }); }
+  function focusEl(selector) { requestAnimationFrame(() => { let el = canvas.querySelector(selector) || root.querySelector(selector); if (el) { el.contentEditable = 'true'; el.focus(); const range = document.createRange(); range.selectNodeContents(el); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } }); }
   function escapeHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function formatTime(sec) { const d = Math.floor(sec / 86400); const h = Math.floor((sec % 86400) / 3600); const m = Math.floor((sec % 3600) / 60); if (d > 0) return d + 'd ' + h + 'h ' + m + 'm'; if (h > 0) return h + 'h ' + m + 'm'; return m + 'm'; }
   function toggleTimer(p, s) { snapshot(); if (s.timerStart) { s.timeLogged = (s.timeLogged || 0) + Math.floor((Date.now() - s.timerStart) / 1000); s.timerStart = null; } else { s.timerStart = Date.now(); } scheduleSave(); render(); }
@@ -4436,6 +4441,87 @@
     });
   })();
 
+  // #4 Swipe right to cycle status on subtasks
+  (function() {
+    let _swipeStartX = 0, _swipeStartY = 0, _swipeRow = null, _swipeMoved = false;
+    document.addEventListener('touchstart', function(e) {
+      const row = e.target.closest('.pf-subrow');
+      if (!row || subMultiSelect.length > 0) return;
+      _swipeRow = row;
+      _swipeStartX = e.touches[0].clientX;
+      _swipeStartY = e.touches[0].clientY;
+      _swipeMoved = false;
+    }, { passive: true });
+    document.addEventListener('touchmove', function(e) {
+      if (!_swipeRow) return;
+      const dx = e.touches[0].clientX - _swipeStartX;
+      const dy = e.touches[0].clientY - _swipeStartY;
+      if (Math.abs(dy) > 30) { _swipeRow = null; return; }
+      if (dx > 60 && !_swipeMoved) {
+        _swipeMoved = true;
+        const p = _swipeRow.__project;
+        const sId = _swipeRow.__subId;
+        if (p && sId) {
+          if (navigator.vibrate) navigator.vibrate(15);
+          cycleSubStatus(p.id, sId);
+        }
+        _swipeRow = null;
+      }
+    }, { passive: true });
+    document.addEventListener('touchend', function() { _swipeRow = null; }, { passive: true });
+  })();
+
+  // #10 Pull-to-refresh (pull down at top to sync from cloud)
+  (function() {
+    let _prStartY = 0, _prActive = false, _prIndicator = null;
+    const splitDetailEl = document.querySelector('.pf-split-detail');
+    if (!splitDetailEl) return;
+    splitDetailEl.addEventListener('touchstart', function(e) {
+      if (splitDetailEl.scrollTop === 0) { _prStartY = e.touches[0].clientY; _prActive = true; }
+    }, { passive: true });
+    splitDetailEl.addEventListener('touchmove', function(e) {
+      if (!_prActive) return;
+      const dy = e.touches[0].clientY - _prStartY;
+      if (dy > 80 && !_prIndicator) {
+        _prIndicator = document.createElement('div');
+        _prIndicator.style.cssText = 'text-align:center;padding:8px;font-size:11px;color:var(--text-dim);';
+        _prIndicator.textContent = '↓ Release to sync';
+        splitDetailEl.prepend(_prIndicator);
+      }
+    }, { passive: true });
+    splitDetailEl.addEventListener('touchend', function(e) {
+      if (_prIndicator) {
+        _prIndicator.remove(); _prIndicator = null;
+        if (window._firebasePush && navigator.onLine) {
+          const pullBtn = document.getElementById('pf-firebase-pull');
+          if (pullBtn && !pullBtn.disabled) pullBtn.click();
+          else showToast('☁ Pull-to-refresh: sign in first');
+        }
+      }
+      _prActive = false;
+    }, { passive: true });
+  })();
+
+  // #12 Haptic feedback extensions
+  const _origCycleSubStatus = cycleSubStatus;
+  cycleSubStatus = function(pid, sid) { if (navigator.vibrate) navigator.vibrate(10); _origCycleSubStatus(pid, sid); };
+  const _origCycleProjectStatus = cycleProjectStatus;
+  cycleProjectStatus = function(id) { if (navigator.vibrate) navigator.vibrate(10); _origCycleProjectStatus(id); };
+
+  // #14 Export reminder (prompt weekly if no export in 7 days)
+  (function() {
+    const LAST_EXPORT_KEY = 'pf-last-export-time';
+    const lastExport = parseInt(localStorage.getItem(LAST_EXPORT_KEY) || '0');
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - lastExport > sevenDays && projects.length > 0) {
+      setTimeout(function() {
+        showToast('💾 Reminder: Export a backup of your data (Options → Save & Import)');
+      }, 5000);
+    }
+    const exportBtn = document.getElementById('pf-export');
+    if (exportBtn) exportBtn.addEventListener('click', function() { localStorage.setItem(LAST_EXPORT_KEY, Date.now().toString()); });
+  })();
+
   // Expose for Firebase sync
   window._pf = {
     getProjects: () => projects,
@@ -4445,10 +4531,16 @@
     scheduleSave: () => scheduleSave(),
     saveCategories: () => saveCategories(),
     render: () => render(),
-    showToast: (msg) => showToast(msg)
+    showToast: (msg) => showToast(msg),
+    snapshot: () => snapshot()
   };
 
 })();
+
+// #11 PWA - Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(function() {});
+}
 
 // --- Firebase Cloud Sync ---
 (function() {
@@ -4534,18 +4626,26 @@
 
   pullBtn.addEventListener('click', function() {
     if (!_fbUser) return;
-    userRef().once('value').then(function(snap) {
-      const val = snap.val();
-      if (val) {
-        window._pf.setProjects(Array.isArray(val) ? val : Object.values(val));
-        window._pf.scheduleSave(); window._pf.render();
+    db.ref('users/' + _fbUser.uid + '/updatedAt').once('value').then(function(tSnap) {
+      const remoteTime = tSnap.val() || 0;
+      const localTime = parseInt(localStorage.getItem('pf-last-save-time') || '0');
+      if (localTime > remoteTime && remoteTime > 0) {
+        if (!confirm('Your local data is NEWER than the cloud. Pull anyway? (This will overwrite local changes. You can Undo after.)')) return;
       }
+      if (window._pf && window._pf.snapshot) window._pf.snapshot();
+      userRef().once('value').then(function(snap) {
+        const val = snap.val();
+        if (val) {
+          window._pf.setProjects(Array.isArray(val) ? val : Object.values(val));
+          window._pf.scheduleSave(); window._pf.render();
+        }
+      });
+      catRef().once('value').then(function(snap) {
+        const val = snap.val();
+        if (val) { window._pf.setCategories(Array.isArray(val) ? val : Object.values(val)); window._pf.saveCategories(); }
+      });
+      window._pf.showToast('⬇ Pulled from cloud');
     });
-    catRef().once('value').then(function(snap) {
-      const val = snap.val();
-      if (val) { window._pf.setCategories(Array.isArray(val) ? val : Object.values(val)); window._pf.saveCategories(); }
-    });
-    window._pf.showToast('⬇ Pulled from cloud');
   });
 
   function startListener() {
@@ -4583,16 +4683,66 @@
     else stopListener();
   });
 
-  // Hook into scheduleSave to push on every change when autosync is on
-  window._firebasePush = function() {
-    if (!_fbAutosync || !_fbUser) return;
+  // Offline queue: track pending changes and push when back online
+  let _fbOfflineQueue = false;
+  window.addEventListener('online', function() {
+    if (_fbOfflineQueue && _fbAutosync && _fbUser) {
+      _fbOfflineQueue = false;
+      userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
+      catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
+      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
+      window._pf.showToast('☁ Offline changes synced');
+    }
+  });
+
+  // Conflict resolution: compare timestamps before overwriting
+  function pushWithTimestamp() {
     userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
     catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
+    db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
+  }
+
+  // Hook into scheduleSave to push on every change when autosync is on (debounced 3s)
+  let _fbPushTimer = null;
+  window._firebasePush = function() {
+    if (!_fbAutosync || !_fbUser) return;
+    if (!navigator.onLine) { _fbOfflineQueue = true; return; }
+    clearTimeout(_fbPushTimer);
+    _fbPushTimer = setTimeout(function() {
+      pushWithTimestamp();
+    }, 3000);
   };
   if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
   else {
     const _prevHook = window.fsAutoSaveHook;
     window.fsAutoSaveHook = function() { _prevHook(); window._firebasePush(); };
   }
+
+  // #13 Auto-backup to Firebase (once per day, keeps last 7 backups)
+  function autoBackupToFirebase() {
+    if (!_fbUser) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const lastBackup = localStorage.getItem('pf-firebase-last-backup');
+    if (lastBackup === today) return;
+    const backupRef = db.ref('users/' + _fbUser.uid + '/backups/' + today);
+    backupRef.set({
+      projects: JSON.parse(JSON.stringify(window._pf.getProjects())),
+      categories: JSON.parse(JSON.stringify(window._pf.getCategories())),
+      timestamp: Date.now()
+    });
+    localStorage.setItem('pf-firebase-last-backup', today);
+    // Clean old backups (keep last 7)
+    db.ref('users/' + _fbUser.uid + '/backups').once('value').then(function(snap) {
+      const val = snap.val();
+      if (!val) return;
+      const keys = Object.keys(val).sort();
+      if (keys.length > 7) {
+        keys.slice(0, keys.length - 7).forEach(function(k) {
+          db.ref('users/' + _fbUser.uid + '/backups/' + k).remove();
+        });
+      }
+    });
+  }
+  auth.onAuthStateChanged(function(user) { if (user) setTimeout(autoBackupToFirebase, 5000); });
 })();
 </script>
