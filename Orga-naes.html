@@ -49,7 +49,7 @@
       padding: 0 4px; line-height: 1;
     }
     .pf-connection-dot {
-      position: fixed; bottom: 52px; left: 8px; width: 8px; height: 8px;
+      position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 38px); right: 6px; width: 8px; height: 8px;
       border-radius: 50%; z-index: 9002; transition: background 0.3s;
     }
     .pf-connection-dot.pf-online { background: #4ade80; }
@@ -479,10 +479,7 @@
   }
 
   #pf-root .pf-overdue-banner {
-    background: transparent; border: none; border-radius: 0;
-    color: var(--danger); font-size: calc(var(--font-size-base) - 5px); font-weight: 500; padding: 2px 8px;
-    display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
-    width: auto; cursor: pointer;
+    display: none !important;
   }
   #pf-root .pf-overdue-banner-icon { font-size: calc(var(--font-size-base) - 4px); flex-shrink: 0; }
   #pf-root .pf-overdue-banner-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(var(--font-size-base) - 5px); }
@@ -1148,8 +1145,8 @@
         <option value="nodue">No Due</option>
       </select>
       <button class="pf-undo-btn" id="pf-today-btn" title="Today's Focus">⭐</button>
-      <button class="pf-undo-btn" id="pf-duelist-btn" title="Tasks by Due Date">📋</button>
-      <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View">📅</button>
+      <button class="pf-undo-btn" id="pf-duelist-btn" title="Tasks by Due Date" style="position:relative;">📅<span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;background:var(--danger,#ef4444);color:#fff;font-size:8px;font-weight:700;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;"></span></button>
+      <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View">🗓</button>
       <span id="pf-weekly-btn" title="Weekly Planner" style="display:none;"></span>
     </div>
     <div class="pf-tb-group" id="pf-tb-viewtools">
@@ -1247,6 +1244,7 @@
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);margin-top:4px;">
           <input type="checkbox" id="pf-firebase-autosync"> Auto-sync on changes
+          <br><input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
         </label>
         <p style="font-size:10px;color:var(--text-dim);margin-top:4px;">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
       </div>
@@ -4623,15 +4621,16 @@
   // Update overdue badge on bottom nav
   function updateOverdueBadge() {
     const badge = document.getElementById('pf-bottom-badge');
-    if (!badge) return;
+    const desktopBadge = document.getElementById('pf-desktop-badge');
     const today = new Date(); today.setHours(0,0,0,0);
     let count = 0;
     projects.forEach(p => {
       if (p.dueAt && p.status !== 'completed') { const d = new Date(p.dueAt + 'T00:00:00'); if (d < today) count++; }
       (function walk(list) { list.forEach(s => { if (s.dueAt && s.status !== 'completed') { const d = new Date(s.dueAt + 'T00:00:00'); if (d < today) count++; } if (s.subtasks && s.subtasks.length) walk(s.subtasks); }); })(p.subtasks || []);
     });
-    if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.style.display = 'flex'; }
-    else { badge.style.display = 'none'; }
+    const label = count > 99 ? '99+' : count;
+    if (badge) { if (count > 0) { badge.textContent = label; badge.style.display = 'flex'; } else { badge.style.display = 'none'; } }
+    if (desktopBadge) { if (count > 0) { desktopBadge.textContent = label; desktopBadge.style.display = 'flex'; } else { desktopBadge.style.display = 'none'; } }
   }
   const _origRender = render;
   render = function() { _origRender(); updateOverdueBadge(); };
@@ -5125,7 +5124,15 @@ if ('serviceWorker' in navigator) {
       }
     });
   }
-  auth.onAuthStateChanged(function(user) { if (user) setTimeout(autoBackupToFirebase, 5000); });
+  const autobackupCb = document.getElementById('pf-firebase-autobackup');
+  let _fbAutobackup = localStorage.getItem('pf-firebase-autobackup') === 'true';
+  autobackupCb.checked = _fbAutobackup;
+  autobackupCb.addEventListener('change', function() {
+    _fbAutobackup = autobackupCb.checked;
+    localStorage.setItem('pf-firebase-autobackup', _fbAutobackup);
+    if (_fbAutobackup && _fbUser) setTimeout(autoBackupToFirebase, 1000);
+  });
+  auth.onAuthStateChanged(function(user) { if (user && _fbAutobackup) setTimeout(autoBackupToFirebase, 5000); });
 
   // Conflict modal logic
   let _lastPushedSnapshot = '';
