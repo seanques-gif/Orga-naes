@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Orga-naes</title>
+<meta name="version" content="1.0.0">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,6 +21,100 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; }
   @media (max-width: 900px) { html, body { overflow: auto; } }
+
+  /* Bottom Navigation Bar */
+  .pf-bottom-nav { display: none; }
+  .pf-fab { display: none; }
+  .pf-fab-menu { display: none; }
+  .pf-fab-overlay { display: none; }
+  @media (max-width: 900px) {
+    .pf-bottom-nav {
+      display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9000;
+      background: var(--card, #2a2a3e); border-top: 1px solid var(--card-border, #3a3a5e);
+      padding: 4px 0; padding-bottom: env(safe-area-inset-bottom, 4px);
+      justify-content: space-around; align-items: center;
+    }
+    .pf-bottom-nav-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      background: none; border: none; color: var(--text-dim); font-size: 18px;
+      padding: 4px 12px; cursor: pointer; border-radius: 8px; transition: color 0.15s, background 0.15s;
+    }
+    .pf-bottom-nav-btn span { font-size: 9px; font-weight: 500; }
+    .pf-bottom-nav-btn.pf-bottom-active { color: var(--accent); }
+    .pf-bottom-nav-btn:active { background: rgba(123,104,238,0.1); }
+    .pf-bottom-badge {
+      position: absolute; top: 2px; right: 6px; min-width: 16px; height: 16px;
+      background: var(--danger, #ef4444); color: #fff; font-size: 9px; font-weight: 700;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      padding: 0 4px; line-height: 1;
+    }
+    .pf-connection-dot {
+      position: fixed; bottom: 52px; left: 8px; width: 8px; height: 8px;
+      border-radius: 50%; z-index: 9002; transition: background 0.3s;
+    }
+    .pf-connection-dot.pf-online { background: #4ade80; }
+    .pf-connection-dot.pf-offline { background: #ef4444; animation: pf-offline-blink 1.5s infinite; }
+    @keyframes pf-offline-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .pf-conflict-modal {
+      display: none; position: fixed; inset: 0; z-index: 10001; background: rgba(0,0,0,0.7);
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    .pf-conflict-modal.pf-conflict-open { display: flex; }
+    .pf-conflict-box {
+      background: var(--card, #1e1e2e); border: 1px solid var(--card-border, #333);
+      border-radius: 12px; padding: 16px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+    }
+    .pf-conflict-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+    .pf-conflict-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: 8px; padding: 10px; font-size: 10px; color: var(--text-dim); overflow: hidden; }
+    .pf-conflict-col-title { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .pf-conflict-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .pf-conflict-btns button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; }
+    .pf-conflict-btns button.pf-conflict-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .pf-fab {
+      display: flex; position: fixed; bottom: 72px; right: 16px; z-index: 9001;
+      width: 48px; height: 48px; border-radius: 50%; background: var(--accent, #7b68ee);
+      color: #fff; font-size: 24px; font-weight: 300; border: none;
+      align-items: center; justify-content: center; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: transform 0.2s, background 0.15s;
+    }
+    .pf-fab:active { transform: scale(0.9); }
+    .pf-fab.pf-fab-open { transform: rotate(45deg); }
+    .pf-fab-menu {
+      display: none; position: fixed; bottom: 130px; right: 16px; z-index: 9000;
+      flex-direction: column; gap: 8px; align-items: flex-end;
+    }
+    .pf-fab-menu.pf-fab-menu-open { display: flex; }
+    .pf-fab-menu-item {
+      display: flex; align-items: center; gap: 8px; background: var(--card, #2a2a3e);
+      border: 1px solid var(--card-border); border-radius: 24px; padding: 8px 14px;
+      color: var(--text); font-size: 12px; font-weight: 500; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .pf-fab-menu-item:active { background: rgba(123,104,238,0.15); }
+    .pf-fab-menu-item span.pf-fab-icon { font-size: 16px; width: 20px; text-align: center; }
+    .pf-fab-overlay {
+      display: none; position: fixed; inset: 0; z-index: 8999; background: rgba(0,0,0,0.3);
+    }
+    .pf-fab-overlay.pf-fab-menu-open { display: block; }
+    #pf-root .pf-split-list { padding-bottom: 60px; }
+    #pf-root .pf-split-detail { padding-bottom: 60px; }
+    #pf-root #pf-today-btn { display: none !important; }
+    #pf-root #pf-duelist-btn { display: none !important; }
+    #pf-root #pf-calendar-btn { display: none !important; }
+    #pf-root .pf-options-mobile { display: none !important; }
+    #pf-root .pf-options-desktop { display: none !important; }
+    #pf-root #pf-toolbar-back { display: none !important; }
+    #pf-root .pf-mobile-back { display: none !important; }
+    #pf-root .pf-toolbar { display: none !important; }
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) { display: flex !important; }
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) > *:not(.pf-search-wrap) { display: none !important; }
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) .pf-search-wrap { flex: 1; }
+    #pf-root .pf-overdue-banner { top: 0; }
+    #pf-root .pf-toast { bottom: auto !important; top: 60px !important; transform: translateX(-50%) translateY(-12px) !important; z-index: 10000 !important; }
+    #pf-root .pf-toast.pf-toast-show { transform: translateX(-50%) translateY(0) !important; }
+  }
 
   #pf-root {
     --bg: #1e1e1e;
@@ -320,7 +415,7 @@
   /* Device-specific optimizations */
   #pf-root.pf-device-mobile .pf-toolbar { gap: 2px; padding: 4px 6px; }
   #pf-root.pf-device-mobile .pf-undo-btn { min-width: 32px; min-height: 32px; font-size: 14px; }
-  #pf-root.pf-device-mobile .pf-split-list-item { padding: 10px 12px; gap: 8px; }
+  #pf-root.pf-device-mobile .pf-split-list-item { padding: 4px 12px; gap: 6px; margin: 0 4px; }
   #pf-root.pf-device-mobile .pf-split-list-status { width: auto; min-width: 0; padding: 0; background: transparent !important; font-size: 0; border-radius: 50%; width: 10px; height: 10px; display: inline-block; }
   #pf-root.pf-device-mobile .pf-subrow { padding: 10px 8px; }
   #pf-root.pf-device-mobile .pf-chevron { width: 28px; height: 28px; }
@@ -332,6 +427,11 @@
 
   #pf-root.pf-device-tablet .pf-split-list-item { padding: 8px 12px; }
   #pf-root.pf-device-tablet .pf-undo-btn { min-width: 30px; min-height: 30px; }
+  #pf-root.pf-device-tablet .pf-toolbar { display: none !important; }
+  #pf-root.pf-device-tablet .pf-toolbar:has(.pf-search-wrap.pf-search-open) { display: flex !important; }
+  #pf-root.pf-device-tablet .pf-toolbar:has(.pf-search-wrap.pf-search-open) > *:not(.pf-search-wrap) { display: none !important; }
+  #pf-root.pf-device-tablet .pf-toolbar:has(.pf-search-wrap.pf-search-open) .pf-search-wrap { flex: 1; }
+  #pf-root.pf-device-tablet .pf-split-sort { display: none !important; }
   #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { zoom: 0.88; }
 
   @media (orientation: portrait) {
@@ -390,7 +490,7 @@
     #pf-root .pf-sublist { padding: 8px 0 8px 14px; }
     #pf-root .pf-node-desc-row { padding: 0 12px 6px 14px; }
     #pf-root .pf-split-collapse-btn { font-size: 9px; padding: 2px 6px; }
-    #pf-root .pf-split-sort select { font-size: 10px; }
+    #pf-root .pf-split-sort { display: none !important; }
   }
 
   #pf-root .pf-overdue-banner {
@@ -449,7 +549,20 @@
   @keyframes pf-view-fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   #pf-root .pf-split-view, #pf-root .pf-canvas-wrap { animation: pf-view-fade 0.25s ease-out; }
   #pf-root .pf-progress-ring { flex-shrink: 0; }
-  #pf-root .pf-progress-ring circle { transition: stroke-dashoffset 0.4s ease; }
+  #pf-root .pf-progress-ring circle { transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+  #pf-root .pf-progress-ring.pf-ring-pulse circle:last-child { animation: pf-ring-pulse 0.6s ease; }
+  #pf-root .pf-progress-ring.pf-ring-complete circle:last-child { animation: pf-ring-complete 0.8s ease; }
+  @keyframes pf-ring-pulse {
+    0% { stroke-width: 2; opacity: 1; }
+    50% { stroke-width: 3.5; opacity: 0.8; }
+    100% { stroke-width: 2; opacity: 1; }
+  }
+  @keyframes pf-ring-complete {
+    0% { stroke-width: 2; opacity: 1; filter: none; }
+    30% { stroke-width: 4; opacity: 1; filter: drop-shadow(0 0 4px var(--completed)); }
+    60% { stroke-width: 3; opacity: 0.9; filter: drop-shadow(0 0 2px var(--completed)); }
+    100% { stroke-width: 2; opacity: 1; filter: none; }
+  }
   #pf-root .pf-streak-badge { font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(245,184,77,0.15); color: var(--ongoing, #f5b84d); font-weight: 700; margin-left: 6px; }
   #pf-root .pf-xp-badge { font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(149,128,255,0.15); color: var(--accent); font-weight: 700; margin-left: 4px; }
   #pf-root .pf-freeze-badge { font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(92,200,232,0.15); color: var(--depth3, #5cc8e8); font-weight: 700; margin-left: 4px; cursor: default; }
@@ -484,7 +597,7 @@
     #pf-root .pf-undo-btn { min-height: 40px; min-width: 40px; padding: 8px 10px; }
     #pf-root .pf-new-btn { min-height: 40px; min-width: 40px; }
     #pf-root .pf-ctx-menu-item { padding: 12px 16px; min-height: 44px; }
-    #pf-root .pf-split-list-item { min-height: 48px; padding: 10px 12px; }
+    #pf-root .pf-split-list-item { min-height: 32px; padding: 4px 12px; }
     #pf-root .pf-search-close { width: 28px; height: 28px; font-size: 14px; }
     #pf-root .pf-chevron { min-width: 36px; min-height: 36px; }
     #pf-root .pf-node-del { min-width: 36px; min-height: 36px; }
@@ -1136,9 +1249,11 @@
       </div>
     </div>
     <div class="pf-options-section">
+      <div style="font-size:9px;color:var(--text-dim);text-align:right;margin-bottom:8px;">v1.0.0</div>
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;">Firebase Cloud Sync</div>
       <div id="pf-firebase-section" style="display:grid;grid-template-columns:1fr;gap:6px;">
         <div id="pf-firebase-status" style="font-size:11px;color:var(--text-dim);">Not signed in</div>
+        <div id="pf-firebase-last-sync" style="font-size:10px;color:var(--text-dim);display:none;"></div>
         <button class="pf-undo-btn" id="pf-firebase-signin" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">🔑</span> Sign in with Google</button>
         <button class="pf-undo-btn" id="pf-firebase-signout" style="justify-content:flex-start;display:none;"><span style="display:inline-block;width:20px;text-align:center;">🚪</span> Sign Out</button>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
@@ -1180,12 +1295,14 @@
     </div>
     <div class="pf-options-section">
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;">Appearance</div>
-      <label class="pf-options-label">Font Size</label>
+      <label class="pf-options-label">Display Scale</label>
       <div class="pf-options-row">
-        <input type="range" id="pf-font-size" class="pf-range-input" min="10" max="20" step="1" value="15">
-        <span id="pf-font-size-val" class="pf-options-val">15px</span>
-        <button class="pf-undo-btn" id="pf-font-size-reset" title="Reset to default">Default</button>
+        <input type="range" id="pf-display-scale" class="pf-range-input" min="60" max="140" step="5" value="100">
+        <span id="pf-display-scale-val" class="pf-options-val">100%</span>
+        <button class="pf-undo-btn" id="pf-display-scale-reset" title="Reset to default">Default</button>
       </div>
+      <input type="range" id="pf-font-size" class="pf-range-input" style="display:none;" min="10" max="20" step="1" value="15">
+      <span id="pf-font-size-val" style="display:none;">15px</span>
       <div class="pf-options-section-title" style="margin-top:14px;">DARK THEMES</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="pf-undo-btn" id="pf-theme-pf-dark" style="padding:5px 12px;font-size:11px;">🌑 PF Dark (Default)</button>
@@ -1322,6 +1439,37 @@
     </div>
   </div>
   </div>
+  <div class="pf-fab-overlay" id="pf-fab-overlay"></div>
+  <div class="pf-fab-menu" id="pf-fab-menu">
+    <div class="pf-fab-menu-item" data-fab="add"><span class="pf-fab-icon">➕</span></div>
+    <div class="pf-fab-menu-item" data-fab="expand"><span class="pf-fab-icon">📖</span></div>
+    <div class="pf-fab-menu-item" data-fab="sort"><span class="pf-fab-icon">⇅</span></div>
+    <div class="pf-fab-menu-item" data-fab="undo"><span class="pf-fab-icon">↩</span></div>
+    <div class="pf-fab-menu-item" data-fab="redo"><span class="pf-fab-icon">↪</span></div>
+    <div class="pf-fab-menu-item" data-fab="search"><span class="pf-fab-icon">🔍</span></div>
+  </div>
+  <button class="pf-fab" id="pf-fab" title="Actions">+</button>
+  <div class="pf-connection-dot pf-online" id="pf-connection-dot" title="Online"></div>
+  <div class="pf-conflict-modal" id="pf-conflict-modal">
+    <div class="pf-conflict-box">
+      <div class="pf-conflict-title">⚠️ Sync Conflict Detected</div>
+      <div class="pf-conflict-cols">
+        <div class="pf-conflict-col"><div class="pf-conflict-col-title">📱 Local</div><div id="pf-conflict-local"></div></div>
+        <div class="pf-conflict-col"><div class="pf-conflict-col-title">☁️ Cloud</div><div id="pf-conflict-remote"></div></div>
+      </div>
+      <div class="pf-conflict-btns">
+        <button id="pf-conflict-keep-local">Keep Local</button>
+        <button id="pf-conflict-keep-remote" class="pf-conflict-primary">Use Cloud</button>
+      </div>
+    </div>
+  </div>
+  <nav class="pf-bottom-nav" id="pf-bottom-nav">
+    <button class="pf-bottom-nav-btn pf-bottom-active" data-nav="projects" title="Projects">📋<span>Projects</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="today" title="Today">⭐<span>Today</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates" style="position:relative;">📅<span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
+    <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar">🗓<span>Calendar</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="options" title="Options">☰<span>Options</span></button>
+  </nav>
   <div class="pf-split-view" id="pf-split-view">
     <div class="pf-split-list" id="pf-split-list"></div>
     <div class="pf-split-divider" id="pf-split-divider"></div>
@@ -2014,6 +2162,16 @@
   }
   function deleteProject(id) { const p = projects.find(p => p.id === id); if (!p) return; if (!confirm('Delete project "' + p.title + '"?')) return; snapshot(); logActivity('Trashed project "' + p.title + '"'); trashProject(p); projects = projects.filter(p => p.id !== id); if (splitSelectedId === id) splitSelectedId = null; scheduleSave(); render(); showToast('\"' + p.title + '\" moved to trash'); }
   function toggleExpand(id) { const p = projects.find(p => p.id === id); p.expanded = !p.expanded; render(); autoArrangeProjects(); }
+  function animateProgressRing(projectId, isComplete) {
+    setTimeout(() => {
+      const item = document.querySelector('[data-id="' + projectId + '"] .pf-progress-ring') || document.querySelector('[data-project-id="' + projectId + '"] .pf-progress-ring');
+      if (!item) return;
+      item.classList.remove('pf-ring-pulse', 'pf-ring-complete');
+      void item.offsetWidth;
+      item.classList.add(isComplete ? 'pf-ring-complete' : 'pf-ring-pulse');
+      setTimeout(() => item.classList.remove('pf-ring-pulse', 'pf-ring-complete'), 900);
+    }, 50);
+  }
   function cycleProjectStatus(id) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
   function checkAllCompleted(p) {
     if (!p.subtasks || !p.subtasks.length) return;
@@ -2061,7 +2219,7 @@
 
   function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
-  function cycleSubStatus(projectId, subId) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); const oldStatus = s.status; s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } checkAllCompleted(p); }
+  function cycleSubStatus(projectId, subId) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); const oldStatus = s.status; s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } checkAllCompleted(p); }
   function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } scheduleSave(); render(); }
   function promoteSubToProject(parentProject, sub) {
     snapshot();
@@ -3275,12 +3433,14 @@
         if (!projectId) return;
         closeAllModals();
         _todayReturnOnEsc = true;
-        showToast('Press Esc to go back to Today\'s Focus');
+        if (!root.classList.contains('pf-device-mobile') && !root.classList.contains('pf-device-tablet')) showToast('Press Esc to go back to Today\'s Focus');
         if (!listViewActive) { document.getElementById('pf-collapse-cats').click(); }
         splitSelectedId = projectId; splitMultiSelect = [];
         searchTerm = t.title;
         _searchAutoCollapseId = null;
         renderSplitList(); renderSplitDetail();
+        root.classList.add('pf-detail-open');
+        if (root.classList.contains('pf-device-mobile')) { root.classList.add('pf-mobile-detail-open'); document.getElementById('pf-toolbar-back').style.display = ''; }
         searchTerm = '';
         const el = splitList.querySelector('.pf-split-active'); if (el) el.scrollIntoView({ block: 'nearest' });
       });
@@ -3328,13 +3488,15 @@
       row.addEventListener('click', () => {
         closeAllModals();
         _duelistReturnOnEsc = true;
-        showToast('Press Esc to go back to Tasks by Due Date');
+        if (!root.classList.contains('pf-device-mobile') && !root.classList.contains('pf-device-tablet')) showToast('Press Esc to go back to Tasks by Due Date');
         if (listViewActive) {
           splitSelectedId = it.projectId;
           splitMultiSelect = [];
           searchTerm = it.subTitle || it.title;
           _searchAutoCollapseId = null;
           renderSplitList(); renderSplitDetail();
+          root.classList.add('pf-detail-open');
+          if (root.classList.contains('pf-device-mobile')) { root.classList.add('pf-mobile-detail-open'); document.getElementById('pf-toolbar-back').style.display = ''; }
           searchTerm = '';
         } else {
           autoArrangeProjects(true);
@@ -3349,10 +3511,10 @@
   function collectDueMap() {
     const map = {};
     projects.forEach(p => {
-      if (p.dueAt) { if (!map[p.dueAt]) map[p.dueAt] = []; map[p.dueAt].push({ title: p.title, status: p.status, color: p.color, projectId: p.id }); }
+      if (p.dueAt) { if (!map[p.dueAt]) map[p.dueAt] = []; map[p.dueAt].push({ title: p.title, status: p.status, color: p.color, projectId: p.id, dueAt: p.dueAt }); }
       (function walk(subs) {
         subs.forEach(s => {
-          if (s.dueAt) { if (!map[s.dueAt]) map[s.dueAt] = []; map[s.dueAt].push({ title: s.title, status: s.status, projectId: p.id }); }
+          if (s.dueAt) { if (!map[s.dueAt]) map[s.dueAt] = []; map[s.dueAt].push({ title: s.title, status: s.status, projectId: p.id, dueAt: s.dueAt }); }
           if (s.subtasks && s.subtasks.length) walk(s.subtasks);
         });
       })(p.subtasks || []);
@@ -3403,7 +3565,7 @@
     const listEl = document.getElementById('pf-cal-detail-list');
     if (!calSelectedDate) { titleEl.textContent = 'Select a date'; listEl.innerHTML = '<div class="pf-activity-empty">Click a date to see tasks.</div>'; return; }
     const dueMap = collectDueMap();
-    const items = dueMap[calSelectedDate] || [];
+    const items = (dueMap[calSelectedDate] || []).slice().sort((a, b) => (a.dueAt || '').localeCompare(b.dueAt || '') || a.title.localeCompare(b.title));
     const d = new Date(calSelectedDate + 'T00:00:00');
     const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     titleEl.textContent = dayNames[d.getDay()] + ', ' + calSelectedDate;
@@ -3425,12 +3587,14 @@
         const taskTitle = el.querySelector('span[style*="flex:1"]').textContent.trim();
         closeAllModals();
         _calendarReturnOnEsc = true;
-        showToast('Press Esc to go back to Calendar');
+        if (!root.classList.contains('pf-device-mobile') && !root.classList.contains('pf-device-tablet')) showToast('Press Esc to go back to Calendar');
         if (!listViewActive) { document.getElementById('pf-collapse-cats').click(); }
         splitSelectedId = projectId; splitMultiSelect = [];
         searchTerm = taskTitle;
         _searchAutoCollapseId = null;
         renderSplitList(); renderSplitDetail();
+        root.classList.add('pf-detail-open');
+        if (root.classList.contains('pf-device-mobile')) { root.classList.add('pf-mobile-detail-open'); document.getElementById('pf-toolbar-back').style.display = ''; }
         searchTerm = '';
         const active = splitList.querySelector('.pf-split-active'); if (active) active.scrollIntoView({ block: 'nearest' });
       });
@@ -3776,8 +3940,22 @@
   const fontSizeVal = document.getElementById('pf-font-size-val');
   const FONT_SIZE_KEY = 'project-flow-font-size';
   fontSizeInput.addEventListener('input', (e) => { const v = e.target.value + 'px'; root.style.setProperty('--font-size-base', v); fontSizeVal.textContent = v; safeSet(FONT_SIZE_KEY, e.target.value, false); });
-  document.getElementById('pf-font-size-reset').addEventListener('click', () => { fontSizeInput.value = '15'; fontSizeVal.textContent = '15px'; root.style.setProperty('--font-size-base', '15px'); safeSet(FONT_SIZE_KEY, '15', false); });
   (async function loadFontSize() { try { const res = await safeGet(FONT_SIZE_KEY, false); if (res && res.value) { root.style.setProperty('--font-size-base', res.value + 'px'); fontSizeInput.value = res.value; fontSizeVal.textContent = res.value + 'px'; } } catch (e) {} })();
+
+  // Display Scale
+  const SCALE_KEY = 'project-flow-display-scale';
+  const scaleInput = document.getElementById('pf-display-scale');
+  const scaleVal = document.getElementById('pf-display-scale-val');
+  function applyScale(v) {
+    const basePx = 15 * (v / 100);
+    root.style.setProperty('--font-size-base', basePx + 'px');
+    root.style.setProperty('--pf-scale', v / 100);
+    fontSizeInput.value = Math.round(basePx);
+    scaleVal.textContent = v + '%';
+  }
+  scaleInput.addEventListener('input', (e) => { applyScale(e.target.value); safeSet(SCALE_KEY, e.target.value, false); });
+  document.getElementById('pf-display-scale-reset').addEventListener('click', () => { scaleInput.value = '100'; applyScale(100); safeSet(SCALE_KEY, '100', false); });
+  (async function loadScale() { try { const res = await safeGet(SCALE_KEY, false); if (res && res.value) { scaleInput.value = res.value; applyScale(res.value); } } catch (e) {} })();
 
   document.getElementById('pf-export').addEventListener('click', async () => {
     const json = JSON.stringify({ projects: projects, categories: categories, collapsedCategories: collapsedCategories, archive: archive }, null, 2);
@@ -4441,6 +4619,124 @@
     });
   })();
 
+  // Update overdue badge on bottom nav
+  function updateOverdueBadge() {
+    const badge = document.getElementById('pf-bottom-badge');
+    if (!badge) return;
+    const today = new Date(); today.setHours(0,0,0,0);
+    let count = 0;
+    projects.forEach(p => {
+      if (p.dueAt && p.status !== 'completed') { const d = new Date(p.dueAt + 'T00:00:00'); if (d < today) count++; }
+      (function walk(list) { list.forEach(s => { if (s.dueAt && s.status !== 'completed') { const d = new Date(s.dueAt + 'T00:00:00'); if (d < today) count++; } if (s.subtasks && s.subtasks.length) walk(s.subtasks); }); })(p.subtasks || []);
+    });
+    if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.style.display = 'flex'; }
+    else { badge.style.display = 'none'; }
+  }
+  const _origRender = render;
+  render = function() { _origRender(); updateOverdueBadge(); };
+  updateOverdueBadge();
+
+  // Floating action button (expandable)
+  (function() {
+    const fab = document.getElementById('pf-fab');
+    const fabMenu = document.getElementById('pf-fab-menu');
+    const fabOverlay = document.getElementById('pf-fab-overlay');
+    if (!fab || !fabMenu) return;
+    let fabOpen = false;
+    function toggleFab() {
+      fabOpen = !fabOpen;
+      fab.classList.toggle('pf-fab-open', fabOpen);
+      fabMenu.classList.toggle('pf-fab-menu-open', fabOpen);
+      fabOverlay.classList.toggle('pf-fab-menu-open', fabOpen);
+      const sortItem = fabMenu.querySelector('[data-fab="sort"]');
+      const addItem = fabMenu.querySelector('[data-fab="add"]');
+      if (sortItem) sortItem.style.display = root.classList.contains('pf-detail-open') ? 'none' : '';
+      if (addItem) addItem.style.display = root.classList.contains('pf-detail-open') ? 'none' : '';
+    }
+    function closeFab() {
+      fabOpen = false;
+      fab.classList.remove('pf-fab-open');
+      fabMenu.classList.remove('pf-fab-menu-open');
+      fabOverlay.classList.remove('pf-fab-menu-open');
+    }
+    fab.addEventListener('click', toggleFab);
+    fabOverlay.addEventListener('click', closeFab);
+    fabMenu.querySelectorAll('.pf-fab-menu-item').forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const action = item.dataset.fab;
+        if (action === 'sort') {
+          if (root.classList.contains('pf-detail-open')) { closeFab(); return; }
+          const modes = ['manual', 'name', 'status', 'due-cat', 'created'];
+          const labels = ['Manual', 'Name', 'Status', 'Due Date', 'Newest'];
+          const cur = modes.indexOf(splitSortMode);
+          const next = (cur + 1) % modes.length;
+          splitSortMode = modes[next];
+          safeSet('project-flow-sort-mode', splitSortMode, false);
+          renderSplitList();
+          showToast('Sort: ' + labels[next]);
+          return;
+        }
+        closeFab();
+        if (action === 'add') openNewProjectCategoryPicker();
+        else if (action === 'search') {
+          const searchWrap = document.getElementById('pf-search-wrap');
+          const searchInput = document.getElementById('pf-search');
+          searchWrap.classList.add('pf-search-open');
+          searchInput.focus();
+        }
+        else if (action === 'expand') {
+          if (root.classList.contains('pf-detail-open') && splitSelectedId) {
+            const p = projects.find(pr => pr.id === splitSelectedId);
+            if (p && p.subtasks && p.subtasks.length) {
+              const allExpanded = (function check(list) { return list.every(s => (!s.subtasks || !s.subtasks.length || (s.expanded && check(s.subtasks)))); })(p.subtasks);
+              (function setAll(list, val) { list.forEach(s => { s.expanded = val; if (s.subtasks && s.subtasks.length) setAll(s.subtasks, val); }); })(p.subtasks, !allExpanded);
+              render();
+              showToast(allExpanded ? 'Collapsed all tasks' : 'Expanded all tasks');
+            }
+          } else {
+            const allCollapsed = categories.length > 0 && categories.every(c => splitCollapsedCats[c]);
+            if (allCollapsed) { categories.forEach(c => { splitCollapsedCats[c] = false; }); }
+            else { categories.forEach(c => { splitCollapsedCats[c] = true; }); }
+            renderSplitList();
+            showToast(allCollapsed ? 'Expanded all categories' : 'Collapsed all categories');
+          }
+        }
+        else if (action === 'undo') undo();
+        else if (action === 'redo') redo();
+      });
+    });
+  })();
+
+  // #11 Bottom navigation bar
+  (function() {
+    const bottomNav = document.getElementById('pf-bottom-nav');
+    if (!bottomNav) return;
+    const btns = bottomNav.querySelectorAll('.pf-bottom-nav-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        btns.forEach(b => b.classList.remove('pf-bottom-active'));
+        btn.classList.add('pf-bottom-active');
+        const nav = btn.dataset.nav;
+        if (nav === 'projects') {
+          closeAllModals();
+          if (root.classList.contains('pf-detail-open')) _goBackToProjects();
+        } else if (nav === 'today') {
+          closeAllModals(); renderTodayList(); openModal(todayPanel, 'flex');
+        } else if (nav === 'duelist') {
+          closeAllModals(); renderDueList(); openModal(duelistPanel, 'flex');
+        } else if (nav === 'calendar') {
+          closeAllModals(); renderCalendar(); openModal(calendarPanel, 'flex');
+        } else if (nav === 'options') {
+          closeAllModals(); openModal(optionsPanel, 'flex');
+        }
+      });
+    });
+    // Reset active state when modals close
+    const _origCloseAll = closeAllModals;
+    closeAllModals = function() { _origCloseAll(); btns.forEach(b => b.classList.remove('pf-bottom-active')); btns[0].classList.add('pf-bottom-active'); };
+  })();
+
   // #4 Swipe right to cycle status on subtasks
   (function() {
     let _swipeStartX = 0, _swipeStartY = 0, _swipeRow = null, _swipeMoved = false;
@@ -4617,10 +4913,31 @@ if ('serviceWorker' in navigator) {
     auth.signOut();
   });
 
+  const lastSyncEl = document.getElementById('pf-firebase-last-sync');
+  let _lastSyncTime = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0');
+  function updateLastSync() {
+    _lastSyncTime = Date.now();
+    localStorage.setItem('pf-firebase-last-sync-time', _lastSyncTime.toString());
+    showLastSync();
+  }
+  function showLastSync() {
+    if (!_lastSyncTime) { lastSyncEl.style.display = 'none'; return; }
+    lastSyncEl.style.display = '';
+    const diff = Math.floor((Date.now() - _lastSyncTime) / 1000);
+    if (diff < 10) lastSyncEl.textContent = 'Last synced: just now';
+    else if (diff < 60) lastSyncEl.textContent = 'Last synced: ' + diff + 's ago';
+    else if (diff < 3600) lastSyncEl.textContent = 'Last synced: ' + Math.floor(diff / 60) + ' min ago';
+    else if (diff < 86400) lastSyncEl.textContent = 'Last synced: ' + Math.floor(diff / 3600) + 'h ago';
+    else lastSyncEl.textContent = 'Last synced: ' + Math.floor(diff / 86400) + 'd ago';
+  }
+  showLastSync();
+  setInterval(showLastSync, 30000);
+
   pushBtn.addEventListener('click', function() {
     if (!_fbUser) return;
     userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
     catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
+    updateLastSync();
     window._pf.showToast('⬆ Pushed to cloud');
   });
 
@@ -4644,6 +4961,7 @@ if ('serviceWorker' in navigator) {
         const val = snap.val();
         if (val) { window._pf.setCategories(Array.isArray(val) ? val : Object.values(val)); window._pf.saveCategories(); }
       });
+      updateLastSync();
       window._pf.showToast('⬇ Pulled from cloud');
     });
   });
@@ -4654,10 +4972,20 @@ if ('serviceWorker' in navigator) {
       const val = snap.val();
       if (!val) return;
       const remote = Array.isArray(val) ? val : Object.values(val);
-      if (JSON.stringify(remote) !== JSON.stringify(window._pf.getProjects())) {
-        window._pf.setProjects(remote);
-        window._pf.scheduleSave(); window._pf.render();
-        window._pf.showToast('☁ Synced from cloud');
+      const localStr = JSON.stringify(window._pf.getProjects());
+      const remoteStr = JSON.stringify(remote);
+      if (remoteStr !== localStr) {
+        const localProjects = window._pf.getProjects();
+        const localChanged = localStr !== _lastPushedSnapshot;
+        if (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr) {
+          showConflictModal(localProjects, remote);
+        } else {
+          window._pf.setProjects(remote);
+          window._pf.scheduleSave(); window._pf.render();
+          updateLastSync();
+          _lastPushedSnapshot = remoteStr;
+          window._pf.showToast('☁ Synced from cloud');
+        }
       }
     });
     catRef().on('value', function(snap) {
@@ -4695,11 +5023,64 @@ if ('serviceWorker' in navigator) {
     }
   });
 
-  // Conflict resolution: compare timestamps before overwriting
+  // Selective sync: track last pushed state, only push changed projects
+  let _lastPushedHash = {};
+  function hashProject(p) { return JSON.stringify(p); }
+  function buildHashMap(projects) {
+    const map = {};
+    projects.forEach(p => { map[p.id] = hashProject(p); });
+    return map;
+  }
+
+  function pushSelective() {
+    const projects = window._pf.getProjects();
+    const categories = window._pf.getCategories();
+    const currentHash = buildHashMap(projects);
+    const updates = {};
+    let hasChanges = false;
+
+    // Detect changed/new projects
+    projects.forEach((p, i) => {
+      if (_lastPushedHash[p.id] !== currentHash[p.id]) {
+        updates['users/' + _fbUser.uid + '/projects/' + i] = JSON.parse(JSON.stringify(p));
+        hasChanges = true;
+      }
+    });
+
+    // Detect deleted projects (in old hash but not current)
+    const currentIds = new Set(projects.map(p => p.id));
+    const oldIds = Object.keys(_lastPushedHash);
+    if (oldIds.length > projects.length) {
+      // Full push needed when projects removed (index shift)
+      userRef().set(JSON.parse(JSON.stringify(projects)));
+      hasChanges = true;
+    } else if (hasChanges) {
+      db.ref().update(updates);
+    }
+
+    // Always sync categories (small data)
+    const catHash = JSON.stringify(categories);
+    if (catHash !== _lastPushedCatHash) {
+      catRef().set(JSON.parse(JSON.stringify(categories)));
+      _lastPushedCatHash = catHash;
+    }
+
+    if (hasChanges || catHash !== _lastPushedCatHash) {
+      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
+      _lastPushedHash = currentHash;
+      updateLastSync();
+    }
+  }
+  let _lastPushedCatHash = '';
+
   function pushWithTimestamp() {
-    userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
+    const projects = window._pf.getProjects();
+    _lastPushedHash = buildHashMap(projects);
+    _lastPushedCatHash = JSON.stringify(window._pf.getCategories());
+    userRef().set(JSON.parse(JSON.stringify(projects)));
     catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
     db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
+    updateLastSync();
   }
 
   // Hook into scheduleSave to push on every change when autosync is on (debounced 3s)
@@ -4709,7 +5090,7 @@ if ('serviceWorker' in navigator) {
     if (!navigator.onLine) { _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
     _fbPushTimer = setTimeout(function() {
-      pushWithTimestamp();
+      pushSelective();
     }, 3000);
   };
   if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
@@ -4744,5 +5125,49 @@ if ('serviceWorker' in navigator) {
     });
   }
   auth.onAuthStateChanged(function(user) { if (user) setTimeout(autoBackupToFirebase, 5000); });
+
+  // Conflict modal logic
+  let _lastPushedSnapshot = '';
+  let _pendingRemote = null;
+  function showConflictModal(local, remote) {
+    _pendingRemote = remote;
+    const modal = document.getElementById('pf-conflict-modal');
+    const localEl = document.getElementById('pf-conflict-local');
+    const remoteEl = document.getElementById('pf-conflict-remote');
+    localEl.innerHTML = '<b>' + local.length + ' projects</b><br>' + local.slice(0, 5).map(p => '• ' + (p.title || 'Untitled') + ' (' + (p.status || 'planned') + ')').join('<br>') + (local.length > 5 ? '<br>…and ' + (local.length - 5) + ' more' : '');
+    remoteEl.innerHTML = '<b>' + remote.length + ' projects</b><br>' + remote.slice(0, 5).map(p => '• ' + (p.title || 'Untitled') + ' (' + (p.status || 'planned') + ')').join('<br>') + (remote.length > 5 ? '<br>…and ' + (remote.length - 5) + ' more' : '');
+    modal.classList.add('pf-conflict-open');
+  }
+  document.getElementById('pf-conflict-keep-local').addEventListener('click', function() {
+    document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
+    pushWithTimestamp();
+    window._pf.showToast('✅ Kept local data & pushed to cloud');
+  });
+  document.getElementById('pf-conflict-keep-remote').addEventListener('click', function() {
+    document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
+    if (_pendingRemote) {
+      window._pf.setProjects(_pendingRemote);
+      window._pf.scheduleSave(); window._pf.render();
+      _lastPushedSnapshot = JSON.stringify(_pendingRemote);
+      updateLastSync();
+      window._pf.showToast('☁ Using cloud data');
+    }
+    _pendingRemote = null;
+  });
+
+  // Connection indicator
+  const connDot = document.getElementById('pf-connection-dot');
+  function updateConnDot() {
+    if (navigator.onLine) { connDot.classList.add('pf-online'); connDot.classList.remove('pf-offline'); connDot.title = 'Online'; }
+    else { connDot.classList.add('pf-offline'); connDot.classList.remove('pf-online'); connDot.title = 'Offline'; }
+  }
+  window.addEventListener('online', updateConnDot);
+  window.addEventListener('offline', updateConnDot);
+  updateConnDot();
+
+  // Version display
+  const APP_VERSION = document.querySelector('meta[name="version"]').content;
+  db.ref('users/' + (_fbUser ? _fbUser.uid : '__none') + '/appVersion').set(APP_VERSION);
+  auth.onAuthStateChanged(function(u) { if (u) db.ref('users/' + u.uid + '/appVersion').set(APP_VERSION); });
 })();
 </script>
