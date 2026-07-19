@@ -55,22 +55,7 @@
     .pf-connection-dot.pf-online { background: #4ade80; }
     .pf-connection-dot.pf-offline { background: #ef4444; animation: pf-offline-blink 1.5s infinite; }
     @keyframes pf-offline-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .pf-conflict-modal {
-      display: none; position: fixed; inset: 0; z-index: 10001; background: rgba(0,0,0,0.7);
-      align-items: center; justify-content: center; padding: 16px;
-    }
-    .pf-conflict-modal.pf-conflict-open { display: flex; }
-    .pf-conflict-box {
-      background: var(--card, #1e1e2e); border: 1px solid var(--card-border, #333);
-      border-radius: 12px; padding: 16px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
-    }
-    .pf-conflict-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
-    .pf-conflict-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-    .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: 8px; padding: 10px; font-size: 10px; color: var(--text-dim); overflow: hidden; }
-    .pf-conflict-col-title { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-    .pf-conflict-btns { display: flex; gap: 8px; justify-content: flex-end; }
-    .pf-conflict-btns button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; }
-    .pf-conflict-btns button.pf-conflict-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+
     .pf-fab {
       display: flex; position: fixed; bottom: 72px; right: 16px; z-index: 9001;
       width: 48px; height: 48px; border-radius: 50%; background: var(--accent, #7b68ee);
@@ -1496,6 +1481,22 @@
 </div>
 
 <style>
+  .pf-conflict-modal {
+    display: none; position: fixed; inset: 0; z-index: 10001; background: rgba(0,0,0,0.7);
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .pf-conflict-modal.pf-conflict-open { display: flex; }
+  .pf-conflict-box {
+    background: var(--card, #1e1e2e); border: 1px solid var(--card-border, #333);
+    border-radius: 12px; padding: 16px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+  }
+  .pf-conflict-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+  .pf-conflict-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: 8px; padding: 10px; font-size: 10px; color: var(--text-dim); overflow: hidden; }
+  .pf-conflict-col-title { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .pf-conflict-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .pf-conflict-btns button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; }
+  .pf-conflict-btns button.pf-conflict-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   @media print {
     #pf-root { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
     #pf-root .pf-toolbar, #pf-root .pf-resize-handle, #pf-root .pf-toast,
