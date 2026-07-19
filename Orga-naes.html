@@ -1247,6 +1247,8 @@
           <br><input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
         </label>
         <p style="font-size:10px;color:var(--text-dim);margin-top:4px;">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
+        <button class="pf-undo-btn" id="pf-firebase-backups-btn" style="justify-content:flex-start;margin-top:6px;" disabled><span style="display:inline-block;width:20px;text-align:center;">🗂</span> Restore from Backup</button>
+        <div id="pf-firebase-backups-list" style="display:none;margin-top:6px;max-height:200px;overflow-y:auto;"></div>
       </div>
     </div>
     <div class="pf-options-section">
@@ -1308,7 +1310,7 @@
     <div class="pf-options-section" style="border-top:1px solid var(--card-border);padding-top:12px;margin-top:8px;">
       <div style="font-size:13px;font-weight:600;margin-bottom:6px;">About</div>
       <div style="font-size:11px;color:var(--text-dim);line-height:1.6;">
-        <strong>Project Flow</strong> is a lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views — all stored locally in your browser.<br><br>
+        <strong>Orga-naes</strong> is a lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views — all stored locally in your browser.<br><br>
         Created by <strong>Sean Desucatan</strong>
       </div>
     </div>
@@ -4824,6 +4826,10 @@
     setProjects: (p) => { projects = p; },
     getCategories: () => categories,
     setCategories: (c) => { categories = c; },
+    getArchive: () => archive,
+    setArchive: (a) => { archive = a; saveArchive(); },
+    getTrash: () => trash,
+    setTrash: (t) => { trash = t; saveTrash(); },
     scheduleSave: () => scheduleSave(),
     saveCategories: () => saveCategories(),
     render: () => render(),
@@ -4870,6 +4876,8 @@ if ('serviceWorker' in navigator) {
 
   function userRef() { return db.ref('users/' + _fbUser.uid + '/projects'); }
   function catRef() { return db.ref('users/' + _fbUser.uid + '/categories'); }
+  function archiveRef() { return db.ref('users/' + _fbUser.uid + '/archive'); }
+  function trashRef() { return db.ref('users/' + _fbUser.uid + '/trash'); }
 
   function setSignedIn(user) {
     _fbUser = user;
@@ -4937,6 +4945,8 @@ if ('serviceWorker' in navigator) {
     if (!_fbUser) return;
     userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
     catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
+    archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive())));
+    trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash())));
     updateLastSync();
     window._pf.showToast('⬆ Pushed to cloud');
   });
@@ -4960,6 +4970,14 @@ if ('serviceWorker' in navigator) {
       catRef().once('value').then(function(snap) {
         const val = snap.val();
         if (val) { window._pf.setCategories(Array.isArray(val) ? val : Object.values(val)); window._pf.saveCategories(); }
+      });
+      archiveRef().once('value').then(function(snap) {
+        const val = snap.val();
+        if (val) { window._pf.setArchive(Array.isArray(val) ? val : Object.values(val)); }
+      });
+      trashRef().once('value').then(function(snap) {
+        const val = snap.val();
+        if (val) { window._pf.setTrash(Array.isArray(val) ? val : Object.values(val)); }
       });
       updateLastSync();
       window._pf.showToast('⬇ Pulled from cloud');
@@ -5079,6 +5097,8 @@ if ('serviceWorker' in navigator) {
     _lastPushedCatHash = JSON.stringify(window._pf.getCategories());
     userRef().set(JSON.parse(JSON.stringify(projects)));
     catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
+    archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive())));
+    trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash())));
     db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
     updateLastSync();
   }
@@ -5133,6 +5153,54 @@ if ('serviceWorker' in navigator) {
     if (_fbAutobackup && _fbUser) setTimeout(autoBackupToFirebase, 1000);
   });
   auth.onAuthStateChanged(function(user) { if (user && _fbAutobackup) setTimeout(autoBackupToFirebase, 5000); });
+
+  // Backup restore UI
+  const backupsBtn = document.getElementById('pf-firebase-backups-btn');
+  const backupsList = document.getElementById('pf-firebase-backups-list');
+  function enableBackupsBtn() { backupsBtn.disabled = false; }
+  function disableBackupsBtn() { backupsBtn.disabled = true; }
+  auth.onAuthStateChanged(function(u) { if (u) enableBackupsBtn(); else disableBackupsBtn(); });
+
+  backupsBtn.addEventListener('click', function() {
+    if (!_fbUser) return;
+    if (backupsList.style.display !== 'none') { backupsList.style.display = 'none'; return; }
+    backupsList.style.display = 'block';
+    backupsList.innerHTML = '<div style="font-size:10px;color:var(--text-dim);padding:6px;">Loading backups...</div>';
+    db.ref('users/' + _fbUser.uid + '/backups').once('value').then(function(snap) {
+      const val = snap.val();
+      if (!val) { backupsList.innerHTML = '<div style="font-size:10px;color:var(--text-dim);padding:6px;">No backups found.</div>'; return; }
+      const keys = Object.keys(val).sort().reverse();
+      backupsList.innerHTML = keys.map(function(k) {
+        const b = val[k];
+        const projCount = b.projects ? (Array.isArray(b.projects) ? b.projects.length : Object.keys(b.projects).length) : 0;
+        const date = new Date(b.timestamp || 0);
+        const label = k + ' (' + projCount + ' projects, ' + date.toLocaleTimeString() + ')';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;border-bottom:1px solid var(--card-border);">' +
+          '<span style="font-size:10px;color:var(--text);">' + label + '</span>' +
+          '<button class="pf-undo-btn pf-backup-restore-btn" data-backup-key="' + k + '" style="font-size:9px;padding:3px 8px;">Restore</button></div>';
+      }).join('');
+      backupsList.querySelectorAll('.pf-backup-restore-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const key = btn.dataset.backupKey;
+          if (!confirm('Restore backup from ' + key + '? This will overwrite your current data.')) return;
+          window._pf.snapshot();
+          const b = val[key];
+          if (b.projects) {
+            const p = Array.isArray(b.projects) ? b.projects : Object.values(b.projects);
+            window._pf.setProjects(p);
+            window._pf.scheduleSave(); window._pf.render();
+          }
+          if (b.categories) {
+            const c = Array.isArray(b.categories) ? b.categories : Object.values(b.categories);
+            window._pf.setCategories(c);
+            window._pf.saveCategories();
+          }
+          window._pf.showToast('✅ Restored backup from ' + key);
+          backupsList.style.display = 'none';
+        });
+      });
+    });
+  });
 
   // Conflict modal logic
   let _lastPushedSnapshot = '';
