@@ -4436,7 +4436,17 @@
     });
   })();
 
-
+  // Expose for Firebase sync
+  window._pf = {
+    getProjects: () => projects,
+    setProjects: (p) => { projects = p; },
+    getCategories: () => categories,
+    setCategories: (c) => { categories = c; },
+    scheduleSave: () => scheduleSave(),
+    saveCategories: () => saveCategories(),
+    render: () => render(),
+    showToast: (msg) => showToast(msg)
+  };
 
 })();
 
@@ -4517,10 +4527,9 @@
 
   pushBtn.addEventListener('click', function() {
     if (!_fbUser) return;
-    const data = { projects: JSON.parse(JSON.stringify(projects)), categories: JSON.parse(JSON.stringify(categories)), updatedAt: Date.now() };
-    userRef().set(data.projects);
-    catRef().set(data.categories);
-    showToast('⬆ Pushed to cloud');
+    userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
+    catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
+    window._pf.showToast('⬆ Pushed to cloud');
   });
 
   pullBtn.addEventListener('click', function() {
@@ -4528,15 +4537,15 @@
     userRef().once('value').then(function(snap) {
       const val = snap.val();
       if (val) {
-        projects = Array.isArray(val) ? val : Object.values(val);
-        scheduleSave(); render();
+        window._pf.setProjects(Array.isArray(val) ? val : Object.values(val));
+        window._pf.scheduleSave(); window._pf.render();
       }
     });
     catRef().once('value').then(function(snap) {
       const val = snap.val();
-      if (val) { categories = Array.isArray(val) ? val : Object.values(val); saveCategories(); }
+      if (val) { window._pf.setCategories(Array.isArray(val) ? val : Object.values(val)); window._pf.saveCategories(); }
     });
-    showToast('⬇ Pulled from cloud');
+    window._pf.showToast('⬇ Pulled from cloud');
   });
 
   function startListener() {
@@ -4545,19 +4554,19 @@
       const val = snap.val();
       if (!val) return;
       const remote = Array.isArray(val) ? val : Object.values(val);
-      if (JSON.stringify(remote) !== JSON.stringify(projects)) {
-        projects = remote;
-        scheduleSave(); render();
-        showToast('☁ Synced from cloud');
+      if (JSON.stringify(remote) !== JSON.stringify(window._pf.getProjects())) {
+        window._pf.setProjects(remote);
+        window._pf.scheduleSave(); window._pf.render();
+        window._pf.showToast('☁ Synced from cloud');
       }
     });
     catRef().on('value', function(snap) {
       const val = snap.val();
       if (!val) return;
       const remote = Array.isArray(val) ? val : Object.values(val);
-      if (JSON.stringify(remote) !== JSON.stringify(categories)) {
-        categories = remote;
-        saveCategories(); render();
+      if (JSON.stringify(remote) !== JSON.stringify(window._pf.getCategories())) {
+        window._pf.setCategories(remote);
+        window._pf.saveCategories(); window._pf.render();
       }
     });
   }
@@ -4575,15 +4584,14 @@
   });
 
   // Hook into scheduleSave to push on every change when autosync is on
-  const _origScheduleSave = scheduleSave;
   window._firebasePush = function() {
     if (!_fbAutosync || !_fbUser) return;
-    userRef().set(JSON.parse(JSON.stringify(projects)));
-    catRef().set(JSON.parse(JSON.stringify(categories)));
+    userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
+    catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
   };
-  if (typeof fsAutoSaveHook === 'undefined') window.fsAutoSaveHook = window._firebasePush;
+  if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
   else {
-    const _prevHook = fsAutoSaveHook;
+    const _prevHook = window.fsAutoSaveHook;
     window.fsAutoSaveHook = function() { _prevHook(); window._firebasePush(); };
   }
 })();
