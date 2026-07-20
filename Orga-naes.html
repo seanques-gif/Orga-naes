@@ -1356,6 +1356,7 @@
     <div style="padding-top:10px;border-top:1px solid var(--card-border);margin-top:10px;display:flex;gap:8px;">
       <button class="pf-undo-btn" id="pf-today-clear-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;border:1px solid var(--card-border);">Clear All</button>
       <button class="pf-undo-btn" id="pf-today-carry-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;background:rgba(149,128,255,0.12);color:var(--accent);font-weight:600;">Carry Over Incomplete</button>
+      <button class="pf-undo-btn" id="pf-today-overdue-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:600;">Add Overdue</button>
     </div>
   </div>
   <div class="pf-activity-panel" id="pf-duelist-panel" style="display:none;width:min(700px,90vw);max-height:min(85vh,700px);height:75vh;flex-direction:column;">
@@ -3607,6 +3608,33 @@
   document.getElementById('pf-cal-today-btn').addEventListener('click', () => { calMonth = new Date().getMonth(); calYear = new Date().getFullYear(); renderCalendar(); });
   document.getElementById('pf-today-clear-btn').addEventListener('click', () => { if (!todayTasks.length) return; clearToday(); });
   document.getElementById('pf-today-carry-btn').addEventListener('click', carryOverToday);
+  document.getElementById('pf-today-overdue-btn').addEventListener('click', function() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    let added = 0;
+    projects.forEach(p => {
+      if (p.dueAt && p.status !== 'completed') {
+        const d = new Date(p.dueAt + 'T00:00:00');
+        if (d < today && !todayTasks.find(t => t.sourceId === p.id)) {
+          todayTasks.push({ id: uid(), title: p.title, sourceId: p.id, sourceType: 'project', done: false });
+          added++;
+        }
+      }
+      (function walk(subs) {
+        subs.forEach(s => {
+          if (s.dueAt && s.status !== 'completed') {
+            const d = new Date(s.dueAt + 'T00:00:00');
+            if (d < today && !todayTasks.find(t => t.sourceId === s.id)) {
+              todayTasks.push({ id: uid(), title: s.title, sourceId: s.id, sourceType: 'subtask', done: false });
+              added++;
+            }
+          }
+          if (s.subtasks && s.subtasks.length) walk(s.subtasks);
+        });
+      })(p.subtasks || []);
+    });
+    if (!added) { showToast('No overdue tasks to add'); return; }
+    saveToday(); renderTodayList(); showToast(added + ' overdue task' + (added > 1 ? 's' : '') + ' added');
+  });
   loadToday();
 
   const WEEKLY_KEY = 'project-flow-weekly';
@@ -4960,27 +4988,24 @@ if ('serviceWorker' in navigator) {
         if (!confirm('Your local data is NEWER than the cloud. Pull anyway? (This will overwrite local changes. You can Undo after.)')) return;
       }
       if (window._pf && window._pf.snapshot) window._pf.snapshot();
-      userRef().once('value').then(function(snap) {
-        const val = snap.val();
-        if (val) {
-          window._pf.setProjects(Array.isArray(val) ? val : Object.values(val));
-          window._pf.scheduleSave(); window._pf.render();
-        }
+      Promise.all([
+        userRef().once('value'),
+        catRef().once('value'),
+        archiveRef().once('value'),
+        trashRef().once('value')
+      ]).then(function(results) {
+        const projVal = results[0].val();
+        const catVal = results[1].val();
+        const archVal = results[2].val();
+        const trashVal = results[3].val();
+        if (projVal) window._pf.setProjects(Array.isArray(projVal) ? projVal : Object.values(projVal));
+        if (catVal) { window._pf.setCategories(Array.isArray(catVal) ? catVal : Object.values(catVal)); window._pf.saveCategories(); }
+        if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal : Object.values(archVal));
+        if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal : Object.values(trashVal));
+        window._pf.scheduleSave(); window._pf.render();
+        updateLastSync();
+        window._pf.showToast('⬇ Pulled from cloud');
       });
-      catRef().once('value').then(function(snap) {
-        const val = snap.val();
-        if (val) { window._pf.setCategories(Array.isArray(val) ? val : Object.values(val)); window._pf.saveCategories(); }
-      });
-      archiveRef().once('value').then(function(snap) {
-        const val = snap.val();
-        if (val) { window._pf.setArchive(Array.isArray(val) ? val : Object.values(val)); }
-      });
-      trashRef().once('value').then(function(snap) {
-        const val = snap.val();
-        if (val) { window._pf.setTrash(Array.isArray(val) ? val : Object.values(val)); }
-      });
-      updateLastSync();
-      window._pf.showToast('⬇ Pulled from cloud');
     });
   });
 
