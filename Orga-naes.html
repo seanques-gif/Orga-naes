@@ -4909,12 +4909,12 @@
     function showFab() {
       fab.classList.add('pf-fab-visible');
       clearTimeout(_fabHideTimer);
-      _fabHideTimer = setTimeout(function() { if (!fabOpen) fab.classList.remove('pf-fab-visible'); }, 3000);
+      _fabHideTimer = setTimeout(function() { if (!fabOpen) fab.classList.remove('pf-fab-visible'); }, 2000);
     }
-    const _splitListForFab = document.getElementById('pf-split-list');
-    if (_splitListForFab) {
-      _splitListForFab.addEventListener('scroll', showFab, { passive: true });
-    }
+    document.addEventListener('scroll', function(e) {
+      if (e.target && (e.target.classList && e.target.classList.contains('pf-split-list') || e.target.id === 'pf-split-list')) showFab();
+    }, { passive: true, capture: true });
+    document.addEventListener('touchmove', function() { showFab(); }, { passive: true });
     function toggleFab() {
       fabOpen = !fabOpen;
       fab.classList.toggle('pf-fab-open', fabOpen);
@@ -5113,7 +5113,7 @@
   // Pull-to-refresh
   (function() {
     let startY = 0, pulling = false, pullDist = 0;
-    const threshold = 80;
+    const threshold = 200;
     let indicator = null;
     function createIndicator() {
       if (indicator) return indicator;
