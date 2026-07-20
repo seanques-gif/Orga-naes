@@ -529,6 +529,10 @@
     from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: translateY(0); }
   }
+  #pf-root .pf-split-list-item { animation: pf-slide-in 0.2s ease-out both; }
+  #pf-root .pf-subrow { animation: pf-slide-in 0.15s ease-out both; }
+  #pf-root .pf-item-removing { animation: pf-slide-out 0.2s ease-in forwards; }
+  @keyframes pf-slide-out { to { opacity: 0; transform: translateY(-4px); height: 0; padding: 0; margin: 0; overflow: hidden; } }
   #pf-root .pf-split-list-item.pf-due-today { border-left-color: var(--ongoing); }
   @keyframes pf-view-fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   #pf-root .pf-split-view, #pf-root .pf-canvas-wrap { animation: pf-view-fade 0.25s ease-out; }
@@ -1290,6 +1294,7 @@
       </div>
       <input type="range" id="pf-font-size" class="pf-range-input" style="display:none;" min="10" max="20" step="1" value="15">
       <span id="pf-font-size-val" style="display:none;">15px</span>
+      <div style="margin-bottom:8px;"><button class="pf-undo-btn" id="pf-theme-auto" style="padding:5px 12px;font-size:11px;">🌗 Auto (System)</button></div>
       <div class="pf-options-section-title" style="margin-top:14px;">DARK THEMES</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="pf-undo-btn" id="pf-theme-pf-dark" style="padding:5px 12px;font-size:11px;">🌑 PF Dark (Default)</button>
@@ -2417,7 +2422,7 @@
 
 
     if (p.expanded && p.height) { div.style.height = p.height + 'px'; div.style.display = 'flex'; div.style.flexDirection = 'column'; div.querySelector('.pf-node-header').style.flexShrink = '0'; const descRow = div.querySelector('.pf-node-desc-row'); if (descRow) descRow.style.flexShrink = '0'; const sl = div.querySelector('.pf-sublist'); sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; }
-    const sublist = div.querySelector('.pf-sublist'); renderSubtaskRows(sublist, p, p.subtasks, 0);
+    const sublist = div.querySelector('.pf-sublist'); if (p.expanded) { renderSubtaskRows(sublist, p, p.subtasks, 0); }
     sublist.__project = p; sublist.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); clearIndicators(); sublist.classList.add('pf-drop-root'); }); sublist.addEventListener('dragleave', (e) => { if (e.target === sublist) sublist.classList.remove('pf-drop-root'); }); sublist.addEventListener('drop', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); performMove(p, null, null); });
     const addBtn = document.createElement('button'); addBtn.className = 'pf-add-sub'; addBtn.textContent = '+ Add subtask'; addBtn.addEventListener('click', (e) => { e.stopPropagation(); addSubtask(p.id, null); }); sublist.appendChild(addBtn);
     div.querySelector('.pf-chevron').addEventListener('click', (e) => { e.stopPropagation(); if (listViewActive) { const allExpanded = (function check(list) { return list.every(s => (!s.subtasks || !s.subtasks.length || (s.expanded && check(s.subtasks)))); })(p.subtasks); (function setAll(list, val) { list.forEach(s => { s.expanded = val; if (s.subtasks && s.subtasks.length) setAll(s.subtasks, val); }); })(p.subtasks, !allExpanded); render(); } else { toggleExpand(p.id); } }); div.querySelector('.pf-node-del').addEventListener('click', (e) => { e.stopPropagation(); deleteProject(p.id); }); div.querySelector('.pf-badge').addEventListener('click', (e) => { e.stopPropagation(); cycleProjectStatus(p.id); });
@@ -3016,11 +3021,14 @@
       catLabel.appendChild(catAddBtn);
       catLabel.appendChild(document.createTextNode(txt));
       splitList.appendChild(catLabel);
+      let idx = 0;
       group.forEach(p => {
         const item = document.createElement('div');
         const isActive = p.id === splitSelectedId && splitMultiSelect.length <= 1;
         const isMulti = splitMultiSelect.includes(p.id);
         item.className = 'pf-split-list-item' + (isActive ? ' pf-split-active' : '') + (isMulti ? ' pf-split-selected' : '');
+        item.style.animationDelay = (Math.min(idx, 20) * 15) + 'ms';
+        idx++;
         item.setAttribute('onclick', '_splitSelect("' + p.id + '", event)');
         if (!window.matchMedia('(pointer: coarse)').matches) item.draggable = true;
         item.dataset.projectId = p.id;
@@ -3092,6 +3100,36 @@
         splitList.appendChild(item);
       });
     });
+    // Virtual scrolling: hide off-screen items when list is large
+    _virtualizeList();
+  }
+  let _splitVirtualCleanup = null;
+  function _virtualizeList() {
+    if (_splitVirtualCleanup) { _splitVirtualCleanup(); _splitVirtualCleanup = null; }
+    const items = splitList.querySelectorAll('.pf-split-list-item');
+    if (items.length <= 50) return;
+    const ITEM_H = 40, BUFFER = 10;
+    const topSpacer = document.createElement('div'); topSpacer.className = 'pf-virt-spacer-top';
+    const botSpacer = document.createElement('div'); botSpacer.className = 'pf-virt-spacer-bot';
+    // Convert items to array with original positions
+    const allItems = Array.from(items);
+    const parents = allItems.map(el => el.parentNode);
+    const nexts = allItems.map(el => el.nextSibling);
+    function applyVirtual() {
+      const scrollTop = splitList.scrollTop;
+      const viewH = splitList.clientHeight;
+      const startIdx = Math.max(0, Math.floor(scrollTop / ITEM_H) - BUFFER);
+      const endIdx = Math.min(allItems.length, Math.ceil((scrollTop + viewH) / ITEM_H) + BUFFER);
+      allItems.forEach((el, i) => {
+        if (i >= startIdx && i < endIdx) { el.style.display = ''; }
+        else { el.style.display = 'none'; }
+      });
+    }
+    applyVirtual();
+    let _vScrollTimer = null;
+    function onScroll() { if (_vScrollTimer) return; _vScrollTimer = setTimeout(() => { _vScrollTimer = null; applyVirtual(); }, 100); }
+    splitList.addEventListener('scroll', onScroll);
+    _splitVirtualCleanup = () => { splitList.removeEventListener('scroll', onScroll); if (_vScrollTimer) clearTimeout(_vScrollTimer); };
   }
 
   let _ctxEl = null;
@@ -3352,6 +3390,21 @@
   document.getElementById('pf-theme-light-sky').addEventListener('click', () => { clearThemePreset(); applyThemePreset('light-sky'); });
   document.getElementById('pf-theme-light-mint').addEventListener('click', () => { clearThemePreset(); applyThemePreset('light-mint'); });
   document.getElementById('pf-theme-light-sand').addEventListener('click', () => { clearThemePreset(); applyThemePreset('light-sand'); });
+  document.getElementById('pf-theme-auto').addEventListener('click', function() {
+    localStorage.setItem('project-flow-theme-preset', 'auto');
+    applyAutoTheme();
+    showToast('Theme: Auto (follows system)');
+  });
+  function applyAutoTheme() {
+    if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+      applyThemePreset('light-rose');
+    } else {
+      applyThemePreset('pf-dark');
+    }
+  }
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+    if (localStorage.getItem('project-flow-theme-preset') === 'auto') applyAutoTheme();
+  });
   document.getElementById('pf-theme-pf-dark').addEventListener('click', () => { clearThemePreset(); applyThemePreset('pf-dark'); });
   document.getElementById('pf-theme-pf-light').addEventListener('click', () => { clearThemePreset(); applyThemePreset('pf-light'); });
 
@@ -4462,7 +4515,7 @@
     let mode = 'focus';
     setViewMode('focus');
     // Restore theme preset
-    try { const tp = localStorage.getItem('project-flow-theme-preset'); if (tp && THEME_PRESETS[tp]) applyThemePreset(tp); } catch(e) {}
+    try { const tp = localStorage.getItem('project-flow-theme-preset'); if (tp === 'auto') applyAutoTheme(); else if (tp && THEME_PRESETS[tp]) applyThemePreset(tp); } catch(e) {}
     // Motivational quote in empty state
     const emptyEl = document.getElementById('pf-empty');
     if (emptyEl && !projects.length) { emptyEl.innerHTML = '<b>' + QUOTES[Math.floor(Math.random() * QUOTES.length)] + '</b><br><br>Click <b>+ New project</b> to get started.'; }
@@ -4726,7 +4779,8 @@
     if (desktopBadge) { if (count > 0) { desktopBadge.textContent = label; desktopBadge.style.display = 'flex'; } else { desktopBadge.style.display = 'none'; } }
   }
   const _origRender = render;
-  render = function() { _origRender(); updateOverdueBadge(); };
+  let _renderRafId = null;
+  render = function() { if (_renderRafId) return; _renderRafId = requestAnimationFrame(() => { _renderRafId = null; _origRender(); updateOverdueBadge(); }); };
   updateOverdueBadge();
 
   // Floating action button (expandable)
