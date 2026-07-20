@@ -604,7 +604,7 @@
   }
   #pf-root .pf-ctx-menu {
     position: fixed; z-index: 100; background: var(--card); border: 1px solid var(--card-border);
-    border-radius: 6px; padding: 4px 0; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    border-radius: 14px; padding: 6px 0; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     max-height: calc(100vh - 20px); overflow-y: auto; animation: pf-ctx-fade 0.15s ease;
   }
   #pf-root .pf-ctx-menu-item {
@@ -621,6 +621,8 @@
   #pf-root .pf-pull-indicator { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: 32px; height: 32px; border-radius: 50%; background: var(--card); border: 2px solid var(--accent); display: none; z-index: 200; font-size: 18px; line-height: 28px; text-align: center; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none; }
   #pf-root .pf-scroll-top { position: fixed; bottom: 80px; right: 16px; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 18px; line-height: 40px; text-align: center; cursor: pointer; z-index: 90; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; transform: translateY(10px); }
   #pf-root .pf-scroll-top.pf-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  #pf-root.pf-device-mobile .pf-scroll-top { bottom: 140px; }
+  #pf-ctx-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; backdrop-filter: blur(2px); }
   #pf-root .pf-split-list::before, #pf-root .pf-split-list::after { content: ''; display: block; position: sticky; left: 0; right: 0; height: 0; z-index: 5; pointer-events: none; transition: height 0.2s ease, opacity 0.2s ease; opacity: 0; }
   #pf-root .pf-split-list::before { top: 0; background: linear-gradient(to bottom, var(--accent-alpha, rgba(123,104,238,0.15)), transparent); }
   #pf-root .pf-split-list::after { bottom: 0; background: linear-gradient(to top, var(--accent-alpha, rgba(123,104,238,0.15)), transparent); }
@@ -897,9 +899,9 @@
     text-align: center;
   }
 
-  #pf-root .pf-toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(12px); background: var(--toast-bg); color: #fff; border: 1px solid var(--card-border); padding: 10px 16px; border-radius: 6px; font-size: 12.5px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 12px; }
+  #pf-root .pf-toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(12px); background: var(--toast-bg); color: #fff; border: 1px solid var(--card-border); padding: 10px 16px; border-radius: 12px; font-size: 12.5px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 12px; }
   #pf-root .pf-toast.pf-toast-show { pointer-events: auto; }
-  #pf-root .pf-toast-undo { background: var(--accent); color: #fff; border: none; border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  #pf-root .pf-toast-undo { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
   #pf-root .pf-toast-undo:hover { background: #7b68ee; }
   #pf-root .pf-toast.pf-toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #pf-root .pf-toast.pf-toast-error { border-color: rgba(224,80,63,0.5); color: var(--danger); }
@@ -932,7 +934,7 @@
     max-height: min(70vh, 600px);
     background: var(--card);
     border: 1px solid var(--card-border);
-    border-radius: 6px;
+    border-radius: 16px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     z-index: 60;
     display: flex;
@@ -981,7 +983,7 @@
     overflow-x: hidden;
     background: var(--card);
     border: 1px solid var(--card-border);
-    border-radius: 6px;
+    border-radius: 16px;
     box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(149,128,255,0.08);
     z-index: 60;
     padding: 18px;
@@ -1510,14 +1512,14 @@
   .pf-conflict-modal.pf-conflict-open { display: flex; }
   .pf-conflict-box {
     background: var(--card, #1e1e2e); border: 1px solid var(--card-border, #333);
-    border-radius: 12px; padding: 16px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+    border-radius: 16px; padding: 16px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
   }
   .pf-conflict-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
   .pf-conflict-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-  .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: 8px; padding: 10px; font-size: 10px; color: var(--text-dim); overflow: hidden; }
+  .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: 12px; padding: 10px; font-size: 10px; color: var(--text-dim); overflow: hidden; }
   .pf-conflict-col-title { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
   .pf-conflict-btns { display: flex; gap: 8px; justify-content: flex-end; }
-  .pf-conflict-btns button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; }
+  .pf-conflict-btns button { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; }
   .pf-conflict-btns button.pf-conflict-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   @media print {
     #pf-root { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
@@ -2220,7 +2222,7 @@
       setTimeout(() => item.classList.remove('pf-ring-pulse', 'pf-ring-complete'), 900);
     }, 50);
   }
-  function cycleProjectStatus(id) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
+  function cycleProjectStatus(id) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
   function checkAllCompleted(p) {
     if (!p.subtasks || !p.subtasks.length) return;
     // Auto-complete parent subtasks when all their children are done
@@ -2805,14 +2807,18 @@
     }
     return false;
   }
+  let _updatingStatuses = false;
   function autoUpdateStatuses() {
+    if (_updatingStatuses) return;
+    _updatingStatuses = true;
     projects.forEach(p => {
       if (!p.subtasks || !p.subtasks.length) return;
       const hasAnyDone = (function check(list) { return list.some(s => s.status === 'completed' || s.status === 'ongoing' || s.status === 'waiting' || s.dueAt || (s.subtasks && s.subtasks.length && check(s.subtasks))); })(p.subtasks);
       const allDone = (function check(list) { return list.every(s => s.status === 'completed' && (!s.subtasks || !s.subtasks.length || check(s.subtasks))); })(p.subtasks);
       if (allDone && p.status !== 'completed') { p.status = 'completed'; p.completedAt = new Date().toISOString(); }
-      else if (!allDone && hasAnyDone && p.status === 'planned') { p.status = 'ongoing'; }
+      else if (!allDone && hasAnyDone && p.status === 'planned' && !p._manualStatus) { p.status = 'ongoing'; }
     });
+    _updatingStatuses = false;
   }
   function render() {
     autoPopulateToday();
@@ -3047,9 +3053,7 @@
           });
           menu.appendChild(delItem);
           root.appendChild(menu);
-          const rect = menu.getBoundingClientRect();
-          if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
-          if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
+          _positionCtxMenu(menu);
           _ctxEl = menu;
         });
       }
@@ -3203,6 +3207,7 @@
       const startIdx = Math.max(0, Math.floor(scrollTop / ITEM_H) - BUFFER);
       const endIdx = Math.min(allItems.length, Math.ceil((scrollTop + viewH) / ITEM_H) + BUFFER);
       allItems.forEach((el, i) => {
+        if (el.closest('.pf-collapsed')) { el.style.display = ''; return; }
         if (i >= startIdx && i < endIdx) { el.style.display = ''; }
         else { el.style.display = 'none'; }
       });
@@ -3215,7 +3220,21 @@
   }
 
   let _ctxEl = null;
-  function _closeCtx() { if (_ctxEl) { _ctxEl.remove(); _ctxEl = null; } }
+  function _closeCtx() { if (_ctxEl) { _ctxEl.remove(); _ctxEl = null; } const bd = document.getElementById('pf-ctx-backdrop'); if (bd) bd.style.display = 'none'; }
+  function _positionCtxMenu(menu) {
+    const isMobile = document.getElementById('pf-root').classList.contains('pf-device-mobile');
+    if (isMobile) {
+      menu.style.left = '50%'; menu.style.top = '50%'; menu.style.transform = 'translate(-50%, -50%)';
+      menu.style.maxHeight = (window.innerHeight - 40) + 'px';
+      let backdrop = document.getElementById('pf-ctx-backdrop');
+      if (!backdrop) { backdrop = document.createElement('div'); backdrop.id = 'pf-ctx-backdrop'; document.getElementById('pf-root').appendChild(backdrop); backdrop.addEventListener('click', _closeCtx); }
+      backdrop.style.display = 'block';
+    } else {
+      const rect = menu.getBoundingClientRect();
+      if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
+      if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
+    }
+  }
   document.addEventListener('click', _closeCtx);
   document.addEventListener('pointerdown', (e) => { if (_ctxEl && !_ctxEl.contains(e.target)) _closeCtx(); });
   document.addEventListener('contextmenu', _closeCtx);
@@ -3247,9 +3266,7 @@
     });
     menu.appendChild(addCatItem);
     root.appendChild(menu);
-    const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
-    if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
+    _positionCtxMenu(menu);
     _ctxEl = menu;
   });
   window._showCtxMenu = function(x, y, p) {
@@ -3265,13 +3282,7 @@
       { label: '→ ' + STATUS_LABEL[statusNext], action: () => { snapshot(); p.status = statusNext; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
       { label: '📋 Duplicate', action: () => { snapshot(); const dup = JSON.parse(JSON.stringify(p)); dup.id = uid(); dup.title += ' (copy)'; projects.push(dup); scheduleSave(); renderSplitList(); } },
     ];
-    if (categories.length) {
-      items.push({ sep: true });
-      categories.forEach(cat => {
-        if (cat !== p.category) items.push({ label: '📁 ' + cat, action: () => { snapshot(); p.category = cat; scheduleSave(); renderSplitList(); renderSplitDetail(); } });
-      });
-      if (p.category) items.push({ label: '📁 (none)', action: () => { snapshot(); p.category = null; scheduleSave(); renderSplitList(); renderSplitDetail(); } });
-    }
+
     items.push({ sep: true });
     items.push({ label: '🔁 Repeat: ' + (p.recurrence || 'None'), action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(p.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); p.recurrence = opts[next]; scheduleSave(); render(); showToast('Repeat: ' + labels[next]); } });
     items.push({ label: '😀 Set Emoji', action: () => { const el = root.querySelector('[data-project-id="' + p.id + '"]') || root.querySelector('.pf-split-active'); if (el) showEmojiPicker(p, el); } });
@@ -3286,9 +3297,7 @@
       menu.appendChild(el);
     });
     root.appendChild(menu);
-    const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
-    if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
+    _positionCtxMenu(menu);
     _ctxEl = menu;
   };
 
@@ -3317,9 +3326,7 @@
       menu.appendChild(el);
     });
     root.appendChild(menu);
-    const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
-    if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
+    _positionCtxMenu(menu);
     _ctxEl = menu;
   }
 
@@ -4357,6 +4364,7 @@
     // Force immediate save to localStorage before page unloads
     try { localStorage.setItem(STORE_KEY, JSON.stringify(projects)); } catch (e) {}
     try { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories)); } catch (e) {}
+    try { localStorage.setItem('project-flow-cat-emojis', JSON.stringify(categoryEmojis)); } catch(e) {}
     if (_fsAutosave && _fsDirHandle) {
       try { fsSave(); } catch (e) {}
     }
@@ -5062,7 +5070,9 @@
     saveCategories: () => saveCategories(),
     render: () => render(),
     showToast: (msg) => showToast(msg),
-    snapshot: () => snapshot()
+    snapshot: () => snapshot(),
+    getCategoryEmojis: () => categoryEmojis,
+    setCategoryEmojis: (e) => { categoryEmojis = e; saveCatEmojis(); }
   };
 
   // Pull-to-refresh
@@ -5128,23 +5138,26 @@
       if (list.scrollTop > 400) btn.classList.add('pf-visible');
       else btn.classList.remove('pf-visible');
     }
+    let _hasScrolled = false;
     function checkOverscroll(list) {
-      if (!list) return;
+      if (!list || !_hasScrolled) return;
       if (list.scrollTop <= 0) list.classList.add('pf-overscroll-top');
       else list.classList.remove('pf-overscroll-top');
       if (list.scrollTop + list.clientHeight >= list.scrollHeight - 1) list.classList.add('pf-overscroll-bottom');
       else list.classList.remove('pf-overscroll-bottom');
     }
-    new MutationObserver(function() {
+    const _scrollInterval = setInterval(function() {
       const list = root.querySelector('.pf-split-list');
       if (list && !list._scrollTopBound) {
         list._scrollTopBound = true;
         list.addEventListener('scroll', function() {
+          _hasScrolled = true;
           if (_scrollRaf) return;
           _scrollRaf = requestAnimationFrame(function() { _scrollRaf = null; checkScroll(); checkOverscroll(list); });
         }, { passive: true });
+        clearInterval(_scrollInterval);
       }
-    }).observe(root, { childList: true, subtree: true });
+    }, 500);
   })();
 
 })();
@@ -5345,6 +5358,9 @@ if ('serviceWorker' in navigator) {
         }
         if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal.filter(Boolean) : Object.values(archVal).filter(Boolean));
         if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal.filter(Boolean) : Object.values(trashVal).filter(Boolean));
+        db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
+          if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
+        });
         window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
         updateLastSync();
         window._pf.showToast('⬇ Pulled from cloud');
@@ -5467,6 +5483,7 @@ if ('serviceWorker' in navigator) {
     _lastPushedCatHash = JSON.stringify(window._pf.getCategories());
     userRef().set(JSON.parse(JSON.stringify(projects)));
     catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
+    db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis())));
     archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive())));
     trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash())));
     db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
