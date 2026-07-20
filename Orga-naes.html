@@ -63,8 +63,10 @@
       width: 48px; height: 48px; border-radius: 50%; background: var(--accent, #7b68ee);
       color: #fff; font-size: 24px; font-weight: 300; border: none;
       align-items: center; justify-content: center; cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: transform 0.2s, background 0.15s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: transform 0.2s, background 0.15s, opacity 0.3s ease;
+      opacity: 0; pointer-events: none;
     }
+    .pf-fab.pf-fab-visible { opacity: 1; pointer-events: auto; }
     .pf-fab:active { transform: scale(0.9); }
     .pf-fab.pf-fab-open { transform: rotate(45deg); }
     .pf-fab-menu {
@@ -3249,9 +3251,14 @@
       if (!backdrop) { backdrop = document.createElement('div'); backdrop.id = 'pf-ctx-backdrop'; document.getElementById('pf-root').appendChild(backdrop); backdrop.addEventListener('click', _closeCtx); }
       backdrop.style.display = 'block';
     }
+    const maxH = window.innerHeight - 16;
+    menu.style.maxHeight = maxH + 'px';
+    menu.style.overflowY = 'auto';
     const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
-    if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
+    if (rect.right > window.innerWidth) menu.style.left = Math.max(8, window.innerWidth - rect.width - 8) + 'px';
+    if (rect.left < 0) menu.style.left = '8px';
+    if (rect.bottom > window.innerHeight) menu.style.top = Math.max(8, window.innerHeight - rect.height - 8) + 'px';
+    if (rect.top < 0) menu.style.top = '8px';
   }
   document.addEventListener('click', _closeCtx);
   document.addEventListener('pointerdown', (e) => { if (_ctxEl && !_ctxEl.contains(e.target)) _closeCtx(); });
@@ -4898,6 +4905,16 @@
     const fabOverlay = document.getElementById('pf-fab-overlay');
     if (!fab || !fabMenu) return;
     let fabOpen = false;
+    let _fabHideTimer = null;
+    function showFab() {
+      fab.classList.add('pf-fab-visible');
+      clearTimeout(_fabHideTimer);
+      _fabHideTimer = setTimeout(function() { if (!fabOpen) fab.classList.remove('pf-fab-visible'); }, 3000);
+    }
+    const _splitListForFab = document.getElementById('pf-split-list');
+    if (_splitListForFab) {
+      _splitListForFab.addEventListener('scroll', showFab, { passive: true });
+    }
     function toggleFab() {
       fabOpen = !fabOpen;
       fab.classList.toggle('pf-fab-open', fabOpen);
