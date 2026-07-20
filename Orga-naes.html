@@ -5069,7 +5069,16 @@ if ('serviceWorker' in navigator) {
         const archVal = results[2].val();
         const trashVal = results[3].val();
         if (catVal) { window._pf.setCategories(Array.isArray(catVal) ? catVal : Object.values(catVal)); window._pf.saveCategories(); }
-        if (projVal) window._pf.setProjects(Array.isArray(projVal) ? projVal : Object.values(projVal));
+        if (projVal) {
+          const p = Array.isArray(projVal) ? projVal : Object.values(projVal);
+          window._pf.setProjects(p);
+          // Rebuild categories from projects if categories is empty
+          const cats = window._pf.getCategories();
+          if (!cats || !cats.length) {
+            const uniqueCats = [...new Set(p.map(pr => pr.category).filter(Boolean))];
+            if (uniqueCats.length) { window._pf.setCategories(uniqueCats); window._pf.saveCategories(); }
+          }
+        }
         if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal : Object.values(archVal));
         if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal : Object.values(trashVal));
         window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
