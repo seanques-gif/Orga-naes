@@ -1357,6 +1357,7 @@
       <button class="pf-undo-btn" id="pf-today-clear-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;border:1px solid var(--card-border);">Clear All</button>
       <button class="pf-undo-btn" id="pf-today-carry-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;background:rgba(149,128,255,0.12);color:var(--accent);font-weight:600;">Carry Over Incomplete</button>
       <button class="pf-undo-btn" id="pf-today-overdue-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:600;">Add Overdue</button>
+      <button class="pf-undo-btn" id="pf-today-due-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;background:rgba(78,205,196,0.12);color:#4ecdc4;font-weight:600;">Add Today's Tasks</button>
     </div>
   </div>
   <div class="pf-activity-panel" id="pf-duelist-panel" style="display:none;width:min(700px,90vw);max-height:min(85vh,700px);height:75vh;flex-direction:column;">
@@ -2928,11 +2929,29 @@
           const menu = document.createElement('div');
           menu.className = 'pf-ctx-menu';
           menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+          const renItem = document.createElement('div');
+          renItem.className = 'pf-ctx-menu-item';
+          renItem.textContent = '✏️ Rename Category';
+          renItem.addEventListener('click', (ev) => {
+            ev.stopPropagation(); _closeCtx();
+            const newName = prompt('Rename category:', cat);
+            if (!newName || newName.trim() === '' || newName.trim() === cat) return;
+            const trimmed = newName.trim();
+            if (categories.includes(trimmed)) { showToast('Category "' + trimmed + '" already exists'); return; }
+            snapshot();
+            const idx = categories.indexOf(cat);
+            if (idx > -1) categories[idx] = trimmed;
+            projects.forEach(p => { if (p.category === cat) p.category = trimmed; });
+            if (splitCollapsedCats[cat]) { splitCollapsedCats[trimmed] = true; delete splitCollapsedCats[cat]; }
+            saveCategories(); scheduleSave(); render();
+          });
+          menu.appendChild(renItem);
           const delItem = document.createElement('div');
           delItem.className = 'pf-ctx-menu-item pf-ctx-danger';
           delItem.textContent = '🗑 Delete Category';
           delItem.addEventListener('click', (ev) => {
             ev.stopPropagation(); _closeCtx(); snapshot();
+            if (!confirm('Delete category "' + cat + '"? Projects will become uncategorized.')) return;
             categories = categories.filter(c => c !== cat);
             projects.forEach(p => { if (p.category === cat) p.category = null; });
             saveCategories(); scheduleSave(); renderCategoryList(); render();
@@ -3608,6 +3627,27 @@
   document.getElementById('pf-cal-today-btn').addEventListener('click', () => { calMonth = new Date().getMonth(); calYear = new Date().getFullYear(); renderCalendar(); });
   document.getElementById('pf-today-clear-btn').addEventListener('click', () => { if (!todayTasks.length) return; clearToday(); });
   document.getElementById('pf-today-carry-btn').addEventListener('click', carryOverToday);
+  document.getElementById('pf-today-due-btn').addEventListener('click', function() {
+    const d = new Date(); const now = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    let added = 0;
+    projects.forEach(p => {
+      if (p.dueAt === now && p.status !== 'completed' && !todayTasks.find(t => t.sourceId === p.id)) {
+        todayTasks.push({ id: uid(), title: p.title, sourceId: p.id, sourceType: 'project', done: false });
+        added++;
+      }
+      (function walk(subs) {
+        subs.forEach(s => {
+          if (s.dueAt === now && s.status !== 'completed' && !todayTasks.find(t => t.sourceId === s.id)) {
+            todayTasks.push({ id: uid(), title: s.title, sourceId: s.id, sourceType: 'subtask', done: false });
+            added++;
+          }
+          if (s.subtasks && s.subtasks.length) walk(s.subtasks);
+        });
+      })(p.subtasks || []);
+    });
+    if (!added) { showToast('No tasks due today'); return; }
+    saveToday(); renderTodayList(); showToast(added + ' task' + (added > 1 ? 's' : '') + ' due today added');
+  });
   document.getElementById('pf-today-overdue-btn').addEventListener('click', function() {
     const today = new Date(); today.setHours(0,0,0,0);
     let added = 0;
@@ -4916,6 +4956,35 @@ if ('serviceWorker' in navigator) {
     signoutBtn.style.display = '';
     pushBtn.disabled = false;
     pullBtn.disabled = false;
+    // Auto-pull if device hasn't synced in over 1 hour
+    const lastSync = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0');
+    const elapsed = Date.now() - lastSync;
+    if (_fbAutosync && elapsed > 3600000) {
+      db.ref('users/' + user.uid + '/updatedAt').once('value').then(function(snap) {
+        const remoteTime = snap.val() || 0;
+        if (remoteTime > lastSync) {
+          if (window._pf && window._pf.snapshot) window._pf.snapshot();
+          Promise.all([
+            userRef().once('value'),
+            catRef().once('value'),
+            archiveRef().once('value'),
+            trashRef().once('value')
+          ]).then(function(results) {
+            const projVal = results[0].val();
+            const catVal = results[1].val();
+            const archVal = results[2].val();
+            const trashVal = results[3].val();
+            if (catVal) { window._pf.setCategories(Array.isArray(catVal) ? catVal : Object.values(catVal)); window._pf.saveCategories(); }
+            if (projVal) { window._pf.setProjects(Array.isArray(projVal) ? projVal : Object.values(projVal)); }
+            if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal : Object.values(archVal));
+            if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal : Object.values(trashVal));
+            window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
+            updateLastSync();
+            window._pf.showToast('☁ Auto-pulled latest data from cloud');
+          });
+        }
+      });
+    }
     if (_fbAutosync) startListener();
   }
 
@@ -5133,6 +5202,7 @@ if ('serviceWorker' in navigator) {
   let _fbPushTimer = null;
   window._firebasePush = function() {
     if (!_fbAutosync || !_fbUser) return;
+    if (!window._pf.getProjects().length) return;
     if (!navigator.onLine) { _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
     _fbPushTimer = setTimeout(function() {
@@ -5200,10 +5270,10 @@ if ('serviceWorker' in navigator) {
         const b = val[k];
         const projCount = b.projects ? (Array.isArray(b.projects) ? b.projects.length : Object.keys(b.projects).length) : 0;
         const date = new Date(b.timestamp || 0);
-        const label = k + ' (' + projCount + ' projects, ' + date.toLocaleTimeString() + ')';
-        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;border-bottom:1px solid var(--card-border);">' +
-          '<span style="font-size:10px;color:var(--text);">' + label + '</span>' +
-          '<button class="pf-undo-btn pf-backup-restore-btn" data-backup-key="' + k + '" style="font-size:9px;padding:3px 8px;">Restore</button></div>';
+        const label = k + ' &middot; ' + projCount + ' projects &middot; ' + date.toLocaleTimeString();
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px;border-bottom:1px solid var(--card-border);gap:8px;">' +
+          '<span style="font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + label + '</span>' +
+          '<button class="pf-undo-btn pf-backup-restore-btn" data-backup-key="' + k + '" style="font-size:9px;padding:3px 8px;flex-shrink:0;">Restore</button></div>';
       }).join('');
       backupsList.querySelectorAll('.pf-backup-restore-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
