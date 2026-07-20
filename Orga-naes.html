@@ -963,7 +963,7 @@
     width: min(300px, 90vw);
     background: var(--card);
     border: 1px solid var(--card-border);
-    border-radius: 6px;
+    border-radius: 16px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     z-index: 60;
     padding: 14px;
@@ -1057,7 +1057,7 @@
     max-height: min(70vh, 600px);
     background: var(--card);
     border: 1px solid var(--card-border);
-    border-radius: 6px;
+    border-radius: 16px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     z-index: 60;
     padding: 14px;
@@ -1227,15 +1227,19 @@
   </div>
   <div class="pf-options-panel" id="pf-options-panel" style="display:none">
     <div class="pf-options-title">Options</div>
+
+    <!-- 📁 Data -->
     <div class="pf-options-section">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;">Save &amp; Import</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">📁 Data</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
         <button class="pf-undo-btn" id="pf-export" title="Save (Ctrl+S)" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">💾</span> Save JSON</button>
         <button class="pf-undo-btn" id="pf-import" title="Import" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📂</span> Import</button>
       </div>
     </div>
+
+    <!-- 📁 Manage -->
     <div class="pf-options-section">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;">Manage</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">📁 Manage</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
         <button class="pf-undo-btn" id="pf-category-btn" title="Manage categories" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📁</span> Categories</button>
         <button class="pf-undo-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">🔔</span> Reminder</button>
@@ -1244,16 +1248,19 @@
         <button class="pf-undo-btn" id="pf-trash-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">🗑</span> Trash</button>
       </div>
     </div>
+
+    <!-- 📤 Export -->
     <div class="pf-options-section">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;">Export</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">📤 Export</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
         <button class="pf-undo-btn" id="pf-export-csv" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📄</span> CSV</button>
         <button class="pf-undo-btn" id="pf-export-pdf" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📑</span> PDF</button>
       </div>
     </div>
+
+    <!-- ☁️ Cloud Sync — Firebase -->
     <div class="pf-options-section">
-      <div style="font-size:9px;color:var(--text-dim);text-align:right;margin-bottom:8px;">v1.0.0</div>
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;">Firebase Cloud Sync</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">☁️ Cloud Sync — Firebase</div>
       <div id="pf-firebase-section" style="display:grid;grid-template-columns:1fr;gap:6px;">
         <div id="pf-firebase-status" style="font-size:11px;color:var(--text-dim);">Not signed in</div>
         <div id="pf-firebase-last-sync" style="font-size:10px;color:var(--text-dim);display:none;"></div>
@@ -1265,18 +1272,20 @@
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);margin-top:4px;">
           <input type="checkbox" id="pf-firebase-autosync"> Auto-sync on changes
-          <br><input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
         </label>
-        <p style="font-size:10px;color:var(--text-dim);margin-top:4px;">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
-        <button class="pf-undo-btn" id="pf-firebase-backups-btn" style="justify-content:flex-start;margin-top:6px;" disabled><span style="display:inline-block;width:20px;text-align:center;">🗂</span> Restore from Backup</button>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);">
+          <input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
+        </label>
+        <button class="pf-undo-btn" id="pf-firebase-backups-btn" style="justify-content:flex-start;margin-top:4px;" disabled><span style="display:inline-block;width:20px;text-align:center;">🗂</span> Restore from Backup</button>
         <div id="pf-firebase-backups-list" style="display:none;margin-top:6px;max-height:200px;overflow-y:auto;"></div>
+        <p style="font-size:10px;color:var(--text-dim);margin-top:4px;">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
       </div>
     </div>
+
+    <!-- ☁️ Cloud Sync — File System -->
     <div class="pf-options-section">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;">Cloud Sync (File System)</div>
-      <div style="display:grid;grid-template-columns:1fr;gap:6px;">
-        <button class="pf-undo-btn" id="pf-fs-pick-folder" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📁</span> Choose Sync Folder</button>
-      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">☁️ Cloud Sync — File System</div>
+      <button class="pf-undo-btn" id="pf-fs-pick-folder" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📁</span> Choose Sync Folder</button>
       <span id="pf-fs-folder-path" style="font-size:10px;color:var(--text-dim);margin-top:4px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
         <button class="pf-undo-btn" id="pf-fs-save" style="justify-content:flex-start;" disabled><span style="display:inline-block;width:20px;text-align:center;">💾</span> Save</button>
@@ -1287,8 +1296,10 @@
       </label>
       <p style="font-size:10px;color:var(--text-dim);margin-top:4px;">Pick your OneDrive / Dropbox sync folder. No server or login needed. <b>Desktop only (Chrome/Edge).</b></p>
     </div>
+
+    <!-- 🔄 Auto-Backup -->
     <div class="pf-options-section">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;">Auto-Backup</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">🔄 Auto-Backup</div>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);">
         🔄 Every
         <input type="number" id="pf-autobackup-min" min="0" max="120" value="5" style="width:48px;padding:2px 4px;border-radius:6px;border:1px solid var(--card-border);background:var(--sub-bg);color:var(--text);font-size:13px;text-align:center;">
@@ -1299,8 +1310,10 @@
         <span id="pf-autobackup-path" style="font-size:11px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
       </div>
     </div>
+
+    <!-- 🎨 Appearance -->
     <div class="pf-options-section">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;">Appearance</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">🎨 Appearance</div>
       <label class="pf-options-label">Display Scale</label>
       <div class="pf-options-row">
         <input type="range" id="pf-display-scale" class="pf-range-input" min="60" max="140" step="5" value="100">
@@ -1309,15 +1322,17 @@
       </div>
       <input type="range" id="pf-font-size" class="pf-range-input" style="display:none;" min="10" max="20" step="1" value="15">
       <span id="pf-font-size-val" style="display:none;">15px</span>
-      <div style="margin-bottom:8px;"><button class="pf-undo-btn" id="pf-theme-auto" style="padding:5px 12px;font-size:11px;">🌗 Auto (System)</button></div>
-      <div class="pf-options-section-title" style="margin-top:14px;">DARK THEMES</div>
+      <div style="margin-top:10px;margin-bottom:8px;">
+        <button class="pf-undo-btn" id="pf-theme-auto" style="padding:5px 12px;font-size:11px;">🌗 Auto (System)</button>
+      </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;margin-top:12px;">Dark Themes</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="pf-undo-btn" id="pf-theme-pf-dark" style="padding:5px 12px;font-size:11px;">🌑 PF Dark (Default)</button>
         <button class="pf-undo-btn" id="pf-theme-cyberpunk" style="padding:5px 12px;font-size:11px;">🌆 Cyberpunk</button>
         <button class="pf-undo-btn" id="pf-theme-forest" style="padding:5px 12px;font-size:11px;">🌲 Forest</button>
         <button class="pf-undo-btn" id="pf-theme-ocean" style="padding:5px 12px;font-size:11px;">🌊 Ocean</button>
       </div>
-      <div class="pf-options-section-title" style="margin-top:10px;">LIGHT THEMES</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;margin-top:10px;">Light Themes</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="pf-undo-btn" id="pf-theme-light-rose" style="padding:5px 12px;font-size:11px;">🌸 Rose</button>
         <button class="pf-undo-btn" id="pf-theme-light-sky" style="padding:5px 12px;font-size:11px;">☁️ Sky</button>
@@ -1326,13 +1341,19 @@
         <button class="pf-undo-btn" id="pf-theme-pf-light" style="padding:5px 12px;font-size:11px;">🌕 PF Light</button>
       </div>
     </div>
+
+    <!-- ⌨️ Shortcuts -->
     <div class="pf-options-section">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">⌨️ Shortcuts</div>
       <button class="pf-undo-btn" id="pf-shortcuts-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">⌨</span> Keyboard Shortcuts</button>
     </div>
+
+    <!-- ℹ️ About -->
     <div class="pf-options-section" style="border-top:1px solid var(--card-border);padding-top:12px;margin-top:8px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">About</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">ℹ️ About</div>
       <div style="font-size:11px;color:var(--text-dim);line-height:1.6;">
-        <strong>Orga-naes</strong> is a lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views — all stored locally in your browser.<br><br>
+        <strong>Orga-naes</strong> v1.0.0<br>
+        A lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views — all stored locally in your browser.<br><br>
         Created by <strong>Sean Desucatan</strong>
       </div>
     </div>
@@ -3224,16 +3245,13 @@
   function _positionCtxMenu(menu) {
     const isMobile = document.getElementById('pf-root').classList.contains('pf-device-mobile');
     if (isMobile) {
-      menu.style.left = '50%'; menu.style.top = '50%'; menu.style.transform = 'translate(-50%, -50%)';
-      menu.style.maxHeight = (window.innerHeight - 40) + 'px';
       let backdrop = document.getElementById('pf-ctx-backdrop');
       if (!backdrop) { backdrop = document.createElement('div'); backdrop.id = 'pf-ctx-backdrop'; document.getElementById('pf-root').appendChild(backdrop); backdrop.addEventListener('click', _closeCtx); }
       backdrop.style.display = 'block';
-    } else {
-      const rect = menu.getBoundingClientRect();
-      if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
-      if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
     }
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
+    if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
   }
   document.addEventListener('click', _closeCtx);
   document.addEventListener('pointerdown', (e) => { if (_ctxEl && !_ctxEl.contains(e.target)) _closeCtx(); });
@@ -5092,6 +5110,8 @@
       const splitList = root.querySelector('.pf-split-list');
       if (!root.classList.contains('pf-device-mobile')) return;
       if (!splitList || splitList.scrollTop > 0) return;
+      if (splitList.offsetParent === null) return;
+      if (e.target.closest('.pf-options-panel,.pf-due-panel,.pf-today-panel,.pf-activity-panel,.pf-calendar-panel,.pf-comment-panel,.pf-modal-layer')) return;
       startY = e.touches[0].clientY;
       pulling = true;
       pullDist = 0;
