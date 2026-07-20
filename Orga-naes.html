@@ -403,7 +403,7 @@
   #pf-root.pf-device-mobile .pf-toolbar { gap: 2px; padding: 4px 6px; }
   #pf-root.pf-device-mobile .pf-undo-btn { min-width: 32px; min-height: 32px; font-size: 14px; }
   #pf-root.pf-device-mobile .pf-split-list-item { padding: 4px 12px; gap: 6px; margin: 0 4px; }
-  #pf-root.pf-device-mobile .pf-split-list-status { width: auto; min-width: 0; padding: 0; background: transparent !important; font-size: 0; border-radius: 50%; width: 10px; height: 10px; display: inline-block; }
+  #pf-root.pf-device-mobile .pf-split-list-status { min-width: 0; padding: 0; font-size: 0; border-radius: 50%; width: 10px; height: 10px; display: inline-block; flex-shrink: 0; }
   #pf-root.pf-device-mobile .pf-subrow { padding: 10px 8px; }
   #pf-root.pf-device-mobile .pf-chevron { width: 28px; height: 28px; }
   #pf-root.pf-device-mobile .pf-sub-chevron { width: 22px; height: 22px; }
@@ -1856,6 +1856,10 @@
 
   const REMINDER_KEY = 'project-flow-reminder-days';
   const CATEGORIES_KEY = 'project-flow-categories';
+  const CAT_EMOJI_KEY = 'project-flow-cat-emojis';
+  let categoryEmojis = {};
+  async function loadCatEmojis() { try { const res = await safeGet(CAT_EMOJI_KEY, false); if (res && res.value) categoryEmojis = JSON.parse(res.value); } catch (e) { categoryEmojis = {}; } }
+  function saveCatEmojis() { safeSet(CAT_EMOJI_KEY, JSON.stringify(categoryEmojis), false); }
   const modalBackdrop = document.getElementById('pf-modal-backdrop');
   const duePanel = document.getElementById('pf-due-panel');
   const duePanelClose = document.getElementById('pf-due-panel-close');
@@ -2945,7 +2949,8 @@
       const catLabel = document.createElement('div');
       catLabel.className = 'pf-split-list-cat';
       if (_splitCatMultiSelect.includes(cat)) { catLabel.style.background = 'rgba(123,104,238,0.15)'; catLabel.style.color = 'var(--accent)'; }
-      catLabel.textContent = (cat === '__uncategorized__' ? 'Uncategorized' : cat) + ' (' + group.length + ')';
+      const catEmoji = categoryEmojis[cat] || '';
+      catLabel.textContent = (catEmoji ? catEmoji + ' ' : '') + (cat === '__uncategorized__' ? 'Uncategorized' : cat) + ' (' + group.length + ')';
       catLabel.style.cursor = 'pointer';
       const _catColor = cat === '__uncategorized__' ? 'var(--text-dim)' : categoryColor(cat);
       catLabel.style.borderLeft = 'none';
@@ -2966,6 +2971,17 @@
           const menu = document.createElement('div');
           menu.className = 'pf-ctx-menu';
           menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+          const emojiItem = document.createElement('div');
+          emojiItem.className = 'pf-ctx-menu-item';
+          emojiItem.textContent = '😀 Set Emoji';
+          emojiItem.addEventListener('click', (ev) => {
+            ev.stopPropagation(); _closeCtx();
+            const emoji = prompt('Enter an emoji for "' + cat + '":', categoryEmojis[cat] || '');
+            if (emoji === null) return;
+            if (emoji.trim() === '') { delete categoryEmojis[cat]; } else { categoryEmojis[cat] = emoji.trim(); }
+            saveCatEmojis(); renderSplitList();
+          });
+          menu.appendChild(emojiItem);
           const renItem = document.createElement('div');
           renItem.className = 'pf-ctx-menu-item';
           renItem.textContent = '✏️ Rename Category';
@@ -2980,6 +2996,7 @@
             if (idx > -1) categories[idx] = trimmed;
             projects.forEach(p => { if (p.category === cat) p.category = trimmed; });
             if (splitCollapsedCats[cat]) { splitCollapsedCats[trimmed] = true; delete splitCollapsedCats[cat]; }
+            if (categoryEmojis[cat]) { categoryEmojis[trimmed] = categoryEmojis[cat]; delete categoryEmojis[cat]; saveCatEmojis(); }
             saveCategories(); scheduleSave(); render();
           });
           menu.appendChild(renItem);
@@ -4537,7 +4554,7 @@
   })();
 
   window._pfLoaded = false;
-  loadSize().then(loadTheme).then(loadReminder).then(loadCategories).then(loadCollapsedCategories).then(load).then(async () => {
+  loadSize().then(loadTheme).then(loadReminder).then(loadCategories).then(loadCatEmojis).then(loadCollapsedCategories).then(load).then(async () => {
     window._pfLoaded = true;
     let mode = 'focus';
     setViewMode('focus');
