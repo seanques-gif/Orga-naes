@@ -2185,10 +2185,30 @@
   function cycleProjectStatus(id) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
   function checkAllCompleted(p) {
     if (!p.subtasks || !p.subtasks.length) return;
+    // Auto-complete parent subtasks when all their children are done
+    (function autoCompleteParents(list) {
+      list.forEach(s => {
+        if (s.subtasks && s.subtasks.length) {
+          autoCompleteParents(s.subtasks);
+          const childrenDone = s.subtasks.every(c => c.status === 'completed');
+          if (childrenDone && s.status !== 'completed') {
+            s.status = 'completed'; s.completedAt = new Date().toISOString();
+            logActivity('"' + s.title + '" auto-completed (all subtasks done)');
+          }
+        }
+      });
+    })(p.subtasks);
+    // Auto-complete project when all top-level subtasks are done
     const allDone = (function check(list) { return list.every(s => s.status === 'completed' && (!s.subtasks || !s.subtasks.length || check(s.subtasks))); })(p.subtasks);
     if (allDone) {
       if (p.status !== 'completed') { p.status = 'completed'; p.completedAt = new Date().toISOString(); logActivity('"' + p.title + '" auto-completed (all subtasks done)'); scheduleSave(); render(); onTaskCompleted(true); }
       confetti();
+    } else if (p.status === 'planned') {
+      // Auto-set project to ongoing if any subtask has progress
+      const hasProgress = (function check(list) {
+        return list.some(s => s.status === 'ongoing' || s.status === 'waiting' || s.dueAt || (s.subtasks && s.subtasks.length && check(s.subtasks)));
+      })(p.subtasks);
+      if (hasProgress) { p.status = 'ongoing'; logActivity('"' + p.title + '" auto-set to ongoing'); scheduleSave(); render(); }
     }
   }
   function confetti() {
@@ -2453,8 +2473,8 @@
       '<button class="pf-undo-btn" data-sub-action="due" style="font-size:10px;padding:3px 8px;">Set Due</button>' +
       '<button class="pf-undo-btn" data-sub-action="delete" style="font-size:10px;padding:3px 8px;color:var(--danger);">Delete</button>' +
       '<button class="pf-undo-btn" data-sub-action="clear" style="font-size:10px;padding:3px 6px;">✕</button>';
-    bar.querySelector('[data-sub-action="cycle"]').addEventListener('click', (e) => { e.stopPropagation(); snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) { s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; } }); scheduleSave(); render(); renderSubSelectBar(p); });
-    bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) s.dueAt = val; }); clearSubSelect(); scheduleSave(); render(); } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
+    bar.querySelector('[data-sub-action="cycle"]').addEventListener('click', (e) => { e.stopPropagation(); snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) { s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; } }); scheduleSave(); render(); checkAllCompleted(p); renderSubSelectBar(p); });
+    bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) s.dueAt = val; }); clearSubSelect(); scheduleSave(); render(); checkAllCompleted(p); } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
     bar.querySelector('[data-sub-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return; snapshot(); subMultiSelect.forEach(id => { const arr = findSubParentArray(p.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } }); clearSubSelect(); scheduleSave(); render(); });
     bar.querySelector('[data-sub-action="clear"]').addEventListener('click', (e) => { e.stopPropagation(); clearSubSelect(); const existing2 = root.querySelector('.pf-sub-select-bar'); if (existing2) existing2.remove(); });
     sublist.insertBefore(bar, sublist.firstChild);
@@ -2502,7 +2522,7 @@
     const commentBtn = document.createElement('button'); commentBtn.className = 'pf-sub-comment'; commentBtn.title = 'Comments'; commentBtn.textContent = '💬' + (s.comments && s.comments.length ? ' ' + s.comments.length : ''); commentBtn.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(commentBtn);
     const _hasBlockers = getUnresolvedBlockers(p, s).length > 0;
     const dotEl = document.createElement('span'); dotEl.className = 'pf-sub-dot' + (_hasBlockers ? ' pf-blocked' : ''); dotEl.title = _hasBlockers ? 'Blocked' : 'Cycle status'; dotEl.style.background = s.status === 'planned' ? 'transparent' : statusDotColor(s.status); dotEl.style.borderColor = statusDotColor(s.status); subDatesEl.appendChild(dotEl);
-    if (s.status === 'completed' && s.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(s.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); s.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); subDatesEl.appendChild(doneLabel); } else { subDatesEl.appendChild(buildDueChip(s, (val) => { snapshot(); s.dueAt = val; scheduleSave(); render(); }, false)); }
+    if (s.status === 'completed' && s.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(s.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); s.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); subDatesEl.appendChild(doneLabel); } else { subDatesEl.appendChild(buildDueChip(s, (val) => { snapshot(); s.dueAt = val; scheduleSave(); render(); checkAllCompleted(p); }, false)); }
     subDatesEl.appendChild(buildDependencyChip(p, s));
 
     row.__project = p; row.__subId = s.id;
@@ -2748,6 +2768,14 @@
     return false;
   }
   function render() {
+    // Auto-update project statuses based on subtask progress
+    projects.forEach(p => {
+      if (!p.subtasks || !p.subtasks.length) return;
+      const hasAnyDone = (function check(list) { return list.some(s => s.status === 'completed' || s.status === 'ongoing' || s.status === 'waiting' || s.dueAt || (s.subtasks && s.subtasks.length && check(s.subtasks))); })(p.subtasks);
+      const allDone = (function check(list) { return list.every(s => s.status === 'completed' && (!s.subtasks || !s.subtasks.length || check(s.subtasks))); })(p.subtasks);
+      if (allDone && p.status !== 'completed') { p.status = 'completed'; p.completedAt = new Date().toISOString(); }
+      else if (!allDone && hasAnyDone && p.status === 'planned') { p.status = 'ongoing'; }
+    });
     autoPopulateToday(); saveToday();
     if (calendarPanel.style.display !== 'none') { renderCalendar(); }
     if (listViewActive) {
