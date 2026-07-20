@@ -403,7 +403,7 @@
   #pf-root.pf-device-mobile .pf-toolbar { gap: 2px; padding: 4px 6px; }
   #pf-root.pf-device-mobile .pf-undo-btn { min-width: 32px; min-height: 32px; font-size: 14px; }
   #pf-root.pf-device-mobile .pf-split-list-item { padding: 4px 12px; gap: 6px; margin: 0 4px; }
-  #pf-root.pf-device-mobile .pf-split-list-status { min-width: 0; padding: 0; font-size: 0; border-radius: 50%; width: 10px; height: 10px; display: inline-block; flex-shrink: 0; }
+  #pf-root.pf-device-mobile .pf-split-list-status { min-width: 0; padding: 0; font-size: 0; border-radius: 50%; width: 10px; height: 10px; display: inline-block; flex-shrink: 0; background: currentColor !important; }
   #pf-root.pf-device-mobile .pf-subrow { padding: 10px 8px; }
   #pf-root.pf-device-mobile .pf-chevron { width: 28px; height: 28px; }
   #pf-root.pf-device-mobile .pf-sub-chevron { width: 22px; height: 22px; }
@@ -530,6 +530,7 @@
     to { opacity: 1; transform: translateY(0); }
   }
   #pf-root .pf-split-list-item { animation: pf-slide-in 0.2s ease-out both; }
+  #pf-root .pf-split-list-item[hidden] { content-visibility: auto; contain-intrinsic-size: 0 40px; }
   #pf-root .pf-subrow { animation: pf-slide-in 0.15s ease-out both; }
   #pf-root .pf-item-removing { animation: pf-slide-out 0.2s ease-in forwards; }
   @keyframes pf-slide-out { to { opacity: 0; transform: translateY(-4px); height: 0; padding: 0; margin: 0; overflow: hidden; } }
@@ -584,7 +585,7 @@
     #pf-root .pf-split-list-edit { display: none; }
     #pf-root .pf-undo-btn { min-height: 40px; min-width: 40px; padding: 8px 10px; }
     #pf-root .pf-new-btn { min-height: 40px; min-width: 40px; }
-    #pf-root .pf-ctx-menu-item { padding: 10px 14px; min-height: 36px; }
+    #pf-root .pf-ctx-menu-item { padding: 8px 12px; min-height: 32px; font-size: 13px; }
     #pf-root .pf-split-list-item { min-height: 32px; padding: 4px 12px; }
     #pf-root .pf-search-close { width: 28px; height: 28px; font-size: 14px; }
     #pf-root .pf-chevron { min-width: 36px; min-height: 36px; }
@@ -604,7 +605,7 @@
   #pf-root .pf-ctx-menu {
     position: fixed; z-index: 100; background: var(--card); border: 1px solid var(--card-border);
     border-radius: 6px; padding: 4px 0; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    max-height: 80vh; overflow-y: auto;
+    max-height: calc(100vh - 20px); overflow-y: auto;
   }
   #pf-root .pf-ctx-menu-item {
     padding: 7px 14px; font-size: calc(var(--font-size-base) - 4px); cursor: pointer; display: flex;
@@ -2113,7 +2114,7 @@
     loadToday();
   }
 
-  function scheduleSave() { if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const res = await safeSet(STORE_KEY, JSON.stringify(projects), false); if (res) { localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
+  function scheduleSave() { autoUpdateStatuses(); if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const res = await safeSet(STORE_KEY, JSON.stringify(projects), false); if (res) { localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
   function addProject(category) { snapshot(); const p = { id: uid(), title: 'New project', status: 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: null, completedAt: null, category: category || null, subtasks: [] }; projects.push(p); logActivity('Created project "New project"' + (category ? ' in ' + category : '')); scheduleSave(); autoArrangeProjects(true); if (listViewActive) { splitSelectedId = p.id; renderSplitList(); renderSplitDetail(); } focusEl('[data-title-id="' + p.id + '"]'); }
   const ARCHIVE_KEY = 'project-flow-archive';
   let archive = [];
@@ -2772,8 +2773,7 @@
     }
     return false;
   }
-  function render() {
-    // Auto-update project statuses based on subtask progress
+  function autoUpdateStatuses() {
     projects.forEach(p => {
       if (!p.subtasks || !p.subtasks.length) return;
       const hasAnyDone = (function check(list) { return list.some(s => s.status === 'completed' || s.status === 'ongoing' || s.status === 'waiting' || s.dueAt || (s.subtasks && s.subtasks.length && check(s.subtasks))); })(p.subtasks);
@@ -2781,7 +2781,9 @@
       if (allDone && p.status !== 'completed') { p.status = 'completed'; p.completedAt = new Date().toISOString(); }
       else if (!allDone && hasAnyDone && p.status === 'planned') { p.status = 'ongoing'; }
     });
-    autoPopulateToday(); saveToday();
+  }
+  function render() {
+    autoPopulateToday();
     if (calendarPanel.style.display !== 'none') { renderCalendar(); }
     if (listViewActive) {
       renderStats(); renderDuePanel(); renderOverdueBanner(); renderSplitList(); renderSplitDetail();
@@ -3014,8 +3016,8 @@
           menu.appendChild(delItem);
           root.appendChild(menu);
           const rect = menu.getBoundingClientRect();
-          if (rect.right > window.innerWidth) menu.style.left = (e.clientX - rect.width) + 'px';
-          if (rect.bottom > window.innerHeight) menu.style.top = (e.clientY - rect.height) + 'px';
+          if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
+          if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
           _ctxEl = menu;
         });
       }
@@ -3211,8 +3213,8 @@
     menu.appendChild(addCatItem);
     root.appendChild(menu);
     const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) menu.style.left = (e.clientX - rect.width) + 'px';
-    if (rect.bottom > window.innerHeight) menu.style.top = (e.clientY - rect.height) + 'px';
+    if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
+    if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
     _ctxEl = menu;
   });
   window._showCtxMenu = function(x, y, p) {
@@ -3250,8 +3252,8 @@
     });
     root.appendChild(menu);
     const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) menu.style.left = (x - rect.width) + 'px';
-    if (rect.bottom > window.innerHeight) menu.style.top = (y - rect.height) + 'px';
+    if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
+    if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
     _ctxEl = menu;
   };
 
@@ -3281,8 +3283,8 @@
     });
     root.appendChild(menu);
     const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) menu.style.left = (x - rect.width) + 'px';
-    if (rect.bottom > window.innerHeight) menu.style.top = (y - rect.height) + 'px';
+    if (rect.right > window.innerWidth) menu.style.left = Math.max(4, window.innerWidth - rect.width - 4) + 'px';
+    if (rect.bottom > window.innerHeight) { menu.style.top = Math.max(4, window.innerHeight - rect.height - 4) + 'px'; menu.style.maxHeight = (window.innerHeight - 8) + 'px'; }
     _ctxEl = menu;
   }
 
@@ -4825,7 +4827,7 @@
   }
   const _origRender = render;
   let _renderRafId = null;
-  render = function() { if (_renderRafId) return; _renderRafId = requestAnimationFrame(() => { _renderRafId = null; _origRender(); updateOverdueBadge(); }); };
+  render = function() { if (_renderRafId) return; _renderRafId = requestAnimationFrame(() => { _renderRafId = null; _origRender(); (window.requestIdleCallback || setTimeout)(function() { updateOverdueBadge(); saveToday(); }, {timeout: 200}); }); };
   updateOverdueBadge();
 
   // Floating action button (expandable)
