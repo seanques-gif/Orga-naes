@@ -5071,9 +5071,31 @@ if ('serviceWorker' in navigator) {
         const catVal = results[1].val();
         const archVal = results[2].val();
         const trashVal = results[3].val();
-        if (catVal) { window._pf.setCategories(Array.isArray(catVal) ? catVal : Object.values(catVal)); window._pf.saveCategories(); }
+        // Deep-fix Firebase objects → arrays for subtasks
+        function fixSubtasks(list) {
+          if (!list) return [];
+          if (!Array.isArray(list)) list = Object.values(list);
+          return list.map(function(s) {
+            if (s && s.subtasks) s.subtasks = fixSubtasks(s.subtasks);
+            return s;
+          });
+        }
+        function fixProjects(val) {
+          var arr = Array.isArray(val) ? val : Object.values(val);
+          return arr.filter(Boolean).map(function(p) {
+            if (p && p.subtasks) p.subtasks = fixSubtasks(p.subtasks);
+            if (!p.subtasks) p.subtasks = [];
+            p.expanded = false;
+            return p;
+          });
+        }
+        if (catVal) {
+          const c = Array.isArray(catVal) ? catVal : Object.values(catVal);
+          window._pf.setCategories(c.filter(Boolean));
+          window._pf.saveCategories();
+        }
         if (projVal) {
-          const p = Array.isArray(projVal) ? projVal : Object.values(projVal);
+          const p = fixProjects(projVal);
           window._pf.setProjects(p);
           // Rebuild categories from projects if categories is empty
           const cats = window._pf.getCategories();
@@ -5082,8 +5104,8 @@ if ('serviceWorker' in navigator) {
             if (uniqueCats.length) { window._pf.setCategories(uniqueCats); window._pf.saveCategories(); }
           }
         }
-        if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal : Object.values(archVal));
-        if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal : Object.values(trashVal));
+        if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal.filter(Boolean) : Object.values(archVal).filter(Boolean));
+        if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal.filter(Boolean) : Object.values(trashVal).filter(Boolean));
         window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
         updateLastSync();
         window._pf.showToast('⬇ Pulled from cloud');
