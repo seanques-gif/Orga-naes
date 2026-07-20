@@ -5133,6 +5133,7 @@ if ('serviceWorker' in navigator) {
 
   function startListener() {
     if (_fbListener || !_fbUser) return;
+    if (!_lastPushedSnapshot) _lastPushedSnapshot = JSON.stringify(window._pf.getProjects());
     _fbListener = userRef().on('value', function(snap) {
       const val = snap.val();
       if (!val) return;
