@@ -6,6 +6,8 @@
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon-192.svg">
+<link rel="apple-touch-icon" href="icon-192.svg">
 <meta name="theme-color" content="#1a1a2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4217,6 +4219,9 @@
   }
 
   window.addEventListener('beforeunload', () => {
+    // Force immediate save to localStorage before page unloads
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(projects)); } catch (e) {}
+    try { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories)); } catch (e) {}
     if (_fsAutosave && _fsDirHandle) {
       try { fsSave(); } catch (e) {}
     }
@@ -4646,11 +4651,13 @@
           const destId = target.dataset.projectId || target.dataset.id;
           if (srcId && destId && srcId !== destId) {
             snapshot();
+            const destProj = projects.find(p => p.id === destId);
+            const destCat = destProj ? destProj.category : null;
             const idsToMove = splitMultiSelect.length ? splitMultiSelect.slice() : [srcId];
             const movedProjects = [];
             idsToMove.forEach(id => {
               const idx = projects.findIndex(p => p.id === id);
-              if (idx > -1) movedProjects.push(projects.splice(idx, 1)[0]);
+              if (idx > -1) { const mp = projects.splice(idx, 1)[0]; mp.category = destCat; movedProjects.push(mp); }
             });
             const destIdx = projects.findIndex(p => p.id === destId);
             const insertIdx = (target.dataset.dropZone === 'before') ? destIdx : destIdx + 1;
@@ -4690,6 +4697,17 @@
       targetEl = null;
     });
   })();
+
+  // Prevent iOS auto-zoom on contenteditable focus
+  const vpMeta = document.querySelector('meta[name="viewport"]');
+  document.addEventListener('focusin', function(e) {
+    if (e.target && (e.target.contentEditable === 'true' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      vpMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+    }
+  });
+  document.addEventListener('focusout', function() {
+    vpMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+  });
 
   // Update overdue badge on bottom nav
   function updateOverdueBadge() {
@@ -5363,13 +5381,18 @@ if ('serviceWorker' in navigator) {
 
   // Connection indicator
   const connDot = document.getElementById('pf-connection-dot');
+  let _lastOnlineState = navigator.onLine;
   function updateConnDot() {
     if (navigator.onLine) { connDot.classList.add('pf-online'); connDot.classList.remove('pf-offline'); connDot.title = 'Online'; }
     else { connDot.classList.add('pf-offline'); connDot.classList.remove('pf-online'); connDot.title = 'Offline'; }
+    _lastOnlineState = navigator.onLine;
   }
   window.addEventListener('online', updateConnDot);
   window.addEventListener('offline', updateConnDot);
   updateConnDot();
+  setInterval(function() {
+    if (navigator.onLine !== _lastOnlineState) updateConnDot();
+  }, 3000);
 
   // Version display
   const APP_VERSION = document.querySelector('meta[name="version"]').content;
