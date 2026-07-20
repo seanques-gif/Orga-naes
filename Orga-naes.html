@@ -516,7 +516,7 @@
     display: none; width: 4px; background: var(--card-border); cursor: col-resize; flex-shrink: 0; transition: background 0.15s;
   }
   #pf-root .pf-split-divider:hover, #pf-root .pf-split-divider.pf-dragging { background: var(--accent); width: 5px; }
-  #pf-root .pf-split-list-cat { padding: 6px 12px; font-size: 10px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin: 6px 6px 2px 6px; border: none; border-radius: 6px; background: transparent; transition: background 0.15s, color 0.15s; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  #pf-root .pf-split-list-cat { padding: 6px 12px; font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin: 10px 6px 2px 6px; border: none; border-top: 1px solid var(--card-border); border-radius: 6px; background: transparent; transition: background 0.15s, color 0.15s; cursor: pointer; display: flex; align-items: center; gap: 6px; }
   #pf-root .pf-split-list-cat:first-of-type { margin-top: 4px; }
   #pf-root .pf-split-list-cat:hover { background: rgba(255,255,255,0.04); color: var(--text); }
   #pf-root .pf-split-list-item {
@@ -560,7 +560,7 @@
   #pf-root .pf-emoji-picker span { cursor: pointer; padding: 4px; border-radius: 6px; text-align: center; font-size: 16px; transition: background 0.1s; }
   #pf-root .pf-emoji-picker span:hover { background: rgba(149,128,255,0.15); }
   #pf-root .pf-split-list-item:hover { background: rgba(255,255,255,0.04); }
-  #pf-root .pf-split-list-item.pf-split-active { background: rgba(255,255,255,0.04); border-left-color: var(--accent); }
+  #pf-root .pf-split-list-item.pf-split-active { background: rgba(123,104,238,0.08); border-left: 3px solid var(--accent); border-radius: 0; }
   #pf-root .pf-split-list-item.pf-split-selected { background: rgba(255,255,255,0.06); border-left-color: var(--accent); touch-action: none; }
   #pf-root .pf-split-delete-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: rgba(123,104,238,0.1); border: 1px solid var(--accent); border-radius: 6px; margin: 6px 0; }
   #pf-root .pf-split-delete-bar button { background: transparent; border: 1px solid var(--card-border); color: var(--text); border-radius: 6px; padding: 3px 8px; font-size: 10px; cursor: pointer; font-weight: 500; transition: border-color 0.15s, background 0.15s; }
@@ -636,7 +636,7 @@
   }
   #pf-root.pf-detail-open .pf-split-detail { display: flex; animation: pf-detail-slide 0.2s ease-out; }
   @keyframes pf-detail-slide { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
-  #pf-root .pf-split-detail .pf-node { position: relative; left: auto; top: auto; width: 100%; min-width: 0; max-width: 100%; margin: 0; flex: none; display: flex; flex-direction: column; border-radius: 0; border: none; }
+  #pf-root .pf-split-detail .pf-node { position: relative; left: auto; top: auto; width: 100%; min-width: 0; max-width: 100%; margin: 0; flex: none; display: flex; flex-direction: column; border-radius: 12px; border: none; }
   #pf-root .pf-split-detail .pf-node .pf-sublist { flex: 1; }
   #pf-root .pf-canvas { position: relative; width: 2200px; height: 1600px; transform-origin: 0 0; transition: transform 0.1s; }
   #pf-root .pf-zoom-controls { position: fixed; bottom: 14px; right: 14px; z-index: 10; display: flex; gap: 4px; align-items: center; }
@@ -2920,8 +2920,7 @@
       catLabel.textContent = (cat === '__uncategorized__' ? 'Uncategorized' : cat) + ' (' + group.length + ')';
       catLabel.style.cursor = 'pointer';
       const _catColor = cat === '__uncategorized__' ? 'var(--text-dim)' : categoryColor(cat);
-      catLabel.style.borderLeft = '3px solid ' + _catColor;
-      if (cat !== '__uncategorized__') catLabel.style.background = 'linear-gradient(90deg, ' + _catColor + '15 0%, transparent 100%)';
+      catLabel.style.borderLeft = 'none';
       catLabel.addEventListener('click', (e) => {
         if (e.ctrlKey || e.metaKey) {
           if (cat === '__uncategorized__') return;
