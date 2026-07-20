@@ -21,7 +21,7 @@
   /* Offline system fonts */
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; overflow: hidden; }
+  html, body { width: 100%; height: 100%; overflow: hidden; padding-top: env(safe-area-inset-top, 0px); }
   @media (max-width: 900px) { html, body { overflow: auto; } }
 
   /* Bottom Navigation Bar */
@@ -4456,7 +4456,9 @@
     if (searchI) { searchI.setAttribute('aria-label', 'Search projects'); searchI.setAttribute('role', 'searchbox'); }
   })();
 
+  window._pfLoaded = false;
   loadSize().then(loadTheme).then(loadReminder).then(loadCategories).then(loadCollapsedCategories).then(load).then(async () => {
+    window._pfLoaded = true;
     let mode = 'focus';
     setViewMode('focus');
     // Restore theme preset
@@ -4978,6 +4980,7 @@ if ('serviceWorker' in navigator) {
     pushBtn.disabled = false;
     pullBtn.disabled = false;
     // Auto-pull if device hasn't synced in over 1 hour
+    if (!window._pfLoaded) { setTimeout(function() { setSignedIn(user); }, 500); return; }
     const lastSync = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0');
     const elapsed = Date.now() - lastSync;
     if (_fbAutosync && elapsed > 3600000) {
@@ -5133,6 +5136,7 @@ if ('serviceWorker' in navigator) {
 
   function startListener() {
     if (_fbListener || !_fbUser) return;
+    if (!window._pfLoaded) { setTimeout(startListener, 500); return; }
     if (!_lastPushedSnapshot) _lastPushedSnapshot = JSON.stringify(window._pf.getProjects());
     _fbListener = userRef().on('value', function(snap) {
       const val = snap.val();
