@@ -359,7 +359,7 @@
     #pf-root .pf-undo-btn { padding: 4px 6px; font-size: 11px; }
     #pf-root .pf-new-btn { padding: 4px 8px; font-size: 11px; }
     #pf-root .pf-tb-group { gap: 1px; border: none; background: none; padding: 0; }
-    #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; }
+    #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
     #pf-root .pf-split-view { flex-direction: column; min-width: 0; width: 100%; overflow-y: auto; overflow-x: hidden; }
     #pf-root .pf-split-divider { display: none; }
     #pf-root.pf-mobile-detail-open .pf-split-list { display: none; }
@@ -444,7 +444,7 @@
     #pf-root .pf-toolbar { gap: 3px; padding: 5px 8px; }
     #pf-root .pf-tb-sep { display: none; }
     #pf-root .pf-undo-btn { padding: 5px 8px; font-size: 12px; }
-    #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; }
+    #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
     #pf-root .pf-split-list-title { font-size: 12px; }
     #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
     #pf-root .pf-node { max-width: 100%; }
@@ -573,7 +573,7 @@
   #pf-root .pf-split-list-item:hover .pf-split-list-dot { transform: scale(1.2); }
   #pf-root .pf-split-list-title { flex: 1; font-size: calc(var(--font-size-base) - 2px); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
   #pf-root .pf-split-list-item.pf-split-active .pf-split-list-title { font-weight: 600; color: var(--accent); }
-  #pf-root .pf-split-list-status { font-size: calc(var(--font-size-base) - 5.5px); padding: 2px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; width: 62px; text-align: center; display: inline-block; }
+  #pf-root .pf-split-list-status { font-size: calc(var(--font-size-base) - 5.5px); padding: 2px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; width: 62px; text-align: center; display: inline-block; transition: background 0.3s ease, color 0.3s ease; }
   #pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 30px; text-align: center; display: inline-block; }
   #pf-root .pf-split-list-due { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px; width: 58px; text-align: right; }
   #pf-root .pf-split-list-due.pf-overdue { color: var(--danger); font-weight: 600; }
@@ -605,7 +605,7 @@
   #pf-root .pf-ctx-menu {
     position: fixed; z-index: 100; background: var(--card); border: 1px solid var(--card-border);
     border-radius: 6px; padding: 4px 0; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    max-height: calc(100vh - 20px); overflow-y: auto;
+    max-height: calc(100vh - 20px); overflow-y: auto; animation: pf-ctx-fade 0.15s ease;
   }
   #pf-root .pf-ctx-menu-item {
     padding: 7px 14px; font-size: calc(var(--font-size-base) - 4px); cursor: pointer; display: flex;
@@ -615,6 +615,17 @@
   #pf-root .pf-ctx-menu-item.pf-ctx-danger { color: var(--danger); }
   #pf-root .pf-ctx-menu-item.pf-ctx-danger:hover { background: rgba(224,80,63,0.1); }
   #pf-root .pf-ctx-menu-sep { height: 1px; background: var(--card-border); margin: 4px 0; }
+  @keyframes pf-ctx-fade { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  #pf-root .pf-cat-items-wrap { overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease; max-height: 2000px; opacity: 1; }
+  #pf-root .pf-cat-items-wrap.pf-collapsed { max-height: 0; opacity: 0; }
+  #pf-root .pf-pull-indicator { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: 32px; height: 32px; border-radius: 50%; background: var(--card); border: 2px solid var(--accent); display: none; z-index: 200; font-size: 18px; line-height: 28px; text-align: center; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none; }
+  #pf-root .pf-scroll-top { position: fixed; bottom: 80px; right: 16px; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 18px; line-height: 40px; text-align: center; cursor: pointer; z-index: 90; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; transform: translateY(10px); }
+  #pf-root .pf-scroll-top.pf-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  #pf-root .pf-split-list::before, #pf-root .pf-split-list::after { content: ''; display: block; position: sticky; left: 0; right: 0; height: 0; z-index: 5; pointer-events: none; transition: height 0.2s ease, opacity 0.2s ease; opacity: 0; }
+  #pf-root .pf-split-list::before { top: 0; background: linear-gradient(to bottom, var(--accent-alpha, rgba(123,104,238,0.15)), transparent); }
+  #pf-root .pf-split-list::after { bottom: 0; background: linear-gradient(to top, var(--accent-alpha, rgba(123,104,238,0.15)), transparent); }
+  #pf-root .pf-split-list.pf-overscroll-top::before { height: 40px; opacity: 1; }
+  #pf-root .pf-split-list.pf-overscroll-bottom::after { height: 40px; opacity: 1; }
   #pf-root .pf-split-sort {
     display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin: 4px 6px 2px 6px; border-radius: 6px; background: rgba(0,0,0,0.08);
   }
@@ -633,13 +644,13 @@
   }
   #pf-root .pf-split-collapse-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(149,128,255,0.06); }
   #pf-root .pf-split-detail {
-    display: none; overflow: auto; padding: 0; position: relative; flex-direction: column;
+    display: none; overflow: auto; padding: 0; position: relative; flex-direction: column; transition: transform 0.2s ease, opacity 0.2s ease;
     background: var(--bg); width: 100%; flex: 1;
   }
   #pf-root.pf-detail-open .pf-split-detail { display: flex; animation: pf-detail-slide 0.2s ease-out; }
   @keyframes pf-detail-slide { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
   #pf-root .pf-split-detail .pf-node { position: relative; left: auto; top: auto; width: 100%; min-width: 0; max-width: 100%; margin: 0; flex: none; display: flex; flex-direction: column; border-radius: 12px; border: none; }
-  #pf-root .pf-split-detail .pf-node .pf-sublist { flex: 1; }
+  #pf-root .pf-split-detail .pf-node .pf-sublist { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
   #pf-root .pf-canvas { position: relative; width: 2200px; height: 1600px; transform-origin: 0 0; transition: transform 0.1s; }
   #pf-root .pf-zoom-controls { position: fixed; bottom: 14px; right: 14px; z-index: 10; display: flex; gap: 4px; align-items: center; }
   #pf-root .pf-zoom-btn { background: var(--card); border: 1px solid var(--card-border); color: var(--text); width: 28px; height: 28px; border-radius: 6px; font-size: var(--font-size-base); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s; }
@@ -753,7 +764,7 @@
   #pf-root .pf-subrow.pf-sub-has-children { cursor: pointer; }
   #pf-root .pf-sub-comment { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 5px); cursor: pointer; opacity: 0.6; transition: opacity 0.15s; flex-shrink: 0; padding: 0 2px; }
   #pf-root .pf-sub-comment:hover { opacity: 1; }
-  #pf-root .pf-sub-dot { width: clamp(5px, 0.9vw, 7px); height: clamp(5px, 0.9vw, 7px); border-radius: 50%; flex-shrink: 0; cursor: pointer; border: 1.5px solid var(--planned); }
+  #pf-root .pf-sub-dot { width: clamp(5px, 0.9vw, 7px); height: clamp(5px, 0.9vw, 7px); border-radius: 50%; flex-shrink: 0; cursor: pointer; border: 1.5px solid var(--planned); transition: background 0.3s ease, border-color 0.3s ease; }
   #pf-root .pf-sub-dates { display: inline-flex; align-items: center; gap: clamp(3px, 0.6vw, 6px); flex-shrink: 0; font-size: clamp(9px, 1.3vw, 12px); }
   #pf-root .pf-subrow-title { font-size: calc(var(--font-size-base) - 1px); flex: 1; outline: none; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
   #pf-root .pf-subrow-title:focus { white-space: normal; overflow: visible; }
@@ -1743,7 +1754,22 @@
     toastTimer = setTimeout(() => { toastEl.classList.remove('pf-toast-show'); }, undoable ? 5000 : 2600);
   }
   function hasStorage() { try { localStorage.setItem('__test__', '1'); localStorage.removeItem('__test__'); return true; } catch (e) { return false; } }
-  async function safeGet(key, shared) { if (!hasStorage()) return null; try { const v = localStorage.getItem(key); return v !== null ? { value: v } : null; } catch (e) { return null; } }
+  let _idbKV = null;
+  function openIDB_KV() {
+    return new Promise(resolve => {
+      if (_idbKV) { resolve(_idbKV); return; }
+      try {
+        const req = indexedDB.open('orga-naes-kv', 1);
+        req.onupgradeneeded = (e) => { const db = e.target.result; if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv', { keyPath: 'key' }); };
+        req.onsuccess = (e) => { _idbKV = e.target.result; resolve(_idbKV); };
+        req.onerror = () => resolve(null);
+      } catch (e) { resolve(null); }
+    });
+  }
+  async function safeGet(key, shared) {
+    if (hasStorage()) { try { const v = localStorage.getItem(key); if (v !== null) return { value: v }; } catch (e) {} }
+    try { const db = await openIDB_KV(); if (!db) return null; return await new Promise(resolve => { const tx = db.transaction('kv','readonly'); const req = tx.objectStore('kv').get(key); req.onsuccess = () => resolve(req.result ? { value: req.result.value } : null); req.onerror = () => resolve(null); }); } catch (e) { return null; }
+  }
   function _checkStorageQuota() {
     try {
       let total = 0;
@@ -1752,7 +1778,13 @@
       if (total > limitBytes * 0.9) showToast('⚠ Storage nearly full (' + Math.round(total / 1024) + 'KB / ~5MB). Consider exporting and clearing old data.', true);
     } catch (e) {}
   }
-  async function safeSet(key, value, shared) { if (!hasStorage()) return false; try { localStorage.setItem(key, value); _checkStorageQuota(); return true; } catch (e) { showToast('⚠ Storage full! Could not save. Export your data and free space.', true); return false; } }
+  async function safeSet(key, value, shared) {
+    let lsOk = false;
+    if (hasStorage()) { try { localStorage.setItem(key, value); _checkStorageQuota(); lsOk = true; } catch (e) {} }
+    try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); tx.objectStore('kv').put({ key: key, value: value }); } } catch (e) {}
+    if (!lsOk) { showToast('⚠ localStorage full — saved to IndexedDB fallback', true); }
+    return true;
+  }
 
   // --- IndexedDB Mirror & Auto-Backup ---
   const IDB_NAME = 'orga-naes-backup';
@@ -3063,11 +3095,13 @@
         }
         const srcId = e.dataTransfer.getData('text/plain'); if (!srcId) return; const p = projects.find(pr => pr.id === srcId); if (!p) return; const newCat = cat === '__uncategorized__' ? null : cat; if (p.category === newCat) return; snapshot(); p.category = newCat; scheduleSave(); renderSplitList(); renderSplitDetail();
       });
-      if (splitCollapsedCats[cat]) { const txt = catLabel.textContent + ' ▸'; catLabel.textContent = ''; catLabel.appendChild(catAddBtn); catLabel.appendChild(document.createTextNode(txt)); splitList.appendChild(catLabel); return; }
-      const txt = catLabel.textContent + ' ▾'; catLabel.textContent = '';
+      const _isCollapsed = !!splitCollapsedCats[cat];
+      const txt = catLabel.textContent + (_isCollapsed ? ' ▸' : ' ▾'); catLabel.textContent = '';
       catLabel.appendChild(catAddBtn);
       catLabel.appendChild(document.createTextNode(txt));
       splitList.appendChild(catLabel);
+      const catItemsWrap = document.createElement('div');
+      catItemsWrap.className = 'pf-cat-items-wrap' + (_isCollapsed ? ' pf-collapsed' : '');
       let idx = 0;
       group.forEach(p => {
         const item = document.createElement('div');
@@ -3144,8 +3178,9 @@
         item.querySelector('.pf-move-up').addEventListener('click', (e) => { e.stopPropagation(); const idx = projects.findIndex(pr => pr.id === p.id); if (idx <= 0) return; snapshot(); projects.splice(idx - 1, 0, projects.splice(idx, 1)[0]); scheduleSave(); renderSplitList(); });
         item.querySelector('.pf-move-down').addEventListener('click', (e) => { e.stopPropagation(); const idx = projects.findIndex(pr => pr.id === p.id); if (idx >= projects.length - 1) return; snapshot(); projects.splice(idx + 1, 0, projects.splice(idx, 1)[0]); scheduleSave(); renderSplitList(); });
         item.querySelector('.pf-split-list-ctx').addEventListener('click', (e) => { e.stopPropagation(); const rect = e.target.getBoundingClientRect(); _showCtxMenu(rect.left, rect.bottom, p); });
-        splitList.appendChild(item);
+        catItemsWrap.appendChild(item);
       });
+      splitList.appendChild(catItemsWrap);
     });
     // Virtual scrolling: hide off-screen items when list is large
     _virtualizeList();
@@ -5030,6 +5065,88 @@
     snapshot: () => snapshot()
   };
 
+  // Pull-to-refresh
+  (function() {
+    let startY = 0, pulling = false, pullDist = 0;
+    const threshold = 80;
+    let indicator = null;
+    function createIndicator() {
+      if (indicator) return indicator;
+      indicator = document.createElement('div');
+      indicator.className = 'pf-pull-indicator';
+      indicator.innerHTML = '↻';
+      root.appendChild(indicator);
+      return indicator;
+    }
+    root.addEventListener('touchstart', function(e) {
+      const splitList = root.querySelector('.pf-split-list');
+      if (!root.classList.contains('pf-device-mobile')) return;
+      if (!splitList || splitList.scrollTop > 0) return;
+      startY = e.touches[0].clientY;
+      pulling = true;
+      pullDist = 0;
+    }, { passive: true });
+    root.addEventListener('touchmove', function(e) {
+      if (!pulling) return;
+      pullDist = Math.max(0, e.touches[0].clientY - startY);
+      if (pullDist > 10) {
+        const ind = createIndicator();
+        const progress = Math.min(pullDist / threshold, 1);
+        ind.style.transform = 'translateX(-50%) translateY(' + (pullDist * 0.4) + 'px) rotate(' + (progress * 360) + 'deg)';
+        ind.style.opacity = progress;
+        ind.style.display = 'block';
+      }
+    }, { passive: true });
+    root.addEventListener('touchend', function() {
+      if (!pulling) return;
+      pulling = false;
+      if (indicator) { indicator.style.display = 'none'; indicator.style.transform = ''; }
+      if (pullDist >= threshold && window._firebasePull) {
+        if (window._pf && window._pf.showToast) window._pf.showToast('☁ Syncing...');
+        window._firebasePull();
+      }
+      pullDist = 0;
+    }, { passive: true });
+  })();
+
+  // Scroll-to-top button
+  (function() {
+    const root = document.getElementById('pf-root');
+    const btn = document.createElement('button');
+    btn.className = 'pf-scroll-top';
+    btn.innerHTML = '↑';
+    btn.title = 'Scroll to top';
+    root.appendChild(btn);
+    btn.addEventListener('click', function() {
+      const list = root.querySelector('.pf-split-list');
+      if (list) list.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    let _scrollRaf = null;
+    function checkScroll() {
+      const list = root.querySelector('.pf-split-list');
+      if (!list) return;
+      if (list.scrollTop > 400) btn.classList.add('pf-visible');
+      else btn.classList.remove('pf-visible');
+    }
+    function checkOverscroll(list) {
+      if (!list) return;
+      if (list.scrollTop <= 0) list.classList.add('pf-overscroll-top');
+      else list.classList.remove('pf-overscroll-top');
+      if (list.scrollTop + list.clientHeight >= list.scrollHeight - 1) list.classList.add('pf-overscroll-bottom');
+      else list.classList.remove('pf-overscroll-bottom');
+    }
+    new MutationObserver(function() {
+      const list = root.querySelector('.pf-split-list');
+      if (list && !list._scrollTopBound) {
+        list._scrollTopBound = true;
+        list.addEventListener('scroll', function() {
+          if (_scrollRaf) return;
+          _scrollRaf = requestAnimationFrame(function() { _scrollRaf = null; checkScroll(); checkOverscroll(list); });
+        }, { passive: true });
+      }
+    }).observe(root, { childList: true, subtree: true });
+  })();
+
 })();
 
 // #11 PWA - Register service worker
@@ -5358,6 +5475,7 @@ if ('serviceWorker' in navigator) {
 
   // Hook into scheduleSave to push on every change when autosync is on (debounced 3s)
   let _fbPushTimer = null;
+  window._firebasePull = function() { if (pullBtn) pullBtn.click(); };
   window._firebasePush = function() {
     if (!_fbAutosync || !_fbUser) return;
     if (!window._pf.getProjects().length) return;
