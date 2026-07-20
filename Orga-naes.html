@@ -3204,7 +3204,7 @@
           '<button class="pf-split-list-ctx" title="More actions">⋮</button>';
         item.querySelector('.pf-move-up').addEventListener('click', (e) => { e.stopPropagation(); const idx = projects.findIndex(pr => pr.id === p.id); if (idx <= 0) return; snapshot(); projects.splice(idx - 1, 0, projects.splice(idx, 1)[0]); scheduleSave(); renderSplitList(); });
         item.querySelector('.pf-move-down').addEventListener('click', (e) => { e.stopPropagation(); const idx = projects.findIndex(pr => pr.id === p.id); if (idx >= projects.length - 1) return; snapshot(); projects.splice(idx + 1, 0, projects.splice(idx, 1)[0]); scheduleSave(); renderSplitList(); });
-        item.querySelector('.pf-split-list-ctx').addEventListener('click', (e) => { e.stopPropagation(); const rect = e.target.getBoundingClientRect(); _showCtxMenu(rect.left, rect.bottom, p); });
+        item.querySelector('.pf-split-list-ctx').addEventListener('click', (e) => { e.stopPropagation(); const rect = e.target.getBoundingClientRect(); _showCtxMenu(rect.left, rect.top, p); });
         catItemsWrap.appendChild(item);
       });
       splitList.appendChild(catItemsWrap);
@@ -3245,23 +3245,41 @@
   let _ctxEl = null;
   function _closeCtx() { if (_ctxEl) { _ctxEl.remove(); _ctxEl = null; } const bd = document.getElementById('pf-ctx-backdrop'); if (bd) bd.style.display = 'none'; }
   function _positionCtxMenu(menu) {
-    const isMobile = document.getElementById('pf-root').classList.contains('pf-device-mobile');
-    if (isMobile) {
-      let backdrop = document.getElementById('pf-ctx-backdrop');
-      if (!backdrop) { backdrop = document.createElement('div'); backdrop.id = 'pf-ctx-backdrop'; document.getElementById('pf-root').appendChild(backdrop); backdrop.addEventListener('click', _closeCtx); }
-      backdrop.style.display = 'block';
+    let backdrop = document.getElementById('pf-ctx-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div'); backdrop.id = 'pf-ctx-backdrop'; document.getElementById('pf-root').appendChild(backdrop);
+      backdrop.addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); _closeCtx(); });
+      backdrop.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); });
+      backdrop.addEventListener('touchstart', function(e) { e.preventDefault(); e.stopPropagation(); _closeCtx(); });
     }
+    backdrop.style.display = 'block';
     const maxH = window.innerHeight - 16;
     menu.style.maxHeight = maxH + 'px';
     menu.style.overflowY = 'auto';
+    void menu.offsetHeight;
     const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) menu.style.left = Math.max(8, window.innerWidth - rect.width - 8) + 'px';
-    if (rect.left < 0) menu.style.left = '8px';
-    if (rect.bottom > window.innerHeight) menu.style.top = Math.max(8, window.innerHeight - rect.height - 8) + 'px';
-    if (rect.top < 0) menu.style.top = '8px';
+    const menuH = Math.min(rect.height, maxH);
+    const menuW = rect.width;
+    let clickY = parseInt(menu.style.top) || rect.top;
+    let clickX = parseInt(menu.style.left) || rect.left;
+    const midScreen = window.innerHeight / 2;
+    let newTop, newLeft;
+    if (clickY > midScreen) {
+      newTop = clickY - menuH;
+    } else {
+      newTop = clickY;
+    }
+    newLeft = clickX;
+    if (newLeft + menuW > window.innerWidth - 8) newLeft = window.innerWidth - menuW - 8;
+    if (newLeft < 8) newLeft = 8;
+    if (newTop + menuH > window.innerHeight - 8) newTop = window.innerHeight - menuH - 8;
+    if (newTop < 8) newTop = 8;
+    menu.style.left = newLeft + 'px';
+    menu.style.top = newTop + 'px';
   }
-  document.addEventListener('click', _closeCtx);
-  document.addEventListener('pointerdown', (e) => { if (_ctxEl && !_ctxEl.contains(e.target)) _closeCtx(); });
+  document.addEventListener('pointerdown', (e) => {
+    if (_ctxEl && !_ctxEl.contains(e.target)) { e.preventDefault(); e.stopPropagation(); _closeCtx(); }
+  }, true);
   document.addEventListener('contextmenu', _closeCtx);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && _ctxEl) { _closeCtx(); e.stopImmediatePropagation(); return; } if (e.key === 'Escape' && (subMultiSelect.length > 0 || splitMultiSelect.length > 0)) { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); splitMultiSelect = []; splitSelectedId = null; renderSplitList(); renderSplitDetail(); e.stopImmediatePropagation(); } });
 
