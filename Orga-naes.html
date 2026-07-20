@@ -1512,14 +1512,14 @@
   .pf-conflict-modal.pf-conflict-open { display: flex; }
   .pf-conflict-box {
     background: var(--card, #1e1e2e); border: 1px solid var(--card-border, #333);
-    border-radius: 16px; padding: 16px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+    border-radius: 16px; padding: 16px; max-width: min(400px, 90vw); width: 100%; max-height: 80vh; overflow-y: auto;
   }
-  .pf-conflict-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
-  .pf-conflict-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-  .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: 12px; padding: 10px; font-size: 10px; color: var(--text-dim); overflow: hidden; }
-  .pf-conflict-col-title { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-  .pf-conflict-btns { display: flex; gap: 8px; justify-content: flex-end; }
-  .pf-conflict-btns button { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; }
+  .pf-conflict-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; text-align: center; }
+  .pf-conflict-cols { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: 12px; padding: 12px; font-size: 11px; color: var(--text-dim); overflow: hidden; line-height: 1.5; }
+  .pf-conflict-col-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .pf-conflict-btns { display: flex; gap: 8px; justify-content: center; }
+  .pf-conflict-btns button { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; flex: 1; }
   .pf-conflict-btns button.pf-conflict-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   @media print {
     #pf-root { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
@@ -5599,8 +5599,19 @@ if ('serviceWorker' in navigator) {
     const modal = document.getElementById('pf-conflict-modal');
     const localEl = document.getElementById('pf-conflict-local');
     const remoteEl = document.getElementById('pf-conflict-remote');
-    localEl.innerHTML = '<b>' + local.length + ' projects</b><br>' + local.slice(0, 5).map(p => '• ' + (p.title || 'Untitled') + ' (' + (p.status || 'planned') + ')').join('<br>') + (local.length > 5 ? '<br>…and ' + (local.length - 5) + ' more' : '');
-    remoteEl.innerHTML = '<b>' + remote.length + ' projects</b><br>' + remote.slice(0, 5).map(p => '• ' + (p.title || 'Untitled') + ' (' + (p.status || 'planned') + ')').join('<br>') + (remote.length > 5 ? '<br>…and ' + (remote.length - 5) + ' more' : '');
+    function countChanges(list) {
+      let tasks = 0, completed = 0, ongoing = 0;
+      list.forEach(p => { if (p.subtasks) p.subtasks.forEach(function walk(s) { tasks++; if (s.status === 'completed') completed++; if (s.status === 'ongoing') ongoing++; if (s.subtasks) s.subtasks.forEach(walk); }); });
+      return { projects: list.length, tasks, completed, ongoing };
+    }
+    const localStats = countChanges(local);
+    const remoteStats = countChanges(remote);
+    const localMore = localStats.tasks > remoteStats.tasks || localStats.completed > remoteStats.completed;
+    const remoteMore = remoteStats.tasks > localStats.tasks || remoteStats.completed > localStats.completed;
+    const localBadge = localMore ? ' ⭐ More changes' : '';
+    const remoteBadge = remoteMore ? ' ⭐ More changes' : '';
+    localEl.innerHTML = '<b>' + local.length + ' projects</b> · ' + localStats.tasks + ' tasks · ' + localStats.completed + ' done' + (localBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + localBadge + '</span>' : '') + '<br>' + local.slice(0, 5).map(p => '• ' + (p.title || 'Untitled') + ' (' + (p.status || 'planned') + ')').join('<br>') + (local.length > 5 ? '<br>…and ' + (local.length - 5) + ' more' : '');
+    remoteEl.innerHTML = '<b>' + remote.length + ' projects</b> · ' + remoteStats.tasks + ' tasks · ' + remoteStats.completed + ' done' + (remoteBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + remoteBadge + '</span>' : '') + '<br>' + remote.slice(0, 5).map(p => '• ' + (p.title || 'Untitled') + ' (' + (p.status || 'planned') + ')').join('<br>') + (remote.length > 5 ? '<br>…and ' + (remote.length - 5) + ' more' : '');
     modal.classList.add('pf-conflict-open');
   }
   document.getElementById('pf-conflict-keep-local').addEventListener('click', function() {
