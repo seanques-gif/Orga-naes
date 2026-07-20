@@ -1353,11 +1353,11 @@
       </div>
     </div>
     <div class="pf-activity-list" id="pf-today-list"><div class="pf-activity-empty">No tasks for today. Add from project context menu.</div></div>
-    <div style="padding-top:10px;border-top:1px solid var(--card-border);margin-top:10px;display:flex;gap:8px;">
-      <button class="pf-undo-btn" id="pf-today-clear-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;border:1px solid var(--card-border);">Clear All</button>
-      <button class="pf-undo-btn" id="pf-today-carry-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;background:rgba(149,128,255,0.12);color:var(--accent);font-weight:600;">Carry Over Incomplete</button>
-      <button class="pf-undo-btn" id="pf-today-overdue-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:600;">Add Overdue</button>
-      <button class="pf-undo-btn" id="pf-today-due-btn" style="padding:5px 12px;font-size:11px;border-radius:6px;background:rgba(78,205,196,0.12);color:#4ecdc4;font-weight:600;">Add Today's Tasks</button>
+    <div style="padding-top:10px;border-top:1px solid var(--card-border);margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="pf-undo-btn" id="pf-today-clear-btn" style="padding:4px 8px;font-size:10px;border-radius:6px;border:1px solid var(--card-border);">Clear All</button>
+      <button class="pf-undo-btn" id="pf-today-carry-btn" style="padding:4px 8px;font-size:10px;border-radius:6px;background:rgba(149,128,255,0.12);color:var(--accent);font-weight:600;">Carry Over</button>
+      <button class="pf-undo-btn" id="pf-today-overdue-btn" style="padding:4px 8px;font-size:10px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:600;">+ Overdue</button>
+      <button class="pf-undo-btn" id="pf-today-due-btn" style="padding:4px 8px;font-size:10px;border-radius:6px;background:rgba(78,205,196,0.12);color:#4ecdc4;font-weight:600;">+ Today</button>
     </div>
   </div>
   <div class="pf-activity-panel" id="pf-duelist-panel" style="display:none;width:min(700px,90vw);max-height:min(85vh,700px);height:75vh;flex-direction:column;">
@@ -2900,6 +2900,9 @@
     }
     const grouped = {};
     sortProjects(projects.filter(p => matchesSearch(p))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
+    // Include any categories from projects not in the categories array
+    const extraCats = Object.keys(grouped).filter(c => c !== '__uncategorized__' && !categories.includes(c));
+    if (extraCats.length) { categories.push(...extraCats); saveCategories(); }
     const catOrder = categories.concat(grouped['__uncategorized__'] ? ['__uncategorized__'] : []);
     catOrder.forEach(cat => {
       const group = grouped[cat] || [];
