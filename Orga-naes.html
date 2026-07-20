@@ -4854,6 +4854,7 @@
     setProjects: (p) => { projects = p; },
     getCategories: () => categories,
     setCategories: (c) => { categories = c; },
+    renderSplitList: () => renderSplitList(),
     getArchive: () => archive,
     setArchive: (a) => { archive = a; saveArchive(); },
     getTrash: () => trash,
@@ -4998,11 +4999,11 @@ if ('serviceWorker' in navigator) {
         const catVal = results[1].val();
         const archVal = results[2].val();
         const trashVal = results[3].val();
-        if (projVal) window._pf.setProjects(Array.isArray(projVal) ? projVal : Object.values(projVal));
         if (catVal) { window._pf.setCategories(Array.isArray(catVal) ? catVal : Object.values(catVal)); window._pf.saveCategories(); }
+        if (projVal) window._pf.setProjects(Array.isArray(projVal) ? projVal : Object.values(projVal));
         if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal : Object.values(archVal));
         if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal : Object.values(trashVal));
-        window._pf.scheduleSave(); window._pf.render();
+        window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
         updateLastSync();
         window._pf.showToast('⬇ Pulled from cloud');
       });
