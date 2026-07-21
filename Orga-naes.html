@@ -371,9 +371,9 @@
     #pf-root .pf-split-view { flex-direction: column; min-width: 0; width: 100%; overflow-y: auto; overflow-x: hidden; }
     #pf-root .pf-split-divider { display: none; }
     #pf-root.pf-mobile-detail-open .pf-split-list { display: none; }
-    #pf-root.pf-mobile-detail-open .pf-split-detail { display: flex; }
+    #pf-root.pf-mobile-detail-open .pf-split-detail { display: flex; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     #pf-root.pf-detail-open .pf-split-list { display: none; }
-    #pf-root.pf-detail-open .pf-split-detail { display: flex; zoom: 0.75; }
+    #pf-root.pf-detail-open .pf-split-detail { display: flex; zoom: 0.75; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     #pf-root .pf-mobile-back { display: none; }
     #pf-root.pf-mobile-detail-open .pf-mobile-back { display: inline-flex; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
     #pf-tb-undoredo { display: flex !important; }
@@ -5152,52 +5152,7 @@
     setCategoryEmojis: (e) => { categoryEmojis = e; saveCatEmojis(); }
   };
 
-  // Pull-to-refresh
-  (function() {
-    let startY = 0, pulling = false, pullDist = 0;
-    const threshold = 200;
-    let indicator = null;
-    function createIndicator() {
-      if (indicator) return indicator;
-      indicator = document.createElement('div');
-      indicator.className = 'pf-pull-indicator';
-      indicator.innerHTML = '↻';
-      root.appendChild(indicator);
-      return indicator;
-    }
-    root.addEventListener('touchstart', function(e) {
-      const splitList = root.querySelector('.pf-split-list');
-      if (!root.classList.contains('pf-device-mobile')) return;
-      if (!splitList || splitList.scrollTop > 0) return;
-      if (splitList.offsetParent === null) return;
-      if (e.target.closest('.pf-options-panel,.pf-due-panel,.pf-today-panel,.pf-activity-panel,.pf-calendar-panel,.pf-comment-panel,.pf-modal-layer')) return;
-      if (splitMultiSelect.length > 0 || subMultiSelect.length > 0) return;
-      startY = e.touches[0].clientY;
-      pulling = true;
-      pullDist = 0;
-    }, { passive: true });
-    root.addEventListener('touchmove', function(e) {
-      if (!pulling) return;
-      pullDist = Math.max(0, e.touches[0].clientY - startY);
-      if (pullDist > 10) {
-        const ind = createIndicator();
-        const progress = Math.min(pullDist / threshold, 1);
-        ind.style.transform = 'translateX(-50%) translateY(' + (pullDist * 0.4) + 'px) rotate(' + (progress * 360) + 'deg)';
-        ind.style.opacity = progress;
-        ind.style.display = 'block';
-      }
-    }, { passive: true });
-    root.addEventListener('touchend', function() {
-      if (!pulling) return;
-      pulling = false;
-      if (indicator) { indicator.style.display = 'none'; indicator.style.transform = ''; }
-      if (pullDist >= threshold && window._firebasePull) {
-        if (window._pf && window._pf.showToast) window._pf.showToast('☁ Syncing...');
-        window._firebasePull();
-      }
-      pullDist = 0;
-    }, { passive: true });
-  })();
+  // Pull-to-refresh (disabled)
 
   // Scroll-to-top button
   (function() {
