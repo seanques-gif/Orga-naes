@@ -32,16 +32,30 @@
   .pf-fab { display: none; }
   .pf-fab-menu { display: none; }
   .pf-fab-overlay { display: none; }
-  @media (max-width: 900px) {
+  @media (max-width: 1400px) {
     .pf-bottom-nav {
-      display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9000;
-      background: var(--card, #2a2a3e); border-top: 1px solid var(--card-border, #3a3a5e);
-      padding: 4px 0; padding-bottom: env(safe-area-inset-bottom, 0px);
+      display: flex; position: fixed; bottom: 12px; left: 16px; right: 16px; z-index: 9000;
+      background: var(--card, #2a2a3e); border: 1px solid var(--card-border, #3a3a5e);
+      padding: 6px 8px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
       justify-content: space-around; align-items: center;
+      border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      transition: transform 0.3s ease, opacity 0.3s ease;
     }
+    @media (min-width: 600px) {
+      .pf-bottom-nav {
+        left: auto; right: 50%; transform: translateX(50%);
+        width: 70%; max-width: 500px; padding: 4px 12px;
+        gap: 4px; bottom: 32px;
+      }
+      .pf-bottom-nav.pf-nav-hidden { transform: translateX(50%) translateY(calc(100% + 20px)); opacity: 0; pointer-events: none; }
+      .pf-fab { bottom: 36px !important; right: 36px !important; }
+      .pf-fab-menu { bottom: 92px !important; right: 36px !important; }
+      .pf-scroll-top { bottom: 100px !important; }
+    }
+    .pf-bottom-nav.pf-nav-hidden { transform: translateY(calc(100% + 20px)); opacity: 0; pointer-events: none; }
     .pf-bottom-nav-btn {
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-      background: none; border: none; color: var(--text); opacity: 0.5; font-size: 18px;
+      background: none; border: none; color: var(--text); opacity: 0.75; font-size: 18px;
       width: 56px; height: 44px; padding: 0; cursor: pointer; border-radius: 8px; transition: color 0.15s, background 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
@@ -55,7 +69,7 @@
       padding: 0 4px; line-height: 1;
     }
     .pf-connection-dot {
-      position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 38px); right: 6px; width: 8px; height: 8px;
+      position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 8px; height: 8px;
       border-radius: 50%; z-index: 9002; transition: background 0.3s;
     }
     .pf-connection-dot.pf-online { background: #4ade80; }
@@ -63,19 +77,20 @@
     @keyframes pf-offline-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
     .pf-fab {
-      display: flex; position: fixed; bottom: 72px; right: 16px; z-index: 9001;
+      display: flex; position: fixed; bottom: 84px; right: 16px; z-index: 9001;
       width: 48px; height: 48px; border-radius: 50%; background: var(--accent, #7b68ee);
       color: #fff; font-size: 24px; font-weight: 300; border: none;
       align-items: center; justify-content: center; cursor: pointer;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: transform 0.2s, background 0.15s, opacity 0.3s ease;
       opacity: 0; pointer-events: none;
     }
-    .pf-fab.pf-fab-visible { opacity: 1; pointer-events: auto; }
+    .pf-fab.pf-fab-visible { opacity: 1; pointer-events: auto; transition: transform 0.2s, background 0.15s, opacity 0.3s ease, bottom 0.3s ease; }
+    .pf-fab.pf-fab-hidden { opacity: 0 !important; pointer-events: none !important; }
     .pf-fab:active { transform: scale(0.9); }
     .pf-fab.pf-fab-open { transform: rotate(45deg); }
     .pf-fab-menu {
-      display: none; position: fixed; bottom: 130px; right: 16px; z-index: 9000;
-      flex-direction: column; gap: 8px; align-items: flex-end;
+      display: none; position: fixed; bottom: 150px; right: 16px; z-index: 9000;
+      flex-direction: column-reverse; gap: 8px; align-items: flex-end;
     }
     .pf-fab-menu.pf-fab-menu-open { display: flex; }
     .pf-fab-menu-item {
@@ -101,9 +116,24 @@
     #pf-root #pf-toolbar-back { display: none !important; }
     #pf-root .pf-mobile-back { display: none !important; }
     #pf-root .pf-toolbar { display: none !important; }
-    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) { display: flex !important; }
-    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) > *:not(.pf-search-wrap) { display: none !important; }
-    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) .pf-search-wrap { flex: 1; }
+    #pf-root .pf-search-wrap.pf-search-open {
+      position: fixed; bottom: 160px; right: 16px; z-index: 9500;
+      background: var(--card, #2a2a3e); border: 1px solid var(--card-border, #3a3a5e);
+      border-radius: 24px; padding: 8px 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      display: inline-flex; align-items: center;
+      animation: pf-search-expand 0.25s ease-out forwards;
+      transform-origin: right center;
+    }
+    @keyframes pf-search-expand {
+      from { width: 48px; opacity: 0.5; }
+      to { width: 50vw; opacity: 1; }
+    }
+    #pf-root .pf-search-toggle { display: none !important; }
+    #pf-root .pf-search-wrap.pf-search-open .pf-search-clear { display: none !important; }
+    #pf-root .pf-search-wrap.pf-search-open .pf-search {
+      position: static; transform: none; width: 100% !important; max-width: 100% !important; flex: 1;
+    }
+    #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { width: 100% !important; max-width: 100% !important; }
     #pf-root .pf-overdue-banner { top: 0; }
     #pf-root .pf-toast { bottom: auto !important; top: 60px !important; transform: translateX(-50%) translateY(-12px) !important; z-index: 10000 !important; }
     #pf-root .pf-toast.pf-toast-show { transform: translateX(-50%) translateY(0) !important; }
@@ -296,13 +326,14 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: calc(var(--font-size-base) - 4px); padding: 5px 22px 5px 8px; border-radius: 6px;
     border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text);
     outline: none; width: 0; max-width: 0; opacity: 0; padding-left: 0; padding-right: 0; border: none;
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
     transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s;
   }
   #pf-root .pf-search-wrap.pf-search-open .pf-search {
-    width: 160px; max-width: 160px; opacity: 1; padding: 5px 22px 5px 8px;
-    border: 1px solid var(--card-border);
+    width: 200px; max-width: 200px; opacity: 1; padding: 5px 22px 5px 8px;
+    border: 1px solid var(--card-border); right: 0;
   }
-  #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { border-color: var(--accent); width: 190px; max-width: 190px; }
+  #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { border-color: var(--accent); width: 240px; max-width: 240px; }
   #pf-root .pf-search::placeholder { color: var(--text-dim); }
   #pf-root .pf-search-clear {
     position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
@@ -460,6 +491,11 @@
   #pf-root.pf-device-desktop.pf-detail-open .pf-split-divider { display: block; }
   #pf-root.pf-device-desktop .pf-mobile-back,
   #pf-root.pf-device-desktop.pf-detail-open .pf-mobile-back { display: none !important; }
+  #pf-root.pf-device-desktop .pf-bottom-nav { display: none !important; }
+  #pf-root.pf-device-desktop .pf-toolbar { display: flex !important; }
+  #pf-root.pf-device-desktop .pf-fab,
+  #pf-root.pf-device-desktop .pf-fab-menu,
+  #pf-root.pf-device-desktop .pf-fab-overlay { display: none !important; }
   @media (max-width: 768px) and (min-width: 501px) {
     #pf-root .pf-toolbar { gap: 3px; padding: 5px 8px; }
     #pf-root .pf-tb-sep { display: none; }
@@ -640,9 +676,9 @@
   #pf-root .pf-cat-items-wrap { overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease; max-height: 2000px; opacity: 1; }
   #pf-root .pf-cat-items-wrap.pf-collapsed { max-height: 0; opacity: 0; }
   #pf-root .pf-pull-indicator { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: 32px; height: 32px; border-radius: 50%; background: var(--card); border: 2px solid var(--accent); display: none; z-index: 200; font-size: 18px; line-height: 28px; text-align: center; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none; }
-  #pf-root .pf-scroll-top { position: fixed; bottom: 80px; right: 16px; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 18px; line-height: 40px; text-align: center; cursor: pointer; z-index: 90; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; transform: translateY(10px); }
-  #pf-root .pf-scroll-top.pf-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
-  #pf-root.pf-device-mobile .pf-scroll-top { bottom: 140px; }
+  #pf-root .pf-scroll-top { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(10px); width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 18px; line-height: 40px; text-align: center; cursor: pointer; z-index: 90; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; }
+  #pf-root .pf-scroll-top.pf-visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+  #pf-root.pf-device-mobile .pf-scroll-top { bottom: 80px; }
   #pf-ctx-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; backdrop-filter: blur(2px); }
   /* overscroll indicators disabled to prevent scroll shake */
   #pf-root .pf-split-sort {
@@ -1496,7 +1532,7 @@
     <div class="pf-fab-menu-item" data-fab="search"><span class="pf-fab-icon">🔍</span></div>
   </div>
   <button class="pf-fab" id="pf-fab" title="Actions">+</button>
-  <div class="pf-connection-dot pf-online" id="pf-connection-dot" title="Online"></div>
+
   <div class="pf-conflict-modal" id="pf-conflict-modal">
     <div class="pf-conflict-box">
       <div class="pf-conflict-title">⚠️ Sync Conflict Detected</div>
@@ -1516,6 +1552,7 @@
     <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates" style="position:relative;">📅<span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
     <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar">🗓<span>Calendar</span></button>
     <button class="pf-bottom-nav-btn" data-nav="options" title="Options">☰<span>Options</span></button>
+    <div class="pf-connection-dot pf-online" id="pf-connection-dot" title="Online"></div>
   </nav>
   <div class="pf-split-view" id="pf-split-view">
     <div class="pf-split-list" id="pf-split-list"></div>
@@ -1597,14 +1634,14 @@
     const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const w = screen.width;
     let device = 'desktop';
-    if (hasTouch && w <= 500) device = 'mobile';
-    else if (hasTouch && w <= 1024) device = 'tablet';
+    if (hasTouch && w <= 1024) device = 'mobile';
+    else if (hasTouch && w <= 1400) device = 'tablet';
     root.classList.add('pf-device-' + device);
     window.addEventListener('resize', () => {
       root.classList.remove('pf-device-mobile', 'pf-device-tablet', 'pf-device-desktop');
       const vw = window.innerWidth;
-      if (hasTouch && vw <= 500) root.classList.add('pf-device-mobile');
-      else if (hasTouch && vw <= 1024) root.classList.add('pf-device-tablet');
+      if (hasTouch && vw <= 1024) root.classList.add('pf-device-mobile');
+      else if (hasTouch && vw <= 1400) root.classList.add('pf-device-tablet');
       else root.classList.add('pf-device-desktop');
     });
   })();
@@ -1734,9 +1771,15 @@
   });
 
   // --- Escape Dismissable Stack ---
+  function _returnSearchToToolbar() {
+    const toolbar = document.querySelector('.pf-toolbar');
+    if (toolbar && searchWrap.parentNode !== toolbar) toolbar.appendChild(searchWrap);
+  }
   function _clearSearch() {
     searchInput.value = ''; searchTerm = '';
     searchWrap.classList.remove('pf-has-value', 'pf-search-open');
+    if (searchWrap._searchOverlay) { searchWrap._searchOverlay.remove(); searchWrap._searchOverlay = null; }
+    _returnSearchToToolbar();
     searchInput.blur();
   }
   function _refreshView() {
@@ -4986,6 +5029,7 @@
       fab.classList.remove('pf-fab-open');
       fabMenu.classList.remove('pf-fab-menu-open');
       fabOverlay.classList.remove('pf-fab-menu-open');
+      if (window._navAutoHideRestart) window._navAutoHideRestart();
     }
     fab.addEventListener('click', toggleFab);
     fabOverlay.addEventListener('click', closeFab);
@@ -5005,13 +5049,25 @@
           showToast('Sort: ' + labels[next]);
           return;
         }
-        closeFab();
+        if (action !== 'search') closeFab();
         if (action === 'add') openNewProjectCategoryPicker();
         else if (action === 'search') {
+          const searchItem = item;
+          const rect = searchItem.getBoundingClientRect();
           const searchWrap = document.getElementById('pf-search-wrap');
           const searchInput = document.getElementById('pf-search');
+          const bottomPos = window.innerHeight - rect.top - rect.height / 2 - 20;
+          searchWrap.style.bottom = bottomPos + 'px';
+          root.appendChild(searchWrap);
+          closeFab();
           searchWrap.classList.add('pf-search-open');
           searchInput.focus();
+          var searchOverlay = document.createElement('div');
+          searchOverlay.style.cssText = 'position:fixed;inset:0;z-index:9499;background:transparent;';
+          searchOverlay.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); _clearSearch(); searchOverlay.remove(); });
+          searchOverlay.addEventListener('touchstart', function(e) { e.stopPropagation(); e.preventDefault(); _clearSearch(); searchOverlay.remove(); });
+          root.appendChild(searchOverlay);
+          searchWrap._searchOverlay = searchOverlay;
         }
         else if (action === 'expand') {
           if (root.classList.contains('pf-detail-open') && splitSelectedId) {
@@ -5071,6 +5127,31 @@
     // Reset active state when modals close externally (backdrop/X button)
     const _origCloseAll = closeAllModals;
     closeAllModals = function() { _origCloseAll(); if (!_navSuppressReset) setActiveNav('projects'); };
+
+    // Auto-hide bottom nav and FAB after 1 second of inactivity
+    const fab = document.querySelector('.pf-fab');
+    let _navTimer = null;
+    function hideNavAndFab() {
+      bottomNav.classList.add('pf-nav-hidden');
+      if (fab && !fab.classList.contains('pf-fab-open')) fab.classList.add('pf-fab-hidden');
+    }
+    function showNavAndFab() {
+      bottomNav.classList.remove('pf-nav-hidden');
+      if (fab) fab.classList.remove('pf-fab-hidden');
+      clearTimeout(_navTimer);
+      _navTimer = setTimeout(hideNavAndFab, 1500);
+    }
+    window._navAutoHideRestart = function() {
+      clearTimeout(_navTimer);
+      _navTimer = setTimeout(hideNavAndFab, 1500);
+    };
+    showNavAndFab();
+    let _swipeStartY = 0;
+    document.addEventListener('touchstart', function(e) { _swipeStartY = e.touches[0].clientY; }, { passive: true });
+    document.addEventListener('touchend', function(e) {
+      const dy = e.changedTouches[0].clientY - _swipeStartY;
+      if (Math.abs(dy) > 30) showNavAndFab();
+    }, { passive: true });
   })();
 
   // #4 Swipe right to cycle status on subtasks
@@ -5160,11 +5241,17 @@
       if (list) list.scrollTo({ top: 0, behavior: 'smooth' });
     });
     let _scrollRaf = null;
+    let _scrollTopTimer = null;
     function checkScroll() {
       const list = root.querySelector('.pf-split-list');
       if (!list) return;
-      if (list.scrollTop > 400) btn.classList.add('pf-visible');
-      else btn.classList.remove('pf-visible');
+      if (list.scrollTop > 400) {
+        btn.classList.add('pf-visible');
+        clearTimeout(_scrollTopTimer);
+        _scrollTopTimer = setTimeout(function() { btn.classList.remove('pf-visible'); }, 1500);
+      } else {
+        btn.classList.remove('pf-visible');
+      }
     }
     let _hasScrolled = false;
     function checkOverscroll() {}
