@@ -5395,65 +5395,59 @@ if ('serviceWorker' in navigator) {
   pullBtn.addEventListener('click', function() {
     if (!_fbUser) { showToast('⚠ Sign in first to pull', true); return; }
     showToast('☁ Pulling from cloud...');
-    db.ref('users/' + _fbUser.uid + '/updatedAt').once('value').then(function(tSnap) {
-      const remoteTime = tSnap.val() || 0;
-      const localTime = parseInt(localStorage.getItem('pf-last-save-time') || '0');
-      if (localTime > remoteTime && remoteTime > 0) {
-        if (!confirm('Your local data is NEWER than the cloud. Pull anyway? (This will overwrite local changes. You can Undo after.)')) return;
-      }
-      if (window._pf && window._pf.snapshot) window._pf.snapshot();
-      Promise.all([
-        userRef().once('value'),
-        catRef().once('value'),
-        archiveRef().once('value'),
-        trashRef().once('value')
-      ]).then(function(results) {
-        const projVal = results[0].val();
-        const catVal = results[1].val();
-        const archVal = results[2].val();
-        const trashVal = results[3].val();
-        // Deep-fix Firebase objects → arrays for subtasks
-        function fixSubtasks(list) {
-          if (!list) return [];
-          if (!Array.isArray(list)) list = Object.values(list);
-          return list.map(function(s) {
-            if (s && s.subtasks) s.subtasks = fixSubtasks(s.subtasks);
-            return s;
-          });
-        }
-        function fixProjects(val) {
-          var arr = Array.isArray(val) ? val : Object.values(val);
-          return arr.filter(Boolean).map(function(p) {
-            if (p && p.subtasks) p.subtasks = fixSubtasks(p.subtasks);
-            if (!p.subtasks) p.subtasks = [];
-            p.expanded = false;
-            return p;
-          });
-        }
-        if (catVal) {
-          const c = Array.isArray(catVal) ? catVal : Object.values(catVal);
-          window._pf.setCategories(c.filter(Boolean));
-          window._pf.saveCategories();
-        }
-        if (projVal) {
-          const p = fixProjects(projVal);
-          window._pf.setProjects(p);
-          // Rebuild categories from projects if categories is empty
-          const cats = window._pf.getCategories();
-          if (!cats || !cats.length) {
-            const uniqueCats = [...new Set(p.map(pr => pr.category).filter(Boolean))];
-            if (uniqueCats.length) { window._pf.setCategories(uniqueCats); window._pf.saveCategories(); }
-          }
-        }
-        if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal.filter(Boolean) : Object.values(archVal).filter(Boolean));
-        if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal.filter(Boolean) : Object.values(trashVal).filter(Boolean));
-        db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
-          if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
+    if (window._pf && window._pf.snapshot) window._pf.snapshot();
+    Promise.all([
+      userRef().once('value'),
+      catRef().once('value'),
+      archiveRef().once('value'),
+      trashRef().once('value')
+    ]).then(function(results) {
+      const projVal = results[0].val();
+      const catVal = results[1].val();
+      const archVal = results[2].val();
+      const trashVal = results[3].val();
+      if (!projVal && !catVal) { showToast('⚠ No data found in cloud', true); return; }
+      function fixSubtasks(list) {
+        if (!list) return [];
+        if (!Array.isArray(list)) list = Object.values(list);
+        return list.map(function(s) {
+          if (s && s.subtasks) s.subtasks = fixSubtasks(s.subtasks);
+          return s;
         });
-        window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
-        updateLastSync();
-        window._pf.showToast('⬇ Pulled from cloud');
+      }
+      function fixProjects(val) {
+        var arr = Array.isArray(val) ? val : Object.values(val);
+        return arr.filter(Boolean).map(function(p) {
+          if (p && p.subtasks) p.subtasks = fixSubtasks(p.subtasks);
+          if (!p.subtasks) p.subtasks = [];
+          p.expanded = false;
+          return p;
+        });
+      }
+      if (catVal) {
+        const c = Array.isArray(catVal) ? catVal : Object.values(catVal);
+        window._pf.setCategories(c.filter(Boolean));
+        window._pf.saveCategories();
+      }
+      if (projVal) {
+        const p = fixProjects(projVal);
+        window._pf.setProjects(p);
+        const cats = window._pf.getCategories();
+        if (!cats || !cats.length) {
+          const uniqueCats = [...new Set(p.map(pr => pr.category).filter(Boolean))];
+          if (uniqueCats.length) { window._pf.setCategories(uniqueCats); window._pf.saveCategories(); }
+        }
+      }
+      if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal.filter(Boolean) : Object.values(archVal).filter(Boolean));
+      if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal.filter(Boolean) : Object.values(trashVal).filter(Boolean));
+      db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
+        if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
       });
+      window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
+      updateLastSync();
+      window._pf.showToast('⬇ Pulled from cloud');
+    }).catch(function(err) {
+      showToast('⚠ Pull failed: ' + (err.message || err), true);
     });
   });
 
