@@ -433,8 +433,8 @@
   #pf-root.pf-device-tablet .pf-toolbar:has(.pf-search-wrap.pf-search-open) .pf-search-wrap { flex: 1; }
   #pf-root.pf-device-tablet .pf-split-sort { display: none !important; }
   #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { zoom: 0.88; }
-  #pf-root.pf-device-tablet .pf-split-view { flex-direction: column; min-width: 0; width: 100%; overflow: hidden; min-height: 0; flex: 1; }
-  #pf-root.pf-device-tablet .pf-split-list { width: 100%; max-width: 100%; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
+  #pf-root.pf-device-tablet .pf-split-view { overflow: hidden; min-height: 0; }
+  #pf-root.pf-device-tablet .pf-split-list { width: 30%; min-width: 200px; max-width: 35%; flex: none; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; border-right: 1px solid var(--card-border); }
   #pf-root.pf-device-tablet .pf-split-detail { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
 
 
@@ -1597,14 +1597,14 @@
     const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const w = screen.width;
     let device = 'desktop';
-    if (hasTouch && w <= 1024) device = 'mobile';
-    else if (hasTouch && w <= 1400) device = 'tablet';
+    if (hasTouch && w <= 500) device = 'mobile';
+    else if (hasTouch && w <= 1024) device = 'tablet';
     root.classList.add('pf-device-' + device);
     window.addEventListener('resize', () => {
       root.classList.remove('pf-device-mobile', 'pf-device-tablet', 'pf-device-desktop');
       const vw = window.innerWidth;
-      if (hasTouch && vw <= 1024) root.classList.add('pf-device-mobile');
-      else if (hasTouch && vw <= 1400) root.classList.add('pf-device-tablet');
+      if (hasTouch && vw <= 500) root.classList.add('pf-device-mobile');
+      else if (hasTouch && vw <= 1024) root.classList.add('pf-device-tablet');
       else root.classList.add('pf-device-desktop');
     });
   })();
