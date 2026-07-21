@@ -5468,7 +5468,7 @@ if ('serviceWorker' in navigator) {
       const localStr = JSON.stringify(window._pf.getProjects());
       const remoteStr = JSON.stringify(remote);
       if (remoteStr !== localStr) {
-        const localProjects = window._pf.getProjects();
+        const localProjects = JSON.parse(localStr);
         const localChanged = localStr !== _lastPushedSnapshot;
         if (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr) {
           showConflictModal(localProjects, remote);
@@ -5700,8 +5700,22 @@ if ('serviceWorker' in navigator) {
     const remoteMore = remoteStats.tasks > localStats.tasks || remoteStats.completed > localStats.completed;
     const localBadge = localMore ? ' ⭐ More changes' : '';
     const remoteBadge = remoteMore ? ' ⭐ More changes' : '';
-    localEl.innerHTML = '<b>' + local.length + ' projects</b> · ' + localStats.tasks + ' tasks · ' + localStats.completed + ' done' + (localBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + localBadge + '</span>' : '') + '<br>' + local.slice(0, 5).map(p => '• ' + (p.title || 'Untitled') + ' (' + (p.status || 'planned') + ')').join('<br>') + (local.length > 5 ? '<br>…and ' + (local.length - 5) + ' more' : '');
-    remoteEl.innerHTML = '<b>' + remote.length + ' projects</b> · ' + remoteStats.tasks + ' tasks · ' + remoteStats.completed + ' done' + (remoteBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + remoteBadge + '</span>' : '') + '<br>' + remote.slice(0, 5).map(p => '• ' + (p.title || 'Untitled') + ' (' + (p.status || 'planned') + ')').join('<br>') + (remote.length > 5 ? '<br>…and ' + (remote.length - 5) + ' more' : '');
+    function findDiffs(localList, remoteList) {
+      const localMap = {}; localList.forEach(p => { localMap[p.id] = p; });
+      const remoteMap = {}; remoteList.forEach(p => { remoteMap[p.id] = p; });
+      const added = remoteList.filter(p => !localMap[p.id]);
+      const removed = localList.filter(p => !remoteMap[p.id]);
+      const changed = localList.filter(p => remoteMap[p.id] && JSON.stringify(p) !== JSON.stringify(remoteMap[p.id]));
+      return { added, removed, changed };
+    }
+    const diffs = findDiffs(local, remote);
+    let diffHtml = '';
+    if (diffs.changed.length) diffHtml += '<b>Modified (' + diffs.changed.length + '):</b><br>' + diffs.changed.slice(0, 5).map(p => '• ' + (p.title || 'Untitled')).join('<br>') + (diffs.changed.length > 5 ? '<br>…+' + (diffs.changed.length - 5) + ' more' : '') + '<br>';
+    if (diffs.added.length) diffHtml += '<b>Added in cloud (' + diffs.added.length + '):</b><br>' + diffs.added.slice(0, 3).map(p => '• ' + (p.title || 'Untitled')).join('<br>') + '<br>';
+    if (diffs.removed.length) diffHtml += '<b>Removed in cloud (' + diffs.removed.length + '):</b><br>' + diffs.removed.slice(0, 3).map(p => '• ' + (p.title || 'Untitled')).join('<br>') + '<br>';
+    if (!diffHtml) diffHtml = 'Minor differences detected';
+    localEl.innerHTML = '<b>Local:</b> ' + local.length + ' projects · ' + localStats.tasks + ' tasks · ' + localStats.completed + ' done' + (localBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + localBadge + '</span>' : '');
+    remoteEl.innerHTML = '<b>Cloud:</b> ' + remote.length + ' projects · ' + remoteStats.tasks + ' tasks · ' + remoteStats.completed + ' done' + (remoteBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + remoteBadge + '</span>' : '') + '<br><br>' + diffHtml;
     modal.classList.add('pf-conflict-open');
   }
   document.getElementById('pf-conflict-keep-local').addEventListener('click', function() {
