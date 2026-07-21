@@ -1,8 +1,10 @@
+<!-- © 2026 Sean Ques. All Rights Reserved. Unauthorized reproduction, distribution, or modification prohibited. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; connect-src https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src https://accounts.google.com https://*.firebaseapp.com;">
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
 <link rel="manifest" href="manifest.json">
@@ -37,13 +39,14 @@
       justify-content: space-around; align-items: center;
     }
     .pf-bottom-nav-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 2px;
-      background: none; border: none; color: var(--text-dim); font-size: 18px;
-      padding: 4px 12px; cursor: pointer; border-radius: 8px; transition: color 0.15s, background 0.15s;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      background: none; border: none; color: var(--text); opacity: 0.5; font-size: 18px;
+      width: 56px; height: 44px; padding: 0; cursor: pointer; border-radius: 8px; transition: color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
     }
     .pf-bottom-nav-btn span { font-size: 9px; font-weight: 500; }
-    .pf-bottom-nav-btn.pf-bottom-active { color: var(--accent); }
-    .pf-bottom-nav-btn:active { background: rgba(123,104,238,0.1); }
+    .pf-bottom-nav-btn.pf-bottom-active { color: var(--accent); opacity: 1; background: color-mix(in srgb, var(--accent) 15%, transparent); font-weight: 700; }
+    .pf-bottom-nav-btn:active { background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: 8px; }
     .pf-bottom-badge {
       position: absolute; top: 2px; right: 6px; min-width: 16px; height: 16px;
       background: var(--danger, #ef4444); color: #fff; font-size: 9px; font-weight: 700;
@@ -1356,7 +1359,7 @@
       <div style="font-size:11px;color:var(--text-dim);line-height:1.6;">
         <strong>Orga-naes</strong> v1.0.0<br>
         A lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views — all stored locally in your browser.<br><br>
-        Created by <strong>Sean Desucatan</strong>
+        Created by <strong>Sean Ques</strong>
       </div>
     </div>
   </div>
@@ -2245,7 +2248,7 @@
       setTimeout(() => item.classList.remove('pf-ring-pulse', 'pf-ring-complete'), 900);
     }, 50);
   }
-  function cycleProjectStatus(id) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
+  function cycleProjectStatus(id) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; if (navigator.vibrate) navigator.vibrate(10); p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
   function checkAllCompleted(p) {
     if (!p.subtasks || !p.subtasks.length) return;
     // Auto-complete parent subtasks when all their children are done
@@ -2264,7 +2267,7 @@
     // Auto-complete project when all top-level subtasks are done
     const allDone = (function check(list) { return list.every(s => s.status === 'completed' && (!s.subtasks || !s.subtasks.length || check(s.subtasks))); })(p.subtasks);
     if (allDone) {
-      if (p.status !== 'completed') { p.status = 'completed'; p.completedAt = new Date().toISOString(); logActivity('"' + p.title + '" auto-completed (all subtasks done)'); scheduleSave(); render(); onTaskCompleted(true); }
+      if (p.status !== 'completed') { p.status = 'completed'; p.completedAt = new Date().toISOString(); delete p._manualStatus; logActivity('"' + p.title + '" auto-completed (all subtasks done)'); scheduleSave(); render(); onTaskCompleted(true); }
       confetti();
     } else if (p.status === 'planned') {
       // Auto-set project to ongoing if any subtask has progress
@@ -2312,7 +2315,7 @@
 
   function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
-  function cycleSubStatus(projectId, subId) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); const oldStatus = s.status; s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } checkAllCompleted(p); }
+  function cycleSubStatus(projectId, subId) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); const oldStatus = s.status; s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }
   function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } scheduleSave(); render(); }
   function promoteSubToProject(parentProject, sub) {
     snapshot();
@@ -2328,6 +2331,7 @@
 
   function focusEl(selector) { requestAnimationFrame(() => { let el = canvas.querySelector(selector) || root.querySelector(selector); if (el) { el.contentEditable = 'true'; el.focus(); const range = document.createRange(); range.selectNodeContents(el); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } }); }
   function escapeHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function highlightMatch(escaped, term) { if (!term) return escaped; const re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'); return escaped.replace(re, '<mark style="background:var(--accent);color:#fff;border-radius:2px;padding:0 2px;">$1</mark>'); }
   function formatTime(sec) { const d = Math.floor(sec / 86400); const h = Math.floor((sec % 86400) / 3600); const m = Math.floor((sec % 3600) / 60); if (d > 0) return d + 'd ' + h + 'h ' + m + 'm'; if (h > 0) return h + 'h ' + m + 'm'; return m + 'm'; }
   function toggleTimer(p, s) { snapshot(); if (s.timerStart) { s.timeLogged = (s.timeLogged || 0) + Math.floor((Date.now() - s.timerStart) / 1000); s.timerStart = null; } else { s.timerStart = Date.now(); } scheduleSave(); render(); }
 
@@ -2537,7 +2541,7 @@
       '<button class="pf-undo-btn" data-sub-action="delete" style="font-size:10px;padding:3px 8px;color:var(--danger);">Delete</button>' +
       '<button class="pf-undo-btn" data-sub-action="clear" style="font-size:10px;padding:3px 6px;">✕</button>';
     bar.querySelector('[data-sub-action="cycle"]').addEventListener('click', (e) => { e.stopPropagation(); snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) { s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; } }); scheduleSave(); render(); checkAllCompleted(p); renderSubSelectBar(p); });
-    bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) s.dueAt = val; }); clearSubSelect(); scheduleSave(); render(); checkAllCompleted(p); } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
+    bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) s.dueAt = val; }); clearSubSelect(); scheduleSave(); render(); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
     bar.querySelector('[data-sub-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return; snapshot(); subMultiSelect.forEach(id => { const arr = findSubParentArray(p.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } }); clearSubSelect(); scheduleSave(); render(); });
     bar.querySelector('[data-sub-action="clear"]').addEventListener('click', (e) => { e.stopPropagation(); clearSubSelect(); const existing2 = root.querySelector('.pf-sub-select-bar'); if (existing2) existing2.remove(); });
     sublist.insertBefore(bar, sublist.firstChild);
@@ -2585,7 +2589,7 @@
     const commentBtn = document.createElement('button'); commentBtn.className = 'pf-sub-comment'; commentBtn.title = 'Comments'; commentBtn.textContent = '💬' + (s.comments && s.comments.length ? ' ' + s.comments.length : ''); commentBtn.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(commentBtn);
     const _hasBlockers = getUnresolvedBlockers(p, s).length > 0;
     const dotEl = document.createElement('span'); dotEl.className = 'pf-sub-dot' + (_hasBlockers ? ' pf-blocked' : ''); dotEl.title = _hasBlockers ? 'Blocked' : 'Cycle status'; dotEl.style.background = s.status === 'planned' ? 'transparent' : statusDotColor(s.status); dotEl.style.borderColor = statusDotColor(s.status); subDatesEl.appendChild(dotEl);
-    if (s.status === 'completed' && s.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(s.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); s.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); subDatesEl.appendChild(doneLabel); } else { subDatesEl.appendChild(buildDueChip(s, (val) => { snapshot(); s.dueAt = val; scheduleSave(); render(); checkAllCompleted(p); }, false)); }
+    if (s.status === 'completed' && s.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(s.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); s.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); subDatesEl.appendChild(doneLabel); } else { subDatesEl.appendChild(buildDueChip(s, (val) => { snapshot(); s.dueAt = val; scheduleSave(); render(); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }, false)); }
     subDatesEl.appendChild(buildDependencyChip(p, s));
 
     row.__project = p; row.__subId = s.id;
@@ -3129,6 +3133,12 @@
       splitList.appendChild(catLabel);
       const catItemsWrap = document.createElement('div');
       catItemsWrap.className = 'pf-cat-items-wrap' + (_isCollapsed ? ' pf-collapsed' : '');
+      if (!group.length && !_isCollapsed) {
+        const hint = document.createElement('div');
+        hint.style.cssText = 'font-size:11px;color:var(--text-dim);padding:8px 16px;font-style:italic;opacity:0.7;';
+        hint.textContent = 'No projects in this category';
+        catItemsWrap.appendChild(hint);
+      }
       let idx = 0;
       group.forEach(p => {
         const item = document.createElement('div');
@@ -3138,6 +3148,7 @@
         item.style.animationDelay = (Math.min(idx, 20) * 15) + 'ms';
         idx++;
         item.setAttribute('onclick', '_splitSelect("' + p.id + '", event)');
+        item.addEventListener('dblclick', (e) => { e.stopPropagation(); _inlineRename(item, p); });
         if (!window.matchMedia('(pointer: coarse)').matches) item.draggable = true;
         item.dataset.projectId = p.id;
         item.addEventListener('dragstart', (e) => {
@@ -3195,7 +3206,7 @@
         if (p.dueAt) { const td = new Date(); td.setHours(0,0,0,0); if (p.dueAt === td.toISOString().slice(0,10) && p.status !== 'completed') item.classList.add('pf-due-today'); }
         const emojiIcon = p.emoji || '';
         item.innerHTML = (emojiIcon ? '<span class="pf-emoji-btn" style="font-size:13px;">' + emojiIcon + '</span>' : '<span class="pf-split-list-dot" style="background:' + (p.color || 'var(--' + p.status + ')') + '"></span>') +
-          '<span class="pf-split-list-title">' + escapeHtml(p.title) + '</span>' +
+          '<span class="pf-split-list-title">' + (searchTerm ? highlightMatch(escapeHtml(p.title), searchTerm) : escapeHtml(p.title)) + '</span>' +
           '<span class="pf-split-list-status" style="background:var(--' + p.status + '-bg);color:var(--' + p.status + ')">' + STATUS_LABEL[p.status] + '</span>' +
           progressHtml +
           '<button class="pf-split-list-edit" title="Rename">✏️</button>' +
@@ -3330,7 +3341,7 @@
     items.push({ label: '🔁 Repeat: ' + (p.recurrence || 'None'), action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(p.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); p.recurrence = opts[next]; scheduleSave(); render(); showToast('Repeat: ' + labels[next]); } });
     items.push({ label: '😀 Set Emoji', action: () => { const el = root.querySelector('[data-project-id="' + p.id + '"]') || root.querySelector('.pf-split-active'); if (el) showEmojiPicker(p, el); } });
     items.push({ label: '📦 Archive', action: () => { snapshot(); archiveProject(p); logActivity('Archived project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" archived', false, true); } });
-    items.push({ label: '🗑 Delete', danger: true, action: () => { if (!confirm('Delete project "' + p.title + '"?')) return; snapshot(); trashProject(p); logActivity('Trashed project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" moved to trash', false, true); } });
+    items.push({ label: '🗑 Delete', danger: true, action: () => { snapshot(); trashProject(p); logActivity('Trashed project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" moved to trash', false, true); } });
     items.forEach(it => {
       if (it.sep) { const s = document.createElement('div'); s.className = 'pf-ctx-menu-sep'; menu.appendChild(s); return; }
       const el = document.createElement('div');
@@ -4184,7 +4195,7 @@
   document.getElementById('pf-export-pdf').addEventListener('click', () => {
     const rows = collectReportRows();
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Organeas Report</title><style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}h1{font-size:18px;margin-bottom:10px;}table{width:100%;border-collapse:collapse;margin-top:10px;}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;}th{background:#f5f5f5;font-weight:600;}tr:nth-child(even){background:#fafafa;}.project-row{background:#eef;font-weight:600;}</style></head><body><h1>Project Flow Report</h1><p>Generated: ' + new Date().toLocaleString() + '</p><table><thead><tr><th>Project</th><th>Task</th><th>Status</th><th>Due Date</th><th>Completed</th><th>Comments</th></tr></thead><tbody>' + rows.map(r => '<tr class="' + (r.task === '' ? 'project-row' : '') + '"><td>' + escapeHtml(r.project) + '</td><td>' + '&nbsp;'.repeat(r.depth * 4) + escapeHtml(r.task) + '</td><td>' + escapeHtml(r.status) + '</td><td>' + escapeHtml(r.due) + '</td><td>' + escapeHtml(r.completed) + '</td><td>' + r.comments + '</td></tr>').join('') + '</tbody></table></body></html>';
-    const w = window.open('', '_blank'); w.document.write(html); w.document.close(); setTimeout(() => { w.print(); }, 300);
+    const blob = new Blob([html], { type: 'text/html' }); const url = URL.createObjectURL(blob); const w = window.open(url, '_blank'); setTimeout(() => { if (w) w.print(); URL.revokeObjectURL(url); }, 500);
   });
   let zoomLevel = 1;
   const zoomLevelEl = document.getElementById('pf-zoom-level');
@@ -4564,7 +4575,7 @@
   // --- Theme Presets ---
   const THEME_PRESETS = {
     cyberpunk: { '--bg':'#0d0221','--card':'#1a0a3e','--card-border':'#3d1a6e','--sub-bg':'#130330','--sub-border':'#2d1055','--accent':'#ff00ff','--text':'#00ffff','--text-dim':'#6ecfcf','--header-bg':'#0f0329','--toast-bg':'#1a0a3e','--hover-border':'#ff00ff' },
-    forest: { '--bg':'#1a2e1a','--card':'#243524','--card-border':'#3d5a3d','--sub-bg':'#1e2e1e','--sub-border':'#3a5530','--accent':'#7bc67b','--text':'#d4e8d4','--text-dim':'#8baf8b','--header-bg':'#1c2c1c','--toast-bg':'#243524','--hover-border':'#7bc67b' },
+    forest: { '--bg':'#1a2e1a','--card':'#243524','--card-border':'#3d5a3d','--sub-bg':'#1e2e1e','--sub-border':'#3a5530','--accent':'#7bc67b','--text':'#ffffff','--text-dim':'#b0b0b0','--header-bg':'#1c2c1c','--toast-bg':'#243524','--hover-border':'#7bc67b' },
     ocean: { '--bg':'#0a1628','--card':'#132238','--card-border':'#1e3a5f','--sub-bg':'#0e1c30','--sub-border':'#1a3050','--accent':'#00b4d8','--text':'#caf0f8','--text-dim':'#7fb8cc','--header-bg':'#0c1a2e','--toast-bg':'#132238','--hover-border':'#00b4d8' },
     'light-rose': { '--bg':'#fff5f5','--card':'#ffffff','--card-border':'#f0d4d4','--sub-bg':'#fff9f9','--sub-border':'#f5e0e0','--accent':'#e84393','--text':'#2d1f2f','--text-dim':'#8c6b7a','--header-bg':'#ffffff','--toast-bg':'#2d1f2f','--hover-border':'#e84393' },
     'light-sky': { '--bg':'#f0f7ff','--card':'#ffffff','--card-border':'#d0e3f7','--sub-bg':'#f5faff','--sub-border':'#dceaf5','--accent':'#2563eb','--text':'#1e293b','--text-dim':'#64748b','--header-bg':'#ffffff','--toast-bg':'#1e293b','--hover-border':'#2563eb' },
@@ -5003,11 +5014,17 @@
     const bottomNav = document.getElementById('pf-bottom-nav');
     if (!bottomNav) return;
     const btns = bottomNav.querySelectorAll('.pf-bottom-nav-btn');
+    let _activeNav = 'projects';
+    let _navSuppressReset = false;
+    function setActiveNav(nav) {
+      _activeNav = nav;
+      btns.forEach(b => b.classList.remove('pf-bottom-active'));
+      btns.forEach(b => { if (b.dataset.nav === nav) b.classList.add('pf-bottom-active'); });
+    }
     btns.forEach(btn => {
       btn.addEventListener('click', function() {
-        btns.forEach(b => b.classList.remove('pf-bottom-active'));
-        btn.classList.add('pf-bottom-active');
         const nav = btn.dataset.nav;
+        _navSuppressReset = true;
         if (nav === 'projects') {
           closeAllModals();
           if (root.classList.contains('pf-detail-open')) _goBackToProjects();
@@ -5020,11 +5037,13 @@
         } else if (nav === 'options') {
           closeAllModals(); openModal(optionsPanel, 'flex');
         }
+        _navSuppressReset = false;
+        setActiveNav(nav);
       });
     });
-    // Reset active state when modals close
+    // Reset active state when modals close externally (backdrop/X button)
     const _origCloseAll = closeAllModals;
-    closeAllModals = function() { _origCloseAll(); btns.forEach(b => b.classList.remove('pf-bottom-active')); btns[0].classList.add('pf-bottom-active'); };
+    closeAllModals = function() { _origCloseAll(); if (!_navSuppressReset) setActiveNav('projects'); };
   })();
 
   // #4 Swipe right to cycle status on subtasks
@@ -5147,6 +5166,7 @@
       if (!splitList || splitList.scrollTop > 0) return;
       if (splitList.offsetParent === null) return;
       if (e.target.closest('.pf-options-panel,.pf-due-panel,.pf-today-panel,.pf-activity-panel,.pf-calendar-panel,.pf-comment-panel,.pf-modal-layer')) return;
+      if (splitMultiSelect.length > 0 || subMultiSelect.length > 0) return;
       startY = e.touches[0].clientY;
       pulling = true;
       pullDist = 0;
@@ -5219,7 +5239,18 @@
 
 // #11 PWA - Register service worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(function() {});
+  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    reg.addEventListener('updatefound', function() {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', function() {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          showToast('🔄 New version available — tap to refresh', false, false);
+          newWorker.postMessage('skipWaiting');
+        }
+      });
+    });
+  }).catch(function() {});
+  navigator.serviceWorker.addEventListener('controllerchange', function() { window.location.reload(); });
 }
 
 // --- Firebase Cloud Sync ---
@@ -5326,6 +5357,7 @@ if ('serviceWorker' in navigator) {
   });
 
   signoutBtn.addEventListener('click', function() {
+    if (_autoBackupTimer) { clearInterval(_autoBackupTimer); _autoBackupTimer = null; }
     auth.signOut();
   });
 
@@ -5517,12 +5549,13 @@ if ('serviceWorker' in navigator) {
       db.ref().update(updates);
     }
 
-    // Always sync categories (small data)
+    // Always sync categories and emojis (small data)
     const catHash = JSON.stringify(categories);
     if (catHash !== _lastPushedCatHash) {
       catRef().set(JSON.parse(JSON.stringify(categories)));
       _lastPushedCatHash = catHash;
     }
+    try { db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))); } catch(e) {}
 
     if (hasChanges || catHash !== _lastPushedCatHash) {
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
