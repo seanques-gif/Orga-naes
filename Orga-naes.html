@@ -1951,7 +1951,7 @@
   const colorModal = document.getElementById('pf-color-modal');
   const duelistPanel = document.getElementById('pf-duelist-panel');
   const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, archivePanel, trashPanel, commentPanel, colorModal];
-  function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; if (listViewActive) { renderSplitList(); } }
+  function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
   function openModal(el, displayValue) { closeAllModals(); el.style.display = displayValue; modalBackdrop.style.display = 'block'; }
   modalBackdrop.addEventListener('click', closeAllModals);
 
@@ -2092,7 +2092,7 @@
   }
   categoryBtn.addEventListener('click', () => {
     const showing = categoryPopover.style.display !== 'none';
-    if (showing) { closeAllModals(); } else { renderCategoryList(); openModal(categoryPopover, 'flex'); }
+    if (showing) { closeAllModals(); renderSplitList(); } else { renderCategoryList(); openModal(categoryPopover, 'flex'); }
   });
   document.getElementById('pf-category-add-btn').addEventListener('click', addCategory);
   categoryAddInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addCategory(); } });
