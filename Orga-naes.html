@@ -1597,14 +1597,14 @@
     const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const w = screen.width;
     let device = 'desktop';
-    if (hasTouch && w <= 500) device = 'mobile';
-    else if (hasTouch && w <= 1024) device = 'tablet';
+    if (hasTouch && w <= 1024) device = 'mobile';
+    else if (hasTouch && w <= 1400) device = 'tablet';
     root.classList.add('pf-device-' + device);
     window.addEventListener('resize', () => {
       root.classList.remove('pf-device-mobile', 'pf-device-tablet', 'pf-device-desktop');
       const vw = window.innerWidth;
-      if (hasTouch && vw <= 500) root.classList.add('pf-device-mobile');
-      else if (hasTouch && vw <= 1024) root.classList.add('pf-device-tablet');
+      if (hasTouch && vw <= 1024) root.classList.add('pf-device-mobile');
+      else if (hasTouch && vw <= 1400) root.classList.add('pf-device-tablet');
       else root.classList.add('pf-device-desktop');
     });
   })();
