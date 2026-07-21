@@ -5301,8 +5301,10 @@ if ('serviceWorker' in navigator) {
     signoutBtn.style.display = '';
     pushBtn.disabled = false;
     pullBtn.disabled = false;
-    // Auto-pull if device hasn't synced in over 1 hour
+    // Auto-pull if device hasn't synced in over 1 hour (skip on page refresh)
     if (!window._pfLoaded) { setTimeout(function() { setSignedIn(user); }, 500); return; }
+    const isReload = performance && performance.navigation && performance.navigation.type === 1 || (performance.getEntriesByType && performance.getEntriesByType('navigation')[0] && performance.getEntriesByType('navigation')[0].type === 'reload');
+    if (isReload) return;
     const lastSync = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0');
     const elapsed = Date.now() - lastSync;
     if (_fbAutosync && elapsed > 3600000) {
