@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon-192.svg">
 <link rel="apple-touch-icon" href="icon-192.svg">
-<meta name="theme-color" content="#1a1a2e">
+<meta name="theme-color" content="#1e1e1e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Orga-naes">
@@ -23,7 +23,8 @@
   /* Offline system fonts */
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; overflow: hidden; padding-top: env(safe-area-inset-top, 0px); }
+  html, body { width: 100%; height: 100%; overflow: hidden; padding-top: env(safe-area-inset-top, 0px); background: #1e1e1e; margin: 0; }
+  @media all and (display-mode: standalone) { html, body { min-height: 100vh; min-height: -webkit-fill-available; } }
   @media (max-width: 900px) { html, body { overflow: auto; } }
 
   /* Bottom Navigation Bar */
