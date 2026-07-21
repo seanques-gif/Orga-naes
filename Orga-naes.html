@@ -432,6 +432,8 @@
   #pf-root.pf-device-tablet .pf-toolbar:has(.pf-search-wrap.pf-search-open) .pf-search-wrap { flex: 1; }
   #pf-root.pf-device-tablet .pf-split-sort { display: none !important; }
   #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { zoom: 0.88; }
+  #pf-root.pf-device-tablet .pf-split-list { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
+  #pf-root.pf-device-tablet .pf-split-detail .pf-node .pf-sublist { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
 
   @media (orientation: portrait) {
     #pf-root.pf-device-tablet .pf-split-list { width: 100%; max-width: 100%; flex: 1; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
@@ -466,7 +468,7 @@
     #pf-root .pf-node-header { padding: 8px; gap: 5px; flex-wrap: nowrap; }
     #pf-root .pf-badge { font-size: 10px; padding: 3px 7px; }
     #pf-root .pf-subrow { font-size: 12px; }
-    #pf-root .pf-split-detail { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+    #pf-root .pf-split-detail { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     #pf-root .pf-split-detail .pf-node { max-width: 100%; width: 100%; }
     #pf-root .pf-split-detail .pf-node-title { font-size: 15px; }
     #pf-root .pf-split-detail .pf-subrow { font-size: 12px; }
@@ -517,7 +519,7 @@
     width: 100%; min-width: 0; max-width: 100%; flex: 1; overflow-y: auto;
     background: var(--bg); padding: 8px 0 8px 0;
     scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
-    scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+    -webkit-overflow-scrolling: touch;
   }
   #pf-root .pf-mobile-back { display: none; }
   #pf-root.pf-detail-open .pf-split-list { display: none; }
