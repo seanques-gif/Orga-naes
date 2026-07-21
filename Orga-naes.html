@@ -278,6 +278,7 @@
   @keyframes pf-tooltip-in { to { opacity: 1; } }
   #pf-root .pf-undo-btn:hover:not(:disabled) { color: var(--text); background: rgba(255,255,255,0.05); }
   #pf-root .pf-undo-btn:active:not(:disabled) { opacity: 0.7; }
+  #pf-root .pf-undo-btn { touch-action: manipulation; }
   #pf-root .pf-undo-btn:disabled { opacity: 0.3; cursor: default; }
   #pf-root .pf-undo-btn.pf-tb-active { color: var(--text); background: rgba(255,255,255,0.08); }
   #pf-root .pf-stats { display: flex; gap: 6px; margin-left: auto; font-size: calc(var(--font-size-base) - 5px); }
@@ -5245,7 +5246,7 @@ if ('serviceWorker' in navigator) {
       const newWorker = reg.installing;
       newWorker.addEventListener('statechange', function() {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          showToast('🔄 New version available — tap to refresh', false, false);
+          window._pf.showToast('🔄 New version available — tap to refresh', false, false);
           newWorker.postMessage('skipWaiting');
         }
       });
@@ -5357,10 +5358,12 @@ if ('serviceWorker' in navigator) {
     });
   });
 
-  signoutBtn.addEventListener('click', function() {
+  function _doSignout() {
     if (_autoBackupTimer) { clearInterval(_autoBackupTimer); _autoBackupTimer = null; }
     auth.signOut();
-  });
+  }
+  signoutBtn.addEventListener('click', _doSignout);
+  signoutBtn.addEventListener('touchend', function(e) { e.preventDefault(); _doSignout(); });
 
   const lastSyncEl = document.getElementById('pf-firebase-last-sync');
   let _lastSyncTime = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0');
@@ -5392,9 +5395,9 @@ if ('serviceWorker' in navigator) {
     window._pf.showToast('⬆ Pushed to cloud');
   });
 
-  pullBtn.addEventListener('click', function() {
-    if (!_fbUser) { showToast('⚠ Sign in first to pull', true); return; }
-    showToast('☁ Pulling from cloud...');
+  function _doPull() {
+    if (!_fbUser) { window._pf.showToast('⚠ Sign in first to pull', true); return; }
+    window._pf.showToast('☁ Pulling from cloud...');
     if (window._pf && window._pf.snapshot) window._pf.snapshot();
     Promise.all([
       userRef().once('value'),
@@ -5406,7 +5409,7 @@ if ('serviceWorker' in navigator) {
       const catVal = results[1].val();
       const archVal = results[2].val();
       const trashVal = results[3].val();
-      if (!projVal && !catVal) { showToast('⚠ No data found in cloud', true); return; }
+      if (!projVal && !catVal) { window._pf.showToast('⚠ No data found in cloud', true); return; }
       function fixSubtasks(list) {
         if (!list) return [];
         if (!Array.isArray(list)) list = Object.values(list);
@@ -5447,9 +5450,11 @@ if ('serviceWorker' in navigator) {
       updateLastSync();
       window._pf.showToast('⬇ Pulled from cloud');
     }).catch(function(err) {
-      showToast('⚠ Pull failed: ' + (err.message || err), true);
+      window._pf.showToast('⚠ Pull failed: ' + (err.message || err), true);
     });
-  });
+  }
+  pullBtn.addEventListener('click', _doPull);
+  pullBtn.addEventListener('touchend', function(e) { e.preventDefault(); _doPull(); });
 
   function startListener() {
     if (_fbListener || !_fbUser) return;
