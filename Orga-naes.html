@@ -433,11 +433,11 @@
   #pf-root.pf-device-tablet .pf-toolbar:has(.pf-search-wrap.pf-search-open) .pf-search-wrap { flex: 1; }
   #pf-root.pf-device-tablet .pf-split-sort { display: none !important; }
   #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { zoom: 0.88; }
-  #pf-root.pf-device-tablet .pf-split-view { flex-direction: column; overflow: hidden; }
-  #pf-root.pf-device-tablet .pf-split-list { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-  #pf-root.pf-device-tablet .pf-split-detail { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-  #pf-root.pf-device-tablet .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-  #pf-root.pf-device-tablet .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)) !important; }
+  #pf-root.pf-device-tablet .pf-split-view { flex-direction: column; overflow: hidden; position: relative; }
+  #pf-root.pf-device-tablet .pf-split-list { position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; }
+  #pf-root.pf-device-tablet .pf-split-detail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; }
+  #pf-root.pf-device-tablet .pf-split-detail .pf-node { overflow: visible; }
+  #pf-root.pf-device-tablet .pf-split-detail .pf-node .pf-sublist { overflow: visible; padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; }
 
   @media (orientation: portrait) {
     #pf-root.pf-device-tablet .pf-split-list { width: 100%; max-width: 100%; flex: 1; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
