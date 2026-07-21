@@ -434,11 +434,13 @@
   #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { zoom: 0.88; }
 
   @media (orientation: portrait) {
-    #pf-root.pf-device-tablet .pf-split-list { width: 100%; max-width: 100%; flex: 1; }
+    #pf-root.pf-device-tablet .pf-split-list { width: 100%; max-width: 100%; flex: 1; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
     #pf-root.pf-device-tablet .pf-split-divider { display: block; }
     #pf-root.pf-device-tablet .pf-split-detail { display: none; }
     #pf-root.pf-device-tablet.pf-detail-open .pf-split-list { display: none; }
-    #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { display: flex; }
+    #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
     #pf-root.pf-device-tablet.pf-detail-open .pf-mobile-back { display: inline-flex !important; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
   }
 
@@ -1665,7 +1667,21 @@
       e.preventDefault(); if (e.shiftKey) redo(); else undo();
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-      e.preventDefault(); document.getElementById('pf-export').click();
+      e.preventDefault();
+      if (!root.classList.contains('pf-device-desktop')) return;
+      const saveModal = document.createElement('div');
+      saveModal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
+      saveModal.innerHTML = '<div style="background:var(--card,#2a2a3e);border:1px solid var(--card-border,#3a3a5e);border-radius:12px;padding:24px;min-width:260px;text-align:center;color:var(--text,#fff);">' +
+        '<div style="font-size:16px;font-weight:700;margin-bottom:16px;">Save</div>' +
+        '<button id="_save-local" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:8px;background:var(--accent,#7b68ee);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">💾 Save to Local (JSON)</button>' +
+        '<button id="_save-cloud" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:8px;background:#4ade80;color:#000;font-size:14px;font-weight:600;cursor:pointer;">☁ Push to Cloud</button>' +
+        '<button id="_save-cancel" style="display:block;width:100%;padding:10px;border:none;border-radius:8px;background:transparent;color:var(--text-dim,#aaa);font-size:13px;cursor:pointer;">Cancel</button>' +
+        '</div>';
+      document.body.appendChild(saveModal);
+      saveModal.querySelector('#_save-local').addEventListener('click', function() { saveModal.remove(); document.getElementById('pf-export').click(); });
+      saveModal.querySelector('#_save-cloud').addEventListener('click', function() { saveModal.remove(); if (window._firebasePush) window._firebasePush(); else showToast('⚠ Sign in first to push', true); });
+      saveModal.querySelector('#_save-cancel').addEventListener('click', function() { saveModal.remove(); });
+      saveModal.addEventListener('click', function(ev) { if (ev.target === saveModal) saveModal.remove(); });
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
