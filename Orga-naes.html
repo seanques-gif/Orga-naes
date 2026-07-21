@@ -23,7 +23,7 @@
   /* Offline system fonts */
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; overflow: hidden; padding-top: env(safe-area-inset-top, 0px); background: #1e1e1e; margin: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; padding-top: env(safe-area-inset-top, 0px); background: #1e1e1e; margin: 0; }
   @media all and (display-mode: standalone) { html, body { min-height: 100vh; min-height: -webkit-fill-available; } }
   @media (max-width: 900px) { html, body { overflow: hidden; } }
 
@@ -150,6 +150,7 @@
     width: 100vw;
     border-radius: 0;
     overflow: hidden;
+    overscroll-behavior: none;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -640,11 +641,7 @@
   #pf-root .pf-scroll-top.pf-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
   #pf-root.pf-device-mobile .pf-scroll-top { bottom: 140px; }
   #pf-ctx-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; backdrop-filter: blur(2px); }
-  #pf-root .pf-split-list::before, #pf-root .pf-split-list::after { content: ''; display: block; position: sticky; left: 0; right: 0; height: 0; z-index: 5; pointer-events: none; transition: height 0.2s ease, opacity 0.2s ease; opacity: 0; }
-  #pf-root .pf-split-list::before { top: 0; background: linear-gradient(to bottom, var(--accent-alpha, rgba(123,104,238,0.15)), transparent); }
-  #pf-root .pf-split-list::after { bottom: 0; background: linear-gradient(to top, var(--accent-alpha, rgba(123,104,238,0.15)), transparent); }
-  #pf-root .pf-split-list.pf-overscroll-top::before { height: 40px; opacity: 1; }
-  #pf-root .pf-split-list.pf-overscroll-bottom::after { height: 40px; opacity: 1; }
+  /* overscroll indicators disabled to prevent scroll shake */
   #pf-root .pf-split-sort {
     display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin: 4px 6px 2px 6px; border-radius: 6px; background: rgba(0,0,0,0.08);
   }
@@ -2946,7 +2943,7 @@
       splitSelectedId = id;
       renderSplitList(); renderSplitDetail();
       root.classList.add('pf-detail-open');
-      if (window.innerWidth <= 500) root.classList.add('pf-mobile-detail-open');
+      if (window.innerWidth <= 1024 && 'ontouchstart' in window) root.classList.add('pf-mobile-detail-open');
       if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = '';
     }, 200);
   };
@@ -3689,7 +3686,7 @@
         _searchAutoCollapseId = null;
         renderSplitList(); renderSplitDetail();
         root.classList.add('pf-detail-open');
-        if (root.classList.contains('pf-device-mobile')) { root.classList.add('pf-mobile-detail-open'); document.getElementById('pf-toolbar-back').style.display = ''; }
+        if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
         searchTerm = '';
         const el = splitList.querySelector('.pf-split-active'); if (el) el.scrollIntoView({ block: 'nearest' });
       });
@@ -3745,7 +3742,7 @@
           _searchAutoCollapseId = null;
           renderSplitList(); renderSplitDetail();
           root.classList.add('pf-detail-open');
-          if (root.classList.contains('pf-device-mobile')) { root.classList.add('pf-mobile-detail-open'); document.getElementById('pf-toolbar-back').style.display = ''; }
+          if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
           searchTerm = '';
         } else {
           autoArrangeProjects(true);
@@ -3843,7 +3840,7 @@
         _searchAutoCollapseId = null;
         renderSplitList(); renderSplitDetail();
         root.classList.add('pf-detail-open');
-        if (root.classList.contains('pf-device-mobile')) { root.classList.add('pf-mobile-detail-open'); document.getElementById('pf-toolbar-back').style.display = ''; }
+        if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
         searchTerm = '';
         const active = splitList.querySelector('.pf-split-active'); if (active) active.scrollIntoView({ block: 'nearest' });
       });
@@ -5167,13 +5164,7 @@
       else btn.classList.remove('pf-visible');
     }
     let _hasScrolled = false;
-    function checkOverscroll(list) {
-      if (!list || !_hasScrolled) return;
-      if (list.scrollTop <= 0) list.classList.add('pf-overscroll-top');
-      else list.classList.remove('pf-overscroll-top');
-      if (list.scrollTop + list.clientHeight >= list.scrollHeight - 1) list.classList.add('pf-overscroll-bottom');
-      else list.classList.remove('pf-overscroll-bottom');
-    }
+    function checkOverscroll() {}
     const _scrollInterval = setInterval(function() {
       const list = root.querySelector('.pf-split-list');
       if (list && !list._scrollTopBound) {
