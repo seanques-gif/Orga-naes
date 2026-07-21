@@ -368,12 +368,16 @@
     #pf-root .pf-new-btn { padding: 4px 8px; font-size: 11px; }
     #pf-root .pf-tb-group { gap: 1px; border: none; background: none; padding: 0; }
     #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-    #pf-root .pf-split-view { flex-direction: column; min-width: 0; width: 100%; overflow-y: auto; overflow-x: hidden; }
+    #pf-root .pf-split-view { flex-direction: column; min-width: 0; width: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
     #pf-root .pf-split-divider { display: none; }
     #pf-root.pf-mobile-detail-open .pf-split-list { display: none; }
-    #pf-root.pf-mobile-detail-open .pf-split-detail { display: flex; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #pf-root.pf-mobile-detail-open .pf-split-detail { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root.pf-mobile-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root.pf-mobile-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; }
     #pf-root.pf-detail-open .pf-split-list { display: none; }
-    #pf-root.pf-detail-open .pf-split-detail { display: flex; zoom: 0.75; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #pf-root.pf-detail-open .pf-split-detail { display: flex; zoom: 0.75; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root.pf-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root.pf-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; }
     #pf-root .pf-mobile-back { display: none; }
     #pf-root.pf-mobile-detail-open .pf-mobile-back { display: inline-flex; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
     #pf-tb-undoredo { display: flex !important; }
@@ -5081,36 +5085,7 @@
     document.addEventListener('touchend', function() { _swipeRow = null; }, { passive: true });
   })();
 
-  // #10 Pull-to-refresh (pull down at top to sync from cloud)
-  (function() {
-    let _prStartY = 0, _prActive = false, _prIndicator = null;
-    const splitDetailEl = document.querySelector('.pf-split-detail');
-    if (!splitDetailEl) return;
-    splitDetailEl.addEventListener('touchstart', function(e) {
-      if (splitDetailEl.scrollTop === 0) { _prStartY = e.touches[0].clientY; _prActive = true; }
-    }, { passive: true });
-    splitDetailEl.addEventListener('touchmove', function(e) {
-      if (!_prActive) return;
-      const dy = e.touches[0].clientY - _prStartY;
-      if (dy > 80 && !_prIndicator) {
-        _prIndicator = document.createElement('div');
-        _prIndicator.style.cssText = 'text-align:center;padding:8px;font-size:11px;color:var(--text-dim);';
-        _prIndicator.textContent = '↓ Release to sync';
-        splitDetailEl.prepend(_prIndicator);
-      }
-    }, { passive: true });
-    splitDetailEl.addEventListener('touchend', function(e) {
-      if (_prIndicator) {
-        _prIndicator.remove(); _prIndicator = null;
-        if (window._firebasePush && navigator.onLine) {
-          const pullBtn = document.getElementById('pf-firebase-pull');
-          if (pullBtn && !pullBtn.disabled) pullBtn.click();
-          else showToast('☁ Pull-to-refresh: sign in first');
-        }
-      }
-      _prActive = false;
-    }, { passive: true });
-  })();
+  // #10 Pull-to-refresh (disabled)
 
   // #12 Haptic feedback extensions
   const _origCycleSubStatus = cycleSubStatus;
