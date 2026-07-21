@@ -5393,7 +5393,8 @@ if ('serviceWorker' in navigator) {
   });
 
   pullBtn.addEventListener('click', function() {
-    if (!_fbUser) return;
+    if (!_fbUser) { showToast('⚠ Sign in first to pull', true); return; }
+    showToast('☁ Pulling from cloud...');
     db.ref('users/' + _fbUser.uid + '/updatedAt').once('value').then(function(tSnap) {
       const remoteTime = tSnap.val() || 0;
       const localTime = parseInt(localStorage.getItem('pf-last-save-time') || '0');
