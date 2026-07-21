@@ -5109,6 +5109,7 @@
         const nav = btn.dataset.nav;
         _navSuppressReset = true;
         if (nav === 'projects') {
+          _clearSearch();
           closeAllModals();
           if (root.classList.contains('pf-detail-open')) _goBackToProjects();
         } else if (nav === 'today') {
@@ -5139,8 +5140,11 @@
       bottomNav.classList.remove('pf-nav-hidden');
       if (fab) fab.classList.remove('pf-fab-hidden');
       clearTimeout(_navTimer);
-      _navTimer = setTimeout(hideNavAndFab, 1500);
+      if (!_navPressed) _navTimer = setTimeout(hideNavAndFab, 1500);
     }
+    let _navPressed = false;
+    bottomNav.addEventListener('touchstart', function() { _navPressed = true; clearTimeout(_navTimer); }, { passive: true });
+    bottomNav.addEventListener('touchend', function() { _navPressed = false; _navTimer = setTimeout(hideNavAndFab, 1500); }, { passive: true });
     window._navAutoHideRestart = function() {
       clearTimeout(_navTimer);
       _navTimer = setTimeout(hideNavAndFab, 1500);
