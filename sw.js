@@ -1,4 +1,5 @@
-const CACHE_NAME = 'orga-naes-v1';
+const CACHE_VERSION = '2026-07-19';
+const CACHE_NAME = 'orga-naes-' + CACHE_VERSION;
 const ASSETS = [
   './Orga-naes.html',
   './manifest.json'
@@ -23,4 +24,8 @@ self.addEventListener('fetch', (e) => {
       return resp;
     }).catch(() => caches.match(e.request))
   );
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
 });
