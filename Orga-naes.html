@@ -91,8 +91,8 @@
       display: none; position: fixed; inset: 0; z-index: 8999; background: rgba(0,0,0,0.3);
     }
     .pf-fab-overlay.pf-fab-menu-open { display: block; }
-    #pf-root .pf-split-list { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
-    #pf-root .pf-split-detail { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root .pf-split-list { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
+    #pf-root .pf-split-detail { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
     #pf-root #pf-today-btn { display: none !important; }
     #pf-root #pf-duelist-btn { display: none !important; }
     #pf-root #pf-calendar-btn { display: none !important; }
@@ -509,7 +509,7 @@
   #pf-root.pf-card-mode .pf-card-only { display: inline-flex; align-items: center; justify-content: center; }
   #pf-root .pf-split-list {
     width: 100%; min-width: 0; max-width: 100%; flex: 1; overflow-y: auto;
-    background: var(--bg); padding: 8px 0;
+    background: var(--bg); padding: 8px 0 8px 0;
     scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
   }
   #pf-root .pf-mobile-back { display: none; }
