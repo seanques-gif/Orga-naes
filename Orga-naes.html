@@ -91,8 +91,8 @@
       display: none; position: fixed; inset: 0; z-index: 8999; background: rgba(0,0,0,0.3);
     }
     .pf-fab-overlay.pf-fab-menu-open { display: block; }
-    #pf-root .pf-split-list { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
-    #pf-root .pf-split-detail { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root .pf-split-list { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root .pf-split-detail { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
     #pf-root #pf-today-btn { display: none !important; }
     #pf-root #pf-duelist-btn { display: none !important; }
     #pf-root #pf-calendar-btn { display: none !important; }
@@ -5361,7 +5361,11 @@ if ('serviceWorker' in navigator) {
 
   function _doSignout() {
     if (_autoBackupTimer) { clearInterval(_autoBackupTimer); _autoBackupTimer = null; }
-    auth.signOut();
+    auth.signOut().then(function() {
+      window._pf.showToast('🚪 Signed out');
+    }).catch(function(err) {
+      window._pf.showToast('⚠ Sign out failed: ' + err.message, true);
+    });
   }
   signoutBtn.addEventListener('click', _doSignout);
   signoutBtn.addEventListener('touchend', function(e) { e.preventDefault(); _doSignout(); });
