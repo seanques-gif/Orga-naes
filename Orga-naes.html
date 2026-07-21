@@ -460,7 +460,7 @@
     #pf-root .pf-node-header { padding: 8px; gap: 5px; flex-wrap: nowrap; }
     #pf-root .pf-badge { font-size: 10px; padding: 3px 7px; }
     #pf-root .pf-subrow { font-size: 12px; }
-    #pf-root .pf-split-detail { padding: 12px; overflow-y: auto; }
+    #pf-root .pf-split-detail { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     #pf-root .pf-split-detail .pf-node { max-width: 100%; width: 100%; }
     #pf-root .pf-split-detail .pf-node-title { font-size: 15px; }
     #pf-root .pf-split-detail .pf-subrow { font-size: 12px; }
@@ -511,6 +511,7 @@
     width: 100%; min-width: 0; max-width: 100%; flex: 1; overflow-y: auto;
     background: var(--bg); padding: 8px 0 8px 0;
     scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
+    scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
   }
   #pf-root .pf-mobile-back { display: none; }
   #pf-root.pf-detail-open .pf-split-list { display: none; }
@@ -1950,7 +1951,7 @@
   const colorModal = document.getElementById('pf-color-modal');
   const duelistPanel = document.getElementById('pf-duelist-panel');
   const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, archivePanel, trashPanel, commentPanel, colorModal];
-  function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
+  function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; if (listViewActive) { renderSplitList(); } }
   function openModal(el, displayValue) { closeAllModals(); el.style.display = displayValue; modalBackdrop.style.display = 'block'; }
   modalBackdrop.addEventListener('click', closeAllModals);
 
@@ -2119,6 +2120,7 @@
     if (!name || categories.includes(name)) { newProjectCatInput.value = ''; return; }
     categories.push(name); saveCategories(); newProjectCatInput.value = '';
     openNewProjectCategoryPicker();
+    renderSplitList();
   }
   document.getElementById('pf-new-project-cat-add').addEventListener('click', addCategoryFromNewProject);
   newProjectCatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addCategoryFromNewProject(); } });
