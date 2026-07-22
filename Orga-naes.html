@@ -5206,27 +5206,102 @@
   // #13 Swipe from left edge to go back (touch devices)
   (function() {
     let _backStartX = 0, _backStartY = 0, _backActive = false;
+    const detailEl = document.getElementById('pf-split-detail');
     document.addEventListener('touchstart', function(e) {
       if (!root.classList.contains('pf-detail-open')) return;
+      if (root.classList.contains('pf-device-desktop')) return;
       const x = e.touches[0].clientX;
       if (x > 30) return;
       _backStartX = x;
       _backStartY = e.touches[0].clientY;
       _backActive = true;
+      detailEl.style.transition = 'none';
     }, { passive: true });
     document.addEventListener('touchmove', function(e) {
       if (!_backActive) return;
       const dy = Math.abs(e.touches[0].clientY - _backStartY);
-      if (dy > 40) { _backActive = false; }
+      if (dy > 40) { _backActive = false; detailEl.style.transform = ''; detailEl.style.opacity = ''; detailEl.style.transition = ''; return; }
+      const dx = Math.max(0, e.touches[0].clientX - _backStartX);
+      const progress = Math.min(dx / 150, 1);
+      detailEl.style.transform = 'translateX(' + dx + 'px)';
+      detailEl.style.opacity = (1 - progress * 0.4).toString();
     }, { passive: true });
     document.addEventListener('touchend', function(e) {
-      if (!_backActive) return;
+      if (!_backActive) { return; }
       const dx = e.changedTouches[0].clientX - _backStartX;
       if (dx > 80) {
+        detailEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+        detailEl.style.transform = 'translateX(100%)';
+        detailEl.style.opacity = '0';
         if (navigator.vibrate) navigator.vibrate(10);
-        _goBackToProjects();
+        setTimeout(function() {
+          detailEl.style.transition = '';
+          detailEl.style.transform = '';
+          detailEl.style.opacity = '';
+          _goBackToProjects();
+        }, 200);
+      } else {
+        detailEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+        detailEl.style.transform = '';
+        detailEl.style.opacity = '';
+        setTimeout(function() { detailEl.style.transition = ''; }, 200);
       }
       _backActive = false;
+    }, { passive: true });
+  })();
+
+  // #14 Swipe down to close modals (touch devices)
+  (function() {
+    let _modalStartX = 0, _modalStartY = 0, _modalActive = false, _modalEl = null;
+    function getVisibleModal() {
+      for (let i = 0; i < ALL_MODALS.length; i++) {
+        if (ALL_MODALS[i] && ALL_MODALS[i].style.display !== 'none') return ALL_MODALS[i];
+      }
+      return null;
+    }
+    document.addEventListener('touchstart', function(e) {
+      if (root.classList.contains('pf-device-desktop')) return;
+      const modal = getVisibleModal();
+      if (!modal) return;
+      if (!modal.contains(e.target) && e.target !== modalBackdrop) return;
+      _modalStartX = e.touches[0].clientX;
+      _modalStartY = e.touches[0].clientY;
+      _modalEl = modal;
+      _modalActive = true;
+      _modalEl.style.transition = 'none';
+    }, { passive: true });
+    document.addEventListener('touchmove', function(e) {
+      if (!_modalActive || !_modalEl) return;
+      const dx = Math.abs(e.touches[0].clientX - _modalStartX);
+      const dy = e.touches[0].clientY - _modalStartY;
+      if (dx > 40) { _modalActive = false; _modalEl.style.transform = ''; _modalEl.style.opacity = ''; _modalEl.style.transition = ''; return; }
+      if (dy < 0) return;
+      const progress = Math.min(dy / 200, 1);
+      _modalEl.style.transform = 'translate(-50%, calc(-50% + ' + dy + 'px))';
+      _modalEl.style.opacity = (1 - progress * 0.4).toString();
+    }, { passive: true });
+    document.addEventListener('touchend', function(e) {
+      if (!_modalActive || !_modalEl) { _modalActive = false; return; }
+      const dy = e.changedTouches[0].clientY - _modalStartY;
+      if (dy > 100) {
+        _modalEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+        _modalEl.style.transform = 'translate(-50%, 100%)';
+        _modalEl.style.opacity = '0';
+        if (navigator.vibrate) navigator.vibrate(10);
+        setTimeout(function() {
+          _modalEl.style.transition = '';
+          _modalEl.style.transform = '';
+          _modalEl.style.opacity = '';
+          closeAllModals();
+          _modalEl = null;
+        }, 200);
+      } else {
+        _modalEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+        _modalEl.style.transform = '';
+        _modalEl.style.opacity = '';
+        setTimeout(function() { if (_modalEl) { _modalEl.style.transition = ''; } }, 200);
+      }
+      _modalActive = false;
     }, { passive: true });
   })();
 
