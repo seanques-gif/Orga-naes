@@ -481,7 +481,16 @@
   #pf-root.pf-device-desktop #pf-duelist-btn { display: inline-flex !important; }
   #pf-root.pf-device-desktop #pf-calendar-btn { display: inline-flex !important; }
   #pf-root.pf-device-desktop .pf-options-desktop { display: inline-flex !important; }
-  #pf-root.pf-device-desktop .pf-search-wrap { display: inline-flex !important; }
+  #pf-root.pf-device-desktop .pf-search-wrap { display: inline-flex !important; margin-left: auto; }
+  #pf-root.pf-device-desktop .pf-search-toggle { display: none !important; }
+  #pf-root.pf-device-desktop .pf-search {
+    width: 160px !important; max-width: 160px !important; opacity: 1 !important;
+    padding: 5px 22px 5px 8px !important; border: 1px solid var(--card-border) !important;
+  }
+  #pf-root.pf-device-desktop .pf-search:focus { width: 220px !important; max-width: 220px !important; border-color: var(--accent) !important; }
+  #pf-root .pf-shortcuts-hint { display: none !important; }
+  #pf-root.pf-device-desktop .pf-shortcuts-hint { display: inline-flex !important; font-size: 11px; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; opacity: 0.5; }
+  #pf-root.pf-device-desktop .pf-shortcuts-hint:hover { opacity: 1; }
   #pf-root.pf-device-desktop .pf-fab,
   #pf-root.pf-device-desktop .pf-fab-menu,
   #pf-root.pf-device-desktop .pf-fab-overlay { display: none !important; }
@@ -577,6 +586,8 @@
   }
   #pf-root .pf-split-list-item { animation: pf-slide-in 0.2s ease-out both; }
   #pf-root .pf-split-list-item[hidden] { content-visibility: auto; contain-intrinsic-size: 0 40px; }
+  #pf-root .pf-split-list-item.pf-list-completed { opacity: 0.55; }
+  #pf-root .pf-split-list-item.pf-list-completed:hover { opacity: 0.8; }
   #pf-root .pf-subrow { animation: pf-slide-in 0.15s ease-out both; }
   #pf-root .pf-item-removing { animation: pf-slide-out 0.2s ease-in forwards; }
   @keyframes pf-slide-out { to { opacity: 0; transform: translateY(-4px); height: 0; padding: 0; margin: 0; overflow: hidden; } }
@@ -1219,6 +1230,7 @@
       <span id="pf-autofit-all" title="Auto-fit all" style="display:none;"></span>
     </div>
     <span class="pf-search-wrap" id="pf-search-wrap"><button class="pf-search-toggle" id="pf-search-toggle" title="Search">🔍</button><input type="text" class="pf-search" id="pf-search" placeholder="Search…" spellcheck="false"><button class="pf-search-clear" id="pf-search-clear" title="Clear search">×</button><button class="pf-search-close" id="pf-search-close" title="Close search">×</button></span>
+    <button class="pf-undo-btn pf-shortcuts-hint" id="pf-shortcuts-hint" title="Keyboard Shortcuts (?)">?</button>
     <div class="pf-stats" id="pf-stats"></div>
     <div class="pf-save" id="pf-save"></div>
     <div class="pf-tb-group pf-options-mobile" style="margin-left:auto;">
@@ -3205,7 +3217,7 @@
         const item = document.createElement('div');
         const isActive = p.id === splitSelectedId && splitMultiSelect.length <= 1;
         const isMulti = splitMultiSelect.includes(p.id);
-        item.className = 'pf-split-list-item' + (isActive ? ' pf-split-active' : '') + (isMulti ? ' pf-split-selected' : '');
+        item.className = 'pf-split-list-item' + (isActive ? ' pf-split-active' : '') + (isMulti ? ' pf-split-selected' : '') + (p.status === 'completed' ? ' pf-list-completed' : '');
         item.style.animationDelay = (Math.min(idx, 20) * 15) + 'ms';
         idx++;
         item.setAttribute('onclick', '_splitSelect("' + p.id + '", event)');
@@ -3573,7 +3585,6 @@
     renderSplitList();
     renderSplitDetail();
   }
-  collapseCatsBtn.addEventListener('click', () => {});
 
   document.getElementById('pf-options-btn').addEventListener('click', () => {
     const showing = optionsPanel.style.display !== 'none';
@@ -3585,6 +3596,9 @@
     if (showing) { closeAllModals(); } else { openModal(optionsPanel, 'flex'); }
   });
   document.getElementById('pf-shortcuts-btn').addEventListener('click', () => {
+    closeAllModals(); openModal(shortcutsPanel, 'flex');
+  });
+  document.getElementById('pf-shortcuts-hint').addEventListener('click', () => {
     closeAllModals(); openModal(shortcutsPanel, 'flex');
   });
   document.getElementById('pf-theme-cyberpunk').addEventListener('click', () => { clearThemePreset(); applyThemePreset('cyberpunk'); });
@@ -5269,7 +5283,7 @@
 
 // #11 PWA - Register service worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=' + Date.now()).then(function(reg) {
     reg.addEventListener('updatefound', function() {
       const newWorker = reg.installing;
       newWorker.addEventListener('statechange', function() {
@@ -5421,12 +5435,18 @@ if ('serviceWorker' in navigator) {
 
   pushBtn.addEventListener('click', function() {
     if (!_fbUser) return;
-    userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
-    catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
-    archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive())));
-    trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash())));
-    updateLastSync();
-    window._pf.showToast('⬆ Pushed to cloud');
+    db.ref('users/' + _fbUser.uid + '/updatedAt').once('value').then(function(snap) {
+      const remoteTime = snap.val() || 0;
+      const localTime = _lastSyncTime || 0;
+      if (remoteTime > localTime && !confirm('⚠ Cloud data is newer than your last sync.\nPush anyway and overwrite cloud?')) return;
+      userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
+      catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
+      archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive())));
+      trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash())));
+      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
+      updateLastSync();
+      window._pf.showToast('⬆ Pushed to cloud');
+    });
   });
 
   function _doPull() {
