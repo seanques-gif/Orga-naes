@@ -484,7 +484,8 @@
   #pf-root.pf-device-desktop .pf-subrow:hover { border-color: var(--hover-border); }
   #pf-root.pf-device-desktop .pf-split-list-item { transition: background 0.12s; }
   #pf-root.pf-device-desktop .pf-split-list { width: 25%; min-width: 15%; max-width: 30%; flex: none; border-right: 1px solid var(--card-border); }
-  #pf-root.pf-device-desktop .pf-split-detail { display: flex; padding: 16px 24px; }
+  #pf-root.pf-device-desktop .pf-split-detail { display: flex; padding: 16px 24px; overflow-y: auto; min-height: 0; }
+  #pf-root.pf-device-desktop .pf-split-detail .pf-node .pf-sublist { overscroll-behavior-y: auto; }
   #pf-root.pf-device-desktop .pf-split-divider { display: block; }
   #pf-root.pf-device-desktop.pf-detail-open .pf-split-list { display: block; }
   #pf-root.pf-device-desktop.pf-detail-open .pf-split-divider { display: block; }
@@ -4767,7 +4768,6 @@
     function doSelect(subRow, listItem) {
       _suppressNextClick = true;
       window._splitSelectSuppressed = true;
-      setTimeout(() => { _suppressNextClick = false; window._splitSelectSuppressed = false; }, 400);
       if (navigator.vibrate) navigator.vibrate(30);
       if (subRow && subRow.__subId) {
         const id = subRow.__subId;
@@ -4897,6 +4897,7 @@
     document.addEventListener('pointerup', function() {
       _pointerCount = Math.max(0, _pointerCount - 1);
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      setTimeout(() => { _suppressNextClick = false; window._splitSelectSuppressed = false; }, 0);
       if (dragStartEl && !dragActive) {
         // Armed but didn't drag = toggle selection
         dragStartEl.style.opacity = '';
