@@ -116,24 +116,9 @@
     #pf-root #pf-toolbar-back { display: none !important; }
     #pf-root .pf-mobile-back { display: none !important; }
     #pf-root .pf-toolbar { display: none !important; }
-    #pf-root .pf-search-wrap.pf-search-open {
-      position: fixed; bottom: 160px; right: 16px; z-index: 9500;
-      background: var(--card, #2a2a3e); border: 1px solid var(--card-border, #3a3a5e);
-      border-radius: 24px; padding: 8px 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      display: inline-flex; align-items: center;
-      animation: pf-search-expand 0.25s ease-out forwards;
-      transform-origin: right center;
-    }
-    @keyframes pf-search-expand {
-      from { width: 48px; opacity: 0.5; }
-      to { width: 50vw; opacity: 1; }
-    }
-    #pf-root .pf-search-toggle { display: none !important; }
-    #pf-root .pf-search-wrap.pf-search-open .pf-search-clear { display: none !important; }
-    #pf-root .pf-search-wrap.pf-search-open .pf-search {
-      position: static; transform: none; width: 100% !important; max-width: 100% !important; flex: 1;
-    }
-    #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { width: 100% !important; max-width: 100% !important; }
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) { display: flex !important; justify-content: flex-end; }
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) > *:not(.pf-search-wrap) { display: none !important; }
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) .pf-search-wrap { flex: 0 1 auto; }
     #pf-root .pf-overdue-banner { top: 0; }
     #pf-root .pf-toast { bottom: auto !important; top: 60px !important; transform: translateX(-50%) translateY(-12px) !important; z-index: 10000 !important; }
     #pf-root .pf-toast.pf-toast-show { transform: translateX(-50%) translateY(0) !important; }
@@ -326,14 +311,13 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: calc(var(--font-size-base) - 4px); padding: 5px 22px 5px 8px; border-radius: 6px;
     border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text);
     outline: none; width: 0; max-width: 0; opacity: 0; padding-left: 0; padding-right: 0; border: none;
-    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
     transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s;
   }
   #pf-root .pf-search-wrap.pf-search-open .pf-search {
-    width: 200px; max-width: 200px; opacity: 1; padding: 5px 22px 5px 8px;
-    border: 1px solid var(--card-border); right: 0;
+    width: 160px; max-width: 160px; opacity: 1; padding: 5px 22px 5px 8px;
+    border: 1px solid var(--card-border);
   }
-  #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { border-color: var(--accent); width: 240px; max-width: 240px; }
+  #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { border-color: var(--accent); width: 190px; max-width: 190px; }
   #pf-root .pf-search::placeholder { color: var(--text-dim); }
   #pf-root .pf-search-clear {
     position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
@@ -492,7 +476,12 @@
   #pf-root.pf-device-desktop .pf-mobile-back,
   #pf-root.pf-device-desktop.pf-detail-open .pf-mobile-back { display: none !important; }
   #pf-root.pf-device-desktop .pf-bottom-nav { display: none !important; }
-  #pf-root.pf-device-desktop .pf-toolbar { display: flex !important; }
+  #pf-root.pf-device-desktop .pf-toolbar { display: flex !important; flex-wrap: wrap; overflow-x: visible; }
+  #pf-root.pf-device-desktop #pf-today-btn { display: inline-flex !important; }
+  #pf-root.pf-device-desktop #pf-duelist-btn { display: inline-flex !important; }
+  #pf-root.pf-device-desktop #pf-calendar-btn { display: inline-flex !important; }
+  #pf-root.pf-device-desktop .pf-options-desktop { display: inline-flex !important; }
+  #pf-root.pf-device-desktop .pf-search-wrap { display: inline-flex !important; }
   #pf-root.pf-device-desktop .pf-fab,
   #pf-root.pf-device-desktop .pf-fab-menu,
   #pf-root.pf-device-desktop .pf-fab-overlay { display: none !important; }
@@ -1083,7 +1072,7 @@
   #pf-root .pf-activity-panel {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: fit-content; min-width: min(320px, 90vw); max-width: min(90%, 90vw); max-height: min(80vh, 700px); background: var(--card); border: 1px solid var(--card-border);
-    border-radius: 6px; box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(149,128,255,0.08); z-index: 60; padding: 18px;
+    border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(149,128,255,0.08); z-index: 60; padding: 18px;
     display: flex; flex-direction: column; overflow: hidden;
   }
   #pf-root .pf-panel-close {
@@ -3022,8 +3011,7 @@
   let splitSortMode = 'due';
   (async function loadSortMode() { try { const res = await safeGet('project-flow-sort-mode', false); if (res && res.value) splitSortMode = res.value; } catch (e) {} })();
   function sortProjects(list) {
-    if (splitSortMode === 'manual') return list;
-    return list.slice().sort((a, b) => {
+    const sorted = splitSortMode === 'manual' ? list : list.slice().sort((a, b) => {
       if (splitSortMode === 'name') return a.title.localeCompare(b.title);
       if (splitSortMode === 'status') return STATUSES.indexOf(a.status) - STATUSES.indexOf(b.status);
       if (splitSortMode === 'due-cat' || splitSortMode === 'due') {
@@ -3033,6 +3021,9 @@
       if (splitSortMode === 'created') return (b.createdAt || '').localeCompare(a.createdAt || '');
       return 0;
     });
+    const active = sorted.filter(p => p.status !== 'completed');
+    const completed = sorted.filter(p => p.status === 'completed');
+    return active.concat(completed);
   }
   function renderSplitList() {
     splitList.innerHTML = '';
