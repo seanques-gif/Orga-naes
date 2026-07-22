@@ -5250,7 +5250,7 @@
     }, { passive: true });
   })();
 
-  // #14 Swipe down to close modals (touch devices)
+  // #14 Swipe down from modal header to close (touch devices)
   (function() {
     let _modalStartX = 0, _modalStartY = 0, _modalActive = false, _modalEl = null;
     function getVisibleModal() {
@@ -5258,6 +5258,15 @@
         if (ALL_MODALS[i] && ALL_MODALS[i].style.display !== 'none') return ALL_MODALS[i];
       }
       return null;
+    }
+    function isModalHeader(target, modal) {
+      const firstChild = modal.children[0];
+      if (!firstChild) return false;
+      if (firstChild.contains(target)) return true;
+      if (target.closest('.pf-panel-close')) return true;
+      const rect = modal.getBoundingClientRect();
+      const touchY = _modalStartY;
+      return touchY < rect.top + 50;
     }
     document.addEventListener('touchstart', function(e) {
       if (root.classList.contains('pf-device-desktop')) return;
@@ -5267,6 +5276,7 @@
       _modalStartX = e.touches[0].clientX;
       _modalStartY = e.touches[0].clientY;
       _modalEl = modal;
+      if (!isModalHeader(e.target, modal)) { _modalActive = false; return; }
       _modalActive = true;
       _modalEl.style.transition = 'none';
     }, { passive: true });
@@ -5283,7 +5293,7 @@
     document.addEventListener('touchend', function(e) {
       if (!_modalActive || !_modalEl) { _modalActive = false; return; }
       const dy = e.changedTouches[0].clientY - _modalStartY;
-      if (dy > 500) {
+      if (dy > 80) {
         _modalEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
         _modalEl.style.transform = 'translate(-50%, 100%)';
         _modalEl.style.opacity = '0';
