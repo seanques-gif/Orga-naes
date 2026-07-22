@@ -119,8 +119,8 @@
     #pf-root .pf-search-wrap.pf-search-open {
       position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 9500;
       background: var(--card, #2a2a3e); border: 1px solid var(--card-border, #3a3a5e);
-      border-radius: 24px; padding: 8px 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-      display: inline-flex; align-items: center; width: min(85vw, 380px);
+      border-radius: 24px; padding: 6px 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      display: inline-flex; align-items: center; height: 40px; width: clamp(220px, 70vw, 400px);
       animation: pf-search-float-in 0.2s ease-out forwards;
     }
     @keyframes pf-search-float-in {
@@ -130,7 +130,8 @@
     #pf-root .pf-search-wrap.pf-search-open .pf-search-toggle { display: none; }
     #pf-root .pf-search-wrap.pf-search-open .pf-search {
       position: static; transform: none; width: 100% !important; max-width: 100% !important;
-      opacity: 1; padding: 5px 8px; border: none; background: transparent; flex: 1;
+      opacity: 1; padding: 4px 8px; border: none; background: transparent; flex: 1;
+      font-size: 14px; height: auto;
     }
     #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { width: 100% !important; max-width: 100% !important; border: none; }
     #pf-root .pf-overdue-banner { top: 0; }
