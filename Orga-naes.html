@@ -5203,6 +5203,33 @@
     document.addEventListener('touchend', function() { _swipeRow = null; }, { passive: true });
   })();
 
+  // #13 Swipe from left edge to go back (touch devices)
+  (function() {
+    let _backStartX = 0, _backStartY = 0, _backActive = false;
+    document.addEventListener('touchstart', function(e) {
+      if (!root.classList.contains('pf-detail-open')) return;
+      const x = e.touches[0].clientX;
+      if (x > 30) return;
+      _backStartX = x;
+      _backStartY = e.touches[0].clientY;
+      _backActive = true;
+    }, { passive: true });
+    document.addEventListener('touchmove', function(e) {
+      if (!_backActive) return;
+      const dy = Math.abs(e.touches[0].clientY - _backStartY);
+      if (dy > 40) { _backActive = false; }
+    }, { passive: true });
+    document.addEventListener('touchend', function(e) {
+      if (!_backActive) return;
+      const dx = e.changedTouches[0].clientX - _backStartX;
+      if (dx > 80) {
+        if (navigator.vibrate) navigator.vibrate(10);
+        _goBackToProjects();
+      }
+      _backActive = false;
+    }, { passive: true });
+  })();
+
   // #10 Pull-to-refresh (disabled)
 
   // #12 Haptic feedback extensions
