@@ -5283,7 +5283,7 @@
 
 // #11 PWA - Register service worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=' + Date.now()).then(function(reg) {
+  navigator.serviceWorker.register('./sw.js').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       const newWorker = reg.installing;
       newWorker.addEventListener('statechange', function() {
