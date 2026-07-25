@@ -2587,7 +2587,7 @@
     const headerMeta = div.querySelector('.pf-header-meta');
     headerMeta.appendChild(buildCategoryChip(p));
     if (p.status === 'completed' && p.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(p.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = p.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); p.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); headerMeta.appendChild(doneLabel); } else { headerMeta.appendChild(buildDueChip(p, (val) => { snapshot(); p.dueAt = val; scheduleSave(); render(); }, false)); }
-
+    headerMeta.appendChild(buildRecurChip(p, (val) => { snapshot(); p.recurrence = val || null; scheduleSave(); render(); }));
 
     if (p.expanded && p.height) { div.style.height = p.height + 'px'; div.style.display = 'flex'; div.style.flexDirection = 'column'; div.querySelector('.pf-node-header').style.flexShrink = '0'; const descRow = div.querySelector('.pf-node-desc-row'); if (descRow) descRow.style.flexShrink = '0'; const sl = div.querySelector('.pf-sublist'); sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; }
     const sublist = div.querySelector('.pf-sublist'); if (p.expanded) { renderSubtaskRows(sublist, p, p.subtasks, 0); }
@@ -3421,7 +3421,7 @@
     ];
 
     items.push({ sep: true });
-    items.push({ label: '🔁 Repeat: ' + (p.recurrence || 'None'), action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(p.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); p.recurrence = opts[next]; scheduleSave(); render(); showToast('Repeat: ' + labels[next]); } });
+    items.push({ label: '🔁 Repeat: ' + (p.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(p.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); p.recurrence = opts[next]; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return '🔁 Repeat: ' + labels[next]; } });
     items.push({ label: '😀 Set Emoji', action: () => { const el = root.querySelector('[data-project-id="' + p.id + '"]') || root.querySelector('.pf-split-active'); if (el) showEmojiPicker(p, el); } });
     items.push({ label: '📦 Archive', action: () => { snapshot(); archiveProject(p); logActivity('Archived project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" archived', false, true); } });
     items.push({ label: '🗑 Delete', danger: true, action: () => { snapshot(); trashProject(p); logActivity('Trashed project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" moved to trash', false, true); } });
@@ -3430,7 +3430,11 @@
       const el = document.createElement('div');
       el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '');
       el.textContent = it.label;
-      el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); it.action(); });
+      if (it.cycling) {
+        el.addEventListener('click', (e) => { e.stopPropagation(); el.textContent = it.action(); });
+      } else {
+        el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); it.action(); });
+      }
       menu.appendChild(el);
     });
     root.appendChild(menu);
@@ -3450,7 +3454,7 @@
       { label: '⏰ Set Reminder', action: () => { promptReminder(s.id, s.title, 'subtask'); } },
       { label: '→ ' + STATUS_LABEL[statusNext], action: () => { snapshot(); s.status = statusNext; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
       { label: '⬆ Promote to Project', action: () => { promoteSubToProject(p, s); } },
-      { label: '🔁 Repeat: ' + (s.recurrence || 'None'), action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); render(); showToast('Repeat: ' + labels[next]); } },
+      { label: '🔁 Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return '🔁 Repeat: ' + labels[next]; } },
       { sep: true },
       { label: '🗑 Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },
     ];
@@ -3459,7 +3463,11 @@
       const el = document.createElement('div');
       el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '');
       el.textContent = it.label;
-      el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); it.action(); });
+      if (it.cycling) {
+        el.addEventListener('click', (e) => { e.stopPropagation(); el.textContent = it.action(); });
+      } else {
+        el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); it.action(); });
+      }
       menu.appendChild(el);
     });
     root.appendChild(menu);
@@ -5211,7 +5219,8 @@
       if (!root.classList.contains('pf-detail-open')) return;
       if (root.classList.contains('pf-device-desktop')) return;
       const x = e.touches[0].clientX;
-      if (x > 30) return;
+      const sw = window.innerWidth;
+      if (x < sw * 0.05 || x > sw * 0.95) return;
       _backStartX = x;
       _backStartY = e.touches[0].clientY;
       _backActive = true;
