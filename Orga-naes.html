@@ -766,9 +766,11 @@
   #pf-root .pf-split-sort select:hover { border-color: var(--accent); }
   #pf-root .pf-split-collapse-btn {
     background: transparent; border: 1px solid var(--card-border); color: var(--text-dim);
-    font-size: calc(var(--font-size-base) - 5px); padding: 3px 8px; border-radius: 5px; cursor: pointer; font-weight: 600; transition: all 0.15s; margin-right: auto;
+    font-size: calc(var(--font-size-base) - 5px); padding: 3px 8px; border-radius: 5px; cursor: pointer; font-weight: 600; transition: all 0.15s;
   }
+  #pf-root #pf-split-collapse-all { margin-right: auto; }
   #pf-root .pf-split-collapse-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(149,128,255,0.06); }
+  #pf-root .pf-split-toggle-active { color: var(--accent); border-color: var(--accent); background: rgba(149,128,255,0.12); }
   #pf-root .pf-split-detail {
     display: none; overflow: auto; padding: 0; position: relative; flex-direction: column; transition: transform 0.2s ease, opacity 0.2s ease;
     background: var(--bg); width: 100%; flex: 1;
@@ -1790,6 +1792,7 @@
     }
   });
 
+  let _saveModalEl = null;
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       const ae = document.activeElement; if (ae && ae.isContentEditable) return; if (!root.contains(ae) && ae !== document.body) return;
@@ -1807,10 +1810,12 @@
         '<button id="_save-cancel" style="display:block;width:100%;padding:10px;border:none;border-radius:8px;background:transparent;color:var(--text-dim,#aaa);font-size:13px;cursor:pointer;">Cancel</button>' +
         '</div>';
       document.body.appendChild(saveModal);
-      saveModal.querySelector('#_save-local').addEventListener('click', function() { saveModal.remove(); document.getElementById('pf-export').click(); });
-      saveModal.querySelector('#_save-cloud').addEventListener('click', function() { saveModal.remove(); if (window._firebasePush) window._firebasePush(); else showToast('⚠ Sign in first to push', true); });
-      saveModal.querySelector('#_save-cancel').addEventListener('click', function() { saveModal.remove(); });
-      saveModal.addEventListener('click', function(ev) { if (ev.target === saveModal) saveModal.remove(); });
+      _saveModalEl = saveModal;
+      const _removeSaveModal = function() { saveModal.remove(); if (_saveModalEl === saveModal) _saveModalEl = null; };
+      saveModal.querySelector('#_save-local').addEventListener('click', function() { _removeSaveModal(); document.getElementById('pf-export').click(); });
+      saveModal.querySelector('#_save-cloud').addEventListener('click', function() { _removeSaveModal(); if (window._firebasePush) window._firebasePush(); else showToast('⚠ Sign in first to push', true); });
+      saveModal.querySelector('#_save-cancel').addEventListener('click', function() { _removeSaveModal(); });
+      saveModal.addEventListener('click', function(ev) { if (ev.target === saveModal) _removeSaveModal(); });
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
@@ -1881,6 +1886,7 @@
     else { autoArrangeProjects(true); }
   }
   const _escDismissables = [
+    { check: () => !!_saveModalEl, run: () => { if (_saveModalEl) { _saveModalEl.remove(); _saveModalEl = null; } } },
     { check: () => !!root.querySelector('.pf-ctx-menu'), run: () => { const m = root.querySelector('.pf-ctx-menu'); if (m) m.remove(); if (typeof _closeCtx === 'function') _closeCtx(); } },
     { check: () => !!root.querySelector('.pf-dep-dropdown'), run: () => { const dd = root.querySelector('.pf-dep-dropdown'); if (dd) dd.remove(); } },
     { check: () => _splitCatMultiSelect.length, run: () => { _splitCatMultiSelect = []; renderSplitList(); } },
@@ -2481,6 +2487,12 @@
     if (allDone) {
       if (p.status !== 'completed') { p.status = 'completed'; p.completedAt = new Date().toISOString(); delete p._manualStatus; logActivity('"' + p.title + '" auto-completed (all subtasks done)'); scheduleSave(); render(); onTaskCompleted(true); }
       confetti();
+    } else if (p.status === 'completed' && !p._manualStatus) {
+      const hasProgress = (function check(list) { return list.some(s => s.status === 'ongoing' || s.status === 'waiting' || s.dueAt || (s.subtasks && s.subtasks.length && check(s.subtasks))); })(p.subtasks);
+      p.status = hasProgress ? 'ongoing' : 'planned';
+      p.completedAt = null;
+      logActivity('"' + p.title + '" reverted to ' + STATUS_LABEL[p.status] + ' (no longer all subtasks complete)');
+      scheduleSave(); render();
     } else if (p.status === 'planned') {
       // Auto-set project to ongoing if any subtask has progress
       const hasProgress = (function check(list) {
@@ -2752,7 +2764,7 @@
       '<button class="pf-undo-btn" data-sub-action="due" style="font-size:10px;padding:3px 8px;">Set Due</button>' +
       '<button class="pf-undo-btn" data-sub-action="delete" style="font-size:10px;padding:3px 8px;color:var(--danger);">Delete</button>' +
       '<button class="pf-undo-btn" data-sub-action="clear" style="font-size:10px;padding:3px 6px;">✕</button>';
-    bar.querySelector('[data-sub-action="cycle"]').addEventListener('click', (e) => { e.stopPropagation(); snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) { s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; } }); scheduleSave(); render(); checkAllCompleted(p); renderSubSelectBar(p); });
+    bar.querySelector('[data-sub-action="cycle"]').addEventListener('click', (e) => { e.stopPropagation(); try { snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) { s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; } }); scheduleSave(); render(); checkAllCompleted(p); requestAnimationFrame(() => renderSubSelectBar(p)); } catch (err) { console.error('[Orga-naes] Bulk cycle status failed:', err); showToast('⚠ Cycle status failed — see console', true); } });
     bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) s.dueAt = val; }); clearSubSelect(); scheduleSave(); render(); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
     bar.querySelector('[data-sub-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return; snapshot(); subMultiSelect.forEach(id => { const arr = findSubParentArray(p.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } }); clearSubSelect(); scheduleSave(); render(); });
     bar.querySelector('[data-sub-action="clear"]').addEventListener('click', (e) => { e.stopPropagation(); clearSubSelect(); const existing2 = root.querySelector('.pf-sub-select-bar'); if (existing2) existing2.remove(); });
@@ -3105,6 +3117,7 @@
       const hasAnyDone = (function check(list) { return list.some(s => s.status === 'completed' || s.status === 'ongoing' || s.status === 'waiting' || s.dueAt || (s.subtasks && s.subtasks.length && check(s.subtasks))); })(p.subtasks);
       const allDone = (function check(list) { return list.every(s => s.status === 'completed' && (!s.subtasks || !s.subtasks.length || check(s.subtasks))); })(p.subtasks);
       if (allDone && p.status !== 'completed') { p.status = 'completed'; p.completedAt = new Date().toISOString(); }
+      else if (!allDone && p.status === 'completed' && !p._manualStatus) { p.status = hasAnyDone ? 'ongoing' : 'planned'; p.completedAt = null; }
       else if (!allDone && hasAnyDone && p.status === 'planned' && !p._manualStatus) { p.status = 'ongoing'; }
     });
     _updatingStatuses = false;
@@ -3193,6 +3206,7 @@
       if (!p) return;
       const oldStatus = p.status;
       p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length];
+      p._manualStatus = true;
       p.completedAt = p.status === 'completed' ? new Date().toISOString() : null;
       logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]);
     });
@@ -3213,6 +3227,8 @@
   };
   let splitSortMode = 'due';
   (async function loadSortMode() { try { const res = await safeGet('project-flow-sort-mode', false); if (res && res.value) splitSortMode = res.value; } catch (e) {} })();
+  let hideCompletedProjects = false;
+  (async function loadHideCompleted() { try { const res = await safeGet('project-flow-hide-completed', false); if (res && res.value) hideCompletedProjects = res.value === 'true'; } catch (e) {} })();
   function sortProjects(list) {
     const sorted = splitSortMode === 'manual' ? list : list.slice().sort((a, b) => {
       if (splitSortMode === 'name') return a.title.localeCompare(b.title);
@@ -3233,10 +3249,12 @@
     const sortBar = document.createElement('div');
     sortBar.className = 'pf-split-sort';
     sortBar.innerHTML = '<button id="pf-split-collapse-all" class="pf-split-collapse-btn" title="Collapse/Expand all categories">▾ All</button>' +
+      '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (hideCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Hide completed projects">' + (hideCompletedProjects ? '☑' : '☐') + ' Hide completed</button>' +
       '<span class="pf-split-sort-label">Sort:</span><select id="pf-split-sort-sel"><option value="manual">Manual</option><option value="name">Name</option><option value="status">Status</option><option value="due-cat">Due Date</option><option value="created">Newest</option></select>';
     splitList.appendChild(sortBar);
     sortBar.querySelector('select').value = splitSortMode;
     sortBar.querySelector('select').addEventListener('change', (e) => { splitSortMode = e.target.value; safeSet('project-flow-sort-mode', splitSortMode, false); renderSplitList(); });
+    sortBar.querySelector('#pf-split-hide-completed').addEventListener('click', () => { hideCompletedProjects = !hideCompletedProjects; safeSet('project-flow-hide-completed', String(hideCompletedProjects), false); renderSplitList(); });
     const collapseBtn = sortBar.querySelector('#pf-split-collapse-all');
     const allCollapsed = categories.length > 0 && categories.every(c => splitCollapsedCats[c]);
     collapseBtn.textContent = allCollapsed ? '▸ All' : '▾ All';
@@ -3270,7 +3288,7 @@
       });
     }
     const grouped = {};
-    sortProjects(projects.filter(p => matchesSearch(p))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
+    sortProjects(projects.filter(p => matchesSearch(p) && (!hideCompletedProjects || p.status !== 'completed'))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
     // Include any categories from projects not in the categories array
     const extraCats = Object.keys(grouped).filter(c => c !== '__uncategorized__' && !categories.includes(c));
     if (extraCats.length) { categories.push(...extraCats); saveCategories(); }
@@ -3732,7 +3750,7 @@
       const el = projectEl(p);
       el.style.cssText = 'position: relative; left: auto; top: auto; width: 100%; min-width: 0; max-width: 100%;';
       splitDetail.appendChild(el);
-    } catch (e) { splitDetail.innerHTML = '<div class="pf-empty" style="display:block;">Error rendering project.</div>'; }
+    } catch (e) { console.error('[Orga-naes] renderSplitDetail failed:', e); splitDetail.innerHTML = '<div class="pf-empty" style="display:block;">Error rendering project. Check console for details.</div>'; }
     requestAnimationFrame(() => { requestAnimationFrame(_equalizeColumnWidths); });
   }
 
@@ -3791,7 +3809,7 @@
   splitList.addEventListener('keydown', (e) => {
     if (!listViewActive) return;
     const grouped = {};
-    sortProjects(projects.filter(p => matchesSearch(p))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
+    sortProjects(projects.filter(p => matchesSearch(p) && (!hideCompletedProjects || p.status !== 'completed'))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
     const catOrder = categories.concat(grouped['__uncategorized__'] ? ['__uncategorized__'] : []);
     const items = [];
     catOrder.forEach(cat => { const group = grouped[cat]; if (!group || !group.length) return; if (splitCollapsedCats[cat]) return; group.forEach(p => items.push(p)); });
