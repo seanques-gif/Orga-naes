@@ -259,9 +259,10 @@
 
   #pf-root .pf-toolbar {
     display: flex; flex-wrap: nowrap; align-items: center; gap: 6px;
-    padding: 6px 12px; border-bottom: 1px solid var(--card-border);
+    padding: 4px 12px; border-bottom: 1px solid var(--card-border);
     background: var(--header-bg); flex-shrink: 0; z-index: 5; overflow-x: auto;
     font-size: calc(var(--font-size-base) - 2px);
+    cursor: default; user-select: none;
   }
   #pf-root .pf-toolbar::-webkit-scrollbar { height: 3px; }
   #pf-root .pf-toolbar::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 6px; }
@@ -292,8 +293,8 @@
   #pf-root .pf-new-btn:hover { filter: brightness(1.15); }
   #pf-root .pf-undo-btn {
     background: transparent; color: var(--text-dim); font-weight: 500; font-size: clamp(11px, 1.6vw, 14px);
-    padding: clamp(3px, 0.6vw, 5px) clamp(5px, 1vw, 8px); border-radius: 5px; border: none;
-    min-width: clamp(22px, 3.5vw, 28px); min-height: clamp(22px, 3.5vw, 28px);
+    padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 8px); border-radius: 5px; border: none;
+    min-width: clamp(20px, 3.5vw, 26px); min-height: clamp(20px, 3.5vw, 26px);
     display: inline-flex; align-items: center; justify-content: center; gap: 4px;
     transition: color 0.12s, background 0.12s; flex-shrink: 0; overflow: visible; line-height: 1.2;
     position: relative;
@@ -326,11 +327,13 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: calc(var(--font-size-base) - 4px); padding: 5px 22px 5px 8px; border-radius: 6px;
     border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text);
     outline: none; width: 0; max-width: 0; opacity: 0; padding-left: 0; padding-right: 0; border: none;
-    transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s;
+    caret-color: transparent; visibility: hidden;
+    transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s, visibility 0s linear 0.2s;
   }
   #pf-root .pf-search-wrap.pf-search-open .pf-search {
     width: 160px; max-width: 160px; opacity: 1; padding: 5px 22px 5px 8px;
     border: 1px solid var(--card-border);
+    caret-color: auto; visibility: visible; transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s;
   }
   #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { border-color: var(--accent); width: 190px; max-width: 190px; }
   #pf-root .pf-search::placeholder { color: var(--text-dim); }
@@ -363,9 +366,9 @@
     #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) #pf-toolbar-back { display: none !important; }
   }
   #pf-root .pf-due-filter {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: calc(var(--font-size-base) - 4px); padding: 5px 6px; border-radius: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: calc(var(--font-size-base) - 4px); padding: 3px 6px; border-radius: 6px;
     border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text);
-    outline: none; cursor: pointer; flex-shrink: 0;
+    outline: none; cursor: pointer; flex-shrink: 0; height: 26px; box-sizing: border-box;
   }
   #pf-root .pf-due-filter:focus { border-color: var(--accent); }
   #pf-root .pf-save { font-size: calc(var(--font-size-base) - 6px); color: var(--text-dim); width: auto; min-width: 55px; text-align: right; flex-shrink: 0; padding: 2px 6px; border-radius: 6px; transition: background 0.3s, color 0.3s, transform 0.2s; }
@@ -626,7 +629,7 @@
   #pf-root.pf-card-mode .pf-card-only { display: inline-flex; align-items: center; justify-content: center; }
   #pf-root .pf-split-list {
     width: 100%; min-width: 0; max-width: 100%; flex: 1; overflow-y: auto;
-    background: var(--bg); padding: 8px 0 8px 0;
+    background: var(--bg); padding: 4px 0 4px 0;
     scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
     -webkit-overflow-scrolling: touch;
   }
@@ -642,8 +645,8 @@
     display: none; width: 4px; background: var(--card-border); cursor: col-resize; flex-shrink: 0; transition: background 0.15s;
   }
   #pf-root .pf-split-divider:hover, #pf-root .pf-split-divider.pf-dragging { background: var(--accent); width: 5px; }
-  #pf-root .pf-split-list-cat { padding: 6px 12px; font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin: 10px 6px 2px 6px; border: none; border-top: 1px solid var(--card-border); border-radius: 6px; background: transparent; transition: background 0.15s, color 0.15s; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-  #pf-root .pf-split-list-cat:first-of-type { margin-top: 4px; }
+  #pf-root .pf-split-list-cat { padding: 8px 12px; font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin: 6px 6px 6px 6px; border: none; border-top: 1px solid var(--card-border); border-radius: 6px; background: transparent; transition: background 0.15s, color 0.15s; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  #pf-root .pf-split-list-cat:first-of-type { margin-top: 4px; border-top: none; }
   #pf-root .pf-split-list-cat:hover { background: rgba(255,255,255,0.04); color: var(--text); }
   #pf-root .pf-split-list-item {
     padding: 6px 12px 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px;
@@ -702,7 +705,8 @@
   #pf-root .pf-split-list-title { flex: 1; font-size: calc(var(--font-size-base) - 2px); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
   #pf-root .pf-split-list-item.pf-split-active .pf-split-list-title { font-weight: 600; color: var(--accent); }
   #pf-root .pf-split-list-status { font-size: calc(var(--font-size-base) - 5.5px); padding: 2px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; width: 62px; text-align: center; display: inline-block; transition: background 0.3s ease, color 0.3s ease; }
-  #pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 30px; text-align: center; display: inline-block; }
+  #pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 44px; text-align: center; display: inline-block; }
+  #pf-root .pf-split-list-progress-pct { font-size: 8.5px; font-weight: 500; color: var(--text-dim); opacity: 0.65; margin-left: 3px; }
   #pf-root .pf-split-list-due { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px; width: 58px; text-align: right; }
   #pf-root .pf-split-list-due.pf-overdue { color: var(--danger); font-weight: 600; }
   #pf-root .pf-split-list-edit { display: none; }
@@ -753,12 +757,14 @@
   #pf-ctx-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; backdrop-filter: blur(2px); }
   /* overscroll indicators disabled to prevent scroll shake */
   #pf-root .pf-split-sort {
-    display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin: 4px 6px 2px 6px; border-radius: 6px; background: rgba(0,0,0,0.08);
+    display: flex; align-items: center; gap: 8px; padding: 0 8px; margin: 0 6px; border-radius: 6px; background: rgba(0,0,0,0.08); min-height: 0; height: 28px;
+    cursor: default; user-select: none;
   }
   #pf-root .pf-split-sort-label { font-size: calc(var(--font-size-base) - 6px); color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
   #pf-root .pf-split-sort select {
     font-size: calc(var(--font-size-base) - 5px); background: var(--card); color: var(--text);
-    border: 1px solid var(--card-border); border-radius: 5px; padding: 3px 6px; outline: none; cursor: pointer; transition: border-color 0.15s;
+    border: 1px solid var(--card-border); border-radius: 5px; padding: 0 6px; outline: none; cursor: pointer; transition: border-color 0.15s;
+    height: 20px; line-height: 1; box-sizing: border-box;
   }
   #pf-root .pf-split-sort select option {
     background: var(--card); color: var(--text);
@@ -766,7 +772,8 @@
   #pf-root .pf-split-sort select:hover { border-color: var(--accent); }
   #pf-root .pf-split-collapse-btn {
     background: transparent; border: 1px solid var(--card-border); color: var(--text-dim);
-    font-size: calc(var(--font-size-base) - 5px); padding: 3px 8px; border-radius: 5px; cursor: pointer; font-weight: 600; transition: all 0.15s;
+    font-size: calc(var(--font-size-base) - 5px); padding: 0 8px; border-radius: 5px; cursor: pointer; font-weight: 600; transition: all 0.15s;
+    height: 20px; box-sizing: border-box; line-height: 1;
   }
   #pf-root #pf-split-collapse-all { margin-right: auto; }
   #pf-root .pf-split-collapse-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(149,128,255,0.06); }
@@ -3433,7 +3440,7 @@
     renderSplitList(); renderSplitDetail();
     showToast(count + ' project(s) moved to trash', false, true);
   };
-  let splitSortMode = 'due';
+  let splitSortMode = 'due-cat';
   (async function loadSortMode() { try { const res = await safeGet('project-flow-sort-mode', false); if (res && res.value) splitSortMode = res.value; } catch (e) {} })();
   let hideCompletedProjects = false;
   (async function loadHideCompleted() { try { const res = await safeGet('project-flow-hide-completed', false); if (res && res.value) hideCompletedProjects = res.value === 'true'; } catch (e) {} })();
@@ -3681,8 +3688,9 @@
         });
         const tc = countTree(p.subtasks);
         const pct = tc.total ? tc.done / tc.total : 0;
-        const r = 7, circ = 2 * Math.PI * r, offset = circ * (1 - pct);
-        const progressHtml = tc.total ? '<svg class="pf-progress-ring" width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="' + r + '" fill="none" stroke="var(--card-border)" stroke-width="2"/><circle cx="9" cy="9" r="' + r + '" fill="none" stroke="var(--' + (p.status === 'waiting' ? 'accent' : p.status) + ')" stroke-width="2" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '" stroke-linecap="round" transform="rotate(-90 9 9)"/></svg><span class="pf-split-list-progress">' + tc.done + '/' + tc.total + '</span>' : '';
+        const pctLabel = Math.round(pct * 100);
+        const r = 8, circ = 2 * Math.PI * r, offset = circ * (1 - pct);
+        const progressHtml = tc.total ? '<svg class="pf-progress-ring" width="20" height="20" viewBox="0 0 20 20" title="' + pctLabel + '% complete"><circle cx="10" cy="10" r="' + r + '" fill="none" stroke="var(--card-border)" stroke-width="2.5"/><circle cx="10" cy="10" r="' + r + '" fill="none" stroke="var(--' + (p.status === 'waiting' ? 'accent' : p.status) + ')" stroke-width="2.5" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '" stroke-linecap="round" transform="rotate(-90 10 10)"/></svg><span class="pf-split-list-progress" title="' + pctLabel + '% complete">' + tc.done + '/' + tc.total + '</span>' : '';
         let dueHtml = '<span class="pf-split-list-due"></span>';
         if (p.dueAt) {
           const now = new Date(); now.setHours(0,0,0,0);
@@ -3697,7 +3705,7 @@
         if (p.dueAt) { const td = new Date(); td.setHours(0,0,0,0); if (p.dueAt === td.toISOString().slice(0,10) && p.status !== 'completed') item.classList.add('pf-due-today'); }
         const emojiIcon = p.emoji || '';
         item.innerHTML = (emojiIcon ? '<span class="pf-emoji-btn" style="font-size:13px;">' + emojiIcon + '</span>' : '<span class="pf-split-list-dot" style="background:' + (p.color || 'var(--' + p.status + ')') + '"></span>') +
-          '<span class="pf-split-list-title">' + (searchTerm ? highlightMatch(escapeHtml(p.title), searchTerm) : escapeHtml(p.title)) + '</span>' +
+          '<span class="pf-split-list-title" title="' + escapeHtml(p.title) + '">' + (searchTerm ? highlightMatch(escapeHtml(p.title), searchTerm) : escapeHtml(p.title)) + '</span>' +
           progressHtml +
           '<button class="pf-split-list-edit" title="Rename">✏️</button>' +
           '<button class="pf-split-list-move pf-move-up" title="Move up">▲</button>' +
@@ -4960,7 +4968,7 @@
   });
 
   const importInput = document.getElementById('pf-import-file');
-  document.getElementById('pf-import').addEventListener('click', () => { _exitMultiSelectMode(); importInput.click(); });
+  document.getElementById('pf-import').addEventListener('click', () => { _exitMultiSelectMode(); closeAllModals(); importInput.click(); });
   function parseImportJson(raw) {
     raw = raw.replace(/^\uFEFF/, '').trim();
     if (!raw) return { error: 'That file is empty.' };
@@ -5428,6 +5436,18 @@
       targetEl = null;
     });
   })();
+
+  // Force-blur any active editable title/description when clicking outside of it.
+  // Some browsers (notably Safari/iOS) don't automatically blur a focused
+  // contenteditable element when the click target isn't itself focusable,
+  // which left a blinking caret "stuck" in the last-edited field even when
+  // clicking on unrelated, non-interactive parts of the UI (e.g. toolbar gaps).
+  document.addEventListener('pointerdown', function(e) {
+    const active = document.activeElement;
+    if (active && active.isContentEditable && active !== e.target && !(e.target.closest && e.target.closest('[contenteditable="true"]') === active)) {
+      active.blur();
+    }
+  }, true);
 
   // Prevent iOS auto-zoom on contenteditable focus
   const vpMeta = document.querySelector('meta[name="viewport"]');
