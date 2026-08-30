@@ -135,7 +135,7 @@
     }
     #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { width: 100% !important; max-width: 100% !important; border: none; }
     #pf-root .pf-overdue-banner { top: 0; }
-    #pf-root .pf-toast { bottom: auto !important; top: 60px !important; transform: translateX(-50%) translateY(-12px) !important; z-index: 10000 !important; }
+    #pf-root .pf-toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; top: auto !important; transform: translateX(-50%) translateY(12px) !important; z-index: 10000 !important; }
     #pf-root .pf-toast.pf-toast-show { transform: translateX(-50%) translateY(0) !important; }
   }
 
@@ -803,6 +803,10 @@
   #pf-root .pf-node-resize:hover { opacity: 1 !important; color: var(--accent); }
   #pf-root .pf-node-resize svg { display: block; }
   #pf-root .pf-node.pf-dragging { opacity: 0.4; cursor: grabbing; box-shadow: 0 10px 28px rgba(0,0,0,0.45); z-index: 20; }
+  #pf-root .pf-node-header.pf-drop-copy-target { outline: 2px dashed var(--completed); outline-offset: -2px; border-radius: 8px 8px 0 0; background: rgba(46,160,67,0.08); }
+  #pf-root.pf-paste-armed .pf-node-header, #pf-root.pf-paste-armed .pf-subrow { cursor: copy; }
+  #pf-root.pf-paste-armed .pf-node-header:hover { outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: 8px 8px 0 0; }
+  #pf-root.pf-paste-armed .pf-subrow:hover { outline: 2px dashed var(--accent); outline-offset: -2px; }
   #pf-root .pf-node.pf-node-drop-before { box-shadow: -4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
   #pf-root .pf-node.pf-node-drop-after { box-shadow: 4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
   #pf-root .pf-node.pf-drop-target::before, #pf-root .pf-node.pf-drop-target::after {
@@ -1422,27 +1426,12 @@
       </div>
     </div>
 
-    <!-- ☁️ Cloud Sync — File System -->
-    <div class="pf-options-section">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">☁️ Cloud Sync — File System</div>
-      <button class="pf-undo-btn" id="pf-fs-pick-folder" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📁</span> Choose Sync Folder</button>
-      <span id="pf-fs-folder-path" style="font-size:10px;color:var(--text-dim);margin-top:4px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
-        <button class="pf-undo-btn" id="pf-fs-save" style="justify-content:flex-start;" disabled><span style="display:inline-block;width:20px;text-align:center;">💾</span> Save</button>
-        <button class="pf-undo-btn" id="pf-fs-load" style="justify-content:flex-start;" disabled><span style="display:inline-block;width:20px;text-align:center;">📥</span> Load</button>
-      </div>
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);margin-top:8px;">
-        <input type="checkbox" id="pf-fs-autosave"> Auto-save on changes
-      </label>
-      <p style="font-size:10px;color:var(--text-dim);margin-top:4px;">Pick your OneDrive / Dropbox sync folder. No server or login needed. <b>Desktop only (Chrome/Edge).</b></p>
-    </div>
-
     <!-- 🔄 Auto-Backup -->
     <div class="pf-options-section">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">🔄 Auto-Backup</div>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);">
         🔄 Every
-        <input type="number" id="pf-autobackup-min" min="0" max="120" value="5" style="width:48px;padding:2px 4px;border-radius:6px;border:1px solid var(--card-border);background:var(--sub-bg);color:var(--text);font-size:13px;text-align:center;">
+        <input type="number" id="pf-autobackup-min" min="0" max="120" value="0" style="width:48px;padding:2px 4px;border-radius:6px;border:1px solid var(--card-border);background:var(--sub-bg);color:var(--text);font-size:13px;text-align:center;">
         min <span style="font-size:11px;color:var(--text-dim);">(0 = off)</span>
       </label>
       <div style="display:flex;align-items:center;gap:6px;margin-top:6px;overflow:hidden;">
@@ -1625,6 +1614,13 @@
   </div>
   <button class="pf-fab" id="pf-fab" title="Actions">+</button>
 
+  <div class="pf-activity-panel" id="pf-copy-modal" style="display:none;width:min(500px,90vw);max-height:min(80vh,600px);height:60vh;flex-direction:column;">
+    <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);flex-shrink:0;">
+      <span style="font-size:22px;">📋</span>
+      <div id="pf-copy-modal-title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Copy to Project</div>
+    </div>
+    <div class="pf-activity-list" id="pf-copy-modal-list" style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding:4px;"></div>
+  </div>
   <div class="pf-conflict-modal" id="pf-conflict-modal">
     <div class="pf-conflict-box">
       <div class="pf-conflict-title">⚠️ Sync Conflict Detected</div>
@@ -1754,8 +1750,8 @@
   function updateHistoryButtons() { undoBtn.disabled = undoStack.length === 0; redoBtn.disabled = redoStack.length === 0; }
   function cloneProjects(data) { if (typeof structuredClone === 'function') return structuredClone(data); return JSON.parse(JSON.stringify(data)); }
   function snapshot() { undoStack.push(cloneProjects(projects)); if (undoStack.length > 100) undoStack.shift(); redoStack = []; updateHistoryButtons(); }
-  function undo() { if (!undoStack.length) return; redoStack.push(cloneProjects(projects)); if (redoStack.length > 100) redoStack.shift(); projects = undoStack.pop(); _completedCollapseId = null; updateHistoryButtons(); scheduleSave(); render(); if (listViewActive) { renderSplitList(); renderSplitDetail(); } showToast('↩ Undo (' + undoStack.length + ' left)'); }
-  function redo() { if (!redoStack.length) return; undoStack.push(cloneProjects(projects)); if (undoStack.length > 100) undoStack.shift(); projects = redoStack.pop(); _completedCollapseId = null; updateHistoryButtons(); scheduleSave(); render(); if (listViewActive) { renderSplitList(); renderSplitDetail(); } showToast('↪ Redo (' + redoStack.length + ' left)'); }
+  function undo() { if (!undoStack.length) return; redoStack.push(cloneProjects(projects)); if (redoStack.length > 100) redoStack.shift(); projects = undoStack.pop(); _completedCollapseId = null; updateHistoryButtons(); scheduleSave(); render(); if (listViewActive) { renderSplitList(); renderSplitDetail(); } if (window._firebasePushNow) window._firebasePushNow(); showToast('↩ Undo (' + undoStack.length + ' left)'); }
+  function redo() { if (!redoStack.length) return; undoStack.push(cloneProjects(projects)); if (undoStack.length > 100) undoStack.shift(); projects = redoStack.pop(); _completedCollapseId = null; updateHistoryButtons(); scheduleSave(); render(); if (listViewActive) { renderSplitList(); renderSplitDetail(); } if (window._firebasePushNow) window._firebasePushNow(); showToast('↪ Redo (' + redoStack.length + ' left)'); }
 
   let _longPressTimer = null;
   let _longPressTarget = null;
@@ -1825,6 +1821,26 @@
       const ae = document.activeElement; if (ae && ae.isContentEditable) return;
       e.preventDefault(); redo();
     }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+      const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      if (!subMultiSelect.length && !splitMultiSelect.length) return;
+      e.preventDefault();
+      const clip = buildClipboardFromSelection();
+      if (!clip || !clip.length) return;
+      _taskClipboard = clip;
+      const n = clip.length;
+      clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove();
+      splitMultiSelect = []; if (listViewActive) { renderSplitList(); renderSplitDetail(); }
+      showToast((n > 1 ? n + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it');
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+      const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      if (!_taskClipboard || !_taskClipboard.length) return;
+      e.preventDefault();
+      _pasteArmed = true;
+      root.classList.add('pf-paste-armed');
+      showToast('Click a project to paste as main task(s), or a task to nest under it — Esc to cancel');
+    }
     if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && root.classList.contains('pf-device-desktop')) {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
       e.preventDefault(); closeAllModals(); openModal(shortcutsPanel, 'flex');
@@ -1886,6 +1902,7 @@
     else { autoArrangeProjects(true); }
   }
   const _escDismissables = [
+    { check: () => _pasteArmed, run: () => { _pasteArmed = false; root.classList.remove('pf-paste-armed'); showToast('Paste canceled'); } },
     { check: () => !!_saveModalEl, run: () => { if (_saveModalEl) { _saveModalEl.remove(); _saveModalEl = null; } } },
     { check: () => !!root.querySelector('.pf-ctx-menu'), run: () => { const m = root.querySelector('.pf-ctx-menu'); if (m) m.remove(); if (typeof _closeCtx === 'function') _closeCtx(); } },
     { check: () => !!root.querySelector('.pf-dep-dropdown'), run: () => { const dd = root.querySelector('.pf-dep-dropdown'); if (dd) dd.remove(); } },
@@ -1904,6 +1921,11 @@
   ];
   function handleEscape() {
     for (const d of _escDismissables) { if (d.check()) { d.run(); return; } }
+  }
+  function _exitMultiSelectMode() {
+    if (_splitCatMultiSelect.length) { _splitCatMultiSelect = []; renderSplitList(); }
+    if (splitMultiSelect.length) { splitMultiSelect = []; renderSplitList(); renderSplitDetail(); }
+    if (subMultiSelect.length) { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); }
   }
 
   let panActive = false, panStartX = 0, panStartY = 0, scrollStartX = 0, scrollStartY = 0;
@@ -2116,7 +2138,8 @@
   const colorModal = document.getElementById('pf-color-modal');
   const duelistPanel = document.getElementById('pf-duelist-panel');
   const snapshotsPanel = document.getElementById('pf-snapshots-panel');
-  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel];
+  const copyModal = document.getElementById('pf-copy-modal');
+  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal];
   function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
   function openModal(el, displayValue) { closeAllModals(); el.style.display = displayValue; modalBackdrop.style.display = 'block'; }
   modalBackdrop.addEventListener('click', closeAllModals);
@@ -2171,6 +2194,7 @@
   if (duePanelClose) duePanelClose.addEventListener('click', closeAllModals);
 
   reminderBtn.addEventListener('click', () => {
+    _exitMultiSelectMode();
     const showing = reminderPopover.style.display !== 'none';
     if (showing) { closeAllModals(); } else { reminderInput.value = reminderDays; openModal(reminderPopover, 'block'); }
   });
@@ -2257,6 +2281,7 @@
     render();
   }
   categoryBtn.addEventListener('click', () => {
+    _exitMultiSelectMode();
     const showing = categoryPopover.style.display !== 'none';
     if (showing) { closeAllModals(); renderSplitList(); } else { renderCategoryList(); openModal(categoryPopover, 'flex'); }
   });
@@ -2466,7 +2491,42 @@
     }, 50);
   }
   function _flashStatusTransition(selector) { requestAnimationFrame(() => { const el = document.querySelector(selector); if (el) { el.classList.remove('pf-status-transitioning'); void el.offsetWidth; el.classList.add('pf-status-transitioning'); el.addEventListener('animationend', () => el.classList.remove('pf-status-transitioning'), { once: true }); } }); }
-  function cycleProjectStatus(id) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; if (navigator.vibrate) navigator.vibrate(10); p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); _flashStatusTransition('[data-id="' + id + '"]'); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
+  function cycleProjectStatus(id, targetStatus) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = targetStatus || STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; if (p.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); _flashStatusTransition('[data-id="' + id + '"]'); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
+  let _statusMenuEl = null;
+  function closeStatusMenu() { if (_statusMenuEl) { _statusMenuEl.remove(); _statusMenuEl = null; document.removeEventListener('click', closeStatusMenu, true); document.removeEventListener('scroll', closeStatusMenu, true); window.removeEventListener('resize', closeStatusMenu); } }
+  function openStatusMenu(anchorEl, currentStatus, onPick) {
+    closeStatusMenu();
+    const rect = anchorEl.getBoundingClientRect();
+    const menu = document.createElement('div');
+    menu.className = 'pf-status-menu';
+    menu.style.cssText = 'position:fixed;z-index:9999;background:var(--card);border:1px solid var(--card-border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.35);padding:4px;min-width:140px;font-size:12px;';
+    STATUSES.forEach(function(st) {
+      const item = document.createElement('div');
+      item.textContent = STATUS_LABEL[st];
+      const isCurrent = st === currentStatus;
+      item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;color:var(--text);' + (isCurrent ? 'background:color-mix(in srgb, var(--accent) 18%, transparent);font-weight:700;' : '');
+      const dot = document.createElement('span');
+      dot.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + statusDotColor(st) + ';border:1.5px solid ' + statusDotColor(st) + ';';
+      item.prepend(dot);
+      item.addEventListener('click', function(e) { e.stopPropagation(); closeStatusMenu(); if (!isCurrent) onPick(st); });
+      item.addEventListener('mouseenter', function() { if (!isCurrent) item.style.background = 'var(--card-hover)'; });
+      item.addEventListener('mouseleave', function() { if (!isCurrent) item.style.background = ''; });
+      menu.appendChild(item);
+    });
+    document.getElementById('pf-root').appendChild(menu);
+    _statusMenuEl = menu;
+    const mRect = menu.getBoundingClientRect();
+    let top = rect.bottom + 4, left = rect.left;
+    if (left + mRect.width > window.innerWidth - 8) left = window.innerWidth - mRect.width - 8;
+    if (top + mRect.height > window.innerHeight - 8) top = rect.top - mRect.height - 4;
+    menu.style.top = Math.max(8, top) + 'px';
+    menu.style.left = Math.max(8, left) + 'px';
+    setTimeout(function() {
+      document.addEventListener('click', closeStatusMenu, true);
+      document.addEventListener('scroll', closeStatusMenu, true);
+      window.addEventListener('resize', closeStatusMenu);
+    }, 0);
+  }
   function checkAllCompleted(p) {
     if (!p.subtasks || !p.subtasks.length) return;
     // Auto-complete parent subtasks when all their children are done
@@ -2535,11 +2595,29 @@
 
   function findSubNode(list, id) { for (const item of list) { if (item.id === id) return item; if (item.subtasks && item.subtasks.length) { const found = findSubNode(item.subtasks, id); if (found) return found; } } return null; }
   function findSubParentArray(list, id) { for (const item of list) { if (item.id === id) return list; if (item.subtasks && item.subtasks.length) { const found = findSubParentArray(item.subtasks, id); if (found) return found; } } return null; }
+  function deepCloneSubtree(node) { const clone = { id: uid(), title: node.title, status: node.status || 'planned', expanded: false, createdAt: new Date().toISOString(), dueAt: node.dueAt || null, completedAt: node.completedAt || null, recurrence: node.recurrence || null, subtasks: (node.subtasks || []).map(deepCloneSubtree) }; return clone; }
+  function copySubtasksToProject(sourceProject, subtaskIds, targetProjectId) {
+    const targetProject = projects.find(pr => pr.id === targetProjectId);
+    if (!targetProject) return;
+    let nodes = subtaskIds.map(id => findSubNode(sourceProject.subtasks, id)).filter(Boolean);
+    // Drop any selected node whose ancestor is also selected — the ancestor's copy already includes it.
+    const idSet = new Set(subtaskIds);
+    nodes = nodes.filter(n => !nodes.some(other => other !== n && idSet.has(other.id) && isDescendant(other, n.id)));
+    if (!nodes.length) return;
+    snapshot();
+    const clones = nodes.map(deepCloneSubtree);
+    if (!targetProject.subtasks) targetProject.subtasks = [];
+    clones.forEach(c => targetProject.subtasks.push(c));
+    targetProject.expanded = true;
+    logActivity('Copied ' + nodes.length + ' task(s) from "' + sourceProject.title + '" to "' + targetProject.title + '"');
+    scheduleSave(); autoArrangeProjects(true); render();
+    showToast((nodes.length > 1 ? nodes.length + ' tasks' : '"' + nodes[0].title + '"') + ' copied to "' + targetProject.title + '"', false, true);
+  }
   function countTree(list) { let done = 0, total = 0; list.forEach(s => { total++; if (s.status === 'completed') done++; if (s.subtasks && s.subtasks.length) { const c = countTree(s.subtasks); done += c.done; total += c.total; } }); return { done, total }; }
 
   function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
-  function cycleSubStatus(projectId, subId) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked — complete dependencies first', true); return; } const oldStatus = s.status; s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }
+  function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked — complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }
   function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks); scheduleSave(); render(); }
   function promoteSubToProject(parentProject, sub) {
     snapshot();
@@ -2551,6 +2629,32 @@
     scheduleSave(); render();
     if (listViewActive) { splitSelectedId = newProj.id; renderSplitList(); renderSplitDetail(); }
     showToast('"' + sub.title + '" promoted to project', false, true);
+  }
+
+  function openCopyToProjectModal(sourceProject, subtaskIds) {
+    const list = document.getElementById('pf-copy-modal-list');
+    const title = document.getElementById('pf-copy-modal-title');
+    title.textContent = 'Copy ' + (subtaskIds.length > 1 ? subtaskIds.length + ' Tasks' : 'Task') + ' to Project';
+    list.innerHTML = '';
+    const others = projects.filter(pr => pr.id !== sourceProject.id);
+    if (!others.length) {
+      list.innerHTML = '<div class="pf-activity-empty">No other projects to copy to.</div>';
+    } else {
+      others.forEach(pr => {
+        const treeCount = countTree(pr.subtasks || []);
+        const countLabel = treeCount.total ? (treeCount.done + '/' + treeCount.total + ' done') : 'No subtasks yet';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--card-border);margin-bottom:4px;background:var(--card);cursor:pointer;transition:border-color 0.15s,transform 0.1s;';
+        row.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--' + pr.status + ');flex-shrink:0;"></span>' +
+          '<span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(pr.title) + '</span>' +
+          '<span style="color:var(--text-dim);font-size:10px;flex-shrink:0;">' + countLabel + '</span>';
+        row.addEventListener('mouseenter', () => { row.style.borderColor = 'var(--hover-border)'; });
+        row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; });
+        row.addEventListener('click', () => { closeAllModals(); copySubtasksToProject(sourceProject, subtaskIds, pr.id); clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); });
+        list.appendChild(row);
+      });
+    }
+    openModal(copyModal, 'flex');
   }
 
   function focusEl(selector) { requestAnimationFrame(() => { let el = canvas.querySelector(selector) || root.querySelector(selector); if (el) { el.contentEditable = 'true'; el.focus(); const range = document.createRange(); range.selectNodeContents(el); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } }); }
@@ -2736,37 +2840,57 @@
     const sublist = div.querySelector('.pf-sublist'); if (p.expanded) { renderSubtaskRows(sublist, p, p.subtasks, 0); }
     sublist.__project = p; sublist.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); clearIndicators(); sublist.classList.add('pf-drop-root'); }); sublist.addEventListener('dragleave', (e) => { if (e.target === sublist) sublist.classList.remove('pf-drop-root'); }); sublist.addEventListener('drop', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); performMove(p, null, null); });
     const addBtn = document.createElement('button'); addBtn.className = 'pf-add-sub'; addBtn.textContent = '+ Add subtask'; addBtn.addEventListener('click', (e) => { e.stopPropagation(); addSubtask(p.id, null); }); sublist.appendChild(addBtn);
-    div.querySelector('.pf-chevron').addEventListener('click', (e) => { e.stopPropagation(); if (listViewActive) { const allExpanded = (function check(list) { return list.every(s => (!s.subtasks || !s.subtasks.length || (s.expanded && check(s.subtasks)))); })(p.subtasks); (function setAll(list, val) { list.forEach(s => { s.expanded = val; if (s.subtasks && s.subtasks.length) setAll(s.subtasks, val); }); })(p.subtasks, !allExpanded); render(); } else { toggleExpand(p.id); } }); div.querySelector('.pf-node-del').addEventListener('click', (e) => { e.stopPropagation(); deleteProject(p.id); }); div.querySelector('.pf-badge').addEventListener('click', (e) => { e.stopPropagation(); cycleProjectStatus(p.id); });
+    div.querySelector('.pf-chevron').addEventListener('click', (e) => { e.stopPropagation(); if (listViewActive) { const allExpanded = (function check(list) { return list.every(s => (!s.subtasks || !s.subtasks.length || (s.expanded && check(s.subtasks)))); })(p.subtasks); (function setAll(list, val) { list.forEach(s => { s.expanded = val; if (s.subtasks && s.subtasks.length) setAll(s.subtasks, val); }); })(p.subtasks, !allExpanded); render(); } else { toggleExpand(p.id); } }); div.querySelector('.pf-node-del').addEventListener('click', (e) => { e.stopPropagation(); deleteProject(p.id); }); div.querySelector('.pf-badge').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, p.status, (st) => cycleProjectStatus(p.id, st)); });
     div.querySelector('.pf-node-header').addEventListener('pointerdown', (e) => { if (e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; const titleEl2 = e.target.closest('.pf-node-title'); if (titleEl2 && titleEl2.contentEditable === 'true') return; dragHandleArmedProject = true; });
+    const nodeHeaderEl = div.querySelector('.pf-node-header');
+    nodeHeaderEl.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId === p.id) return; e.preventDefault(); e.stopPropagation(); nodeHeaderEl.classList.add('pf-drop-copy-target'); });
+    nodeHeaderEl.addEventListener('dragleave', (e) => { if (e.target === nodeHeaderEl) nodeHeaderEl.classList.remove('pf-drop-copy-target'); });
+    nodeHeaderEl.addEventListener('drop', (e) => {
+      if (!draggingSubId || draggingProjectId === p.id) return;
+      e.preventDefault(); e.stopPropagation();
+      nodeHeaderEl.classList.remove('pf-drop-copy-target');
+      const sourceProject = projects.find(pr => pr.id === draggingProjectId);
+      const ids = _draggingSubIds.length ? _draggingSubIds.slice() : [draggingSubId];
+      draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; clearIndicators();
+      if (sourceProject) { copySubtasksToProject(sourceProject, ids, p.id); clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); }
+    });
     const titleEl = div.querySelector('.pf-node-title'); let titleClickCount = 0; let titleClickTimer = null; let _titleTapCount = 0; let _titleTapTimer = null;
     titleEl.addEventListener('pointerdown', (e) => { if (titleEl.contentEditable === 'true') e.stopPropagation(); });
     titleEl.addEventListener('click', (e) => { e.stopPropagation(); if (titleEl.contentEditable === 'true') return; titleClickCount++; if (titleClickCount === 1) { titleClickTimer = setTimeout(() => { titleClickCount = 0; if (!listViewActive) toggleExpand(p.id); }, 200); } else if (titleClickCount === 2) { clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } });
     titleEl.addEventListener('touchend', (e) => { if (titleEl.contentEditable === 'true') return; _titleTapCount++; if (_titleTapCount === 2) { clearTimeout(_titleTapTimer); _titleTapCount = 0; e.preventDefault(); clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } else { clearTimeout(_titleTapTimer); _titleTapTimer = setTimeout(() => { _titleTapCount = 0; }, 350); } });
     titleEl.addEventListener('blur', () => { titleEl.contentEditable = 'false'; const val = titleEl.textContent.trim() || 'Untitled'; if (val !== p.title) { snapshot(); p.title = val; scheduleSave(); } }); titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
     const descEl = div.querySelector('.pf-node-desc'); descEl.addEventListener('pointerdown', (e) => e.stopPropagation()); descEl.addEventListener('click', (e) => e.stopPropagation()); descEl.addEventListener('blur', () => { const val = descEl.textContent.trim(); if (val !== (p.description || '')) { snapshot(); p.description = val || ''; scheduleSave(); } }); descEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); descEl.blur(); } });
-    div.querySelector('.pf-node-header').addEventListener('click', (e) => { if (e.target.closest('.pf-node-title') || e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; toggleExpand(p.id); });
+    div.querySelector('.pf-node-header').addEventListener('click', (e) => { if (_pasteArmed && _taskClipboard && _taskClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; } if (e.target.closest('.pf-node-title') || e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; toggleExpand(p.id); }, true);
     makeDraggable(div, p); makeResizable(div, p); return div;
   }
 
   let subMultiSelect = [];
   function clearSubSelect() { subMultiSelect = []; root.querySelectorAll('.pf-sub-selected').forEach(el => el.classList.remove('pf-sub-selected')); }
+  function subSelectOwnerProject(id) { return projects.find(pr => pr.subtasks && findSubNode(pr.subtasks, id)); }
+  function subSelectProjectIds() { const ids = new Set(); subMultiSelect.forEach(id => { const pr = subSelectOwnerProject(id); if (pr) ids.add(pr.id); }); return ids; }
   function renderSubSelectBar(p) {
     const existing = root.querySelector('.pf-sub-select-bar');
     if (existing) existing.remove();
     if (subMultiSelect.length < 1) return;
     const sublist = root.querySelector('.pf-node[data-id="' + p.id + '"] .pf-sublist');
     if (!sublist) return;
+    const projectIds = subSelectProjectIds();
+    const spansMultiple = projectIds.size > 1;
     const bar = document.createElement('div');
     bar.className = 'pf-sub-select-bar';
-    bar.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(123,104,238,0.1);border:1px solid var(--accent);border-radius:6px;margin:6px 0;';
-    bar.innerHTML = '<span style="font-size:11px;color:var(--text-dim);">' + subMultiSelect.length + ' selected</span>' +
-      '<button class="pf-undo-btn" data-sub-action="cycle" style="font-size:10px;padding:3px 8px;">Cycle Status</button>' +
+    bar.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(123,104,238,0.1);border:1px solid var(--accent);border-radius:6px;margin:6px 0;flex-wrap:wrap;';
+    bar.innerHTML = '<span style="font-size:11px;color:var(--text-dim);">' + subMultiSelect.length + ' selected' + (spansMultiple ? ' (' + projectIds.size + ' projects)' : '') + '</span>' +
+      '<button class="pf-undo-btn" data-sub-action="cycle" style="font-size:10px;padding:3px 8px;">Set Status</button>' +
       '<button class="pf-undo-btn" data-sub-action="due" style="font-size:10px;padding:3px 8px;">Set Due</button>' +
+      '<button class="pf-undo-btn" data-sub-action="copy" style="font-size:10px;padding:3px 8px;"' + (spansMultiple ? ' title="Copy to… only works from a single project — narrow your selection to one project"' : '') + '>Copy to…</button>' +
+      '<button class="pf-undo-btn" data-sub-action="copy-clip" style="font-size:10px;padding:3px 8px;" title="Ctrl+C">📄 Copy</button>' +
       '<button class="pf-undo-btn" data-sub-action="delete" style="font-size:10px;padding:3px 8px;color:var(--danger);">Delete</button>' +
       '<button class="pf-undo-btn" data-sub-action="clear" style="font-size:10px;padding:3px 6px;">✕</button>';
-    bar.querySelector('[data-sub-action="cycle"]').addEventListener('click', (e) => { e.stopPropagation(); try { snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) { s.status = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; } }); scheduleSave(); render(); checkAllCompleted(p); requestAnimationFrame(() => renderSubSelectBar(p)); } catch (err) { console.error('[Orga-naes] Bulk cycle status failed:', err); showToast('⚠ Cycle status failed — see console', true); } });
-    bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); subMultiSelect.forEach(id => { const s = findSubNode(p.subtasks, id); if (s) s.dueAt = val; }); clearSubSelect(); scheduleSave(); render(); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
-    bar.querySelector('[data-sub-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return; snapshot(); subMultiSelect.forEach(id => { const arr = findSubParentArray(p.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } }); clearSubSelect(); scheduleSave(); render(); });
+    bar.querySelector('[data-sub-action="copy"]').addEventListener('click', (e) => { e.stopPropagation(); if (spansMultiple) { showToast('⚠ "Copy to…" needs a single-project selection — narrow your selection first', true); return; } openCopyToProjectModal(p, subMultiSelect.slice()); });
+    bar.querySelector('[data-sub-action="copy-clip"]').addEventListener('click', (e) => { e.stopPropagation(); const clip = buildClipboardFromSelection(); if (!clip || !clip.length) return; _taskClipboard = clip; showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it'); });
+    bar.querySelector('[data-sub-action="cycle"]').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, null, (st) => { try { snapshot(); const touched = new Set(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.status = st; s.completedAt = st === 'completed' ? new Date().toISOString() : null; touched.add(owner); } }); scheduleSave(); render(); touched.forEach(pr => checkAllCompleted(pr)); requestAnimationFrame(() => renderSubSelectBar(p)); } catch (err) { console.error('[Orga-naes] Bulk set status failed:', err); showToast('⚠ Set status failed — see console', true); } }); });
+    bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); const touched = new Set(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.dueAt = val; touched.add(owner); } }); clearSubSelect(); scheduleSave(); render(); touched.forEach(pr => { checkAllCompleted(pr); if (pr._manualStatus && pr.status !== 'completed') { delete pr._manualStatus; } }); } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
+    bar.querySelector('[data-sub-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return; snapshot(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const arr = findSubParentArray(owner.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } }); clearSubSelect(); scheduleSave(); render(); });
     bar.querySelector('[data-sub-action="clear"]').addEventListener('click', (e) => { e.stopPropagation(); clearSubSelect(); const existing2 = root.querySelector('.pf-sub-select-bar'); if (existing2) existing2.remove(); });
     sublist.insertBefore(bar, sublist.firstChild);
   }
@@ -2805,7 +2929,7 @@
     const editBtn = document.createElement('button'); editBtn.className = 'pf-sub-edit'; editBtn.title = 'Edit title'; editBtn.textContent = '✏️'; editBtn.addEventListener('click', (e) => { e.stopPropagation(); const t = row.querySelector('.pf-subrow-title'); t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); }); subDatesEl.appendChild(editBtn);
     const delBtn = document.createElement('button'); delBtn.className = 'pf-sub-del'; delBtn.title = 'Delete subtask'; delBtn.textContent = '×'; delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteSubtask(p.id, s.id); }); subDatesEl.appendChild(delBtn);
     const _hasBlockers = getUnresolvedBlockers(p, s).length > 0;
-    const dotEl = document.createElement('span'); dotEl.className = 'pf-sub-dot' + (_hasBlockers ? ' pf-blocked' : ''); dotEl.title = _hasBlockers ? 'Blocked' : 'Cycle status'; dotEl.style.background = s.status === 'planned' ? 'transparent' : statusDotColor(s.status); dotEl.style.borderColor = statusDotColor(s.status); subDatesEl.appendChild(dotEl);
+    const dotEl = document.createElement('span'); dotEl.className = 'pf-sub-dot' + (_hasBlockers ? ' pf-blocked' : ''); dotEl.title = _hasBlockers ? 'Blocked' : 'Set status'; dotEl.style.background = s.status === 'planned' ? 'transparent' : statusDotColor(s.status); dotEl.style.borderColor = statusDotColor(s.status); subDatesEl.appendChild(dotEl);
     if (s.status === 'completed' && s.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(s.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); s.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); subDatesEl.appendChild(doneLabel); } else { subDatesEl.appendChild(buildDueChip(s, (val) => { snapshot(); s.dueAt = val; scheduleSave(); render(); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }, false)); }
     subDatesEl.appendChild(buildDependencyChip(p, s));
     const commentBtn = document.createElement('button'); commentBtn.className = 'pf-sub-comment'; commentBtn.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; commentBtn.textContent = '💬'; commentBtn.style.whiteSpace = 'nowrap'; if (s.comments && s.comments.length) { commentBtn.style.opacity = '1'; commentBtn.style.color = 'var(--text)'; } commentBtn.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(commentBtn);
@@ -2861,12 +2985,13 @@
     row.querySelector('.pf-subrow-title').addEventListener('pointerdown', (e) => { const t = row.querySelector('.pf-subrow-title'); if (t.contentEditable === 'true') { e.stopPropagation(); return; } dragHandleArmed = true; });
     row.draggable = true;
     row.addEventListener('dragstart', (e) => { if (!dragHandleArmed) { e.preventDefault(); return; } e.stopPropagation(); dragHandleArmed = false; draggingSubId = s.id; draggingProjectId = p.id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', s.id); } catch (err) {} if (subMultiSelect.length && subMultiSelect.includes(s.id)) { _draggingSubIds = subMultiSelect.slice(); } else { _draggingSubIds = [s.id]; } requestAnimationFrame(() => row.classList.add('pf-sub-dragging')); });
+    row.addEventListener('click', (e) => { if (!_pasteArmed || !_taskClipboard || !_taskClipboard.length) return; if (e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates') || e.target.closest('.pf-sub-ctx-btn')) return; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); pasteClipboardUnder(p, s); }, true);
     row.addEventListener('dragend', () => { row.classList.remove('pf-sub-dragging'); draggingSubId = null; draggingProjectId = null; clearIndicators(); });
     row.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId !== p.id || draggingSubId === s.id) return; e.preventDefault(); e.stopPropagation(); const rect = row.getBoundingClientRect(); const ratio = (e.clientY - rect.top) / rect.height; const zone = ratio < 0.25 ? 'before' : ratio > 0.75 ? 'after' : 'nest'; clearIndicators(); row.classList.add('pf-drop-' + zone); row.dataset.dropZone = zone; });
     row.addEventListener('dragleave', (e) => { if (e.target === row) row.classList.remove('pf-drop-before', 'pf-drop-after', 'pf-drop-nest'); });
     row.addEventListener('drop', (e) => { if (!draggingSubId || draggingProjectId !== p.id || draggingSubId === s.id) return; e.preventDefault(); e.stopPropagation(); performMove(p, s.id, row.dataset.dropZone || 'after'); });
     if (hasChildren) { row.querySelector('.pf-sub-chevron').addEventListener('click', (e) => { e.stopPropagation(); toggleSubExpand(p.id, s.id); }); row.addEventListener('click', (e) => { if (e.ctrlKey || e.metaKey) return; if (e.target.closest('.pf-sub-handle') || e.target.closest('.pf-sub-chevron') || e.target.closest('.pf-sub-dot') || e.target.closest('.pf-subrow-title') || e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates')) return; toggleSubExpand(p.id, s.id); }); }
-    row.querySelector('.pf-sub-dot').addEventListener('click', (e) => { e.stopPropagation(); cycleSubStatus(p.id, s.id); });
+    row.querySelector('.pf-sub-dot').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, s.status, (st) => cycleSubStatus(p.id, s.id, st)); });
     row.addEventListener('click', (e) => { if (e.ctrlKey || e.metaKey) { if (e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates')) return; e.stopPropagation(); const idx = subMultiSelect.indexOf(s.id); if (idx > -1) { subMultiSelect.splice(idx, 1); row.classList.remove('pf-sub-selected'); } else { subMultiSelect.push(s.id); row.classList.add('pf-sub-selected'); } renderSubSelectBar(p); } });
     row.querySelector('.pf-sub-ctx-btn').addEventListener('click', (e) => { e.stopPropagation(); const rect = e.target.getBoundingClientRect(); _showSubCtxMenu(rect.left, rect.bottom, p, s); });
     row.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); if (e.pointerType === 'touch' || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) return; _showSubCtxMenu(e.clientX, e.clientY, p, s); });
@@ -3004,14 +3129,14 @@
           const isCompleted = p.status === 'completed';
           const item = document.createElement('div');
           item.style.cssText = 'font-size: 13px; color: var(--text); padding: 6px 8px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.15s; background: var(--card); border: 1px solid var(--card-border);' + (isCompleted ? 'opacity:0.5;text-decoration:line-through;' : '');
-          item.innerHTML = '<span class="pf-list-dot" style="width:8px;height:8px;border-radius:50%;background:' + (p.color || 'var(--' + p.status + ')') + ';flex-shrink:0;cursor:pointer;border:1.5px solid ' + (p.color || 'var(--' + p.status + ')') + ';" title="Cycle status"></span>' +
+          item.innerHTML = '<span class="pf-list-dot" style="width:8px;height:8px;border-radius:50%;background:' + (p.color || 'var(--' + p.status + ')') + ';flex-shrink:0;cursor:pointer;border:1.5px solid ' + (p.color || 'var(--' + p.status + ')') + ';" title="Set status"></span>' +
             '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">' + escapeHtml(p.title) + '</span>' +
             (progressText ? '<span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">' + progressText + '</span>' : '') +
             '<span style="font-size:10px;color:var(--' + p.status + ');flex-shrink:0;padding:2px 6px;border-radius:6px;background:var(--' + p.status + '-bg);">' + STATUS_LABEL[p.status] + '</span>' +
             (dueText ? '<span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">' + dueText + '</span>' : '');
           item.addEventListener('mouseenter', () => { item.style.borderColor = 'var(--hover-border)'; });
           item.addEventListener('mouseleave', () => { item.style.borderColor = 'var(--card-border)'; });
-          item.querySelector('.pf-list-dot').addEventListener('click', (e) => { e.stopPropagation(); snapshot(); const oldStatus = p.status; p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); renderCategoryZones(); });
+          item.querySelector('.pf-list-dot').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, p.status, (st) => { snapshot(); const oldStatus = p.status; p.status = st; if (p.status === oldStatus) return; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); renderCategoryZones(); }); });
           item.addEventListener('click', (e) => { e.stopPropagation(); collapsedCategories[name] = false; saveCollapsedCategories(); p.expanded = true; scheduleSave(); autoArrangeProjects(true); });
           list.appendChild(item);
         });
@@ -3024,6 +3149,88 @@
   let searchTerm = '';
   let dueFilter = 'all';
   let selectedProjectId = null;
+  let _taskClipboard = null; let _pasteArmed = false;
+  function pruneCloneToSelection(node, idSet) {
+    const clone = { id: uid(), title: node.title, status: node.status || 'planned', expanded: false, createdAt: new Date().toISOString(), dueAt: node.dueAt || null, completedAt: node.completedAt || null, recurrence: node.recurrence || null, subtasks: [] };
+    const anySelectedBelow = (node.subtasks || []).some(c => idSet.has(c.id) || nodeHasSelectedDescendant(c, idSet));
+    if (!anySelectedBelow) {
+      // Nothing under this node was individually selected: this node was selected on its own, so copy its whole branch as-is.
+      clone.subtasks = (node.subtasks || []).map(deepCloneSubtree);
+      return clone;
+    }
+    (node.subtasks || []).forEach(child => {
+      if (idSet.has(child.id)) {
+        // Child explicitly selected: include it in full (with all its own descendants), regardless of grandchild selection.
+        clone.subtasks.push(deepCloneSubtree(child));
+      } else if (nodeHasSelectedDescendant(child, idSet)) {
+        // Child not selected itself, but something under it is: keep it as a pass-through container, pruned to only the selected branches.
+        clone.subtasks.push(pruneCloneToSelection(child, idSet));
+      }
+      // else: unselected sibling with nothing selected underneath — dropped entirely.
+    });
+    return clone;
+  }
+  function nodeHasSelectedDescendant(node, idSet) {
+    if (!node.subtasks) return false;
+    return node.subtasks.some(c => idSet.has(c.id) || nodeHasSelectedDescendant(c, idSet));
+  }
+  function buildClipboardFromSelection() {
+    // Manually-selected subtasks always win: copy exactly what's selected, nothing more.
+    if (subMultiSelect.length) {
+      const idSet = new Set(subMultiSelect);
+      const byProject = new Map();
+      subMultiSelect.forEach(id => {
+        const owner = subSelectOwnerProject(id);
+        if (!owner) return;
+        if (!byProject.has(owner.id)) byProject.set(owner.id, { project: owner, nodes: [] });
+        const node = findSubNode(owner.subtasks, id);
+        if (node) byProject.get(owner.id).nodes.push(node);
+      });
+      const out = [];
+      byProject.forEach(({ nodes }) => {
+        // Keep only the "top" selected nodes — drop any selected node whose ancestor is also selected, since the ancestor's pruned clone already carries it.
+        const roots = nodes.filter(n => !nodes.some(other => other !== n && idSet.has(other.id) && isDescendant(other, n.id)));
+        roots.forEach(n => out.push(pruneCloneToSelection(n, idSet)));
+      });
+      return out;
+    }
+    // No subtasks manually selected: selected main task(s) copy in full, with all nested subtasks.
+    if (splitMultiSelect.length) {
+      return splitMultiSelect.map(id => projects.find(pr => pr.id === id)).filter(Boolean).map(pr => ({ id: pr.id, title: pr.title, status: pr.status, dueAt: pr.dueAt, completedAt: pr.completedAt, recurrence: pr.recurrence, subtasks: pr.subtasks || [] }));
+    }
+    return null;
+  }
+  function pasteClipboardAsMain(targetProject) {
+    if (!_taskClipboard || !_taskClipboard.length) return;
+    snapshot();
+    const clones = _taskClipboard.map(deepCloneSubtree);
+    if (!targetProject.subtasks) targetProject.subtasks = [];
+    clones.forEach(c => targetProject.subtasks.push(c));
+    targetProject.expanded = true;
+    logActivity('Copied ' + clones.length + ' task(s) to "' + targetProject.title + '"');
+    scheduleSave(); autoArrangeProjects(true); render();
+    showToast((clones.length > 1 ? clones.length + ' tasks' : '"' + clones[0].title + '"') + ' copied to "' + targetProject.title + '"', false, true);
+    _pasteArmed = false; root.classList.remove('pf-paste-armed');
+    clearSubSelect(); splitMultiSelect = []; const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove();
+  }
+  function pasteClipboardUnder(targetProject, targetSub) {
+    if (!_taskClipboard || !_taskClipboard.length) return;
+    const nodes = _taskClipboard;
+    if (nodes.some(n => n.id === targetSub.id || isDescendant(n, targetSub.id))) {
+      showToast('⚠ Can\'t paste a task under itself or its own child', true);
+      return;
+    }
+    snapshot();
+    const clones = nodes.map(deepCloneSubtree);
+    if (!targetSub.subtasks) targetSub.subtasks = [];
+    clones.forEach(c => targetSub.subtasks.push(c));
+    targetSub.expanded = true;
+    logActivity('Copied ' + clones.length + ' task(s) under "' + targetSub.title + '"');
+    scheduleSave(); autoArrangeProjects(true); render();
+    showToast((clones.length > 1 ? clones.length + ' tasks' : '"' + clones[0].title + '"') + ' pasted under "' + targetSub.title + '"', false, true);
+    _pasteArmed = false; root.classList.remove('pf-paste-armed');
+    clearSubSelect(); splitMultiSelect = []; const bar2 = root.querySelector('.pf-sub-select-bar'); if (bar2) bar2.remove();
+  }
   function renderSelection() {
     canvas.querySelectorAll('.pf-node').forEach(n => {
       n.classList.remove('pf-node-selected');
@@ -3198,14 +3405,15 @@
       if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = '';
     }, 200);
   };
-  window._splitCycleSelected = function() {
+  window._splitCycleSelected = function(targetStatus) {
     if (!splitMultiSelect.length) return;
     snapshot();
     splitMultiSelect.forEach(id => {
       const p = projects.find(pr => pr.id === id);
       if (!p) return;
       const oldStatus = p.status;
-      p.status = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length];
+      p.status = targetStatus || STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length];
+      if (p.status === oldStatus) return;
       p._manualStatus = true;
       p.completedAt = p.status === 'completed' ? new Date().toISOString() : null;
       logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]);
@@ -3266,8 +3474,8 @@
     if (splitMultiSelect.length >= 1) {
       const bar = document.createElement('div');
       bar.className = 'pf-split-delete-bar';
-      bar.innerHTML = '<span>' + splitMultiSelect.length + ' selected</span><button data-action="cycle">Cycle status</button><button data-action="delete">Delete selected</button><button data-action="clear">✕ Clear</button>';
-      bar.querySelector('[data-action="cycle"]').addEventListener('click', () => { _splitCycleSelected(); });
+      bar.innerHTML = '<span>' + splitMultiSelect.length + ' selected</span><button data-action="cycle">Set status</button><button data-action="delete">Delete selected</button><button data-action="clear">✕ Clear</button>';
+      bar.querySelector('[data-action="cycle"]').addEventListener('click', (e) => { openStatusMenu(e.currentTarget, null, (st) => _splitCycleSelected(st)); });
       bar.querySelector('[data-action="delete"]').addEventListener('click', () => { _splitDeleteSelected(); });
       bar.querySelector('[data-action="clear"]').addEventListener('click', () => { splitMultiSelect = []; splitSelectedId = null; renderSplitList(); renderSplitDetail(); });
       splitList.appendChild(bar);
@@ -3474,7 +3682,7 @@
         const tc = countTree(p.subtasks);
         const pct = tc.total ? tc.done / tc.total : 0;
         const r = 7, circ = 2 * Math.PI * r, offset = circ * (1 - pct);
-        const progressHtml = tc.total ? '<svg class="pf-progress-ring" width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="' + r + '" fill="none" stroke="var(--card-border)" stroke-width="2"/><circle cx="9" cy="9" r="' + r + '" fill="none" stroke="var(--completed)" stroke-width="2" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '" stroke-linecap="round" transform="rotate(-90 9 9)"/></svg><span class="pf-split-list-progress">' + tc.done + '/' + tc.total + '</span>' : '';
+        const progressHtml = tc.total ? '<svg class="pf-progress-ring" width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="' + r + '" fill="none" stroke="var(--card-border)" stroke-width="2"/><circle cx="9" cy="9" r="' + r + '" fill="none" stroke="var(--' + (p.status === 'waiting' ? 'accent' : p.status) + ')" stroke-width="2" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '" stroke-linecap="round" transform="rotate(-90 9 9)"/></svg><span class="pf-split-list-progress">' + tc.done + '/' + tc.total + '</span>' : '';
         let dueHtml = '<span class="pf-split-list-due"></span>';
         if (p.dueAt) {
           const now = new Date(); now.setHours(0,0,0,0);
@@ -3490,7 +3698,6 @@
         const emojiIcon = p.emoji || '';
         item.innerHTML = (emojiIcon ? '<span class="pf-emoji-btn" style="font-size:13px;">' + emojiIcon + '</span>' : '<span class="pf-split-list-dot" style="background:' + (p.color || 'var(--' + p.status + ')') + '"></span>') +
           '<span class="pf-split-list-title">' + (searchTerm ? highlightMatch(escapeHtml(p.title), searchTerm) : escapeHtml(p.title)) + '</span>' +
-          '<span class="pf-split-list-status" style="background:var(--' + p.status + '-bg);color:var(--' + p.status + ')">' + STATUS_LABEL[p.status] + '</span>' +
           progressHtml +
           '<button class="pf-split-list-edit" title="Rename">✏️</button>' +
           '<button class="pf-split-list-move pf-move-up" title="Move up">▲</button>' +
@@ -3687,6 +3894,8 @@
       { label: '→ ' + STATUS_LABEL[statusNext], action: () => { snapshot(); s.status = statusNext; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
       ...(!isMobile ? [{ label: '🔗 Dependencies', action: () => { const chip = root.querySelector('[data-sub-id="' + s.id + '"] .pf-dep-chip'); if (chip) chip.click(); else { const row = root.querySelector('[data-sub-id="' + s.id + '"]'); if (row) { const tempChip = buildDependencyChip(p, s); tempChip.style.position = 'absolute'; tempChip.style.opacity = '0'; row.appendChild(tempChip); tempChip.click(); } } } }] : []),
       ...(!isMobile ? [{ label: '⬆ Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
+      { label: '📋 Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
+      { label: '📄 Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied — click a project to paste as main task, or a task to nest under it'); } },
       ...(!isMobile ? [{ label: '🔁 Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return '🔁 Repeat: ' + labels[next]; } }] : []),
       { sep: true },
       { label: '🗑 Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },
@@ -3751,6 +3960,7 @@
       el.style.cssText = 'position: relative; left: auto; top: auto; width: 100%; min-width: 0; max-width: 100%;';
       splitDetail.appendChild(el);
     } catch (e) { console.error('[Orga-naes] renderSplitDetail failed:', e); splitDetail.innerHTML = '<div class="pf-empty" style="display:block;">Error rendering project. Check console for details.</div>'; }
+    if (subMultiSelect.length > 0) renderSubSelectBar(p);
     requestAnimationFrame(() => { requestAnimationFrame(_equalizeColumnWidths); });
   }
 
@@ -3920,12 +4130,15 @@
     listEl.innerHTML = activityLog.map(e => '<div class="pf-activity-item"><span class="pf-activity-time">' + formatDateTime(e.time) + '</span>' + escapeHtml(e.msg) + '</div>').join('');
   }
   document.getElementById('pf-activity-btn').addEventListener('click', () => {
+    _exitMultiSelectMode();
     closeAllModals(); renderActivityList(); openModal(activityPanel, 'flex');
   });
   document.getElementById('pf-archive-btn').addEventListener('click', () => {
+    _exitMultiSelectMode();
     closeAllModals(); renderArchiveList(); openModal(archivePanel, 'flex');
   });
   document.getElementById('pf-trash-btn').addEventListener('click', () => {
+    _exitMultiSelectMode();
     closeAllModals(); renderTrashList(); openModal(trashPanel, 'flex');
   });
   async function idbGetAllSnapshots() {
@@ -3978,6 +4191,7 @@
     });
   }
   document.getElementById('pf-snapshots-btn').addEventListener('click', () => {
+    _exitMultiSelectMode();
     closeAllModals(); renderSnapshotsList(); openModal(snapshotsPanel, 'flex');
   });
   document.getElementById('pf-trash-empty-btn').addEventListener('click', emptyTrash);
@@ -4593,6 +4807,7 @@
     return rows;
   }
   document.getElementById('pf-export-csv').addEventListener('click', () => {
+    _exitMultiSelectMode();
     const rows = collectReportRows();
     const header = 'Project,Task,Status,Due Date,Completed,Category,Comments\n';
     const csv = header + rows.map(r => [r.project, r.task, r.status, r.due, r.completed, r.category || '', r.comments].map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
@@ -4600,6 +4815,7 @@
     showToast('CSV exported.');
   });
   document.getElementById('pf-export-pdf').addEventListener('click', () => {
+    _exitMultiSelectMode();
     const rows = collectReportRows();
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Organeas Report</title><style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}h1{font-size:18px;margin-bottom:10px;}table{width:100%;border-collapse:collapse;margin-top:10px;}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;}th{background:#f5f5f5;font-weight:600;}tr:nth-child(even){background:#fafafa;}.project-row{background:#eef;font-weight:600;}</style></head><body><h1>Project Flow Report</h1><p>Generated: ' + new Date().toLocaleString() + '</p><table><thead><tr><th>Project</th><th>Task</th><th>Status</th><th>Due Date</th><th>Completed</th><th>Comments</th></tr></thead><tbody>' + rows.map(r => '<tr class="' + (r.task === '' ? 'project-row' : '') + '"><td>' + escapeHtml(r.project) + '</td><td>' + '&nbsp;'.repeat(r.depth * 4) + escapeHtml(r.task) + '</td><td>' + escapeHtml(r.status) + '</td><td>' + escapeHtml(r.due) + '</td><td>' + escapeHtml(r.completed) + '</td><td>' + r.comments + '</td></tr>').join('') + '</tbody></table></body></html>';
     const blob = new Blob([html], { type: 'text/html' }); const url = URL.createObjectURL(blob); const w = window.open(url, '_blank'); setTimeout(() => { if (w) w.print(); URL.revokeObjectURL(url); }, 500);
@@ -4635,6 +4851,7 @@
   (async function loadScale() { try { const res = await safeGet(SCALE_KEY, false); if (res && res.value) { scaleInput.value = res.value; applyScale(res.value); } } catch (e) {} })();
 
   document.getElementById('pf-export').addEventListener('click', async () => {
+    _exitMultiSelectMode();
     const json = JSON.stringify({ projects: projects, categories: categories, collapsedCategories: collapsedCategories, archive: archive }, null, 2);
     if (window.showSaveFilePicker) {
       try {
@@ -4735,115 +4952,15 @@
     startAutoBackup();
   })();
 
-  // --- File System Access API (Cloud Sync via local folder) ---
-  const FS_FILENAME = 'orga-naes-projects.json';
-  const FS_AUTOSAVE_KEY = 'project-flow-fs-autosave';
-  let _fsDirHandle = null;
-  let _fsAutosave = false;
-
-  (function loadFsAutosave() {
-    try { _fsAutosave = localStorage.getItem(FS_AUTOSAVE_KEY) === 'true'; } catch(e) {}
-    const cb = document.getElementById('pf-fs-autosave');
-    if (cb) { cb.checked = _fsAutosave; }
-  })();
-
-  function updateFsButtons() {
-    const ready = !!_fsDirHandle;
-    document.getElementById('pf-fs-save').disabled = !ready;
-    document.getElementById('pf-fs-load').disabled = !ready;
-    document.getElementById('pf-fs-folder-path').textContent = ready ? ('📂 ' + _fsDirHandle.name) : '';
-  }
-
-  async function fsPickFolder() {
-    if (!window.showDirectoryPicker) {
-      showToast('⚠ Your browser does not support File System Access API. Use Chrome or Edge.', true);
-      return;
-    }
-    try {
-      _fsDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-      updateFsButtons();
-      showToast('📁 Sync folder: ' + _fsDirHandle.name);
-    } catch (err) {
-      if (err.name !== 'AbortError') showToast('⚠ Could not select folder', true);
-    }
-  }
-
-  async function fsSave() {
-    if (!_fsDirHandle) { showToast('⚠ Pick a sync folder first', true); return; }
-    try {
-      const fileHandle = await _fsDirHandle.getFileHandle(FS_FILENAME, { create: true });
-      const writable = await fileHandle.createWritable();
-      const content = JSON.stringify({ projects, categories, collapsedCategories, archive, trash, lastModified: new Date().toISOString() }, null, 2);
-      await writable.write(content);
-      await writable.close();
-      showToast('✓ Saved to ' + _fsDirHandle.name + '/' + FS_FILENAME);
-    } catch (err) {
-      showToast('⚠ Save failed: ' + err.message, true);
-    }
-  }
-
-  function _applyFsData(parsed) {
-    snapshot();
-    if (Array.isArray(parsed.projects)) projects = parsed.projects;
-    else if (Array.isArray(parsed)) projects = parsed;
-    if (Array.isArray(parsed.categories)) categories = parsed.categories;
-    if (parsed.collapsedCategories) collapsedCategories = parsed.collapsedCategories;
-    if (Array.isArray(parsed.archive)) { archive = parsed.archive; saveArchive(); }
-    if (Array.isArray(parsed.trash)) { trash = parsed.trash; saveTrash(); }
-    projects.forEach(p => { p.expanded = false; });
-    saveCategories(); saveCollapsedCategories(); scheduleSave(); render();
-    showToast('✓ Loaded from ' + _fsDirHandle.name + ' (' + projects.length + ' projects)');
-  }
-
-  async function fsLoad() {
-    if (!_fsDirHandle) { showToast('⚠ Pick a sync folder first', true); return; }
-    try {
-      const fileHandle = await _fsDirHandle.getFileHandle(FS_FILENAME);
-      const file = await fileHandle.getFile();
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      const localTime = localStorage.getItem('project-flow-last-modified') || '';
-      const fileTime = parsed.lastModified || '';
-      if (localTime && fileTime && new Date(fileTime) < new Date(localTime)) {
-        if (!confirm('⚠ The file on disk (' + new Date(fileTime).toLocaleString() + ') is OLDER than your local data (' + new Date(localTime).toLocaleString() + ').\n\nLoad anyway and overwrite local data?')) return;
-      }
-      _applyFsData(parsed);
-    } catch (err) {
-      if (err.name === 'NotFoundError') { showToast('⚠ No save file found in that folder. Save first.', true); }
-      else { showToast('⚠ Load failed: ' + err.message, true); }
-    }
-  }
-
-  let _fsAutoSaveTimer = null;
-  function fsAutoSaveHook() {
-    if (!_fsAutosave || !_fsDirHandle) return;
-    if (_fsAutoSaveTimer) clearTimeout(_fsAutoSaveTimer);
-    _fsAutoSaveTimer = setTimeout(() => { _fsAutoSaveTimer = null; fsSave(); }, 2000);
-  }
-
   window.addEventListener('beforeunload', () => {
     // Force immediate save to localStorage before page unloads
     try { localStorage.setItem(STORE_KEY, JSON.stringify(projects)); } catch (e) {}
     try { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories)); } catch (e) {}
     try { localStorage.setItem('project-flow-cat-emojis', JSON.stringify(categoryEmojis)); } catch(e) {}
-    if (_fsAutosave && _fsDirHandle) {
-      try { fsSave(); } catch (e) {}
-    }
   });
-
-  document.getElementById('pf-fs-pick-folder').addEventListener('click', fsPickFolder);
-  document.getElementById('pf-fs-save').addEventListener('click', fsSave);
-  document.getElementById('pf-fs-load').addEventListener('click', fsLoad);
-  document.getElementById('pf-fs-autosave').addEventListener('change', (e) => {
-    _fsAutosave = e.target.checked;
-    localStorage.setItem(FS_AUTOSAVE_KEY, _fsAutosave ? 'true' : 'false');
-    showToast(_fsAutosave ? '✓ Auto-save enabled' : 'Auto-save disabled');
-  });
-
-
 
   const importInput = document.getElementById('pf-import-file');
-  document.getElementById('pf-import').addEventListener('click', () => importInput.click());
+  document.getElementById('pf-import').addEventListener('click', () => { _exitMultiSelectMode(); importInput.click(); });
   function parseImportJson(raw) {
     raw = raw.replace(/^\uFEFF/, '').trim();
     if (!raw) return { error: 'That file is empty.' };
@@ -6095,6 +6212,7 @@ if ('serviceWorker' in navigator) {
       _lastPushedHash = currentHash;
       updateLastSync();
     }
+    _lastPushedSnapshot = JSON.stringify(projects);
   }
   let _lastPushedCatHash = '';
 
@@ -6122,6 +6240,13 @@ if ('serviceWorker' in navigator) {
     _fbPushTimer = setTimeout(function() {
       pushSelective();
     }, 3000);
+  };
+  window._firebasePushNow = function() {
+    if (!_fbAutosync || !_fbUser) return;
+    if (!window._pf.getProjects().length) return;
+    if (!navigator.onLine) { _fbOfflineQueue = true; return; }
+    clearTimeout(_fbPushTimer);
+    pushSelective();
   };
   if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
   else {
