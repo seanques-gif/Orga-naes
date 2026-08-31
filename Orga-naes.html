@@ -795,6 +795,11 @@
   #pf-root .pf-ctx-menu-item:hover { background: rgba(123,104,238,0.1); }
   #pf-root .pf-ctx-menu-item.pf-ctx-danger { color: var(--danger); }
   #pf-root .pf-ctx-menu-item.pf-ctx-danger:hover { background: rgba(224,80,63,0.1); }
+  /* Non-clickable "info" row in a ⋮ menu (e.g. "Created Aug 31, 2026, 3:45 PM") —
+     dimmed text, no pointer cursor, no hover highlight. Search "it.info" in
+     the JS to see where these lines are added. */
+  #pf-root .pf-ctx-menu-item.pf-ctx-info { opacity: 0.6; cursor: default; font-size: 12px; }
+  #pf-root .pf-ctx-menu-item.pf-ctx-info:hover { background: transparent; }
   #pf-root .pf-ctx-menu-sep { height: 1px; background: var(--card-border); margin: 4px 0; }
   @keyframes pf-ctx-fade { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
   #pf-root .pf-cat-items-wrap { overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease; max-height: 2000px; opacity: 1; }
@@ -909,6 +914,9 @@
   #pf-root .pf-node-meta { display: flex; align-items: center; justify-content: space-between; padding: 0 11px 11px 37px; gap: 6px; }
   #pf-root .pf-badge { font-size: clamp(9px, 1.4vw, 11px); font-weight: 600; padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 9px); border-radius: 100px; border: 1px solid transparent; cursor: pointer; letter-spacing: 0.2px; white-space: nowrap; margin-top: 0; line-height: 1.2; align-self: center; transition: transform 0.15s, filter 0.15s, background 0.3s ease, color 0.3s ease; flex-shrink: 0; }
   #pf-root .pf-badge:hover { transform: scale(1.05); filter: brightness(1.15); }
+  #pf-root .pf-split-detail .pf-node > .pf-node-header > .pf-badge { display: none !important; }
+  #pf-root .pf-split-detail .pf-node > .pf-node-header .pf-cat-chip { display: none !important; }
+  #pf-root .pf-split-detail .pf-node > .pf-node-header .pf-recur-chip { display: none !important; }
   #pf-root .pf-count { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 500; }
 
   #pf-root .pf-sublist {
@@ -3913,6 +3921,10 @@
     }
     const statusNext = STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length];
     const items = [
+      // Non-clickable info line showing when this project was created.
+      // Uses the existing p.createdAt field (already saved on every
+      // project) and the existing formatDateTime() helper.
+      ...(p.createdAt ? [{ label: '📅 Created ' + formatDateTime(p.createdAt), info: true }, { sep: true }] : []),
       { label: '✏️ Rename', action: () => { const item = splitList.querySelector('[data-project-id="' + p.id + '"]'); if (item) _inlineRename(item, p); } },
       { label: '⭐ Add to Today', action: () => { addToToday(p.title, p.id, 'project'); } },
       { label: '⏰ Set Reminder', action: () => { promptReminder(p.id, p.title, 'project'); } },
@@ -3928,8 +3940,11 @@
     items.forEach(it => {
       if (it.sep) { const s = document.createElement('div'); s.className = 'pf-ctx-menu-sep'; menu.appendChild(s); return; }
       const el = document.createElement('div');
-      el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '');
+      // Non-clickable info line (e.g. "Created ..."): dimmed text, no
+      // hover highlight, no click action — search "it.info" to adjust.
+      el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '') + (it.info ? ' pf-ctx-info' : '');
       el.textContent = it.label;
+      if (it.info) { menu.appendChild(el); return; }
       if (it.cycling) {
         el.addEventListener('click', (e) => { e.stopPropagation(); el.textContent = it.action(); });
       } else {
@@ -3950,6 +3965,11 @@
     const statusNext = STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length];
     const isMobile = root.classList.contains('pf-device-mobile');
     const items = [
+      // Non-clickable info line showing when this task/subtask was
+      // created. Applies to both — in this app, a top-level "task" inside
+      // a project is really just a depth-0 subtask, so this one menu
+      // covers both cases. Uses the existing s.createdAt field.
+      ...(s.createdAt ? [{ label: '📅 Created ' + formatDateTime(s.createdAt), info: true }, { sep: true }] : []),
       ...(!isMobile ? [{ label: '✏️ Edit Title', action: () => { const row = root.querySelector('[data-sub-title-id="' + s.id + '"]'); if (row) { row.contentEditable = 'true'; row.focus(); const range = document.createRange(); range.selectNodeContents(row); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } } }] : []),
       { label: '⭐ Add to Today', action: () => { addToToday(s.title, s.id, 'subtask'); } },
       { label: '⏰ Set Reminder', action: () => { promptReminder(s.id, s.title, 'subtask'); } },
@@ -3965,8 +3985,11 @@
     items.forEach(it => {
       if (it.sep) { const sep = document.createElement('div'); sep.className = 'pf-ctx-menu-sep'; menu.appendChild(sep); return; }
       const el = document.createElement('div');
-      el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '');
+      // Non-clickable info line (e.g. "Created ..."): dimmed text, no
+      // hover highlight, no click action — search "it.info" to adjust.
+      el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '') + (it.info ? ' pf-ctx-info' : '');
       el.textContent = it.label;
+      if (it.info) { menu.appendChild(el); return; }
       if (it.cycling) {
         el.addEventListener('click', (e) => { e.stopPropagation(); el.textContent = it.action(); });
       } else {
