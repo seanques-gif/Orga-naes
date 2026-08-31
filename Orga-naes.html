@@ -3442,8 +3442,8 @@
   };
   let splitSortMode = 'due-cat';
   (async function loadSortMode() { try { const res = await safeGet('project-flow-sort-mode', false); if (res && res.value) splitSortMode = res.value; } catch (e) {} })();
-  let hideCompletedProjects = false;
-  (async function loadHideCompleted() { try { const res = await safeGet('project-flow-hide-completed', false); if (res && res.value) hideCompletedProjects = res.value === 'true'; } catch (e) {} })();
+  let showCompletedProjects = false;
+  (async function loadHideCompleted() { try { const res = await safeGet('project-flow-hide-completed', false); if (res && res.value) showCompletedProjects = res.value === 'true'; } catch (e) {} })();
   function sortProjects(list) {
     const sorted = splitSortMode === 'manual' ? list : list.slice().sort((a, b) => {
       if (splitSortMode === 'name') return a.title.localeCompare(b.title);
@@ -3464,12 +3464,12 @@
     const sortBar = document.createElement('div');
     sortBar.className = 'pf-split-sort';
     sortBar.innerHTML = '<button id="pf-split-collapse-all" class="pf-split-collapse-btn" title="Collapse/Expand all categories">▾ All</button>' +
-      '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (hideCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Hide completed projects">' + (hideCompletedProjects ? '☑' : '☐') + ' Hide completed</button>' +
+      '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (showCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Show completed projects">' + (showCompletedProjects ? '☑' : '☐') + ' Completed</button>' +
       '<span class="pf-split-sort-label">Sort:</span><select id="pf-split-sort-sel"><option value="manual">Manual</option><option value="name">Name</option><option value="status">Status</option><option value="due-cat">Due Date</option><option value="created">Newest</option></select>';
     splitList.appendChild(sortBar);
     sortBar.querySelector('select').value = splitSortMode;
     sortBar.querySelector('select').addEventListener('change', (e) => { splitSortMode = e.target.value; safeSet('project-flow-sort-mode', splitSortMode, false); renderSplitList(); });
-    sortBar.querySelector('#pf-split-hide-completed').addEventListener('click', () => { hideCompletedProjects = !hideCompletedProjects; safeSet('project-flow-hide-completed', String(hideCompletedProjects), false); renderSplitList(); });
+    sortBar.querySelector('#pf-split-hide-completed').addEventListener('click', () => { showCompletedProjects = !showCompletedProjects; safeSet('project-flow-hide-completed', String(showCompletedProjects), false); renderSplitList(); });
     const collapseBtn = sortBar.querySelector('#pf-split-collapse-all');
     const allCollapsed = categories.length > 0 && categories.every(c => splitCollapsedCats[c]);
     collapseBtn.textContent = allCollapsed ? '▸ All' : '▾ All';
@@ -3503,7 +3503,7 @@
       });
     }
     const grouped = {};
-    sortProjects(projects.filter(p => matchesSearch(p) && (!hideCompletedProjects || p.status !== 'completed'))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
+    sortProjects(projects.filter(p => matchesSearch(p) && (showCompletedProjects || p.status !== 'completed'))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
     // Include any categories from projects not in the categories array
     const extraCats = Object.keys(grouped).filter(c => c !== '__uncategorized__' && !categories.includes(c));
     if (extraCats.length) { categories.push(...extraCats); saveCategories(); }
@@ -4027,7 +4027,7 @@
   splitList.addEventListener('keydown', (e) => {
     if (!listViewActive) return;
     const grouped = {};
-    sortProjects(projects.filter(p => matchesSearch(p) && (!hideCompletedProjects || p.status !== 'completed'))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
+    sortProjects(projects.filter(p => matchesSearch(p) && (showCompletedProjects || p.status !== 'completed'))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
     const catOrder = categories.concat(grouped['__uncategorized__'] ? ['__uncategorized__'] : []);
     const items = [];
     catOrder.forEach(cat => { const group = grouped[cat]; if (!group || !group.length) return; if (splitCollapsedCats[cat]) return; group.forEach(p => items.push(p)); });
