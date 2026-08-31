@@ -17,6 +17,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 </head>
 <body>
 <style>
@@ -169,7 +172,7 @@
     --depth3: #5ba8c8;
 
     --font-size-base: clamp(11px, 1.8vw, 14px);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
     height: 100vh;
@@ -278,14 +281,14 @@
   }
   #pf-root .pf-tb-sep { width: 1px; height: 20px; background: var(--card-border); margin: 0 4px; flex-shrink: 0; }
   #pf-root .pf-title {
-    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: calc(var(--font-size-base) - 2px);
+    font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: calc(var(--font-size-base) - 2px);
     letter-spacing: 0.2px; display: flex; align-items: center; gap: 6px;
     margin-right: 2px; white-space: nowrap;
   }
   #pf-root .pf-title .pf-dot {
     width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
   }
-  #pf-root button { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; cursor: pointer; border: none; outline: none; }
+  #pf-root button { font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; cursor: pointer; border: none; outline: none; }
   #pf-root .pf-new-btn {
     background: var(--accent); color: var(--accent-contrast); font-weight: 600;
     font-size: calc(var(--font-size-base) - 4px); padding: 6px 10px; border-radius: 6px; transition: filter 0.15s; flex-shrink: 0;
@@ -324,7 +327,7 @@
   #pf-root .pf-search-toggle { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); cursor: pointer; border: none; padding: 4px 6px; border-radius: 5px; transition: color 0.12s, background 0.12s; }
   #pf-root .pf-search-toggle:hover { color: var(--text); background: rgba(255,255,255,0.06); }
   #pf-root .pf-search {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: calc(var(--font-size-base) - 4px); padding: 5px 22px 5px 8px; border-radius: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: calc(var(--font-size-base) - 4px); padding: 5px 22px 5px 8px; border-radius: 6px;
     border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text);
     outline: none; width: 0; max-width: 0; opacity: 0; padding-left: 0; padding-right: 0; border: none;
     caret-color: transparent; visibility: hidden;
@@ -366,7 +369,7 @@
     #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) #pf-toolbar-back { display: none !important; }
   }
   #pf-root .pf-due-filter {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: calc(var(--font-size-base) - 4px); padding: 3px 6px; border-radius: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: calc(var(--font-size-base) - 4px); padding: 3px 6px; border-radius: 6px;
     border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text);
     outline: none; cursor: pointer; flex-shrink: 0; height: 26px; box-sizing: border-box;
   }
@@ -448,7 +451,7 @@
   /* Device-specific optimizations */
   #pf-root.pf-device-mobile .pf-toolbar { gap: 2px; padding: 4px 6px; }
   #pf-root.pf-device-mobile .pf-undo-btn { min-width: 32px; min-height: 32px; font-size: 14px; }
-  #pf-root.pf-device-mobile .pf-split-list-item { padding: 4px 12px; gap: 6px; margin: 0 4px; }
+  #pf-root.pf-device-mobile .pf-split-list-item { padding: 4px 12px; gap: 6px; margin: 0 4px 0 16px; }
   #pf-root.pf-device-mobile .pf-split-list-status { min-width: 0; padding: 0; font-size: 0; border-radius: 50%; width: 10px; height: 10px; display: inline-block; flex-shrink: 0; background: currentColor !important; }
   #pf-root.pf-device-mobile .pf-subrow { padding: 10px 8px; }
   #pf-root.pf-device-mobile .pf-chevron { width: 28px; height: 28px; }
@@ -645,12 +648,12 @@
     display: none; width: 4px; background: var(--card-border); cursor: col-resize; flex-shrink: 0; transition: background 0.15s;
   }
   #pf-root .pf-split-divider:hover, #pf-root .pf-split-divider.pf-dragging { background: var(--accent); width: 5px; }
-  #pf-root .pf-split-list-cat { padding: 8px 12px; font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin: 6px 6px 6px 6px; border: none; border-top: 1px solid var(--card-border); border-radius: 6px; background: transparent; transition: background 0.15s, color 0.15s; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  #pf-root .pf-split-list-cat { padding: 6px 12px; font-size: 15px; font-weight: 700; color: var(--text); text-transform: none; letter-spacing: 0.1px; margin: 6px 6px 0px 6px; border: none; border-top: 1px solid var(--card-border); border-radius: 6px; background: transparent; transition: background 0.15s, color 0.15s; cursor: pointer; display: flex; align-items: center; gap: 6px; }
   #pf-root .pf-split-list-cat:first-of-type { margin-top: 4px; border-top: none; }
   #pf-root .pf-split-list-cat:hover { background: rgba(255,255,255,0.04); color: var(--text); }
   #pf-root .pf-split-list-item {
-    padding: 6px 12px 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px;
-    border-left: 2px solid transparent; border-radius: 6px; margin: 1px 4px;
+    padding: 6px 12px 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 3px;
+    border-left: 2px solid transparent; border-radius: 6px; margin: 1px 4px 1px 16px;
     transition: background 0.1s, border-color 0.1s;
     position: relative;
   }
@@ -702,10 +705,10 @@
   #pf-root .pf-split-delete-bar span { font-size: 11px; color: var(--text-dim); }
   #pf-root .pf-split-list-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 4px currentColor; transition: transform 0.15s; }
   #pf-root .pf-split-list-item:hover .pf-split-list-dot { transform: scale(1.2); }
-  #pf-root .pf-split-list-title { flex: 1; font-size: calc(var(--font-size-base) - 2px); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
-  #pf-root .pf-split-list-item.pf-split-active .pf-split-list-title { font-weight: 600; color: var(--accent); }
+  #pf-root .pf-split-list-title { flex: 1; font-size: calc(var(--font-size-base) - 2px); font-weight: 5000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
+  #pf-root .pf-split-list-item.pf-split-active .pf-split-list-title { font-weight: 500; color: var(--accent); }
   #pf-root .pf-split-list-status { font-size: calc(var(--font-size-base) - 5.5px); padding: 2px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; width: 62px; text-align: center; display: inline-block; transition: background 0.3s ease, color 0.3s ease; }
-  #pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 44px; text-align: center; display: inline-block; }
+  #pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 36px; text-align: center; display: inline-block; }
   #pf-root .pf-split-list-progress-pct { font-size: 8.5px; font-weight: 500; color: var(--text-dim); opacity: 0.65; margin-left: 3px; }
   #pf-root .pf-split-list-due { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px; width: 58px; text-align: right; }
   #pf-root .pf-split-list-due.pf-overdue { color: var(--danger); font-weight: 600; }
@@ -840,7 +843,7 @@
   #pf-root .pf-node.pf-expanded .pf-chevron { transform: rotate(90deg); }
   #pf-root .pf-chevron svg, #pf-root .pf-sub-chevron svg { display: block; }
   #pf-root .pf-node-title {
-    font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: var(--font-size-base); line-height: 1.35;
+    font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-weight: 600; font-size: var(--font-size-base); line-height: 1.35;
     outline: none; min-width: 0; flex: 1; padding-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   #pf-root .pf-node-title:focus { white-space: normal; overflow: visible; }
@@ -979,7 +982,7 @@
   #pf-root .pf-due-chip.pf-due-icon-only { width: 26px; height: 22px; padding: 0; font-size: 12px; border-radius: 6px; min-width: unset; }
   #pf-root .pf-due-chip.pf-due-soon { color: var(--ongoing); border-color: rgba(232,163,61,0.4); background: var(--ongoing-bg); }
   #pf-root .pf-due-chip.pf-due-overdue { color: var(--danger); border-color: rgba(224,80,63,0.4); background: rgba(224,80,63,0.12); }
-  #pf-root .pf-due-input { font-size: calc(var(--font-size-base) - 2.5px); background: var(--card); color: var(--text); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 4px; color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+  #pf-root .pf-due-input { font-size: calc(var(--font-size-base) - 2.5px); background: var(--card); color: var(--text); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 4px; color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
   #pf-root .pf-recur-chip {
     background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: 11px; font-weight: 500;
     padding: 4px 9px; border-radius: 100px; border: 1px solid var(--card-border); cursor: pointer;
@@ -1091,7 +1094,7 @@
     overflow: hidden;
   }
   #pf-root .pf-due-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--card-border); flex-shrink: 0; }
-  #pf-root .pf-due-panel-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
+  #pf-root .pf-due-panel-title { font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-weight: 600; font-size: 13px; }
   #pf-root .pf-due-panel-close { background: transparent; color: var(--text-dim); font-size: 16px; width: 22px; height: 22px; border-radius: 5px; }
   #pf-root .pf-due-panel-close:hover { background: rgba(123,104,238,0.12); color: var(--accent); }
   #pf-root .pf-due-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -1117,7 +1120,7 @@
     z-index: 60;
     padding: 14px;
   }
-  #pf-root .pf-reminder-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; margin-bottom: 10px; }
+  #pf-root .pf-reminder-title { font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-weight: 600; font-size: 13px; margin-bottom: 10px; }
   #pf-root .pf-reminder-label { display: block; font-size: 12px; color: var(--text-dim); line-height: 1.6; }
   #pf-root .pf-reminder-input { width: 52px; background: var(--bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 4px 6px; font-size: 12px; margin: 0 4px; }
   #pf-root .pf-reminder-actions { display: flex; gap: 8px; margin-top: 12px; }
@@ -1141,7 +1144,7 @@
     font-size: 15px;
     overflow-y: auto;
   }
-  #pf-root .pf-options-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; margin-bottom: 14px; letter-spacing: -0.3px; }
+  #pf-root .pf-options-title { font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: 16px; margin-bottom: 14px; letter-spacing: -0.3px; }
   #pf-root .pf-options-section { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--card-border); }
   #pf-root .pf-options-section .pf-undo-btn { width: 100%; text-align: left; justify-content: flex-start; }
   #pf-root .pf-options-row .pf-undo-btn { width: auto; flex-shrink: 0; padding: 6px 8px; font-size: 13px; }
@@ -1174,7 +1177,7 @@
   #pf-root .pf-comment-time { font-size: 10px; color: var(--text-dim); display: block; margin-top: 2px; }
   #pf-root .pf-comment-empty { font-size: 12px; color: var(--text-dim); text-align: center; padding: 16px 0; }
   #pf-root .pf-comment-input-row { display: flex; gap: 6px; }
-  #pf-root .pf-comment-input { flex: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); outline: none; }
+  #pf-root .pf-comment-input { flex: 1; font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); outline: none; }
   #pf-root .pf-comment-input:focus { border-color: var(--accent); }
   #pf-root .pf-activity-panel {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -1213,7 +1216,7 @@
     display: flex;
     flex-direction: column;
   }
-  #pf-root .pf-category-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; margin-bottom: 10px; }
+  #pf-root .pf-category-title { font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-weight: 600; font-size: 13px; margin-bottom: 10px; }
   #pf-root .pf-category-list { overflow-y: auto; margin-bottom: 10px; }
   #pf-root .pf-category-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--card-border); }
   #pf-root .pf-category-swatch { width: 10px; height: 10px; border-radius: 6px; flex-shrink: 0; }
@@ -1289,7 +1292,7 @@
     z-index: 1;
     border: none;
     cursor: pointer;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 
 </style>
@@ -1511,14 +1514,14 @@
       <div class="pf-cal-left" style="flex:0 0 40%;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--card-border);padding-right:8px;">
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;padding:12px 8px;margin-bottom:6px;background:var(--header-bg);border-radius:6px;">
           <button class="pf-undo-btn" id="pf-cal-prev" style="padding:4px 10px;font-size:14px;">◀</button>
-          <span id="pf-cal-month" style="flex:1;text-align:center;font-size:16px;font-weight:700;font-family:'Space Grotesk',sans-serif;letter-spacing:-0.3px;"></span>
+          <span id="pf-cal-month" style="flex:1;text-align:center;font-size:16px;font-weight:700;font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;letter-spacing:-0.3px;"></span>
           <button class="pf-undo-btn" id="pf-cal-today-btn" style="padding:4px 12px;font-size:11px;font-weight:600;background:var(--accent);color:var(--accent-contrast);border-radius:6px;">Today</button>
           <button class="pf-undo-btn" id="pf-cal-next" style="padding:4px 10px;font-size:14px;">▶</button>
         </div>
         <div id="pf-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;overflow-y:auto;flex:1;font-size:11px;"></div>
       </div>
       <div class="pf-cal-right" style="flex:1;display:flex;flex-direction:column;overflow:hidden;overflow-x:hidden;padding-left:14px;">
-        <div id="pf-cal-detail-title" style="flex-shrink:0;font-size:14px;font-weight:700;font-family:'Space Grotesk',sans-serif;padding:12px 8px;margin-bottom:6px;background:var(--header-bg);border-radius:6px;text-align:center;">Select a date</div>
+        <div id="pf-cal-detail-title" style="flex-shrink:0;font-size:14px;font-weight:700;font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;padding:12px 8px;margin-bottom:6px;background:var(--header-bg);border-radius:6px;text-align:center;">Select a date</div>
         <div class="pf-activity-list" id="pf-cal-detail-list" style="overflow-y:auto;overflow-x:hidden;flex:1;"><div class="pf-activity-empty">Click a date to see tasks.</div></div>
       </div>
     </div>
@@ -1527,7 +1530,7 @@
     <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);">
       <span style="font-size:22px;">⭐</span>
       <div style="flex:1;">
-        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Today's Focus</div>
+        <div style="font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Today's Focus</div>
         <span id="pf-today-date" style="font-size:11px;color:var(--text-dim);font-weight:400;"></span>
       </div>
     </div>
@@ -1542,14 +1545,14 @@
   <div class="pf-activity-panel" id="pf-duelist-panel" style="display:none;width:min(700px,90vw);max-height:min(85vh,700px);height:75vh;flex-direction:column;">
     <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);flex-shrink:0;">
       <span style="font-size:22px;">📋</span>
-      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Tasks by Due Date</div>
+      <div style="font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Tasks by Due Date</div>
     </div>
     <div class="pf-activity-list" id="pf-duelist-list" style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding:4px;"></div>
   </div>
   <div class="pf-activity-panel" id="pf-weekly-panel" style="display:none;width:min(95vw,1100px);max-height:min(88vh,750px);height:82vh;">
     <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;padding:12px 16px;background:var(--header-bg);border-radius:6px 10px 0 0;border-bottom:1px solid var(--card-border);">
       <button class="pf-undo-btn" id="pf-week-prev" style="padding:4px 10px;font-size:14px;">◀</button>
-      <span id="pf-week-label" style="flex:1;text-align:center;font-size:16px;font-weight:700;font-family:'Space Grotesk',sans-serif;letter-spacing:-0.3px;"></span>
+      <span id="pf-week-label" style="flex:1;text-align:center;font-size:16px;font-weight:700;font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;letter-spacing:-0.3px;"></span>
       <button class="pf-undo-btn" id="pf-week-today" style="padding:4px 12px;font-size:11px;font-weight:600;background:var(--accent);color:var(--accent-contrast);border-radius:6px;">This Week</button>
       <button class="pf-undo-btn" id="pf-week-next" style="padding:4px 10px;font-size:14px;">▶</button>
     </div>
@@ -1624,7 +1627,7 @@
   <div class="pf-activity-panel" id="pf-copy-modal" style="display:none;width:min(500px,90vw);max-height:min(80vh,600px);height:60vh;flex-direction:column;">
     <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);flex-shrink:0;">
       <span style="font-size:22px;">📋</span>
-      <div id="pf-copy-modal-title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Copy to Project</div>
+      <div id="pf-copy-modal-title" style="font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Copy to Project</div>
     </div>
     <div class="pf-activity-list" id="pf-copy-modal-list" style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding:4px;"></div>
   </div>
@@ -3625,8 +3628,13 @@
       });
       const _isCollapsed = !!splitCollapsedCats[cat];
       const txt = catLabel.textContent + (_isCollapsed ? ' ▸' : ' ▾'); catLabel.textContent = '';
+      const catLabelText = document.createElement('span');
+      catLabelText.textContent = txt;
+      catLabelText.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      catAddBtn.style.marginRight = '0';
+      catAddBtn.style.marginLeft = '4px';
+      catLabel.appendChild(catLabelText);
       catLabel.appendChild(catAddBtn);
-      catLabel.appendChild(document.createTextNode(txt));
       splitList.appendChild(catLabel);
       const catItemsWrap = document.createElement('div');
       catItemsWrap.className = 'pf-cat-items-wrap' + (_isCollapsed ? ' pf-collapsed' : '');
@@ -3704,7 +3712,7 @@
 
         if (p.dueAt) { const td = new Date(); td.setHours(0,0,0,0); if (p.dueAt === td.toISOString().slice(0,10) && p.status !== 'completed') item.classList.add('pf-due-today'); }
         const emojiIcon = p.emoji || '';
-        item.innerHTML = (emojiIcon ? '<span class="pf-emoji-btn" style="font-size:13px;">' + emojiIcon + '</span>' : '<span class="pf-split-list-dot" style="background:' + (p.color || 'var(--' + p.status + ')') + '"></span>') +
+        item.innerHTML = (emojiIcon ? '<span class="pf-emoji-btn" style="font-size:13px;">' + emojiIcon + '</span>' : '') +
           '<span class="pf-split-list-title" title="' + escapeHtml(p.title) + '">' + (searchTerm ? highlightMatch(escapeHtml(p.title), searchTerm) : escapeHtml(p.title)) + '</span>' +
           progressHtml +
           '<button class="pf-split-list-edit" title="Rename">✏️</button>' +
