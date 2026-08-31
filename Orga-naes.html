@@ -576,7 +576,7 @@
     #pf-root .pf-tb-sep { display: none; }
     #pf-root .pf-undo-btn { padding: 5px 8px; font-size: 12px; }
     #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-    #pf-root .pf-split-list-title { font-size: 12px; }
+    #pf-root#pf-root .pf-split-list-title { font-size: 13px; }/*-- project title font --*/
     #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
     #pf-root .pf-node { max-width: 100%; }
     #pf-root .pf-node-title { font-size: 14px; }
@@ -595,9 +595,9 @@
   }
   @media (max-width: 500px) {
     #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
-    #pf-root .pf-split-list-title { font-size: 13px; }
+    #pf-root#pf-root .pf-split-list-title { font-size: 13px; }/*-- project title font --*/
     #pf-root .pf-split-list-status { font-size: 9px; padding: 2px 5px; }
-    #pf-root .pf-split-list-progress { font-size: 9px; }
+    #pf-root#pf-root .pf-split-list-progress { font-size: 10px; }
     #pf-root .pf-split-list-due { font-size: 9px; }
     #pf-root .pf-node { max-width: 100%; }
     #pf-root .pf-node-header { padding: 8px; gap: 6px; flex-wrap: nowrap; }
@@ -4847,12 +4847,20 @@
 
   const fontSizeInput = document.getElementById('pf-font-size');
   const fontSizeVal = document.getElementById('pf-font-size-val');
-  const FONT_SIZE_KEY = 'project-flow-font-size';
-  fontSizeInput.addEventListener('input', (e) => { const v = e.target.value + 'px'; root.style.setProperty('--font-size-base', v); fontSizeVal.textContent = v; safeSet(FONT_SIZE_KEY, e.target.value, false); });
-  (async function loadFontSize() { try { const res = await safeGet(FONT_SIZE_KEY, false); if (res && res.value) { root.style.setProperty('--font-size-base', res.value + 'px'); fontSizeInput.value = res.value; fontSizeVal.textContent = res.value + 'px'; } } catch (e) {} })();
+  // Device-specific keys: desktop and mobile (and tablet) each remember their own value.
+  function currentDeviceSuffix() {
+    if (root.classList.contains('pf-device-mobile')) return 'mobile';
+    if (root.classList.contains('pf-device-tablet')) return 'tablet';
+    return 'desktop';
+  }
+  function FONT_SIZE_KEY() { return 'project-flow-font-size-' + currentDeviceSuffix(); }
+  function SCALE_KEY() { return 'project-flow-display-scale-' + currentDeviceSuffix(); }
+
+  fontSizeInput.addEventListener('input', (e) => { const v = e.target.value + 'px'; root.style.setProperty('--font-size-base', v); fontSizeVal.textContent = v; safeSet(FONT_SIZE_KEY(), e.target.value, false); });
+  async function loadFontSize() { try { const res = await safeGet(FONT_SIZE_KEY(), false); if (res && res.value) { root.style.setProperty('--font-size-base', res.value + 'px'); fontSizeInput.value = res.value; fontSizeVal.textContent = res.value + 'px'; } } catch (e) {} }
+  loadFontSize();
 
   // Display Scale
-  const SCALE_KEY = 'project-flow-display-scale';
   const scaleInput = document.getElementById('pf-display-scale');
   const scaleVal = document.getElementById('pf-display-scale-val');
   function applyScale(v) {
@@ -4862,9 +4870,22 @@
     fontSizeInput.value = Math.round(basePx);
     scaleVal.textContent = v + '%';
   }
-  scaleInput.addEventListener('input', (e) => { applyScale(e.target.value); safeSet(SCALE_KEY, e.target.value, false); });
-  document.getElementById('pf-display-scale-reset').addEventListener('click', () => { scaleInput.value = '100'; applyScale(100); safeSet(SCALE_KEY, '100', false); });
-  (async function loadScale() { try { const res = await safeGet(SCALE_KEY, false); if (res && res.value) { scaleInput.value = res.value; applyScale(res.value); } } catch (e) {} })();
+  scaleInput.addEventListener('input', (e) => { applyScale(e.target.value); safeSet(SCALE_KEY(), e.target.value, false); });
+  document.getElementById('pf-display-scale-reset').addEventListener('click', () => { scaleInput.value = '100'; applyScale(100); safeSet(SCALE_KEY(), '100', false); });
+  async function loadScale() { try { const res = await safeGet(SCALE_KEY(), false); if (res && res.value) { scaleInput.value = res.value; applyScale(res.value); } } catch (e) {} }
+  loadScale();
+
+  // Re-apply the correct device's saved size if the device class changes later
+  // (e.g. resizing a desktop browser window, or rotating/switching device type).
+  let _pfLastDeviceSuffix = currentDeviceSuffix();
+  window.addEventListener('resize', () => {
+    const suffix = currentDeviceSuffix();
+    if (suffix !== _pfLastDeviceSuffix) {
+      _pfLastDeviceSuffix = suffix;
+      loadFontSize();
+      loadScale();
+    }
+  });
 
   document.getElementById('pf-export').addEventListener('click', async () => {
     _exitMultiSelectMode();
