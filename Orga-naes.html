@@ -412,7 +412,7 @@
     #pf-root.pf-mobile-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
     #pf-root.pf-mobile-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
     #pf-root.pf-detail-open .pf-split-list { display: none; }
-    #pf-root.pf-detail-open .pf-split-detail { display: flex; zoom: 0.75; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root.pf-detail-open .pf-split-detail { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
     #pf-root.pf-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
     #pf-root.pf-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
     #pf-root .pf-mobile-back { display: none; }
@@ -423,7 +423,6 @@
 
   }
   @media (max-width: 400px) {
-    #pf-root.pf-detail-open .pf-split-detail { zoom: 0.65; }
   }
   @media (max-width: 600px) {
     #pf-root .pf-cal-layout { flex-direction: column !important; }
@@ -455,11 +454,19 @@
   #pf-root.pf-device-mobile .pf-split-list-status { min-width: 0; padding: 0; font-size: 0; border-radius: 50%; width: 10px; height: 10px; display: inline-block; flex-shrink: 0; background: currentColor !important; }
   #pf-root.pf-device-mobile .pf-subrow { padding: 10px 8px; }
   #pf-root.pf-device-mobile .pf-chevron { width: 28px; height: 28px; }
-  #pf-root.pf-device-mobile .pf-sub-chevron { width: 22px; height: 22px; }
-  #pf-root.pf-device-mobile .pf-node-del { min-width: 28px; min-height: 28px; }
-  #pf-root.pf-device-mobile .pf-sub-dot { width: 12px; height: 12px; }
-  #pf-root.pf-device-mobile .pf-badge { font-size: 9.5px; padding: 2px 7px; border-radius: 100px; border: 1px solid var(--card-border); min-height: 20px; display: inline-flex; align-items: center; }
-  #pf-root.pf-device-mobile.pf-detail-open .pf-split-detail { zoom: 0.78; padding-top: 12px; }
+
+  /* ===== MOBILE DETAIL VIEW — ICON SIZES =====
+     These control the icons/buttons on each subtask row when a project
+     is opened on mobile (the "task detail" screen). #pf-root#pf-root is
+     repeated on purpose — it's a specificity trick so these rules always
+     win over a conflicting unscoped rule elsewhere in the file. To resize
+     an icon, just change its width/height (or min-width/min-height) below. */
+  #pf-root#pf-root.pf-device-mobile .pf-sub-chevron { width: 30px; height: 30px; } /* the ">" expand arrow on subtasks with nested subtasks */
+  #pf-root#pf-root.pf-device-mobile .pf-node-del { min-width: 34px; min-height: 34px; } /* the "×" delete button in the task header */
+  #pf-root#pf-root.pf-device-mobile .pf-sub-dot { width: 16px; height: 16px; } /* the colored status circle (green/orange/purple) on each subtask */
+  #pf-root#pf-root.pf-device-mobile .pf-badge { font-size: 13px; padding: 3px 9px; border-radius: 100px; border: 1px solid var(--card-border); min-height: 24px; display: inline-flex; align-items: center; } /* the status pill text, e.g. "Ongoing" */
+  #pf-root#pf-root.pf-device-mobile .pf-sub-comment { font-size: 13px; min-width: 24px; padding: 3px 9px; } /* the speech-bubble comment icon on each subtask */
+  #pf-root.pf-device-mobile.pf-detail-open .pf-split-detail { padding-top: 12px; }
   #pf-root.pf-device-mobile .pf-dep-chip { display: none !important; }
 
   #pf-root.pf-device-mobile .pf-subrow .pf-sub-comment { display: none !important; }
@@ -529,9 +536,29 @@
   #pf-root.pf-device-tablet .pf-toolbar:has(.pf-search-wrap.pf-search-open) .pf-search-wrap { flex: 1; }
   #pf-root.pf-device-tablet .pf-split-sort { display: none !important; }
   #pf-root.pf-device-mobile .pf-split-sort { display: none !important; }
+
+  /* ===== TABLET — TEXT & ICON SIZE (task detail view) =====
+     Unlike mobile, the tablet detail view uses a single CSS "zoom" value
+     to scale EVERYTHING at once — title text, subtask text, icons, badges,
+     spacing — all together, proportionally. This keeps every row aligned
+     (icons don't drift out of place relative to the text next to them).
+     To make tablet text/icons BIGGER: raise the number below (e.g. 0.88 → 0.95 → 1.0 → 1.1).
+     To make them SMALLER: lower it (e.g. 0.88 → 0.8).
+     1.0 = full/normal size, same as desktop. Don't remove this rule —
+     doing so previously caused icons and chips to misalign (they're
+     positioned assuming this zoom is active). */
   #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { zoom: 0.88; }
+
   #pf-root.pf-device-tablet .pf-split-view { overflow: hidden; min-height: 0; }
   #pf-root.pf-device-tablet .pf-split-list { width: 30%; min-width: 200px; max-width: 35%; flex: none; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; border-right: 1px solid var(--card-border); }
+  /* Project LIST (left-hand panel, before opening a task) currently has no
+     tablet-specific font-size — it uses the desktop-size text by default.
+     To set a tablet-only size for the project name in the list, add e.g.:
+       #pf-root#pf-root.pf-device-tablet .pf-split-list-title { font-size: 14px; }
+     and for the category headers ("For Disposition", "Work", etc.):
+       #pf-root#pf-root.pf-device-tablet .pf-split-list-cat { font-size: 16px; }
+     (the doubled #pf-root#pf-root is needed so it reliably overrides other
+     rules elsewhere in the file — same pattern used for mobile above). */
   #pf-root.pf-device-tablet .pf-split-detail { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
 
 
@@ -571,12 +598,16 @@
   #pf-root.pf-device-desktop .pf-fab,
   #pf-root.pf-device-desktop .pf-fab-menu,
   #pf-root.pf-device-desktop .pf-fab-overlay { display: none !important; }
+  /* ===== TABLET / LARGE-PHONE BREAKPOINT (screen width 501–768px) =====
+     Font sizes and spacing for this size range. Your phone is likely
+     narrower than this and uses the ≤500px block further down instead —
+     but tablets and larger phones in landscape will use this one. */
   @media (max-width: 768px) and (min-width: 501px) {
     #pf-root .pf-toolbar { gap: 3px; padding: 5px 8px; }
     #pf-root .pf-tb-sep { display: none; }
     #pf-root .pf-undo-btn { padding: 5px 8px; font-size: 12px; }
     #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-    #pf-root#pf-root .pf-split-list-title { font-size: 13px; }/*-- project title font --*/
+    #pf-root#pf-root .pf-split-list-title { font-size: 13px; } /* project name in the left-hand list */
     #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
     #pf-root .pf-node { max-width: 100%; }
     #pf-root .pf-node-title { font-size: 14px; }
@@ -585,23 +616,37 @@
     #pf-root .pf-subrow { font-size: 12px; }
     #pf-root .pf-split-detail { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     #pf-root .pf-split-detail .pf-node { max-width: 100%; width: 100%; }
-    #pf-root .pf-split-detail .pf-node-title { font-size: 15px; }
-    #pf-root .pf-split-detail .pf-subrow { font-size: 12px; }
+    /* --- Task detail screen text sizes (when a project is opened) --- */
+    #pf-root .pf-split-detail .pf-node-title { font-size: 15px; } /* the big task/project title at the very top, e.g. "ESCALATION TO PO..." */
+    #pf-root#pf-root .pf-split-detail .pf-subrow { font-size: 13px; } /* the subtask row container */
+    #pf-root#pf-root .pf-split-detail .pf-subrow-title { font-size: 13px; } /* the ACTUAL subtask text you read/edit, e.g. "Waiting for Material" — this is the one that matters visually */
+    #pf-root#pf-root .pf-split-detail .pf-node-desc { font-size: 12px; } /* the "Add description..." field under the title */
     #pf-root .pf-split-divider { display: none; }
     #pf-root.pf-detail-open .pf-split-list { display: none; }
     #pf-root.pf-detail-open .pf-split-detail { display: flex; zoom: 0.85; }
     #pf-root .pf-mobile-back { display: none; }
     #pf-root.pf-detail-open .pf-mobile-back { display: inline-flex !important; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
   }
+  /* ===== PHONE BREAKPOINT (screen width ≤500px) =====
+     This is the block that actually applies to most phones, including
+     yours — it controls both the project LIST screen and the TASK
+     DETAIL screen (when a project is opened). Edit font-size / width /
+     height values below to resize things; #pf-root#pf-root is a
+     specificity trick that makes sure these values always win over a
+     conflicting rule elsewhere in the file. */
   @media (max-width: 500px) {
     #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
-    #pf-root#pf-root .pf-split-list-title { font-size: 13px; }/*-- project title font --*/
+    #pf-root#pf-root .pf-split-list-title { font-size: 13px; } /* project name in the list (e.g. "Efficiency", "DS1922L - Battrip") */
     #pf-root .pf-split-list-status { font-size: 9px; padding: 2px 5px; }
-    #pf-root#pf-root .pf-split-list-progress { font-size: 10px; }
+    #pf-root#pf-root .pf-split-list-progress { font-size: 11px; } /* the "x/y" progress count next to each project */
     #pf-root .pf-split-list-due { font-size: 9px; }
     #pf-root .pf-node { max-width: 100%; }
     #pf-root .pf-node-header { padding: 8px; gap: 6px; flex-wrap: nowrap; }
-    #pf-root .pf-node-title { font-size: 14px; }
+    /* --- Task detail screen text sizes (when a project is opened) --- */
+    #pf-root#pf-root .pf-node-title { font-size: 14px; } /* the big task/project title at the very top of the detail screen */
+    #pf-root#pf-root .pf-subrow { font-size: 13px; } /* the subtask row container */
+    #pf-root#pf-root .pf-subrow-title { font-size: 13px; } /* the ACTUAL subtask text (what you actually read), e.g. "Waiting for Material" */
+    #pf-root#pf-root .pf-node-desc { font-size: 12px; } /* the "Add description..." field under the title */
     #pf-root .pf-badge { font-size: 11px; padding: 4px 8px; }
     #pf-root .pf-header-meta { gap: 4px; }
     #pf-root .pf-split-detail { padding: 8px; }
@@ -648,6 +693,7 @@
     display: none; width: 4px; background: var(--card-border); cursor: col-resize; flex-shrink: 0; transition: background 0.15s;
   }
   #pf-root .pf-split-divider:hover, #pf-root .pf-split-divider.pf-dragging { background: var(--accent); width: 5px; }
+  /* Category header (e.g. "For Disposition (2)", "Work (1)") — same size on all screens, not device-specific. */
   #pf-root .pf-split-list-cat { padding: 6px 12px; font-size: 15px; font-weight: 700; color: var(--text); text-transform: none; letter-spacing: 0.1px; margin: 6px 6px 0px 6px; border: none; border-top: 1px solid var(--card-border); border-radius: 6px; background: transparent; transition: background 0.15s, color 0.15s; cursor: pointer; display: flex; align-items: center; gap: 6px; }
   #pf-root .pf-split-list-cat:first-of-type { margin-top: 4px; border-top: none; }
   #pf-root .pf-split-list-cat:hover { background: rgba(255,255,255,0.04); color: var(--text); }
