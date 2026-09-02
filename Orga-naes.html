@@ -1524,6 +1524,7 @@
         <button class="pf-undo-btn" id="pf-theme-cyberpunk" style="padding:5px 12px;font-size:11px;">🌆 Cyberpunk</button>
         <button class="pf-undo-btn" id="pf-theme-forest" style="padding:5px 12px;font-size:11px;">🌲 Forest</button>
         <button class="pf-undo-btn" id="pf-theme-ocean" style="padding:5px 12px;font-size:11px;">🌊 Ocean</button>
+        <button class="pf-undo-btn" id="pf-theme-onyx" style="padding:5px 12px;font-size:11px;">⬛ Onyx</button>
       </div>
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;margin-top:10px;">Light Themes</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -2459,6 +2460,13 @@
       if (p.category && typeof p.category !== 'string') { p.category = null; repaired++; }
       p.subtasks = fixSubtasks(p.subtasks, 0);
       if (typeof p.expanded === 'undefined') p.expanded = false;
+      // Self-heal projects whose stored status no longer matches their actual subtask completeness
+      // (e.g. left stuck as "completed" by an older version of the app after a task was added back in).
+      if (p.subtasks.length) {
+        const allDone = (function check(list) { return list.every(s => s.status === 'completed' && (!s.subtasks || !s.subtasks.length || check(s.subtasks))); })(p.subtasks);
+        if (allDone && p.status !== 'completed') { p.status = 'completed'; if (!p.completedAt) p.completedAt = new Date().toISOString(); delete p._manualStatus; repaired++; }
+        else if (!allDone && p.status === 'completed') { p.status = 'ongoing'; p.completedAt = null; delete p._manualStatus; repaired++; }
+      }
       return p;
     }).filter(Boolean);
     const allIds = new Set();
@@ -2673,24 +2681,26 @@
     if (!targetProject.subtasks) targetProject.subtasks = [];
     clones.forEach(c => targetProject.subtasks.push(c));
     targetProject.expanded = true;
+    if (targetProject._manualStatus) { delete targetProject._manualStatus; }
+    checkAllCompleted(targetProject);
     logActivity('Copied ' + nodes.length + ' task(s) from "' + sourceProject.title + '" to "' + targetProject.title + '"');
     scheduleSave(); autoArrangeProjects(true); render();
     showToast((nodes.length > 1 ? nodes.length + ' tasks' : '"' + nodes[0].title + '"') + ' copied to "' + targetProject.title + '"', false, true);
   }
   function countTree(list) { let done = 0, total = 0; list.forEach(s => { total++; if (s.status === 'completed') done++; if (s.subtasks && s.subtasks.length) { const c = countTree(s.subtasks); done += c.done; total += c.total; } }); return { done, total }; }
 
-  function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
+  function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
-  function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked — complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }
-  function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } scheduleSave(); render(); }
+  function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked — complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }
+  function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); render(); }
   function promoteSubToProject(parentProject, sub) {
     snapshot();
     const newProj = { id: uid(), title: sub.title, status: sub.status || 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: sub.dueAt || null, completedAt: sub.completedAt || null, category: parentProject.category || null, subtasks: sub.subtasks ? JSON.parse(JSON.stringify(sub.subtasks)) : [] };
     projects.push(newProj);
     const arr = findSubParentArray(parentProject.subtasks, sub.id);
     if (arr) { const idx = arr.findIndex(s => s.id === sub.id); if (idx > -1) arr.splice(idx, 1); }
+    if (parentProject._manualStatus) { delete parentProject._manualStatus; }
     checkAllCompleted(parentProject);
-    if (parentProject._manualStatus && parentProject.status !== 'completed') { delete parentProject._manualStatus; }
     logActivity('Promoted "' + sub.title + '" to project from "' + parentProject.title + '"');
     scheduleSave(); render();
     if (listViewActive) { splitSelectedId = newProj.id; renderSplitList(); renderSplitDetail(); }
@@ -2961,7 +2971,7 @@
     bar.querySelector('[data-sub-action="copy"]').addEventListener('click', (e) => { e.stopPropagation(); if (spansMultiple) { showToast('⚠ "Copy to…" needs a single-project selection — narrow your selection first', true); return; } openCopyToProjectModal(p, subMultiSelect.slice()); });
     bar.querySelector('[data-sub-action="copy-clip"]').addEventListener('click', (e) => { e.stopPropagation(); const clip = buildClipboardFromSelection(); if (!clip || !clip.length) return; _taskClipboard = clip; showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it'); });
     bar.querySelector('[data-sub-action="cycle"]').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, null, (st) => { try { snapshot(); const touched = new Set(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.status = st; s.completedAt = st === 'completed' ? new Date().toISOString() : null; touched.add(owner); } }); scheduleSave(); render(); touched.forEach(pr => checkAllCompleted(pr)); requestAnimationFrame(() => renderSubSelectBar(p)); } catch (err) { console.error('[Orga-naes] Bulk set status failed:', err); showToast('⚠ Set status failed — see console', true); } }); });
-    bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); const touched = new Set(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.dueAt = val; touched.add(owner); } }); clearSubSelect(); scheduleSave(); render(); touched.forEach(pr => { checkAllCompleted(pr); if (pr._manualStatus && pr.status !== 'completed') { delete pr._manualStatus; } }); } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
+    bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); const touched = new Set(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.dueAt = val; touched.add(owner); } }); clearSubSelect(); scheduleSave(); render(); touched.forEach(pr => { if (pr._manualStatus) { delete pr._manualStatus; } checkAllCompleted(pr); }); } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
     bar.querySelector('[data-sub-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return; snapshot(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const arr = findSubParentArray(owner.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } }); clearSubSelect(); scheduleSave(); render(); });
     bar.querySelector('[data-sub-action="clear"]').addEventListener('click', (e) => { e.stopPropagation(); clearSubSelect(); const existing2 = root.querySelector('.pf-sub-select-bar'); if (existing2) existing2.remove(); });
     sublist.insertBefore(bar, sublist.firstChild);
@@ -2986,7 +2996,7 @@
     if (!targetId) { nodes.forEach(n => p.subtasks.push(n)); }
     else if (zone === 'nest') { const targetNode = findSubNode(p.subtasks, targetId); if (!targetNode.subtasks) targetNode.subtasks = []; nodes.forEach(n => targetNode.subtasks.push(n)); targetNode.expanded = true; }
     else { const destArr = findSubParentArray(p.subtasks, targetId); const tIdx = destArr.findIndex(s => s.id === targetId); destArr.splice(zone === 'before' ? tIdx : tIdx + 1, 0, ...nodes); }
-    draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; subMultiSelect = []; clearIndicators(); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } scheduleSave(); render();
+    draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; subMultiSelect = []; clearIndicators(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); render();
   }
 
   function renderSubtaskRows(container, p, list, depth) { list.forEach(s => { const row = subtaskEl(p, s, depth); container.appendChild(row); if (s.expanded && s.subtasks && s.subtasks.length) { const nestedWrap = document.createElement('div'); nestedWrap.className = 'pf-sublist-nested'; const { color } = levelMarkerFor(depth + 1); nestedWrap.style.setProperty('--rail-color', color); container.appendChild(nestedWrap); renderSubtaskRows(nestedWrap, p, s.subtasks, depth + 1); const nestedAddBtn = document.createElement('button'); nestedAddBtn.className = 'pf-add-sub'; nestedAddBtn.textContent = '+ Add subtask'; nestedAddBtn.addEventListener('click', (e) => { e.stopPropagation(); addSubtask(p.id, s.id); }); nestedWrap.appendChild(nestedAddBtn); } }); }
@@ -3002,7 +3012,7 @@
     const delBtn = document.createElement('button'); delBtn.className = 'pf-sub-del'; delBtn.title = 'Delete subtask'; delBtn.textContent = '×'; delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteSubtask(p.id, s.id); }); subDatesEl.appendChild(delBtn);
     const _hasBlockers = getUnresolvedBlockers(p, s).length > 0;
     const dotEl = document.createElement('span'); dotEl.className = 'pf-sub-dot' + (_hasBlockers ? ' pf-blocked' : ''); dotEl.title = _hasBlockers ? 'Blocked' : 'Set status'; dotEl.style.background = s.status === 'planned' ? 'transparent' : statusDotColor(s.status); dotEl.style.borderColor = statusDotColor(s.status); subDatesEl.appendChild(dotEl);
-    if (s.status === 'completed' && s.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(s.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); s.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); subDatesEl.appendChild(doneLabel); } else { subDatesEl.appendChild(buildDueChip(s, (val) => { snapshot(); s.dueAt = val; scheduleSave(); render(); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }, false)); }
+    if (s.status === 'completed' && s.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(s.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); s.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); subDatesEl.appendChild(doneLabel); } else { subDatesEl.appendChild(buildDueChip(s, (val) => { snapshot(); s.dueAt = val; scheduleSave(); render(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }, false)); }
     subDatesEl.appendChild(buildDependencyChip(p, s));
     const commentBtn = document.createElement('button'); commentBtn.className = 'pf-sub-comment'; commentBtn.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; commentBtn.textContent = '💬'; commentBtn.style.whiteSpace = 'nowrap'; if (s.comments && s.comments.length) { commentBtn.style.opacity = '1'; commentBtn.style.color = 'var(--text)'; } commentBtn.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(commentBtn);
     const promoteBtn = document.createElement('button'); promoteBtn.className = 'pf-sub-promote'; promoteBtn.title = 'Promote to Project'; promoteBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'; promoteBtn.addEventListener('click', (e) => { e.stopPropagation(); promoteSubToProject(p, s); }); subDatesEl.appendChild(promoteBtn);
@@ -3030,7 +3040,7 @@
         dueIcon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="pf-ext-due-text" style="font-size:9.5px;color:' + color + ';white-space:nowrap;margin-left:3px;">' + (dateText || '+ Due') + '</span>';
         dueIcon.title = title;
       })();
-      dueIcon.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.dueAt || ''; input.style.position = 'absolute'; input.style.opacity = '0'; input.style.pointerEvents = 'none'; dueIcon.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch(err){} input.addEventListener('change', () => { snapshot(); s.dueAt = input.value || null; scheduleSave(); render(); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }); input.addEventListener('blur', () => { input.remove(); }); });
+      dueIcon.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.dueAt || ''; input.style.position = 'absolute'; input.style.opacity = '0'; input.style.pointerEvents = 'none'; dueIcon.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch(err){} input.addEventListener('change', () => { snapshot(); s.dueAt = input.value || null; scheduleSave(); render(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }); input.addEventListener('blur', () => { input.remove(); }); });
       subDatesEl.appendChild(dueIcon);
       const cm = document.createElement('span'); cm.textContent = '💬'; cm.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;'; cm.classList.add('pf-ext-comment'); cm.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; if (!s.comments || !s.comments.length) cm.style.opacity = '0.4'; cm.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(cm);
       // Extend-meta with dependency only (revealed on swipe)
@@ -3279,7 +3289,7 @@
     if (!targetProject.subtasks) targetProject.subtasks = [];
     clones.forEach(c => targetProject.subtasks.push(c));
     targetProject.expanded = true;
-    if (targetProject._manualStatus && targetProject.status !== 'completed') { delete targetProject._manualStatus; }
+    if (targetProject._manualStatus) { delete targetProject._manualStatus; }
     checkAllCompleted(targetProject);
     logActivity('Copied ' + clones.length + ' task(s) to "' + targetProject.title + '"');
     scheduleSave(); autoArrangeProjects(true); render();
@@ -3299,7 +3309,7 @@
     if (!targetSub.subtasks) targetSub.subtasks = [];
     clones.forEach(c => targetSub.subtasks.push(c));
     targetSub.expanded = true;
-    if (targetProject._manualStatus && targetProject.status !== 'completed') { delete targetProject._manualStatus; }
+    if (targetProject._manualStatus) { delete targetProject._manualStatus; }
     checkAllCompleted(targetProject);
     logActivity('Copied ' + clones.length + ' task(s) under "' + targetSub.title + '"');
     scheduleSave(); autoArrangeProjects(true); render();
@@ -4191,6 +4201,7 @@
   document.getElementById('pf-theme-cyberpunk').addEventListener('click', () => { clearThemePreset(); applyThemePreset('cyberpunk'); });
   document.getElementById('pf-theme-forest').addEventListener('click', () => { clearThemePreset(); applyThemePreset('forest'); });
   document.getElementById('pf-theme-ocean').addEventListener('click', () => { clearThemePreset(); applyThemePreset('ocean'); });
+  document.getElementById('pf-theme-onyx').addEventListener('click', () => { clearThemePreset(); applyThemePreset('onyx'); });
   document.getElementById('pf-theme-light-rose').addEventListener('click', () => { clearThemePreset(); applyThemePreset('light-rose'); });
   document.getElementById('pf-theme-light-sky').addEventListener('click', () => { clearThemePreset(); applyThemePreset('light-sky'); });
   document.getElementById('pf-theme-light-mint').addEventListener('click', () => { clearThemePreset(); applyThemePreset('light-mint'); });
@@ -5224,9 +5235,10 @@
     'light-mint': { '--bg':'#f0fdf4','--card':'#ffffff','--card-border':'#bbf7d0','--sub-bg':'#f5fef7','--sub-border':'#d1fae5','--accent':'#059669','--text':'#14332a','--text-dim':'#4b7c6f','--header-bg':'#ffffff','--toast-bg':'#14332a','--hover-border':'#059669' },
     'light-sand': { '--bg':'#fefcf3','--card':'#ffffff','--card-border':'#ede5d0','--sub-bg':'#fdfbf5','--sub-border':'#f0ead8','--accent':'#b45309','--text':'#3d2e1a','--text-dim':'#8b7355','--header-bg':'#ffffff','--toast-bg':'#3d2e1a','--hover-border':'#b45309' },
     'pf-dark': { '--bg':'#1a1e2a','--card':'#242a38','--card-border':'#4a4568','--sub-bg':'#1f2230','--sub-border':'#3f3c5a','--accent':'#9580ff','--text':'#f2f4f8','--text-dim':'#a8b0c4','--header-bg':'#1e2233','--toast-bg':'#2a2740','--hover-border':'#6e64a0' },
-    'pf-light': { '--bg':'#f6f6fb','--card':'#ffffff','--card-border':'#e6e4f0','--sub-bg':'#fbfaff','--sub-border':'#ece9f7','--accent':'#7b68ee','--text':'#211f33','--text-dim':'#6f6c85','--header-bg':'#ffffff','--toast-bg':'#2a2740','--hover-border':'#c9c3ea' }
+    'pf-light': { '--bg':'#f6f6fb','--card':'#ffffff','--card-border':'#e6e4f0','--sub-bg':'#fbfaff','--sub-border':'#ece9f7','--accent':'#7b68ee','--text':'#211f33','--text-dim':'#6f6c85','--header-bg':'#ffffff','--toast-bg':'#2a2740','--hover-border':'#c9c3ea' },
+    onyx: { '--bg':'#0a0a0a','--card':'#161616','--card-border':'#2b2b2b','--sub-bg':'#101010','--sub-border':'#242424','--accent':'#a3a3a3','--accent-contrast':'#0a0a0a','--text':'#e8e8e8','--text-dim':'#8a8a8a','--header-bg':'#0d0d0d','--toast-bg':'#1c1c1c','--hover-border':'#4a4a4a','--waiting':'#7a94ad','--waiting-bg':'rgba(122,148,173,0.10)','--depth0':'#a3a3a3' }
   };
-  const THEME_BTN_IDS = ['pf-theme-pf-dark','pf-theme-cyberpunk','pf-theme-forest','pf-theme-ocean','pf-theme-light-rose','pf-theme-light-sky','pf-theme-light-mint','pf-theme-light-sand','pf-theme-pf-light'];
+  const THEME_BTN_IDS = ['pf-theme-pf-dark','pf-theme-cyberpunk','pf-theme-forest','pf-theme-ocean','pf-theme-onyx','pf-theme-light-rose','pf-theme-light-sky','pf-theme-light-mint','pf-theme-light-sand','pf-theme-pf-light'];
   function highlightActiveThemeBtn(name) {
     THEME_BTN_IDS.forEach(id => {
       const el = document.getElementById(id);
@@ -5242,7 +5254,9 @@
     showToast('Theme: ' + name.charAt(0).toUpperCase() + name.slice(1));
   }
   function clearThemePreset() {
-    Object.keys(THEME_PRESETS.cyberpunk).forEach(k => root.style.removeProperty(k));
+    const allKeys = new Set();
+    Object.values(THEME_PRESETS).forEach(preset => Object.keys(preset).forEach(k => allKeys.add(k)));
+    allKeys.forEach(k => root.style.removeProperty(k));
     localStorage.removeItem('project-flow-theme-preset');
   }
 
