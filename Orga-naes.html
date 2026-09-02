@@ -2132,7 +2132,7 @@
   }
 
   let _autoBackupTimer = null;
-  function startAutoBackup() {
+  function startIdbSnapshotBackup() {
     if (_autoBackupTimer) clearInterval(_autoBackupTimer);
     _autoBackupTimer = setInterval(() => {
       if (projects.length) idbSaveSnapshot(JSON.parse(JSON.stringify(projects)));
@@ -2484,7 +2484,7 @@
     projects = result.projects;
     if (result.repaired > 0) { scheduleSave(); showToast('🔧 Auto-repaired ' + result.repaired + ' data issue' + (result.repaired > 1 ? 's' : '')); }
     projects.forEach(p => { p.expanded = false; }); render();
-    startAutoBackup();
+    startIdbSnapshotBackup();
     loadToday();
   }
 
