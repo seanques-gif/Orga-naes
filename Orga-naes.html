@@ -1873,7 +1873,7 @@
       _saveModalEl = saveModal;
       const _removeSaveModal = function() { saveModal.remove(); if (_saveModalEl === saveModal) _saveModalEl = null; };
       saveModal.querySelector('#_save-local').addEventListener('click', function() { _removeSaveModal(); document.getElementById('pf-export').click(); });
-      saveModal.querySelector('#_save-cloud').addEventListener('click', function() { _removeSaveModal(); if (window._firebasePush) window._firebasePush(); else showToast('⚠ Sign in first to push', true); });
+      saveModal.querySelector('#_save-cloud').addEventListener('click', function() { _removeSaveModal(); if (window._firebasePushManual) window._firebasePushManual(); else showToast('⚠ Sign in first to push', true); });
       saveModal.querySelector('#_save-cancel').addEventListener('click', function() { _removeSaveModal(); });
       saveModal.addEventListener('click', function(ev) { if (ev.target === saveModal) _removeSaveModal(); });
     }
@@ -2612,8 +2612,8 @@
       if (p.status !== 'completed') { p.status = 'completed'; p.completedAt = new Date().toISOString(); delete p._manualStatus; logActivity('"' + p.title + '" auto-completed (all subtasks done)'); scheduleSave(); render(); onTaskCompleted(true); }
       confetti();
     } else if (p.status === 'completed' && !p._manualStatus) {
-      const hasProgress = (function check(list) { return list.some(s => s.status === 'ongoing' || s.status === 'waiting' || s.dueAt || (s.subtasks && s.subtasks.length && check(s.subtasks))); })(p.subtasks);
-      p.status = hasProgress ? 'ongoing' : 'planned';
+      // A previously-completed project with at least one incomplete subtask is back in progress.
+      p.status = 'ongoing';
       p.completedAt = null;
       logActivity('"' + p.title + '" reverted to ' + STATUS_LABEL[p.status] + ' (no longer all subtasks complete)');
       scheduleSave(); render();
@@ -2679,7 +2679,7 @@
   }
   function countTree(list) { let done = 0, total = 0; list.forEach(s => { total++; if (s.status === 'completed') done++; if (s.subtasks && s.subtasks.length) { const c = countTree(s.subtasks); done += c.done; total += c.total; } }); return { done, total }; }
 
-  function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
+  function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
   function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked — complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }
   function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks); scheduleSave(); render(); }
@@ -2799,9 +2799,15 @@
     if (isNaN(d)) return new Date().toISOString().slice(0, 10);
     switch (interval) {
       case 'daily': d.setDate(d.getDate() + 1); break;
+      case 'weekdays':
+        d.setDate(d.getDate() + 1);
+        while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+        break;
       case 'weekly': d.setDate(d.getDate() + 7); break;
       case 'biweekly': d.setDate(d.getDate() + 14); break;
       case 'monthly': d.setMonth(d.getMonth() + 1); break;
+      case 'quarterly': d.setMonth(d.getMonth() + 3); break;
+      case 'yearly': d.setFullYear(d.getFullYear() + 1); break;
     }
     return d.toISOString().slice(0, 10);
   }
@@ -4974,7 +4980,7 @@
 
   const AUTOBACKUP_KEY = 'project-flow-autobackup';
   const AUTOBACKUP_LAST_KEY = 'project-flow-autobackup-last';
-  let autoBackupInterval = 5;
+  let autoBackupInterval = 0;
   let autoBackupTimer = null;
   let autoBackupDirHandle = null;
   function saveBackupHandle(handle) {
@@ -6365,6 +6371,14 @@ if ('serviceWorker' in navigator) {
     if (!navigator.onLine) { _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
     pushSelective();
+  };
+  // Manual "Push to Cloud" (Ctrl+S dialog): only requires being signed in — must work even with autosync off.
+  window._firebasePushManual = function() {
+    if (!_fbUser) { showToast('⚠ Sign in first to push', true); return; }
+    if (!navigator.onLine) { showToast('⚠ You are offline — will sync when back online', true); _fbOfflineQueue = true; return; }
+    clearTimeout(_fbPushTimer);
+    pushWithTimestamp();
+    showToast('☁ Pushed to cloud');
   };
   if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
   else {
