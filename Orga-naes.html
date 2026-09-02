@@ -2682,13 +2682,15 @@
   function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
   function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked — complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } }
-  function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks); scheduleSave(); render(); }
+  function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } scheduleSave(); render(); }
   function promoteSubToProject(parentProject, sub) {
     snapshot();
     const newProj = { id: uid(), title: sub.title, status: sub.status || 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: sub.dueAt || null, completedAt: sub.completedAt || null, category: parentProject.category || null, subtasks: sub.subtasks ? JSON.parse(JSON.stringify(sub.subtasks)) : [] };
     projects.push(newProj);
     const arr = findSubParentArray(parentProject.subtasks, sub.id);
     if (arr) { const idx = arr.findIndex(s => s.id === sub.id); if (idx > -1) arr.splice(idx, 1); }
+    checkAllCompleted(parentProject);
+    if (parentProject._manualStatus && parentProject.status !== 'completed') { delete parentProject._manualStatus; }
     logActivity('Promoted "' + sub.title + '" to project from "' + parentProject.title + '"');
     scheduleSave(); render();
     if (listViewActive) { splitSelectedId = newProj.id; renderSplitList(); renderSplitDetail(); }
@@ -2984,7 +2986,7 @@
     if (!targetId) { nodes.forEach(n => p.subtasks.push(n)); }
     else if (zone === 'nest') { const targetNode = findSubNode(p.subtasks, targetId); if (!targetNode.subtasks) targetNode.subtasks = []; nodes.forEach(n => targetNode.subtasks.push(n)); targetNode.expanded = true; }
     else { const destArr = findSubParentArray(p.subtasks, targetId); const tIdx = destArr.findIndex(s => s.id === targetId); destArr.splice(zone === 'before' ? tIdx : tIdx + 1, 0, ...nodes); }
-    draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; subMultiSelect = []; clearIndicators(); scheduleSave(); render();
+    draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; subMultiSelect = []; clearIndicators(); checkAllCompleted(p); if (p._manualStatus && p.status !== 'completed') { delete p._manualStatus; } scheduleSave(); render();
   }
 
   function renderSubtaskRows(container, p, list, depth) { list.forEach(s => { const row = subtaskEl(p, s, depth); container.appendChild(row); if (s.expanded && s.subtasks && s.subtasks.length) { const nestedWrap = document.createElement('div'); nestedWrap.className = 'pf-sublist-nested'; const { color } = levelMarkerFor(depth + 1); nestedWrap.style.setProperty('--rail-color', color); container.appendChild(nestedWrap); renderSubtaskRows(nestedWrap, p, s.subtasks, depth + 1); const nestedAddBtn = document.createElement('button'); nestedAddBtn.className = 'pf-add-sub'; nestedAddBtn.textContent = '+ Add subtask'; nestedAddBtn.addEventListener('click', (e) => { e.stopPropagation(); addSubtask(p.id, s.id); }); nestedWrap.appendChild(nestedAddBtn); } }); }
@@ -3206,7 +3208,7 @@
             (dueText ? '<span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">' + dueText + '</span>' : '');
           item.addEventListener('mouseenter', () => { item.style.borderColor = 'var(--hover-border)'; });
           item.addEventListener('mouseleave', () => { item.style.borderColor = 'var(--card-border)'; });
-          item.querySelector('.pf-list-dot').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, p.status, (st) => { snapshot(); const oldStatus = p.status; p.status = st; if (p.status === oldStatus) return; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); renderCategoryZones(); }); });
+          item.querySelector('.pf-list-dot').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, p.status, (st) => { snapshot(); const oldStatus = p.status; p.status = st; if (p.status === oldStatus) return; p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); renderCategoryZones(); }); });
           item.addEventListener('click', (e) => { e.stopPropagation(); collapsedCategories[name] = false; saveCollapsedCategories(); p.expanded = true; scheduleSave(); autoArrangeProjects(true); });
           list.appendChild(item);
         });
@@ -3277,6 +3279,8 @@
     if (!targetProject.subtasks) targetProject.subtasks = [];
     clones.forEach(c => targetProject.subtasks.push(c));
     targetProject.expanded = true;
+    if (targetProject._manualStatus && targetProject.status !== 'completed') { delete targetProject._manualStatus; }
+    checkAllCompleted(targetProject);
     logActivity('Copied ' + clones.length + ' task(s) to "' + targetProject.title + '"');
     scheduleSave(); autoArrangeProjects(true); render();
     showToast((clones.length > 1 ? clones.length + ' tasks' : '"' + clones[0].title + '"') + ' copied to "' + targetProject.title + '"', false, true);
@@ -3295,6 +3299,8 @@
     if (!targetSub.subtasks) targetSub.subtasks = [];
     clones.forEach(c => targetSub.subtasks.push(c));
     targetSub.expanded = true;
+    if (targetProject._manualStatus && targetProject.status !== 'completed') { delete targetProject._manualStatus; }
+    checkAllCompleted(targetProject);
     logActivity('Copied ' + clones.length + ' task(s) under "' + targetSub.title + '"');
     scheduleSave(); autoArrangeProjects(true); render();
     showToast((clones.length > 1 ? clones.length + ' tasks' : '"' + clones[0].title + '"') + ' pasted under "' + targetSub.title + '"', false, true);
