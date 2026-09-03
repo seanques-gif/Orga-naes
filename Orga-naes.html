@@ -2494,7 +2494,7 @@
   let archive = [];
   async function loadArchive() { try { const res = await safeGet(ARCHIVE_KEY, false); if (res && res.value) archive = JSON.parse(res.value); } catch (e) { archive = []; } }
   function saveArchive() { safeSet(ARCHIVE_KEY, JSON.stringify(archive), false); }
-  function archiveProject(p) { archive.push({ ...JSON.parse(JSON.stringify(p)), archivedAt: new Date().toISOString() }); saveArchive(); }
+  function archiveProject(p) { archive = archive.filter(a => a.id !== p.id); archive.push({ ...JSON.parse(JSON.stringify(p)), archivedAt: new Date().toISOString() }); saveArchive(); }
   function restoreFromArchive(id) { const idx = archive.findIndex(a => a.id === id); if (idx < 0) return; const item = archive.splice(idx, 1)[0]; delete item.archivedAt; projects.push(item); saveArchive(); scheduleSave(); render(); renderArchiveList(); showToast('"' + item.title + '" restored'); }
   function renderArchiveList() {
     const list = document.getElementById('pf-archive-list');
@@ -3562,8 +3562,17 @@
     if (splitMultiSelect.length >= 1) {
       const bar = document.createElement('div');
       bar.className = 'pf-split-delete-bar';
-      bar.innerHTML = '<span>' + splitMultiSelect.length + ' selected</span><button data-action="cycle">Set status</button><button data-action="delete">Delete selected</button><button data-action="clear">✕ Clear</button>';
+      bar.innerHTML = '<span>' + splitMultiSelect.length + ' selected</span><button data-action="cycle">Set status</button><button data-action="archive">📦 Archive</button><button data-action="delete">Delete selected</button><button data-action="clear">✕ Clear</button>';
       bar.querySelector('[data-action="cycle"]').addEventListener('click', (e) => { openStatusMenu(e.currentTarget, null, (st) => _splitCycleSelected(st)); });
+      bar.querySelector('[data-action="archive"]').addEventListener('click', () => {
+        snapshot();
+        const count = splitMultiSelect.length;
+        splitMultiSelect.forEach(id => { const pr = projects.find(pr => pr.id === id); if (pr) { archiveProject(pr); logActivity('Archived project "' + pr.title + '"'); } });
+        projects = projects.filter(pr => !splitMultiSelect.includes(pr.id));
+        splitMultiSelect = []; splitSelectedId = null;
+        scheduleSave(); renderSplitList(); renderSplitDetail();
+        showToast('📦 Archived ' + count + ' project' + (count === 1 ? '' : 's'));
+      });
       bar.querySelector('[data-action="delete"]').addEventListener('click', () => { _splitDeleteSelected(); });
       bar.querySelector('[data-action="clear"]').addEventListener('click', () => { splitMultiSelect = []; splitSelectedId = null; renderSplitList(); renderSplitDetail(); });
       splitList.appendChild(bar);
