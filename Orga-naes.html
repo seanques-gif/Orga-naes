@@ -1979,9 +1979,9 @@
     { check: () => _duelistReturnOnEsc, run: () => { _duelistReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderDueList(); openModal(duelistPanel, 'flex'); showToast('Press Esc to exit Tasks by Due Date'); } },
     { check: () => _todayReturnOnEsc, run: () => { _todayReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderTodayList(); openModal(todayPanel, 'flex'); showToast('Press Esc to exit Today\'s Focus'); } },
     { check: () => _calendarReturnOnEsc, run: () => { _calendarReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderCalendar(); openModal(calendarPanel, 'flex'); showToast('Press Esc to exit Calendar'); } },
+    { check: () => subMultiSelect.length, run: () => { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); } },
     { check: () => root.classList.contains('pf-detail-open'), run: () => { _goBackToProjects(); } },
     { check: () => searchTerm || searchWrap.classList.contains('pf-search-open'), run: () => { _clearSearch(); _refreshView(); } },
-    { check: () => subMultiSelect.length, run: () => { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); } },
     { check: () => true, run: () => { closeAllModals(); } }
   ];
   function handleEscape() {
@@ -2566,8 +2566,10 @@
   function cycleProjectStatus(id, targetStatus) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = targetStatus || STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; if (p.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); _flashStatusTransition('[data-id="' + id + '"]'); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
   let _statusMenuEl = null;
   function closeStatusMenu() { if (_statusMenuEl) { _statusMenuEl.remove(); _statusMenuEl = null; document.removeEventListener('click', closeStatusMenu, true); document.removeEventListener('scroll', closeStatusMenu, true); window.removeEventListener('resize', closeStatusMenu); } }
+  let _statusMenuToken = 0;
   function openStatusMenu(anchorEl, currentStatus, onPick) {
     closeStatusMenu();
+    const myToken = ++_statusMenuToken;
     const rect = anchorEl.getBoundingClientRect();
     const menu = document.createElement('div');
     menu.className = 'pf-status-menu';
@@ -2580,7 +2582,7 @@
       const dot = document.createElement('span');
       dot.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + statusDotColor(st) + ';border:1.5px solid ' + statusDotColor(st) + ';';
       item.prepend(dot);
-      item.addEventListener('click', function(e) { e.stopPropagation(); closeStatusMenu(); if (!isCurrent) onPick(st); });
+      item.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); const stillCurrent = myToken === _statusMenuToken; closeStatusMenu(); if (!isCurrent && stillCurrent) onPick(st); });
       item.addEventListener('mouseenter', function() { if (!isCurrent) item.style.background = 'var(--card-hover)'; });
       item.addEventListener('mouseleave', function() { if (!isCurrent) item.style.background = ''; });
       menu.appendChild(item);
@@ -2922,7 +2924,7 @@
     const sublist = div.querySelector('.pf-sublist'); if (p.expanded) { renderSubtaskRows(sublist, p, p.subtasks, 0); }
     sublist.__project = p; sublist.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); clearIndicators(); sublist.classList.add('pf-drop-root'); }); sublist.addEventListener('dragleave', (e) => { if (e.target === sublist) sublist.classList.remove('pf-drop-root'); }); sublist.addEventListener('drop', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); performMove(p, null, null); });
     const addBtn = document.createElement('button'); addBtn.className = 'pf-add-sub'; addBtn.textContent = '+ Add subtask'; addBtn.addEventListener('click', (e) => { e.stopPropagation(); addSubtask(p.id, null); }); sublist.appendChild(addBtn);
-    div.querySelector('.pf-chevron').addEventListener('click', (e) => { e.stopPropagation(); if (listViewActive) { const allExpanded = (function check(list) { return list.every(s => (!s.subtasks || !s.subtasks.length || (s.expanded && check(s.subtasks)))); })(p.subtasks); (function setAll(list, val) { list.forEach(s => { s.expanded = val; if (s.subtasks && s.subtasks.length) setAll(s.subtasks, val); }); })(p.subtasks, !allExpanded); render(); } else { toggleExpand(p.id); } }); div.querySelector('.pf-node-del').addEventListener('click', (e) => { e.stopPropagation(); deleteProject(p.id); }); div.querySelector('.pf-badge').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, p.status, (st) => cycleProjectStatus(p.id, st)); });
+    div.querySelector('.pf-chevron').addEventListener('click', (e) => { e.stopPropagation(); if (listViewActive) { const allExpanded = (function check(list) { return list.every(s => (!s.subtasks || !s.subtasks.length || (s.expanded && check(s.subtasks)))); })(p.subtasks); (function setAll(list, val) { list.forEach(s => { s.expanded = val; if (s.subtasks && s.subtasks.length) setAll(s.subtasks, val); }); })(p.subtasks, !allExpanded); render(); } else { toggleExpand(p.id); } }); div.querySelector('.pf-node-del').addEventListener('click', (e) => { e.stopPropagation(); deleteProject(p.id); }); div.querySelector('.pf-badge').addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); openStatusMenu(e.currentTarget, p.status, (st) => cycleProjectStatus(p.id, st)); });
     div.querySelector('.pf-node-header').addEventListener('pointerdown', (e) => { if (e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; const titleEl2 = e.target.closest('.pf-node-title'); if (titleEl2 && titleEl2.contentEditable === 'true') return; dragHandleArmedProject = true; });
     const nodeHeaderEl = div.querySelector('.pf-node-header');
     nodeHeaderEl.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId === p.id) return; e.preventDefault(); e.stopPropagation(); nodeHeaderEl.classList.add('pf-drop-copy-target'); });
@@ -3073,7 +3075,7 @@
     row.addEventListener('dragleave', (e) => { if (e.target === row) row.classList.remove('pf-drop-before', 'pf-drop-after', 'pf-drop-nest'); });
     row.addEventListener('drop', (e) => { if (!draggingSubId || draggingProjectId !== p.id || draggingSubId === s.id) return; e.preventDefault(); e.stopPropagation(); performMove(p, s.id, row.dataset.dropZone || 'after'); });
     if (hasChildren) { row.querySelector('.pf-sub-chevron').addEventListener('click', (e) => { e.stopPropagation(); toggleSubExpand(p.id, s.id); }); row.addEventListener('click', (e) => { if (e.ctrlKey || e.metaKey) return; if (e.target.closest('.pf-sub-handle') || e.target.closest('.pf-sub-chevron') || e.target.closest('.pf-sub-dot') || e.target.closest('.pf-subrow-title') || e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates')) return; toggleSubExpand(p.id, s.id); }); }
-    row.querySelector('.pf-sub-dot').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, s.status, (st) => cycleSubStatus(p.id, s.id, st)); });
+    row.querySelector('.pf-sub-dot').addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); const _pid = p.id, _sid = s.id; openStatusMenu(e.currentTarget, s.status, (st) => cycleSubStatus(_pid, _sid, st)); });
     row.addEventListener('click', (e) => { if (e.ctrlKey || e.metaKey) { if (e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates')) return; e.stopPropagation(); const idx = subMultiSelect.indexOf(s.id); if (idx > -1) { subMultiSelect.splice(idx, 1); row.classList.remove('pf-sub-selected'); } else { subMultiSelect.push(s.id); row.classList.add('pf-sub-selected'); } renderSubSelectBar(p); } });
     row.querySelector('.pf-sub-ctx-btn').addEventListener('click', (e) => { e.stopPropagation(); const rect = e.target.getBoundingClientRect(); _showSubCtxMenu(rect.left, rect.bottom, p, s); });
     row.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); if (e.pointerType === 'touch' || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) return; _showSubCtxMenu(e.clientX, e.clientY, p, s); });
@@ -3218,7 +3220,7 @@
             (dueText ? '<span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">' + dueText + '</span>' : '');
           item.addEventListener('mouseenter', () => { item.style.borderColor = 'var(--hover-border)'; });
           item.addEventListener('mouseleave', () => { item.style.borderColor = 'var(--card-border)'; });
-          item.querySelector('.pf-list-dot').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, p.status, (st) => { snapshot(); const oldStatus = p.status; p.status = st; if (p.status === oldStatus) return; p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); renderCategoryZones(); }); });
+          item.querySelector('.pf-list-dot').addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); const _pid = p.id; openStatusMenu(e.currentTarget, p.status, (st) => { snapshot(); const proj = projects.find(pr => pr.id === _pid); if (!proj) return; const oldStatus = proj.status; proj.status = st; if (proj.status === oldStatus) return; proj._manualStatus = true; proj.completedAt = proj.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + proj.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[proj.status]); scheduleSave(); renderCategoryZones(); }); });
           item.addEventListener('click', (e) => { e.stopPropagation(); collapsedCategories[name] = false; saveCollapsedCategories(); p.expanded = true; scheduleSave(); autoArrangeProjects(true); });
           list.appendChild(item);
         });
@@ -5936,9 +5938,9 @@
 
   // #12 Haptic feedback extensions
   const _origCycleSubStatus = cycleSubStatus;
-  cycleSubStatus = function(pid, sid) { if (navigator.vibrate) navigator.vibrate(10); _origCycleSubStatus(pid, sid); };
+  cycleSubStatus = function(pid, sid, targetStatus) { if (navigator.vibrate) navigator.vibrate(10); _origCycleSubStatus(pid, sid, targetStatus); };
   const _origCycleProjectStatus = cycleProjectStatus;
-  cycleProjectStatus = function(id) { if (navigator.vibrate) navigator.vibrate(10); _origCycleProjectStatus(id); };
+  cycleProjectStatus = function(id, targetStatus) { if (navigator.vibrate) navigator.vibrate(10); _origCycleProjectStatus(id, targetStatus); };
 
   // #14 Export reminder (prompt weekly if no export in 7 days)
   (function() {
