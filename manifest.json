@@ -2,7 +2,7 @@
   "name": "Orga-naes",
   "short_name": "Orga-naes",
   "description": "Personal Project Manager",
-  "start_url": "./index.html",
+  "start_url": "./Orga-naes.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#1e1e1e",
