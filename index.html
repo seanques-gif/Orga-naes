@@ -1,0 +1,413 @@
+<!-- © 2026 Sean Ques. All Rights Reserved. Unauthorized reproduction, distribution, or modification prohibited. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<title>Orga-naes</title>
+<meta name="version" content="1.0.0">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#1e1e1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orga-naes">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+</head>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="pf-root">
+  <div class="pf-toolbar">
+    <div class="pf-title"><span class="pf-dot"></span>Orga-naes</div>
+    <button class="pf-new-btn" id="pf-new-project">+</button>
+    <div class="pf-tb-group" id="pf-tb-undoredo">
+      <button class="pf-undo-btn" id="pf-undo" title="Undo (Ctrl+Z)" disabled>↶</button>
+      <button class="pf-undo-btn" id="pf-redo" title="Redo (Ctrl+Y)" disabled>↷</button>
+      <button class="pf-undo-btn pf-options-desktop" id="pf-options-btn-desktop" title="Options">☰</button>
+    </div>
+    <div class="pf-tb-group" id="pf-tb-duefilter">
+      <select class="pf-due-filter" id="pf-due-filter" title="Filter by due date">
+        <option value="all">All</option>
+        <option value="overdue">Overdue</option>
+        <option value="today">Today</option>
+        <option value="tomorrow">Tomorrow</option>
+        <option value="week">This Week</option>
+        <option value="nextweek">Next Week</option>
+        <option value="month">This Month</option>
+        <option value="nodue">No Due</option>
+      </select>
+      <button class="pf-undo-btn" id="pf-today-btn" title="Today's Focus">⭐</button>
+      <button class="pf-undo-btn" id="pf-duelist-btn" title="Tasks by Due Date" style="position:relative;">📅<span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;background:var(--danger,#ef4444);color:#fff;font-size:8px;font-weight:700;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;"></span></button>
+      <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View">🗓</button>
+      <span id="pf-weekly-btn" title="Weekly Planner" style="display:none;"></span>
+    </div>
+    <div class="pf-tb-group" id="pf-tb-viewtools">
+      <span id="pf-collapse-cats" title="Toggle Focus/Card view" style="display:none;"></span>
+      <button class="pf-undo-btn pf-toggle-all-btn" id="pf-toggle-all" title="Expand/Collapse all">📖</button>
+      <span id="pf-arrange" title="Auto-arrange" style="display:none;"></span>
+      <span id="pf-autofit-all" title="Auto-fit all" style="display:none;"></span>
+    </div>
+    <span class="pf-search-wrap" id="pf-search-wrap"><button class="pf-search-toggle" id="pf-search-toggle" title="Search">🔍</button><input type="text" class="pf-search" id="pf-search" placeholder="Search…" spellcheck="false"><button class="pf-search-clear" id="pf-search-clear" title="Clear search">×</button><button class="pf-search-close" id="pf-search-close" title="Close search">×</button></span>
+    <button class="pf-undo-btn pf-shortcuts-hint" id="pf-shortcuts-hint" title="Keyboard Shortcuts (?)">?</button>
+    <div class="pf-stats" id="pf-stats"></div>
+    <div class="pf-save" id="pf-save"></div>
+    <div class="pf-tb-group pf-options-mobile" style="margin-left:auto;">
+      <button class="pf-undo-btn" id="pf-options-btn" title="Options">☰</button>
+    </div>
+    <button class="pf-undo-btn pf-back-btn" id="pf-toolbar-back" title="Back to projects" style="display:none;margin-left:auto;">←</button>
+    <span id="pf-theme-toggle" title="Toggle theme" style="display:none;"></span>
+    <input type="file" id="pf-import-file" accept=".json" style="display:none">
+  </div>
+  <span class="pf-overdue-banner" id="pf-overdue-banner" style="display:none"></span>
+  <div class="pf-modal-layer" id="pf-modal-layer">
+  <div class="pf-modal-backdrop" id="pf-modal-backdrop"></div>
+  <div class="pf-due-panel" id="pf-due-panel" style="display:none">
+    <div class="pf-due-panel-head">
+      <span class="pf-due-panel-title">Tasks by due date</span>
+      <button class="pf-due-panel-close" id="pf-due-panel-close" title="Close">&times;</button>
+    </div>
+    <table class="pf-due-table">
+      <thead><tr><th>Task</th><th>Due date</th></tr></thead>
+      <tbody id="pf-due-table-body"></tbody>
+    </table>
+  </div>
+  <div class="pf-reminder-popover" id="pf-reminder-popover" style="display:none">
+    <div class="pf-reminder-title">Due-date reminder</div>
+    <label class="pf-reminder-label">Flag tasks as "soon" when due within
+      <input type="number" id="pf-reminder-days" min="0" max="60" value="2" class="pf-reminder-input"> day(s)
+    </label>
+    <div class="pf-reminder-actions">
+      <button class="pf-undo-btn" id="pf-reminder-save">Save</button>
+      <button class="pf-undo-btn" id="pf-reminder-cancel">Cancel</button>
+    </div>
+  </div>
+  <div class="pf-category-popover" id="pf-category-popover" style="display:none">
+    <div class="pf-category-title">Categories</div>
+    <div class="pf-category-list" id="pf-category-list"></div>
+    <div class="pf-category-add-row">
+      <input type="text" id="pf-category-add-input" class="pf-category-add-input" placeholder="New category name (e.g. Home, Work)" maxlength="30">
+      <button class="pf-undo-btn" id="pf-category-add-btn">+ Add</button>
+    </div>
+  </div>
+  <div class="pf-category-popover" id="pf-new-project-popover" style="display:none">
+    <div class="pf-category-title">New project — pick a category</div>
+    <div class="pf-category-list" id="pf-new-project-cat-list"></div>
+    <div class="pf-category-add-row">
+      <input type="text" id="pf-new-project-cat-input" class="pf-category-add-input" placeholder="New category name" maxlength="30">
+      <button class="pf-undo-btn" id="pf-new-project-cat-add">+ Add</button>
+    </div>
+  </div>
+  <div class="pf-options-panel" id="pf-options-panel" style="display:none">
+    <div class="pf-options-title">Options</div>
+
+    <!-- 📁 Data -->
+    <div class="pf-options-section">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">📁 Data</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="pf-undo-btn" id="pf-export" title="Save (Ctrl+S)" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">💾</span> Save JSON</button>
+        <button class="pf-undo-btn" id="pf-import" title="Import" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📂</span> Import</button>
+      </div>
+    </div>
+
+    <!-- 📁 Manage -->
+    <div class="pf-options-section">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">📁 Manage</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="pf-undo-btn" id="pf-category-btn" title="Manage categories" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📁</span> Categories</button>
+        <button class="pf-undo-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">🔔</span> Reminder</button>
+        <button class="pf-undo-btn" id="pf-activity-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📋</span> Activity Log</button>
+        <button class="pf-undo-btn" id="pf-archive-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📦</span> Archive</button>
+        <button class="pf-undo-btn" id="pf-trash-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">🗑</span> Trash</button>
+        <button class="pf-undo-btn" id="pf-snapshots-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">🕒</span> Version History</button>
+      </div>
+    </div>
+
+    <!-- 📤 Export -->
+    <div class="pf-options-section">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">📤 Export</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="pf-undo-btn" id="pf-export-csv" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📄</span> CSV</button>
+        <button class="pf-undo-btn" id="pf-export-pdf" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📑</span> PDF</button>
+      </div>
+    </div>
+
+    <!-- ☁️ Cloud Sync — Firebase -->
+    <div class="pf-options-section">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">☁️ Cloud Sync — Firebase</div>
+      <div id="pf-firebase-section" style="display:grid;grid-template-columns:1fr;gap:6px;">
+        <div id="pf-firebase-status" style="font-size:11px;color:var(--text-dim);">Not signed in</div>
+        <div id="pf-firebase-last-sync" style="font-size:10px;color:var(--text-dim);display:none;"></div>
+        <button class="pf-undo-btn" id="pf-firebase-signin" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">🔑</span> Sign in with Google</button>
+        <button class="pf-undo-btn" id="pf-firebase-signout" style="justify-content:flex-start;display:none;"><span style="display:inline-block;width:20px;text-align:center;">🚪</span> Sign Out</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <button class="pf-undo-btn" id="pf-firebase-push" style="justify-content:flex-start;" disabled><span style="display:inline-block;width:20px;text-align:center;">⬆</span> Push</button>
+          <button class="pf-undo-btn" id="pf-firebase-pull" style="justify-content:flex-start;" disabled><span style="display:inline-block;width:20px;text-align:center;">⬇</span> Pull</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);margin-top:4px;">
+          <input type="checkbox" id="pf-firebase-autosync"> Auto-sync on changes
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);">
+          <input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
+        </label>
+        <button class="pf-undo-btn" id="pf-firebase-backups-btn" style="justify-content:flex-start;margin-top:4px;" disabled><span style="display:inline-block;width:20px;text-align:center;">🗂</span> Restore from Backup</button>
+        <div id="pf-firebase-backups-list" style="display:none;margin-top:6px;max-height:200px;overflow-y:auto;"></div>
+        <p style="font-size:10px;color:var(--text-dim);margin-top:4px;">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
+      </div>
+    </div>
+
+    <!-- 🔄 Auto-Backup -->
+    <div class="pf-options-section">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">🔄 Auto-Backup</div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);">
+        🔄 Every
+        <input type="number" id="pf-autobackup-min" min="0" max="120" value="0" style="width:48px;padding:2px 4px;border-radius:6px;border:1px solid var(--card-border);background:var(--sub-bg);color:var(--text);font-size:13px;text-align:center;">
+        min <span style="font-size:11px;color:var(--text-dim);">(0 = off)</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px;overflow:hidden;">
+        <button class="pf-undo-btn" id="pf-autobackup-dir" style="justify-content:flex-start;flex-shrink:0;"><span style="display:inline-block;width:20px;text-align:center;">📁</span> Choose folder</button>
+        <span id="pf-autobackup-path" style="font-size:11px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+      </div>
+    </div>
+
+    <!-- 🎨 Appearance -->
+    <div class="pf-options-section">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">🎨 Appearance</div>
+      <label class="pf-options-label">Display Scale</label>
+      <div class="pf-options-row">
+        <input type="range" id="pf-display-scale" class="pf-range-input" min="60" max="140" step="5" value="100">
+        <span id="pf-display-scale-val" class="pf-options-val">100%</span>
+        <button class="pf-undo-btn" id="pf-display-scale-reset" title="Reset to default">Default</button>
+      </div>
+      <input type="range" id="pf-font-size" class="pf-range-input" style="display:none;" min="10" max="20" step="1" value="15">
+      <span id="pf-font-size-val" style="display:none;">15px</span>
+      <div style="margin-top:10px;margin-bottom:8px;">
+        <button class="pf-undo-btn" id="pf-theme-auto" style="padding:5px 12px;font-size:11px;">🌗 Auto (System)</button>
+      </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;margin-top:12px;">Dark Themes</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="pf-undo-btn" id="pf-theme-pf-dark" style="padding:5px 12px;font-size:11px;">🌑 PF Dark (Default)</button>
+        <button class="pf-undo-btn" id="pf-theme-cyberpunk" style="padding:5px 12px;font-size:11px;">🌆 Cyberpunk</button>
+        <button class="pf-undo-btn" id="pf-theme-forest" style="padding:5px 12px;font-size:11px;">🌲 Forest</button>
+        <button class="pf-undo-btn" id="pf-theme-ocean" style="padding:5px 12px;font-size:11px;">🌊 Ocean</button>
+        <button class="pf-undo-btn" id="pf-theme-onyx" style="padding:5px 12px;font-size:11px;">⬛ Onyx</button>
+      </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;margin-top:10px;">Light Themes</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="pf-undo-btn" id="pf-theme-light-rose" style="padding:5px 12px;font-size:11px;">🌸 Rose</button>
+        <button class="pf-undo-btn" id="pf-theme-light-sky" style="padding:5px 12px;font-size:11px;">☁️ Sky</button>
+        <button class="pf-undo-btn" id="pf-theme-light-mint" style="padding:5px 12px;font-size:11px;">🍃 Mint</button>
+        <button class="pf-undo-btn" id="pf-theme-light-sand" style="padding:5px 12px;font-size:11px;">🏖️ Sand</button>
+        <button class="pf-undo-btn" id="pf-theme-pf-light" style="padding:5px 12px;font-size:11px;">🌕 PF Light</button>
+      </div>
+    </div>
+
+    <!-- ⌨️ Shortcuts -->
+    <div class="pf-options-section">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">⌨️ Shortcuts</div>
+      <button class="pf-undo-btn" id="pf-shortcuts-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">⌨</span> Keyboard Shortcuts</button>
+    </div>
+
+    <!-- ℹ️ About -->
+    <div class="pf-options-section" style="border-top:1px solid var(--card-border);padding-top:12px;margin-top:8px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px;">ℹ️ About</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.6;">
+        <strong>Orga-naes</strong> v1.0.0<br>
+        A lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views — all stored locally in your browser.<br><br>
+        Created by <strong>Sean Ques</strong>
+      </div>
+    </div>
+  </div>
+  <div class="pf-comment-panel" id="pf-comment-panel" style="display:none">
+    <div class="pf-options-title">Comments — <span id="pf-comment-task-name"></span></div>
+    <div class="pf-comment-list" id="pf-comment-list"></div>
+    <div class="pf-comment-input-row">
+      <input type="text" id="pf-comment-input" class="pf-comment-input" placeholder="Add a comment…" maxlength="200">
+      <button class="pf-undo-btn" id="pf-comment-add">Add</button>
+    </div>
+  </div>
+  <div class="pf-activity-panel" id="pf-activity-panel" style="display:none">
+    <div class="pf-options-title">Activity Log</div>
+    <div class="pf-activity-list" id="pf-activity-list"><div class="pf-activity-empty">No activity yet.</div></div>
+  </div>
+  <div class="pf-activity-panel" id="pf-calendar-panel" style="display:none;width:min(95vw,1100px);max-height:min(90vh,750px);height:85vh;">
+    <div class="pf-cal-layout" style="display:flex;flex:1;overflow:hidden;gap:0;min-height:0;">
+      <div class="pf-cal-left" style="flex:0 0 40%;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--card-border);padding-right:8px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;padding:12px 8px;margin-bottom:6px;background:var(--header-bg);border-radius:6px;">
+          <button class="pf-undo-btn" id="pf-cal-prev" style="padding:4px 10px;font-size:14px;">◀</button>
+          <span id="pf-cal-month" style="flex:1;text-align:center;font-size:16px;font-weight:700;font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;letter-spacing:-0.3px;"></span>
+          <button class="pf-undo-btn" id="pf-cal-today-btn" style="padding:4px 12px;font-size:11px;font-weight:600;background:var(--accent);color:var(--accent-contrast);border-radius:6px;">Today</button>
+          <button class="pf-undo-btn" id="pf-cal-next" style="padding:4px 10px;font-size:14px;">▶</button>
+        </div>
+        <div id="pf-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;overflow-y:auto;flex:1;font-size:11px;"></div>
+      </div>
+      <div class="pf-cal-right" style="flex:1;display:flex;flex-direction:column;overflow:hidden;overflow-x:hidden;padding-left:14px;">
+        <div id="pf-cal-detail-title" style="flex-shrink:0;font-size:14px;font-weight:700;font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;padding:12px 8px;margin-bottom:6px;background:var(--header-bg);border-radius:6px;text-align:center;">Select a date</div>
+        <div class="pf-activity-list" id="pf-cal-detail-list" style="overflow-y:auto;overflow-x:hidden;flex:1;"><div class="pf-activity-empty">Click a date to see tasks.</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="pf-activity-panel" id="pf-today-panel" style="display:none;width:min(420px,90vw);">
+    <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);">
+      <span style="font-size:22px;">⭐</span>
+      <div style="flex:1;">
+        <div style="font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Today's Focus</div>
+        <span id="pf-today-date" style="font-size:11px;color:var(--text-dim);font-weight:400;"></span>
+      </div>
+    </div>
+    <div class="pf-activity-list" id="pf-today-list"><div class="pf-activity-empty">No tasks for today. Add from project context menu.</div></div>
+    <div style="padding-top:10px;border-top:1px solid var(--card-border);margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="pf-undo-btn" id="pf-today-clear-btn" style="padding:4px 8px;font-size:10px;border-radius:6px;border:1px solid var(--card-border);">Clear All</button>
+      <button class="pf-undo-btn" id="pf-today-carry-btn" style="padding:4px 8px;font-size:10px;border-radius:6px;background:rgba(149,128,255,0.12);color:var(--accent);font-weight:600;">Carry Over</button>
+      <button class="pf-undo-btn" id="pf-today-overdue-btn" style="padding:4px 8px;font-size:10px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:600;">+ Overdue</button>
+      <button class="pf-undo-btn" id="pf-today-due-btn" style="padding:4px 8px;font-size:10px;border-radius:6px;background:rgba(78,205,196,0.12);color:#4ecdc4;font-weight:600;">+ Today</button>
+    </div>
+  </div>
+  <div class="pf-activity-panel" id="pf-duelist-panel" style="display:none;width:min(700px,90vw);max-height:min(85vh,700px);height:75vh;flex-direction:column;">
+    <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);flex-shrink:0;">
+      <span style="font-size:22px;">📋</span>
+      <div style="font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Tasks by Due Date</div>
+    </div>
+    <div class="pf-activity-list" id="pf-duelist-list" style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding:4px;"></div>
+  </div>
+  <div class="pf-activity-panel" id="pf-weekly-panel" style="display:none;width:min(95vw,1100px);max-height:min(88vh,750px);height:82vh;">
+    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;padding:12px 16px;background:var(--header-bg);border-radius:6px 10px 0 0;border-bottom:1px solid var(--card-border);">
+      <button class="pf-undo-btn" id="pf-week-prev" style="padding:4px 10px;font-size:14px;">◀</button>
+      <span id="pf-week-label" style="flex:1;text-align:center;font-size:16px;font-weight:700;font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;letter-spacing:-0.3px;"></span>
+      <button class="pf-undo-btn" id="pf-week-today" style="padding:4px 12px;font-size:11px;font-weight:600;background:var(--accent);color:var(--accent-contrast);border-radius:6px;">This Week</button>
+      <button class="pf-undo-btn" id="pf-week-next" style="padding:4px 10px;font-size:14px;">▶</button>
+    </div>
+    <div id="pf-week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;flex:1;overflow-y:auto;min-height:0;padding:12px 10px;"></div>
+    <div style="padding:10px 16px;border-top:1px solid var(--card-border);display:flex;gap:8px;align-items:center;flex-shrink:0;background:var(--header-bg);border-radius:0 0 10px 10px;">
+      <button class="pf-undo-btn" id="pf-week-auto" style="padding:5px 12px;font-size:11px;font-weight:600;background:rgba(149,128,255,0.12);color:var(--accent);border-radius:6px;">⚡ Auto-fill from due dates</button>
+      <span style="flex:1;font-size:10px;color:var(--text-dim);text-align:right;font-style:italic;">Drag tasks between days · Click + to add manually</span>
+    </div>
+  </div>
+  <div class="pf-activity-panel" id="pf-archive-panel" style="display:none;width:min(500px,90vw);max-height:min(80vh,700px);">
+    <div class="pf-options-title">📦 Archive <span id="pf-archive-count" style="font-size:11px;color:var(--text-dim);font-weight:400;"></span></div>
+    <div class="pf-activity-list" id="pf-archive-list" style="overflow-y:auto;flex:1;min-height:0;"><div class="pf-activity-empty">Archive is empty.</div></div>
+  </div>
+  <div class="pf-activity-panel" id="pf-trash-panel" style="display:none">
+    <div class="pf-options-title">Trash <span id="pf-trash-count" style="font-size:11px;color:var(--text-dim);font-weight:400;"></span></div>
+    <div class="pf-activity-list" id="pf-trash-list"><div class="pf-activity-empty">Trash is empty.</div></div>
+    <div style="padding-top:8px;border-top:1px solid var(--card-border);margin-top:8px;display:flex;gap:6px;">
+      <button class="pf-undo-btn" id="pf-trash-empty-btn" style="color:var(--danger);">Empty Trash</button>
+      <span style="flex:1;font-size:10px;color:var(--text-dim);align-self:center;text-align:right;">Auto-deletes after 30 days</span>
+    </div>
+  </div>
+  <div class="pf-activity-panel" id="pf-snapshots-panel" style="display:none;width:min(500px,90vw);max-height:min(80vh,700px);">
+    <div class="pf-options-title">🕒 Version History <span id="pf-snapshots-count" style="font-size:11px;color:var(--text-dim);font-weight:400;"></span></div>
+    <div class="pf-activity-list" id="pf-snapshots-list" style="overflow-y:auto;flex:1;min-height:0;"><div class="pf-activity-empty">No snapshots yet.</div></div>
+  </div>
+  <div class="pf-shortcuts-panel" id="pf-shortcuts-panel" style="display:none">
+    <div class="pf-options-title">Keyboard Shortcuts</div>
+    <div class="pf-shortcut-list">
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+F</span><span>Search</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+S</span><span>Save / Export</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+Z</span><span>Undo</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+Y</span><span>Redo</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">N</span><span>New project</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">←→</span><span>Navigate left/right (Card View)</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">↑↓</span><span>Navigate projects (Focus list)</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Enter</span><span>Open selected project (Focus list)</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Delete</span><span>Delete selected project(s) (Focus list)</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+Click</span><span>Multi-select projects (Focus list)</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Double-click</span><span>Rename project (Focus list)</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Right-click</span><span>Context menu (Focus list)</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Shift+N</span><span>New project in selected category (Focus list)</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Esc</span><span>Close search / Exit selection / Close popup</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+Wheel</span><span>Zoom in/out (Card View)</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">?</span><span>Show this shortcuts panel</span></div>
+    </div>
+  </div>
+  <div class="pf-color-modal" id="pf-color-modal" style="display:none">
+    <div class="pf-options-title">Pick Card Color</div>
+    <div class="pf-color-palette" id="pf-color-palette"></div>
+    <div class="pf-color-custom-row">
+      <span class="pf-color-custom-label">Custom:</span>
+      <input type="color" id="pf-color-modal-picker" value="#7b68ee">
+    </div>
+    <div class="pf-color-modal-btns">
+      <button class="pf-undo-btn" id="pf-color-modal-ok">OK</button>
+      <button class="pf-undo-btn" id="pf-color-modal-clear">Clear</button>
+      <button class="pf-undo-btn" id="pf-color-modal-cancel">Cancel</button>
+    </div>
+  </div>
+  </div>
+  <div class="pf-fab-overlay" id="pf-fab-overlay"></div>
+  <div class="pf-fab-menu" id="pf-fab-menu">
+    <div class="pf-fab-menu-item" data-fab="add"><span class="pf-fab-icon">➕</span></div>
+    <div class="pf-fab-menu-item" data-fab="expand"><span class="pf-fab-icon">📖</span></div>
+    <div class="pf-fab-menu-item" data-fab="sort"><span class="pf-fab-icon">⇅</span></div>
+    <div class="pf-fab-menu-item" data-fab="undo"><span class="pf-fab-icon">↩</span></div>
+    <div class="pf-fab-menu-item" data-fab="redo"><span class="pf-fab-icon">↪</span></div>
+    <div class="pf-fab-menu-item" data-fab="search"><span class="pf-fab-icon">🔍</span></div>
+  </div>
+  <button class="pf-fab" id="pf-fab" title="Actions">+</button>
+
+  <div class="pf-activity-panel" id="pf-copy-modal" style="display:none;width:min(500px,90vw);max-height:min(80vh,600px);height:60vh;flex-direction:column;">
+    <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);flex-shrink:0;">
+      <span style="font-size:22px;">📋</span>
+      <div id="pf-copy-modal-title" style="font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.3px;">Copy to Project</div>
+    </div>
+    <div class="pf-activity-list" id="pf-copy-modal-list" style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding:4px;"></div>
+  </div>
+  <div class="pf-conflict-modal" id="pf-conflict-modal">
+    <div class="pf-conflict-box">
+      <div class="pf-conflict-title">⚠️ Sync Conflict Detected</div>
+      <div class="pf-conflict-cols">
+        <div class="pf-conflict-col"><div class="pf-conflict-col-title">📱 Local</div><div id="pf-conflict-local"></div></div>
+        <div class="pf-conflict-col"><div class="pf-conflict-col-title">☁️ Cloud</div><div id="pf-conflict-remote"></div></div>
+      </div>
+      <div class="pf-conflict-btns">
+        <button id="pf-conflict-keep-local">Keep Local</button>
+        <button id="pf-conflict-keep-remote" class="pf-conflict-primary">Use Cloud</button>
+      </div>
+    </div>
+  </div>
+  <nav class="pf-bottom-nav" id="pf-bottom-nav">
+    <button class="pf-bottom-nav-btn pf-bottom-active" data-nav="projects" title="Projects">📋<span>Projects</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="today" title="Today">⭐<span>Today</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates" style="position:relative;">📅<span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
+    <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar">🗓<span>Calendar</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="options" title="Options">☰<span>Options</span></button>
+    <div class="pf-connection-dot pf-online" id="pf-connection-dot" title="Online"></div>
+  </nav>
+  <div class="pf-split-view" id="pf-split-view">
+    <div class="pf-split-list" id="pf-split-list"></div>
+    <div class="pf-split-divider" id="pf-split-divider"></div>
+    <div class="pf-split-detail" id="pf-split-detail"><div class="pf-empty" style="display:block;">Select a project from the list to view details.</div></div>
+  </div>
+  <div class="pf-canvas-wrap" id="pf-canvas-wrap">
+    <div class="pf-canvas" id="pf-canvas">
+      <div class="pf-category-zones" id="pf-category-zones"></div>
+      <div class="pf-empty" id="pf-empty" style="display: block;">Click <b>+ New project</b>, then click the project card to expand it and add subtasks inside.</div>
+    </div>
+    <div class="pf-zoom-controls">
+      <button class="pf-zoom-btn" id="pf-zoom-out" title="Zoom out">−</button>
+      <span class="pf-zoom-level" id="pf-zoom-level">100%</span>
+      <button class="pf-zoom-btn" id="pf-zoom-in" title="Zoom in">+</button>
+      <button class="pf-zoom-btn" id="pf-zoom-reset" title="Reset zoom" style="font-size:11px;">⟲</button>
+    </div>
+  </div>
+  <div class="pf-toast" id="pf-toast"></div>
+  <div class="pf-resize-handle" id="pf-resize-handle" title="Drag to resize">
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+      <path d="M9.5 1.5L1.5 9.5M9.5 5.5L5.5 9.5M9.5 9.5L9.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script src="pwa.js"></script>
+<script src="firebase-sync.js"></script>
+</body>
+</html>
