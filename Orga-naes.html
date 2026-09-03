@@ -22,6 +22,32 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 </head>
 <body>
+<!--
+  ORGA-NAES AI NAVIGATION MAP
+  Purpose: keep this single-file app fast to navigate when editing with an AI.
+
+  SECTIONS (search for "SECTION:")
+  - CSS: visual system, responsive layout, and component styles
+  - HTML SHELL: application root, panels, and modals
+  - CORE STATE & LOCAL PERSISTENCE: projects/categories, history, localStorage, IndexedDB
+  - PROJECT & TASK UI: canvas, split view, task interactions, and rendering
+  - SECONDARY VIEWS & UTILITIES: Today, Calendar, activity, reports, import/export, backups
+  - PWA REGISTRATION: service worker update lifecycle
+  - FIREBASE CLOUD SYNC: auth, push/pull, listeners, backups, and conflicts
+
+  SOURCE OF TRUTH
+  - `projects` and `categories` are in-memory local-first state.
+  - `scheduleSave()` persists project changes locally, then invokes the optional cloud-save hook.
+  - `render()` redraws the canvas; split-view changes may also require `renderSplitList()` and/or
+    `renderSplitDetail()`.
+  - `window._pf` is the public bridge consumed by Firebase and other integration code. Preserve it.
+
+  EDITING GUARDRAILS
+  - Call `snapshot()` before a user-undoable project mutation.
+  - Escape user-provided text before inserting it with `innerHTML`.
+  - Preserve Firebase conflict handling; cloud operations are asynchronous and must not silently
+    overwrite unsynced local data.
+-->
 <style>
   /* Offline system fonts */
 
@@ -1773,6 +1799,9 @@
 </style>
 
 <script>
+  // ============================================================
+  // SECTION: CORE STATE & LOCAL PERSISTENCE
+  // ============================================================
 (function() {
   const STATUSES = ['planned', 'ongoing', 'waiting', 'completed'];
   const STATUS_LABEL = { planned: 'Planned', ongoing: 'Ongoing', waiting: 'Waiting', completed: 'Completed' };
@@ -1980,6 +2009,7 @@
     { check: () => _todayReturnOnEsc, run: () => { _todayReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderTodayList(); openModal(todayPanel, 'flex'); showToast('Press Esc to exit Today\'s Focus'); } },
     { check: () => _calendarReturnOnEsc, run: () => { _calendarReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderCalendar(); openModal(calendarPanel, 'flex'); showToast('Press Esc to exit Calendar'); } },
     { check: () => subMultiSelect.length, run: () => { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); } },
+    { check: () => ALL_MODALS.some(m => m && m.style.display !== 'none'), run: () => { closeAllModals(); } },
     { check: () => root.classList.contains('pf-detail-open'), run: () => { _goBackToProjects(); } },
     { check: () => searchTerm || searchWrap.classList.contains('pf-search-open'), run: () => { _clearSearch(); _refreshView(); } },
     { check: () => true, run: () => { closeAllModals(); } }
@@ -2488,6 +2518,7 @@
     loadToday();
   }
 
+  // Persists current projects locally, then triggers optional debounced cloud sync via fsAutoSaveHook.
   function scheduleSave() { autoUpdateStatuses(); invalidateSearchCache(); if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const res = await safeSet(STORE_KEY, JSON.stringify(projects), false); if (res) { localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
   function addProject(category) { snapshot(); const p = { id: uid(), title: 'New project', status: 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: null, completedAt: null, category: category || null, subtasks: [] }; projects.push(p); logActivity('Created project "New project"' + (category ? ' in ' + category : '')); scheduleSave(); autoArrangeProjects(true); if (listViewActive) { splitSelectedId = p.id; renderSplitList(); renderSplitDetail(); } focusEl('[data-title-id="' + p.id + '"]'); }
   const ARCHIVE_KEY = 'project-flow-archive';
@@ -2903,6 +2934,9 @@
     return btn;
   }
 
+  // ============================================================
+  // SECTION: PROJECT & TASK UI
+  // ============================================================
   let statusFilter = '';
   function renderStats() { const counts = { planned: 0, ongoing: 0, waiting: 0, completed: 0 }; function tally(list) { list.forEach(s => { if (counts[s.status] !== undefined) counts[s.status]++; if (s.subtasks && s.subtasks.length) tally(s.subtasks); }); } projects.forEach(p => { if (counts[p.status] !== undefined) counts[p.status]++; tally(p.subtasks); }); const streakHtml = _streak.count > 0 ? '<span class="pf-streak-badge">🔥 ' + _streak.count + '</span>' : ''; const freezeHtml = '<span class="pf-freeze-badge" title="Streak freezes (replenish weekly)">❄️ ' + _streakFreezes + '</span>'; const xpLvl = Math.floor(_xp / 100) + 1; const xpHtml = '<span class="pf-xp-badge">⭐ Lv.' + xpLvl + '</span>'; statsEl.innerHTML = STATUSES.map(s => '<span class="pf-stat' + (statusFilter === s ? ' pf-stat-active' : '') + '" data-status-filter="' + s + '" style="background:var(--' + s + '-bg); color:var(--' + s + ');cursor:pointer;' + (statusFilter === s ? 'outline:2px solid var(--' + s + ');outline-offset:1px;' : '') + '"><span class="pf-swatch" style="background:var(--' + s + ')"></span>' + STATUS_LABEL[s] + ' ' + counts[s] + '</span>').join('') + streakHtml + freezeHtml + xpHtml; statsEl.querySelectorAll('[data-status-filter]').forEach(el => { el.addEventListener('click', () => { const clicked = el.dataset.statusFilter; statusFilter = statusFilter === clicked ? '' : clicked; render(); }); }); }
 
@@ -3417,6 +3451,7 @@
     });
     _updatingStatuses = false;
   }
+  // Rebuilds the primary canvas from the current in-memory project state.
   function render() {
     autoPopulateToday();
     if (calendarPanel.style.display !== 'none') { renderCalendar(); }
@@ -3540,6 +3575,7 @@
     const completed = sorted.filter(p => p.status === 'completed');
     return active.concat(completed);
   }
+  // Rebuilds the project list in split view; call after changes that affect list ordering/filtering.
   function renderSplitList() {
     splitList.innerHTML = '';
     const sortBar = document.createElement('div');
@@ -4064,6 +4100,7 @@
 
   let _searchAutoCollapseId = null;
   let _completedCollapseId = null;
+  // Rebuilds the selected project's detail pane in split view.
   function renderSplitDetail() {
     splitDetail.innerHTML = '';
     if (!splitSelectedId) { splitDetail.innerHTML += '<div class="pf-empty" style="display:block;">Select a project from the list to view details.</div>'; _completedCollapseId = null; return; }
@@ -4911,6 +4948,9 @@
   });
   document.getElementById('pf-color-modal-cancel').addEventListener('click', () => { closeAllModals(); });
 
+  // ============================================================
+  // SECTION: SECONDARY VIEWS & UTILITIES
+  // ============================================================
   function collectReportRows() {
     const rows = [];
     function walkSubs(list, projectTitle, depth) {
@@ -6032,6 +6072,9 @@
 })();
 
 // #11 PWA - Register service worker
+// ============================================================
+// SECTION: PWA REGISTRATION
+// ============================================================
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').then(function(reg) {
     reg.addEventListener('updatefound', function() {
@@ -6047,7 +6090,9 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', function() { window.location.reload(); });
 }
 
-// --- Firebase Cloud Sync ---
+// ============================================================
+// SECTION: FIREBASE CLOUD SYNC
+// ============================================================
 (function() {
   const firebaseConfig = {
     apiKey: "AIzaSyBiDGWVjs8Djoez_saNA5cpOY3aO2cgVVc",
@@ -6260,6 +6305,7 @@ if ('serviceWorker' in navigator) {
   pullBtn.addEventListener('click', _doPull);
   pullBtn.addEventListener('touchend', function(e) { e.preventDefault(); _doPull(); });
 
+  // Subscribes to remote changes and either applies them or presents a conflict decision.
   function startListener() {
     if (_fbListener || !_fbUser) return;
     if (!window._pfLoaded) { setTimeout(startListener, 500); return; }
@@ -6328,6 +6374,7 @@ if ('serviceWorker' in navigator) {
     return map;
   }
 
+  // Pushes only changed project records where possible; deletions fall back to a full project write.
   function pushSelective() {
     const projects = window._pf.getProjects();
     const categories = window._pf.getCategories();
@@ -6371,6 +6418,7 @@ if ('serviceWorker' in navigator) {
   }
   let _lastPushedCatHash = '';
 
+  // Performs a deliberate full cloud save of projects, categories, archive, and trash.
   function pushWithTimestamp() {
     const projects = window._pf.getProjects();
     _lastPushedHash = buildHashMap(projects);
@@ -6503,6 +6551,7 @@ if ('serviceWorker' in navigator) {
   // Conflict modal logic
   let _lastPushedSnapshot = '';
   let _pendingRemote = null;
+  // Presents local versus cloud state; the user explicitly chooses which version wins.
   function showConflictModal(local, remote) {
     _pendingRemote = remote;
     const modal = document.getElementById('pf-conflict-modal');
