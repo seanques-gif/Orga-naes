@@ -69,6 +69,7 @@
   - Escape user-provided text before inserting it with `innerHTML`.
   - Preserve Firebase conflict handling; cloud operations are asynchronous and must not silently
     overwrite unsynced local data.
+  - Keep SECTION:/SUBSECTION: markers in this header updated when adding or moving functions.
 -->
 <style>
   /* SECTION: CSS — visual system, responsive breakpoints, component styles */
@@ -2076,7 +2077,7 @@
   });
 
   const toastEl = document.getElementById('pf-toast'); let toastTimer = null;
-  function showToast(msg, isError, undoable) {
+  function showToast(msg, isError, undoable, actionCallback, actionLabel) {
     clearTimeout(toastTimer);
     toastEl.innerHTML = '';
     const span = document.createElement('span');
@@ -2088,9 +2089,15 @@
       btn.className = 'pf-toast-undo';
       btn.addEventListener('click', () => { undo(); toastEl.classList.remove('pf-toast-show'); });
       toastEl.appendChild(btn);
+    } else if (actionCallback) {
+      const btn = document.createElement('button');
+      btn.textContent = actionLabel || 'Refresh';
+      btn.className = 'pf-toast-undo';
+      btn.addEventListener('click', () => { actionCallback(); toastEl.classList.remove('pf-toast-show'); });
+      toastEl.appendChild(btn);
     }
     toastEl.className = 'pf-toast pf-toast-show' + (isError ? ' pf-toast-error' : '');
-    toastTimer = setTimeout(() => { toastEl.classList.remove('pf-toast-show'); }, undoable ? 5000 : 2600);
+    toastTimer = setTimeout(() => { toastEl.classList.remove('pf-toast-show'); }, undoable ? 5000 : (actionCallback ? 8000 : 2600));
   }
   function hasStorage() { try { localStorage.setItem('__test__', '1'); localStorage.removeItem('__test__'); return true; } catch (e) { return false; } }
   let _idbKV = null;
@@ -5211,15 +5218,37 @@
     return { data, importedCategories, importedCollapsed };
   }
 
+  // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
+  // damaged or hand-edited backup can't break rendering, sync, or the undo stack. Recurses into subtasks.
+  function sanitizeImportedNode(node, seenIds) {
+    if (!node || typeof node !== 'object') node = {};
+    if (typeof node.id !== 'string' || !node.id || seenIds.has(node.id)) node.id = uid();
+    seenIds.add(node.id);
+    if (typeof node.title !== 'string' || !node.title.trim()) node.title = 'Untitled';
+    if (!STATUSES.includes(node.status)) node.status = 'planned';
+    if (node.category != null && typeof node.category !== 'string') node.category = null;
+    if (node.dueAt != null && typeof node.dueAt !== 'string') node.dueAt = null;
+    if (node.createdAt != null && typeof node.createdAt !== 'string') node.createdAt = null;
+    if (node.completedAt != null && typeof node.completedAt !== 'string') node.completedAt = null;
+    if (!Array.isArray(node.subtasks)) node.subtasks = [];
+    node.subtasks = node.subtasks.map(s => sanitizeImportedNode(s, seenIds));
+    return node;
+  }
+  function sanitizeImportedProjects(data) {
+    const seenIds = new Set();
+    return (Array.isArray(data) ? data : []).filter(p => p != null).map(p => sanitizeImportedNode(p, seenIds));
+  }
+
   function applyImportData(data, importedCategories, importedCollapsed) {
     snapshot();
-    projects = data;
+    projects = sanitizeImportedProjects(data);
     projects.forEach(p => { p.expanded = false; });
     const fromProjects = projects.map(p => p.category).filter(Boolean);
-    categories = Array.from(new Set(categories.concat(importedCategories, fromProjects)));
+    const safeImportedCategories = (Array.isArray(importedCategories) ? importedCategories : []).filter(c => typeof c === 'string');
+    categories = Array.from(new Set(categories.concat(safeImportedCategories, fromProjects)));
     collapsedCategories = Object.assign({}, collapsedCategories, importedCollapsed);
     saveCategories(); saveCollapsedCategories(); scheduleSave(); autoArrangeProjects(true);
-    showToast('Imported ' + data.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : ''));
+    showToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : ''));
   }
 
   importInput.addEventListener('change', () => {
@@ -6134,8 +6163,9 @@ if ('serviceWorker' in navigator) {
       const newWorker = reg.installing;
       newWorker.addEventListener('statechange', function() {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          window._pf.showToast('🔄 New version available — tap to refresh', false, false);
-          newWorker.postMessage('skipWaiting');
+          window._pf.showToast('🔄 New version available', false, false, function() {
+            newWorker.postMessage('skipWaiting');
+          }, 'Refresh');
         }
       });
     });
@@ -6287,13 +6317,18 @@ if ('serviceWorker' in navigator) {
       const remoteTime = snap.val() || 0;
       const localTime = _lastSyncTime || 0;
       if (remoteTime > localTime && !confirm('⚠ Cloud data is newer than your last sync.\nPush anyway and overwrite cloud?')) return;
-      userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
-      catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
-      archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive())));
-      trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash())));
-      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
-      updateLastSync();
-      window._pf.showToast('⬆ Pushed to cloud');
+      Promise.all([
+        userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects()))),
+        catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories()))),
+        archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive()))),
+        trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
+        db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
+      ]).then(function() {
+        updateLastSync();
+        window._pf.showToast('⬆ Pushed to cloud');
+      }).catch(function(err) {
+        window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+      });
     });
   });
 
@@ -6420,6 +6455,7 @@ if ('serviceWorker' in navigator) {
 
   // Selective sync: track last pushed state, only push changed projects
   let _lastPushedHash = {};
+  let _lastPushedIdOrder = [];
   function hashProject(p) { return JSON.stringify(p); }
   function buildHashMap(projects) {
     const map = {};
@@ -6427,11 +6463,14 @@ if ('serviceWorker' in navigator) {
     return map;
   }
 
-  // Pushes only changed project records where possible; deletions fall back to a full project write.
+  // Pushes only changed project records where possible; deletions or reordering fall back to a full project write
+  // (index-keyed partial updates can't safely represent an order change on their own).
   function pushSelective() {
     const projects = window._pf.getProjects();
     const categories = window._pf.getCategories();
     const currentHash = buildHashMap(projects);
+    const currentIdOrder = projects.map(p => p.id);
+    const orderChanged = JSON.stringify(currentIdOrder) !== JSON.stringify(_lastPushedIdOrder);
     const updates = {};
     let hasChanges = false;
 
@@ -6446,23 +6485,26 @@ if ('serviceWorker' in navigator) {
     // Detect deleted projects (in old hash but not current)
     const currentIds = new Set(projects.map(p => p.id));
     const oldIds = Object.keys(_lastPushedHash);
-    if (oldIds.length > projects.length) {
-      // Full push needed when projects removed (index shift)
+    if (oldIds.length > projects.length || orderChanged) {
+      // Full push needed when projects removed (index shift) or reordered — partial index-keyed
+      // updates would otherwise leave unchanged projects at their old cloud position.
       userRef().set(JSON.parse(JSON.stringify(projects)));
       hasChanges = true;
     } else if (hasChanges) {
       db.ref().update(updates);
     }
+    _lastPushedIdOrder = currentIdOrder;
 
     // Always sync categories and emojis (small data)
     const catHash = JSON.stringify(categories);
-    if (catHash !== _lastPushedCatHash) {
+    const catChanged = catHash !== _lastPushedCatHash;
+    if (catChanged) {
       catRef().set(JSON.parse(JSON.stringify(categories)));
       _lastPushedCatHash = catHash;
     }
     try { db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))); } catch(e) {}
 
-    if (hasChanges || catHash !== _lastPushedCatHash) {
+    if (hasChanges || catChanged) {
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
       _lastPushedHash = currentHash;
       updateLastSync();
@@ -6475,14 +6517,18 @@ if ('serviceWorker' in navigator) {
   function pushWithTimestamp() {
     const projects = window._pf.getProjects();
     _lastPushedHash = buildHashMap(projects);
+    _lastPushedIdOrder = projects.map(p => p.id);
     _lastPushedCatHash = JSON.stringify(window._pf.getCategories());
-    userRef().set(JSON.parse(JSON.stringify(projects)));
-    catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
-    db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis())));
-    archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive())));
-    trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash())));
-    db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
-    updateLastSync();
+    const writePromise = Promise.all([
+      userRef().set(JSON.parse(JSON.stringify(projects))),
+      catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories()))),
+      db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))),
+      archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive()))),
+      trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
+      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
+    ]);
+    writePromise.then(function() { updateLastSync(); });
+    return writePromise;
   }
 
   // Hook into scheduleSave to push on every change when autosync is on (debounced 3s)
@@ -6509,8 +6555,11 @@ if ('serviceWorker' in navigator) {
     if (!_fbUser) { showToast('⚠ Sign in first to push', true); return; }
     if (!navigator.onLine) { showToast('⚠ You are offline — will sync when back online', true); _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
-    pushWithTimestamp();
-    showToast('☁ Pushed to cloud');
+    pushWithTimestamp().then(function() {
+      showToast('☁ Pushed to cloud');
+    }).catch(function(err) {
+      showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+    });
   };
   if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
   else {
@@ -6641,8 +6690,11 @@ if ('serviceWorker' in navigator) {
   }
   document.getElementById('pf-conflict-keep-local').addEventListener('click', function() {
     document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
-    pushWithTimestamp();
-    window._pf.showToast('✅ Kept local data & pushed to cloud');
+    pushWithTimestamp().then(function() {
+      window._pf.showToast('✅ Kept local data & pushed to cloud');
+    }).catch(function(err) {
+      window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+    });
   });
   document.getElementById('pf-conflict-keep-remote').addEventListener('click', function() {
     document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
