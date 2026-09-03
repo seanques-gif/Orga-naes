@@ -1,7 +1,11 @@
-const CACHE_VERSION = '2026-09-02-0001';
+const CACHE_VERSION = '2026-09-03-0001';
 const CACHE_NAME = 'orga-naes-' + CACHE_VERSION;
 const ASSETS = [
   './Orga-naes.html',
+  './styles.css',
+  './app.js',
+  './pwa.js',
+  './firebase-sync.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
