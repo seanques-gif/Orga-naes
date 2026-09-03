@@ -26,14 +26,36 @@
   ORGA-NAES AI NAVIGATION MAP
   Purpose: keep this single-file app fast to navigate when editing with an AI.
 
-  SECTIONS (search for "SECTION:")
-  - CSS: visual system, responsive layout, and component styles
-  - HTML SHELL: application root, panels, and modals
-  - CORE STATE & LOCAL PERSISTENCE: projects/categories, history, localStorage, IndexedDB
-  - PROJECT & TASK UI: canvas, split view, task interactions, and rendering
-  - SECONDARY VIEWS & UTILITIES: Today, Calendar, activity, reports, import/export, backups
+  SECTIONS (search for "SECTION:") — top-level, one per major area of the file.
+  SUBSECTIONS (search for "SUBSECTION:") — finer-grained landmarks inside the two large
+  JS sections below, so an edit to one feature doesn't require reading the whole section.
+
+  - CSS (SECTION only — rules are interleaved by breakpoint, not by feature; grep the
+    class name, e.g. ".pf-options-panel", rather than relying on subsections here)
+  - HTML SHELL (SECTION only — each panel/modal is already a uniquely named
+    id="pf-..." element, so grep the id directly, e.g. "pf-options-panel")
+  - CORE STATE & LOCAL PERSISTENCE — projects/categories, history, localStorage, IndexedDB
+      Subsections: Global Keyboard Shortcuts, Escape Dismissable Stack, IndexedDB Mirror &
+      Auto-Backup, Categories, Project CRUD/Archive/Trash, Subtask Tree Helpers, Task Dependencies
+  - PROJECT & TASK UI — canvas, split view, task interactions, and rendering
+      Subsections: Canvas Rendering, Multi-Select & Bulk Actions, Drag & Drop, Auto-Arrange &
+      Layout, Clipboard, Search, Main Render Loop, Split/List View, Context Menu, Task Detail
+      View, Activity Log, Today's Focus, Due List, Calendar View, Weekly Planner, Reminders,
+      Comments, Color Picker
+  - SECONDARY VIEWS & UTILITIES — Today, Calendar, activity, reports, import/export, backups
+      Subsections: Reports & Export, Display Scale & Zoom, File Backups & Import/Export,
+      Gamification, Motivational Quotes, Emoji Picker, Theme Presets, Particle Background,
+      Accessibility, Overdue Badge & Notifications, Mobile FAB & Bottom Nav, Modal Helpers,
+      Scroll Shadows
   - PWA REGISTRATION: service worker update lifecycle
   - FIREBASE CLOUD SYNC: auth, push/pull, listeners, backups, and conflicts
+
+  QUICK FUNCTION INDEX (high-traffic entry points — grep the name directly)
+  - handleEscape / _escDismissables: Escape-key priority stack (CORE STATE)
+  - closeAllModals / openModal / ALL_MODALS: modal open/close plumbing (CORE STATE)
+  - render / renderSplitList / renderSplitDetail: the three view redraws (PROJECT & TASK UI)
+  - snapshot / undo / redo: undo-stack management (CORE STATE)
+  - scheduleSave: local persistence entry point (CORE STATE)
 
   SOURCE OF TRUTH
   - `projects` and `categories` are in-memory local-first state.
@@ -49,6 +71,7 @@
     overwrite unsynced local data.
 -->
 <style>
+  /* SECTION: CSS — visual system, responsive breakpoints, component styles */
   /* Offline system fonts */
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1377,6 +1400,7 @@
 
 </style>
 
+<!-- SECTION: HTML SHELL — application root, toolbar, panels, and modals -->
 <div id="pf-root">
   <div class="pf-toolbar">
     <div class="pf-title"><span class="pf-dot"></span>Orga-naes</div>
@@ -1883,6 +1907,7 @@
   });
 
   let _saveModalEl = null;
+  // SUBSECTION: Global Keyboard Shortcuts
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       const ae = document.activeElement; if (ae && ae.isContentEditable) return; if (!root.contains(ae) && ae !== document.body) return;
@@ -1979,7 +2004,7 @@
     }
   });
 
-  // --- Escape Dismissable Stack ---
+  // SUBSECTION: Escape Dismissable Stack
   function _returnSearchToToolbar() {
     const toolbar = document.querySelector('.pf-toolbar');
     if (toolbar && searchWrap.parentNode !== toolbar) toolbar.appendChild(searchWrap);
@@ -2100,7 +2125,7 @@
     return true;
   }
 
-  // --- IndexedDB Mirror & Auto-Backup ---
+  // SUBSECTION: IndexedDB Mirror & Auto-Backup
   const IDB_NAME = 'orga-naes-backup';
   const IDB_STORE = 'snapshots';
   const AUTO_BACKUP_INTERVAL = 5 * 60 * 1000;
@@ -2310,6 +2335,7 @@
   }
 
   const CATEGORY_COLORS = ['#7b68ee', '#f0a742', '#3fc27a', '#4fb8d6', '#e0503f', '#d968c9'];
+  // SUBSECTION: Categories
   function categoryColor(name) {
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
@@ -2520,6 +2546,7 @@
 
   // Persists current projects locally, then triggers optional debounced cloud sync via fsAutoSaveHook.
   function scheduleSave() { autoUpdateStatuses(); invalidateSearchCache(); if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const res = await safeSet(STORE_KEY, JSON.stringify(projects), false); if (res) { localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
+  // SUBSECTION: Project CRUD, Archive & Trash
   function addProject(category) { snapshot(); const p = { id: uid(), title: 'New project', status: 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: null, completedAt: null, category: category || null, subtasks: [] }; projects.push(p); logActivity('Created project "New project"' + (category ? ' in ' + category : '')); scheduleSave(); autoArrangeProjects(true); if (listViewActive) { splitSelectedId = p.id; renderSplitList(); renderSplitDetail(); } focusEl('[data-title-id="' + p.id + '"]'); }
   const ARCHIVE_KEY = 'project-flow-archive';
   let archive = [];
@@ -2698,6 +2725,7 @@
     requestAnimationFrame(draw);
   }
 
+  // SUBSECTION: Subtask Tree Helpers
   function findSubNode(list, id) { for (const item of list) { if (item.id === id) return item; if (item.subtasks && item.subtasks.length) { const found = findSubNode(item.subtasks, id); if (found) return found; } } return null; }
   function findSubParentArray(list, id) { for (const item of list) { if (item.id === id) return list; if (item.subtasks && item.subtasks.length) { const found = findSubParentArray(item.subtasks, id); if (found) return found; } } return null; }
   function deepCloneSubtree(node) { const clone = { id: uid(), title: node.title, status: node.status || 'planned', expanded: false, createdAt: new Date().toISOString(), dueAt: node.dueAt || null, completedAt: node.completedAt || null, recurrence: node.recurrence || null, subtasks: (node.subtasks || []).map(deepCloneSubtree) }; return clone; }
@@ -2869,7 +2897,7 @@
     return true;
   }
 
-  // --- Task Dependencies ---
+  // SUBSECTION: Task Dependencies
   function getAllSubtasksFlat(subtasks) {
     const result = [];
     (function walk(list) { list.forEach(s => { result.push(s); if (s.subtasks && s.subtasks.length) walk(s.subtasks); }); })(subtasks);
@@ -2938,6 +2966,7 @@
   // SECTION: PROJECT & TASK UI
   // ============================================================
   let statusFilter = '';
+    // SUBSECTION: Canvas Rendering (Nodes & Stats)
   function renderStats() { const counts = { planned: 0, ongoing: 0, waiting: 0, completed: 0 }; function tally(list) { list.forEach(s => { if (counts[s.status] !== undefined) counts[s.status]++; if (s.subtasks && s.subtasks.length) tally(s.subtasks); }); } projects.forEach(p => { if (counts[p.status] !== undefined) counts[p.status]++; tally(p.subtasks); }); const streakHtml = _streak.count > 0 ? '<span class="pf-streak-badge">🔥 ' + _streak.count + '</span>' : ''; const freezeHtml = '<span class="pf-freeze-badge" title="Streak freezes (replenish weekly)">❄️ ' + _streakFreezes + '</span>'; const xpLvl = Math.floor(_xp / 100) + 1; const xpHtml = '<span class="pf-xp-badge">⭐ Lv.' + xpLvl + '</span>'; statsEl.innerHTML = STATUSES.map(s => '<span class="pf-stat' + (statusFilter === s ? ' pf-stat-active' : '') + '" data-status-filter="' + s + '" style="background:var(--' + s + '-bg); color:var(--' + s + ');cursor:pointer;' + (statusFilter === s ? 'outline:2px solid var(--' + s + ');outline-offset:1px;' : '') + '"><span class="pf-swatch" style="background:var(--' + s + ')"></span>' + STATUS_LABEL[s] + ' ' + counts[s] + '</span>').join('') + streakHtml + freezeHtml + xpHtml; statsEl.querySelectorAll('[data-status-filter]').forEach(el => { el.addEventListener('click', () => { const clicked = el.dataset.statusFilter; statusFilter = statusFilter === clicked ? '' : clicked; render(); }); }); }
 
   function projectEl(p) {
@@ -2983,6 +3012,7 @@
   }
 
   let subMultiSelect = [];
+    // SUBSECTION: Multi-Select & Bulk Actions
   function clearSubSelect() { subMultiSelect = []; root.querySelectorAll('.pf-sub-selected').forEach(el => el.classList.remove('pf-sub-selected')); }
   function subSelectOwnerProject(id) { return projects.find(pr => pr.subtasks && findSubNode(pr.subtasks, id)); }
   function subSelectProjectIds() { const ids = new Set(); subMultiSelect.forEach(id => { const pr = subSelectOwnerProject(id); if (pr) ids.add(pr.id); }); return ids; }
@@ -3013,6 +3043,7 @@
     sublist.insertBefore(bar, sublist.firstChild);
   }
   let draggingSubId = null; let draggingProjectId = null; let dragHandleArmed = false; let _draggingSubIds = [];
+    // SUBSECTION: Drag & Drop
   function clearIndicators() { canvas.querySelectorAll('.pf-drop-before, .pf-drop-after, .pf-drop-nest').forEach(el => { el.classList.remove('pf-drop-before', 'pf-drop-after', 'pf-drop-nest'); }); canvas.querySelectorAll('.pf-drop-root').forEach(el => el.classList.remove('pf-drop-root')); }
   function isDescendant(node, id) { if (!node.subtasks) return false; for (const c of node.subtasks) { if (c.id === id) return true; if (isDescendant(c, id)) return true; } return false; }
   function performMove(p, targetId, zone) {
@@ -3153,6 +3184,7 @@
   document.addEventListener('dragend', () => { clearInterval(autoScrollInterval); autoScrollInterval = null; });
 
   function makeResizable(el, p) { const MIN_W = 190, MIN_H = 140; const grip = el.querySelector('.pf-node-resize'); let resizing = false, moved = false, startX, startY, startW, startH; grip.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); resizing = true; moved = false; startX = e.clientX; startY = e.clientY; const z = typeof zoomLevel !== 'undefined' ? zoomLevel : 1; startW = el.offsetWidth; startH = el.offsetHeight; grip.setPointerCapture(e.pointerId); }); grip.addEventListener('pointermove', (e) => { if (!resizing) return; const z = typeof zoomLevel !== 'undefined' ? zoomLevel : 1; const dx = (e.clientX - startX) / z, dy = (e.clientY - startY) / z; if (!moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) { moved = true; snapshot(); el.style.maxWidth = 'none'; } if (!moved) return; const newW = Math.max(MIN_W, startW + dx); const newH = Math.max(MIN_H, startH + dy); p.width = newW; el.style.width = newW + 'px'; if (p.expanded) { p.height = newH; el.style.height = newH + 'px'; el.style.display = 'flex'; el.style.flexDirection = 'column'; const sl = el.querySelector('.pf-sublist'); if (sl) { sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; } } }); function end() { if (!resizing) return; resizing = false; if (moved) { scheduleSave(); autoArrangeProjects(true); } } grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end); grip.addEventListener('dblclick', (e) => { e.stopPropagation(); snapshot(); p.height = null; p.width = null; scheduleSave(); autoArrangeProjects(true); }); }
+    // SUBSECTION: Auto-Arrange & Layout
   function autoArrangeProjects(skipSnapshot) {
     const GAP = 32, START_X = 24; let START_Y = 40;
     const z = typeof zoomLevel !== 'undefined' ? zoomLevel : 1;
@@ -3268,6 +3300,7 @@
   let dueFilter = 'all';
   let selectedProjectId = null;
   let _taskClipboard = null; let _pasteArmed = false;
+    // SUBSECTION: Clipboard (Copy/Paste)
   function pruneCloneToSelection(node, idSet) {
     const clone = { id: uid(), title: node.title, status: node.status || 'planned', expanded: false, createdAt: new Date().toISOString(), dueAt: node.dueAt || null, completedAt: node.completedAt || null, recurrence: node.recurrence || null, subtasks: [] };
     const anySelectedBelow = (node.subtasks || []).some(c => idSet.has(c.id) || nodeHasSelectedDescendant(c, idSet));
@@ -3389,6 +3422,7 @@
     return hasDue(p);
   }
   let _searchCache = {}; let _searchCacheKey = '';
+    // SUBSECTION: Search
   function invalidateSearchCache() { _searchCache = {}; _searchCacheKey = ''; }
   function matchesSearch(p) {
     const cacheKey = searchTerm + '|' + statusFilter + '|' + dueFilter;
@@ -3452,6 +3486,7 @@
     _updatingStatuses = false;
   }
   // Rebuilds the primary canvas from the current in-memory project state.
+    // SUBSECTION: Main Render Loop (Canvas View)
   function render() {
     autoPopulateToday();
     if (calendarPanel.style.display !== 'none') { renderCalendar(); }
@@ -3576,6 +3611,7 @@
     return active.concat(completed);
   }
   // Rebuilds the project list in split view; call after changes that affect list ordering/filtering.
+    // SUBSECTION: Split/List View
   function renderSplitList() {
     splitList.innerHTML = '';
     const sortBar = document.createElement('div');
@@ -3883,6 +3919,7 @@
   }
 
   let _ctxEl = null;
+    // SUBSECTION: Context Menu
   function _closeCtx() { if (_ctxEl) { _ctxEl.remove(); _ctxEl = null; } const bd = document.getElementById('pf-ctx-backdrop'); if (bd) bd.style.display = 'none'; }
   function _positionCtxMenu(menu) {
     let backdrop = document.getElementById('pf-ctx-backdrop');
@@ -4101,6 +4138,7 @@
   let _searchAutoCollapseId = null;
   let _completedCollapseId = null;
   // Rebuilds the selected project's detail pane in split view.
+    // SUBSECTION: Task Detail View (Split Detail)
   function renderSplitDetail() {
     splitDetail.innerHTML = '';
     if (!splitSelectedId) { splitDetail.innerHTML += '<div class="pf-empty" style="display:block;">Select a project from the list to view details.</div>'; _completedCollapseId = null; return; }
@@ -4274,6 +4312,7 @@
 
   const activityLog = [];
   const ACTIVITY_KEY = 'project-flow-activity';
+    // SUBSECTION: Activity Log
   function logActivity(msg) {
     const entry = { time: new Date().toISOString(), msg: msg };
     activityLog.unshift(entry);
@@ -4358,6 +4397,7 @@
   const TODAY_KEY = 'project-flow-today';
   let todayTasks = [];
   let todayDate = '';
+    // SUBSECTION: Today's Focus
   function autoPopulateToday() {
     const now = new Date().toISOString().slice(0, 10);
     projects.forEach(p => {
@@ -4455,6 +4495,7 @@
   let _duelistReturnOnEsc = false;
   let _todayReturnOnEsc = false;
   let _calendarReturnOnEsc = false;
+    // SUBSECTION: Due List (Tasks by Due Date)
   function renderDueList() {
     const list = document.getElementById('pf-duelist-list');
     const items = [];
@@ -4521,6 +4562,7 @@
     return map;
   }
   let calSelectedDate = null;
+    // SUBSECTION: Calendar View
   function renderCalendar() {
     const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const grid = document.getElementById('pf-cal-grid');
@@ -4658,6 +4700,7 @@
   const WEEKLY_KEY = 'project-flow-weekly';
   let weeklyData = {};
   let weekOffset = 0;
+    // SUBSECTION: Weekly Planner
   function getWeekStart(offset) {
     const d = new Date(); d.setHours(0,0,0,0);
     d.setDate(d.getDate() - d.getDay() + 1 + (offset * 7));
@@ -4785,6 +4828,7 @@
   const REMINDERS_KEY = 'project-flow-reminders';
   let reminders = [];
   async function loadReminders() { try { const res = await safeGet(REMINDERS_KEY, false); if (res && res.value) reminders = JSON.parse(res.value); } catch (e) { reminders = []; } }
+    // SUBSECTION: Reminders
   function saveReminders() { safeSet(REMINDERS_KEY, JSON.stringify(reminders), false); }
   function promptReminder(sourceId, title, sourceType) {
     const wrap = document.createElement('div');
@@ -4880,6 +4924,7 @@
   setTimeout(checkReminders, 2000);
 
   let commentTarget = null;
+    // SUBSECTION: Comments
   function openCommentPanel(p, s) {
     commentTarget = { project: p, sub: s };
     if (!s.comments) s.comments = [];
@@ -4924,6 +4969,7 @@
   const colorPalette = document.getElementById('pf-color-palette');
   const PRESET_COLORS = ['#e0503f','#e67e22','#f1c40f','#27ae60','#2ecc71','#1abc9c','#3498db','#2980b9','#7b68ee','#9b59b6','#e84393','#fd79a8','#636e72','#b2bec3','#fdcb6e','#00cec9'];
   let selectedColor = null;
+    // SUBSECTION: Color Picker
   function renderPalette() {
     colorPalette.innerHTML = PRESET_COLORS.map(c => '<div class="pf-color-swatch' + (selectedColor === c ? ' pf-swatch-selected' : '') + '" data-color="' + c + '" style="background:' + c + '"></div>').join('');
     colorPalette.querySelectorAll('.pf-color-swatch').forEach(sw => {
@@ -4951,6 +4997,7 @@
   // ============================================================
   // SECTION: SECONDARY VIEWS & UTILITIES
   // ============================================================
+  // SUBSECTION: Reports & Export
   function collectReportRows() {
     const rows = [];
     function walkSubs(list, projectTitle, depth) {
@@ -4991,6 +5038,7 @@
   const fontSizeInput = document.getElementById('pf-font-size');
   const fontSizeVal = document.getElementById('pf-font-size-val');
   // Device-specific keys: desktop and mobile (and tablet) each remember their own value.
+  // SUBSECTION: Display Scale & Zoom
   function currentDeviceSuffix() {
     if (root.classList.contains('pf-device-mobile')) return 'mobile';
     if (root.classList.contains('pf-device-tablet')) return 'tablet';
@@ -5051,6 +5099,7 @@
   let autoBackupInterval = 0;
   let autoBackupTimer = null;
   let autoBackupDirHandle = null;
+  // SUBSECTION: File Backups & Import/Export
   function saveBackupHandle(handle) {
     const req = indexedDB.open('project-flow-db', 1);
     req.onupgradeneeded = (e) => { e.target.result.createObjectStore('handles'); };
@@ -5193,7 +5242,7 @@
 
 
 
-  // --- Gamification: Streak, XP, Milestones, Freezes ---
+  // SUBSECTION: Gamification (Streak, XP, Milestones)
   let _streak = { count: 0, lastDate: '' };
   let _xp = 0;
   let _totalCompletions = 0;
@@ -5240,7 +5289,7 @@
     saveGamification(); renderStats();
   }
 
-  // --- Motivational Quotes ---
+  // SUBSECTION: Motivational Quotes
   const QUOTES = [
     '"The secret of getting ahead is getting started." — Mark Twain',
     '"Done is better than perfect." — Sheryl Sandberg',
@@ -5252,7 +5301,7 @@
     '"The only way to do great work is to love what you do." — Steve Jobs'
   ];
 
-  // --- Emoji Picker for Projects ---
+  // SUBSECTION: Emoji Picker
   const PROJECT_EMOJIS = ['📋','🚀','💡','🎯','🔥','⚡','🌟','💎','🎨','📦','🔧','📱','🌍','🏠','📚','🎮','🧪','💰','❤️','🏆'];
   function showEmojiPicker(p, anchorEl) {
     _closeCtx();
@@ -5276,7 +5325,7 @@
     _ctxEl = picker;
   }
 
-  // --- Theme Presets ---
+  // SUBSECTION: Theme Presets
   const THEME_PRESETS = {
     cyberpunk: { '--bg':'#0d0221','--card':'#1a0a3e','--card-border':'#3d1a6e','--sub-bg':'#130330','--sub-border':'#2d1055','--accent':'#ff00ff','--text':'#00ffff','--text-dim':'#6ecfcf','--header-bg':'#0f0329','--toast-bg':'#1a0a3e','--hover-border':'#ff00ff' },
     forest: { '--bg':'#1a2e1a','--card':'#243524','--card-border':'#3d5a3d','--sub-bg':'#1e2e1e','--sub-border':'#3a5530','--accent':'#7bc67b','--text':'#ffffff','--text-dim':'#b0b0b0','--header-bg':'#1c2c1c','--toast-bg':'#243524','--hover-border':'#7bc67b' },
@@ -5311,7 +5360,7 @@
     localStorage.removeItem('project-flow-theme-preset');
   }
 
-  // --- Particle Background ---
+  // SUBSECTION: Particle Background
   let _particleAnim = null;
   function startParticles() {
     let pc = document.getElementById('pf-particles');
@@ -5334,13 +5383,13 @@
   }
   function stopParticles() { if (_particleAnim) { cancelAnimationFrame(_particleAnim); _particleAnim = null; } }
 
-  // --- Pause particles when tab hidden (Feature 12) ---
+  // SUBSECTION: Particle Background (Visibility Pause)
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { stopParticles(); }
     else { if (root.classList.contains('pf-card-mode')) startParticles(); }
   });
 
-  // --- Accessibility (Feature 11) ---
+  // SUBSECTION: Accessibility
   root.setAttribute('role', 'application');
   root.setAttribute('aria-label', 'Orga-naes Project Manager');
   (function applyAria() {
@@ -5636,6 +5685,7 @@
   });
 
   // Update overdue badge on bottom nav
+  // SUBSECTION: Overdue Badge & Notifications
   function updateOverdueBadge() {
     const badge = document.getElementById('pf-bottom-badge');
     const desktopBadge = document.getElementById('pf-desktop-badge');
@@ -5662,6 +5712,7 @@
     if (!fab || !fabMenu) return;
     let fabOpen = false;
     let _fabHideTimer = null;
+    // SUBSECTION: Mobile FAB & Bottom Nav
     function showFab() {
       fab.classList.add('pf-fab-visible');
       clearTimeout(_fabHideTimer);
@@ -5921,6 +5972,7 @@
   // #14 Swipe down from modal header to close (touch devices)
   (function() {
     let _modalStartX = 0, _modalStartY = 0, _modalActive = false, _modalEl = null;
+    // SUBSECTION: Modal Helpers (Focus/Visibility)
     function getVisibleModal() {
       for (let i = 0; i < ALL_MODALS.length; i++) {
         if (ALL_MODALS[i] && ALL_MODALS[i].style.display !== 'none') return ALL_MODALS[i];
@@ -6042,6 +6094,7 @@
     });
     let _scrollRaf = null;
     let _scrollTopTimer = null;
+    // SUBSECTION: Scroll Shadows
     function checkScroll() {
       const list = root.querySelector('.pf-split-list');
       if (!list) return;
