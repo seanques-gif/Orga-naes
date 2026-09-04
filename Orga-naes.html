@@ -5156,9 +5156,28 @@
     }
   });
 
+  // Single source of truth for what a "full backup" contains — used by both
+  // manual Export and the auto-backup-to-folder path. Previously each built
+  // its own object with only { projects, categories, collapsedCategories,
+  // archive }, silently leaving trash, Today's Focus, the Weekly Planner,
+  // reminders, and category emoji colors out of every backup file.
+  function buildFullBackupPayload() {
+    return {
+      projects: projects,
+      categories: categories,
+      collapsedCategories: collapsedCategories,
+      archive: archive,
+      trash: trash,
+      today: { date: todayDate, tasks: todayTasks },
+      weeklyData: weeklyData,
+      reminders: reminders,
+      categoryEmojis: categoryEmojis
+    };
+  }
+
   document.getElementById('pf-export').addEventListener('click', async () => {
     _exitMultiSelectMode();
-    const json = JSON.stringify({ projects: projects, categories: categories, collapsedCategories: collapsedCategories, archive: archive }, null, 2);
+    const json = JSON.stringify(buildFullBackupPayload(), null, 2);
     if (window.showSaveFilePicker) {
       try {
         const handle = await window.showSaveFilePicker({ suggestedName: 'project-flow.json', types: [{ description: 'JSON file', accept: { 'application/json': ['.json'] } }] });
@@ -5193,7 +5212,7 @@
   }
   async function doAutoBackup() {
     if (!projects.length) return;
-    const json = JSON.stringify({ projects, categories, collapsedCategories, archive, backupAt: new Date().toISOString() }, null, 2);
+    const json = JSON.stringify(Object.assign(buildFullBackupPayload(), { backupAt: new Date().toISOString() }), null, 2);
     const filename = 'project-flow-backup-' + new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-') + '.json';
     if (autoBackupDirHandle) {
       try {
@@ -5277,6 +5296,7 @@
 
   function extractImportData(parsed) {
     let data = null, importedCategories = [], importedCollapsed = {};
+    let importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null;
     if (Array.isArray(parsed)) {
       data = parsed;
     } else if (typeof parsed === 'object' && parsed !== null) {
@@ -5285,8 +5305,13 @@
       if (Array.isArray(parsed.categories)) importedCategories = parsed.categories;
       if (parsed.collapsedCategories && typeof parsed.collapsedCategories === 'object') importedCollapsed = parsed.collapsedCategories;
       if (Array.isArray(parsed.archive)) { archive = parsed.archive; saveArchive(); }
+      if (Array.isArray(parsed.trash)) importedTrash = parsed.trash;
+      if (parsed.today && typeof parsed.today === 'object') importedToday = parsed.today;
+      if (parsed.weeklyData && typeof parsed.weeklyData === 'object') importedWeekly = parsed.weeklyData;
+      if (Array.isArray(parsed.reminders)) importedReminders = parsed.reminders;
+      if (parsed.categoryEmojis && typeof parsed.categoryEmojis === 'object') importedEmojis = parsed.categoryEmojis;
     }
-    return { data, importedCategories, importedCollapsed };
+    return { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis };
   }
 
   // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
@@ -5310,7 +5335,7 @@
     return (Array.isArray(data) ? data : []).filter(p => p != null).map(p => sanitizeImportedNode(p, seenIds));
   }
 
-  function applyImportData(data, importedCategories, importedCollapsed) {
+  function applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis) {
     snapshot();
     projects = sanitizeImportedProjects(data);
     projects.forEach(p => { p.expanded = false; });
@@ -5319,7 +5344,13 @@
     categories = Array.from(new Set(categories.concat(safeImportedCategories, fromProjects)));
     collapsedCategories = Object.assign({}, collapsedCategories, importedCollapsed);
     saveCategories(); saveCollapsedCategories(); scheduleSave(); autoArrangeProjects(true);
-    showToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : ''));
+    let restoredExtras = 0;
+    if (Array.isArray(importedTrash)) { trash = importedTrash; saveTrash(); renderTrashList(); restoredExtras++; }
+    if (importedToday && Array.isArray(importedToday.tasks)) { todayTasks = importedToday.tasks; todayDate = typeof importedToday.date === 'string' ? importedToday.date : new Date().toISOString().slice(0, 10); saveToday(); renderTodayList(); restoredExtras++; }
+    if (importedWeekly) { weeklyData = importedWeekly; saveWeekly(); renderWeeklyPanel(); restoredExtras++; }
+    if (Array.isArray(importedReminders)) { reminders = importedReminders; saveReminders(); restoredExtras++; }
+    if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); restoredExtras++; }
+    showToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders from backup)' : ''));
   }
 
   importInput.addEventListener('change', () => {
@@ -5330,8 +5361,8 @@
       const { parsed, error } = parseImportJson(String(e.target.result || ''));
       if (error) { showToast(error, true); importInput.value = ''; return; }
       try {
-        const { data, importedCategories, importedCollapsed } = extractImportData(parsed);
-        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed); }
+        const { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis } = extractImportData(parsed);
+        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); }
     };
@@ -6175,7 +6206,25 @@
     snapshot: () => snapshot(),
     getCategoryEmojis: () => categoryEmojis,
     setCategoryEmojis: (e) => { categoryEmojis = e; saveCatEmojis(); },
-    stopAutoBackup: () => { if (_autoBackupTimer) { clearInterval(_autoBackupTimer); _autoBackupTimer = null; } }
+    stopAutoBackup: () => { if (_autoBackupTimer) { clearInterval(_autoBackupTimer); _autoBackupTimer = null; } },
+    // Resets the account-scoped panels that clearLocalUserData() can't
+    // reach directly (their arrays/objects live in this closure and
+    // localStorage.removeItem() alone doesn't touch the in-memory copy
+    // or re-render the panel). Without this, switching accounts leaves
+    // the previous account's activity log, Today's Focus tasks, weekly
+    // planner entries, reminders, and collapsed-category state visible
+    // on screen even though projects/categories/archive/trash did clear.
+    clearEphemeralState: () => {
+      activityLog.length = 0;
+      renderActivityList();
+      todayTasks = [];
+      todayDate = new Date().toISOString().slice(0, 10);
+      renderTodayList();
+      weeklyData = {};
+      renderWeeklyPanel();
+      reminders = [];
+      collapsedCategories = {};
+    }
   };
 
   // Pull-to-refresh (disabled)
@@ -6313,6 +6362,7 @@ if ('serviceWorker' in navigator) {
       if (window._pf.setCategories) window._pf.setCategories([]);
       if (window._pf.setArchive) window._pf.setArchive([]);
       if (window._pf.setTrash) window._pf.setTrash([]);
+      if (window._pf.clearEphemeralState) window._pf.clearEphemeralState();
       if (window._pf.render) window._pf.render();
       if (window._pf.renderSplitList) window._pf.renderSplitList();
     }
