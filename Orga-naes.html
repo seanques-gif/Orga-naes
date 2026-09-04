@@ -6273,6 +6273,8 @@ if ('serviceWorker' in navigator) {
 
   let _fbUser = null;
   let _fbListener = null;
+  let _fbListenerUserRef = null;
+  let _fbListenerCatRef = null;
   let _fbAutosync = localStorage.getItem('pf-firebase-autosync') === 'true';
   autosyncCb.checked = _fbAutosync;
 
@@ -6287,10 +6289,24 @@ if ('serviceWorker' in navigator) {
   // caches) so the next account to sign in doesn't inherit the previous
   // account's data. Does NOT touch device-only prefs (theme, size, etc).
   function clearLocalUserData() {
-    [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
+    const keysToClear = [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
      'pf-firebase-last-sync-time', ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY,
-     REMINDERS_KEY, COLLAPSED_CAT_KEY].forEach(function(k) {
+     REMINDERS_KEY, COLLAPSED_CAT_KEY];
+    keysToClear.forEach(function(k) {
       try { localStorage.removeItem(k); } catch (e) {}
+    });
+    // safeSet() mirrors every write into the IndexedDB fallback store, and
+    // safeGet() falls back to reading from it whenever the localStorage key
+    // is missing. Clearing only localStorage above isn't enough — without
+    // this, a later load can silently resurrect the previous account's
+    // data from IndexedDB. Delete the mirrored entries directly.
+    openIDB_KV().then(function(db) {
+      if (!db) return;
+      try {
+        const tx = db.transaction('kv', 'readwrite');
+        const store = tx.objectStore('kv');
+        keysToClear.forEach(function(k) { try { store.delete(k); } catch (e) {} });
+      } catch (e) {}
     });
     if (window._pf) {
       if (window._pf.setProjects) window._pf.setProjects([]);
@@ -6328,6 +6344,9 @@ if ('serviceWorker' in navigator) {
         return;
       }
       _switchingAccount = true;
+      stopListener(); // tear down the previous account's realtime listener first —
+                       // otherwise it can keep firing against the old account's data
+                       // after we've already switched to the new one
       clearLocalUserData();
       window._pf.snapshot && window._pf.snapshot();
       Promise.all([
@@ -6340,16 +6359,25 @@ if ('serviceWorker' in navigator) {
         const catVal = results[1].val();
         const archVal = results[2].val();
         const trashVal = results[3].val();
-        if (catVal) { window._pf.setCategories(Array.isArray(catVal) ? catVal : Object.values(catVal)); window._pf.saveCategories(); }
-        if (projVal) window._pf.setProjects(Array.isArray(projVal) ? projVal : Object.values(projVal));
-        if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal : Object.values(archVal));
-        if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal : Object.values(trashVal));
+        // Always persist, even when the field is empty/falsy (a newer
+        // account can legitimately have no archive/trash/categories yet).
+        // clearLocalUserData() above only wiped localStorage + the
+        // IndexedDB mirror; if we skip these calls on falsy values, the
+        // corresponding save*() never fires, nothing overwrites the
+        // mirror, and the next safeGet() falls back to it — silently
+        // resurrecting the previous account's data.
+        window._pf.setCategories(catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)) : []);
+        window._pf.saveCategories();
+        window._pf.setProjects(projVal ? (Array.isArray(projVal) ? projVal : Object.values(projVal)) : []);
+        window._pf.setArchive(archVal ? (Array.isArray(archVal) ? archVal : Object.values(archVal)) : []);
+        window._pf.setTrash(trashVal ? (Array.isArray(trashVal) ? trashVal : Object.values(trashVal)) : []);
         window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
         updateLastSync();
         window._pf.showToast('☁ Loaded ' + (user.displayName || user.email) + '\u2019s data');
       }).finally(function() {
         _switchingAccount = false;
         localStorage.setItem(LAST_UID_KEY, user.uid);
+        if (_fbAutosync) startListener();
         if (_pendingSwitchUser && _pendingSwitchUser.uid !== user.uid) {
           const next = _pendingSwitchUser;
           _pendingSwitchUser = null;
@@ -6543,7 +6571,8 @@ if ('serviceWorker' in navigator) {
     if (_fbListener || !_fbUser) return;
     if (!window._pfLoaded) { setTimeout(startListener, 500); return; }
     if (!_lastPushedSnapshot) _lastPushedSnapshot = JSON.stringify(window._pf.getProjects());
-    _fbListener = userRef().on('value', function(snap) {
+    _fbListenerUserRef = userRef();
+    _fbListener = _fbListenerUserRef.on('value', function(snap) {
       const val = snap.val();
       if (!val) return;
       const remote = Array.isArray(val) ? val : Object.values(val);
@@ -6563,7 +6592,8 @@ if ('serviceWorker' in navigator) {
         }
       }
     });
-    catRef().on('value', function(snap) {
+    _fbListenerCatRef = catRef();
+    _fbListenerCatRef.on('value', function(snap) {
       const val = snap.val();
       if (!val) return;
       const remote = Array.isArray(val) ? val : Object.values(val);
@@ -6575,8 +6605,14 @@ if ('serviceWorker' in navigator) {
   }
 
   function stopListener() {
-    if (_fbListener && _fbUser) { userRef().off('value', _fbListener); catRef().off('value'); }
+    // Detach using the refs captured at attach time — NOT userRef()/catRef()
+    // recomputed from the current _fbUser, which may already be null or
+    // pointing at a different account by the time this runs.
+    if (_fbListenerUserRef && _fbListener) _fbListenerUserRef.off('value', _fbListener);
+    if (_fbListenerCatRef) _fbListenerCatRef.off('value');
     _fbListener = null;
+    _fbListenerUserRef = null;
+    _fbListenerCatRef = null;
   }
 
   autosyncCb.addEventListener('change', function() {
@@ -6627,10 +6663,14 @@ if ('serviceWorker' in navigator) {
       }
     });
 
-    // Detect deleted projects (in old hash but not current)
+    // Detect deleted projects (in old hash but not current). Comparing
+    // counts alone (oldIds.length > projects.length) misses a delete+add
+    // in the same window that leaves the count unchanged — check the
+    // actual id sets instead.
     const currentIds = new Set(projects.map(p => p.id));
     const oldIds = Object.keys(_lastPushedHash);
-    if (oldIds.length > projects.length || orderChanged) {
+    const hasDeletion = oldIds.some(id => !currentIds.has(id));
+    if (hasDeletion || orderChanged) {
       // Full push needed when projects removed (index shift) or reordered — partial index-keyed
       // updates would otherwise leave unchanged projects at their old cloud position.
       userRef().set(JSON.parse(JSON.stringify(projects)));
