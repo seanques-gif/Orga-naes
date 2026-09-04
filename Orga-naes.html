@@ -1425,7 +1425,7 @@
       <button class="pf-undo-btn" id="pf-today-btn" title="Today's Focus">⭐</button>
       <button class="pf-undo-btn" id="pf-duelist-btn" title="Tasks by Due Date" style="position:relative;">📅<span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;background:var(--danger,#ef4444);color:#fff;font-size:8px;font-weight:700;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;"></span></button>
       <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View">🗓</button>
-      <span id="pf-weekly-btn" title="Weekly Planner" style="display:none;"></span>
+      <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner">🗂</button>
     </div>
     <div class="pf-tb-group" id="pf-tb-viewtools">
       <span id="pf-collapse-cats" title="Toggle Focus/Card view" style="display:none;"></span>
@@ -1655,16 +1655,17 @@
     </div>
     <div class="pf-activity-list" id="pf-duelist-list" style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding:4px;"></div>
   </div>
-  <div class="pf-activity-panel" id="pf-weekly-panel" style="display:none;width:min(95vw,1100px);max-height:min(88vh,750px);height:82vh;">
+  <div class="pf-activity-panel" id="pf-weekly-panel" style="display:none;width:min(98vw,1600px);max-height:min(95vh,1000px);height:92vh;">
     <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;padding:12px 16px;background:var(--header-bg);border-radius:6px 10px 0 0;border-bottom:1px solid var(--card-border);">
       <button class="pf-undo-btn" id="pf-week-prev" style="padding:4px 10px;font-size:14px;">◀</button>
       <span id="pf-week-label" style="flex:1;text-align:center;font-size:16px;font-weight:700;font-family:-apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;letter-spacing:-0.3px;"></span>
       <button class="pf-undo-btn" id="pf-week-today" style="padding:4px 12px;font-size:11px;font-weight:600;background:var(--accent);color:var(--accent-contrast);border-radius:6px;">This Week</button>
       <button class="pf-undo-btn" id="pf-week-next" style="padding:4px 10px;font-size:14px;">▶</button>
     </div>
-    <div id="pf-week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;flex:1;overflow-y:auto;min-height:0;padding:12px 10px;"></div>
+    <div id="pf-week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;gap:10px;flex:1;overflow-y:auto;min-height:0;padding:14px 12px;"></div>
     <div style="padding:10px 16px;border-top:1px solid var(--card-border);display:flex;gap:8px;align-items:center;flex-shrink:0;background:var(--header-bg);border-radius:0 0 10px 10px;">
       <button class="pf-undo-btn" id="pf-week-auto" style="padding:5px 12px;font-size:11px;font-weight:600;background:rgba(149,128,255,0.12);color:var(--accent);border-radius:6px;">⚡ Auto-fill from due dates</button>
+      <button class="pf-undo-btn" id="pf-week-clear" style="padding:5px 12px;font-size:11px;font-weight:600;background:rgba(239,68,68,0.1);color:var(--danger,#ef4444);border-radius:6px;">🗑 Clear week</button>
       <span style="flex:1;font-size:10px;color:var(--text-dim);text-align:right;font-style:italic;">Drag tasks between days · Click + to add manually</span>
     </div>
   </div>
@@ -4718,10 +4719,10 @@
     try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = JSON.parse(res.value); } catch (e) { weeklyData = {}; }
   }
   function saveWeekly() { safeSet(WEEKLY_KEY, JSON.stringify(weeklyData), false); }
-  function addToWeekDay(dayStr, title, sourceId, sourceType) {
+  function addToWeekDay(dayStr, title, sourceId, sourceType, projectTitle) {
     if (!weeklyData[dayStr]) weeklyData[dayStr] = [];
     if (weeklyData[dayStr].some(t => t.sourceId === sourceId)) return;
-    weeklyData[dayStr].push({ id: uid(), title, sourceId, sourceType, done: false });
+    weeklyData[dayStr].push({ id: uid(), title, sourceId, sourceType, done: false, projectTitle: projectTitle || null });
     saveWeekly();
   }
   function autoFillWeekly() {
@@ -4730,8 +4731,8 @@
       const d = new Date(start); d.setDate(d.getDate() + i);
       const ds = weekDateStr(d);
       projects.forEach(p => {
-        if (p.dueAt === ds && p.status !== 'completed') addToWeekDay(ds, p.title, p.id, 'project');
-        (function walk(subs) { subs.forEach(s => { if (s.dueAt === ds && s.status !== 'completed') addToWeekDay(ds, s.title, s.id, 'subtask'); if (s.subtasks) walk(s.subtasks); }); })(p.subtasks || []);
+        if (p.dueAt === ds && p.status !== 'completed') addToWeekDay(ds, p.title, p.id, 'project', null);
+        (function walk(subs) { subs.forEach(s => { if (s.dueAt === ds && s.status !== 'completed') addToWeekDay(ds, s.title, s.id, 'subtask', p.title); if (s.subtasks) walk(s.subtasks); }); })(p.subtasks || []);
       });
     }
     saveWeekly();
@@ -4753,34 +4754,86 @@
       const ds = weekDateStr(d);
       const isToday = ds === todayStr;
       const col = document.createElement('div');
-      col.style.cssText = 'display:flex;flex-direction:column;border-radius:6px;background:' + (isToday ? 'rgba(149,128,255,0.06)' : 'var(--sub-bg)') + ';border:1.5px solid ' + (isToday ? 'var(--accent)' : 'var(--sub-border)') + ';padding:10px 8px;min-height:140px;overflow-y:auto;transition:border-color 0.2s,box-shadow 0.2s;' + (isToday ? 'box-shadow:0 0 12px rgba(149,128,255,0.15);' : '');
+      col.style.cssText = 'display:flex;flex-direction:column;border-radius:6px;background:' + (isToday ? 'rgba(149,128,255,0.06)' : 'var(--sub-bg)') + ';border:1.5px solid ' + (isToday ? 'var(--accent)' : 'var(--sub-border)') + ';padding:10px 8px;height:100%;overflow-y:auto;transition:border-color 0.2s,box-shadow 0.2s;' + (isToday ? 'box-shadow:0 0 12px rgba(149,128,255,0.15);' : '');
       const header = document.createElement('div');
-      header.style.cssText = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;text-align:center;margin-bottom:8px;padding:4px 0 6px;border-bottom:1px solid ' + (isToday ? 'rgba(149,128,255,0.3)' : 'var(--sub-border)') + ';color:' + (isToday ? 'var(--accent)' : 'var(--text-dim)') + ';';
-      header.innerHTML = '<div style="font-size:18px;font-weight:800;color:' + (isToday ? 'var(--accent)' : 'var(--text)') + ';line-height:1;margin-bottom:2px;">' + d.getDate() + '</div>' + DAYS[i];
+      header.style.cssText = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;text-align:center;margin-bottom:8px;padding:4px 0 6px;border-bottom:1px solid ' + (isToday ? 'rgba(149,128,255,0.3)' : 'var(--sub-border)') + ';color:' + (isToday ? 'var(--accent)' : 'var(--text-dim)') + ';position:relative;';
+      const tasksForBadge = weeklyData[ds] || [];
+      const badgeHtml = tasksForBadge.length ? '<span style="position:absolute;top:0;right:2px;font-size:9px;font-weight:700;color:' + (isToday ? 'var(--accent)' : 'var(--text-dim)') + ';background:' + (isToday ? 'rgba(149,128,255,0.15)' : 'var(--card)') + ';border-radius:8px;padding:1px 6px;">' + tasksForBadge.length + '</span>' : '';
+      const clearDayHtml = tasksForBadge.length ? '<span class="pf-week-day-clear" data-day="' + ds + '" title="Clear this day" style="position:absolute;top:0;left:2px;font-size:11px;color:var(--text-dim);cursor:pointer;padding:0 3px;">🗑</span>' : '';
+      header.innerHTML = clearDayHtml + badgeHtml + '<div style="font-size:18px;font-weight:800;color:' + (isToday ? 'var(--accent)' : 'var(--text)') + ';line-height:1;margin-bottom:2px;">' + d.getDate() + '</div>' + DAYS[i];
       col.appendChild(header);
+      const dayClearBtn = header.querySelector('.pf-week-day-clear');
+      if (dayClearBtn) {
+        dayClearBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const n = (weeklyData[ds] || []).length;
+          if (!n) return;
+          if (!confirm('Remove all ' + n + ' task' + (n > 1 ? 's' : '') + ' from ' + DAYS[i] + '?')) return;
+          delete weeklyData[ds];
+          saveWeekly(); renderWeeklyPanel();
+          showToast('Cleared ' + DAYS[i]);
+        });
+      }
       const tasks = weeklyData[ds] || [];
+      if (!tasks.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'flex:1;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);opacity:0.5;font-style:italic;text-align:center;padding:8px;';
+        empty.textContent = 'Nothing scheduled';
+        col.appendChild(empty);
+      }
       tasks.forEach((t, idx) => {
+        const srcProject = t.sourceId ? projects.find(pr => pr.id === t.sourceId || (pr.subtasks && (function findIn(subs) { return subs.some(s => s.id === t.sourceId || (s.subtasks && findIn(s.subtasks))); })(pr.subtasks))) : null;
+        const accentColor = srcProject && srcProject.color ? srcProject.color : null;
         const row = document.createElement('div');
         row.draggable = true;
         row.dataset.taskId = t.id;
         row.dataset.day = ds;
-        row.style.cssText = 'font-size:12px;padding:6px 8px;border-radius:6px;background:var(--card);border:1px solid var(--card-border);margin-bottom:5px;display:flex;align-items:center;gap:6px;cursor:grab;transition:border-color 0.15s,transform 0.1s,box-shadow 0.15s;' + (t.done ? 'opacity:0.5;text-decoration:line-through;' : '');
+        row.title = t.title + (t.projectTitle ? ' — ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '');
+        row.style.cssText = 'font-size:12px;padding:7px 8px 7px ' + (accentColor ? '7px' : '8px') + ';border-radius:6px;background:var(--card);border:1px solid var(--card-border);' + (accentColor ? 'border-left:3px solid ' + accentColor + ';' : '') + 'margin-bottom:5px;display:flex;align-items:flex-start;gap:6px;cursor:grab;transition:border-color 0.15s,transform 0.1s,box-shadow 0.15s;' + (t.done ? 'opacity:0.5;text-decoration:line-through;' : '');
         row.addEventListener('mouseenter', () => { if (!t.done) { row.style.borderColor = 'var(--hover-border)'; row.style.transform = 'translateY(-1px)'; row.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)'; } });
         row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; row.style.transform = ''; row.style.boxShadow = ''; });
         const check = document.createElement('input');
         check.type = 'checkbox';
         check.checked = t.done;
-        check.style.cssText = 'margin:0;cursor:pointer;flex-shrink:0;';
+        check.style.cssText = 'margin:2px 0 0;cursor:pointer;flex-shrink:0;';
         check.addEventListener('change', () => { t.done = check.checked; saveWeekly(); renderWeeklyPanel(); });
+        const titleWrap = document.createElement('div');
+        titleWrap.style.cssText = 'flex:1;min-width:0;';
         const titleSpan = document.createElement('span');
-        titleSpan.style.cssText = 'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+        titleSpan.style.cssText = 'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;word-break:break-word;';
         titleSpan.textContent = t.title;
+        titleWrap.appendChild(titleSpan);
+        if (t.projectTitle) {
+          const projSpan = document.createElement('div');
+          projSpan.style.cssText = 'font-size:10px;font-weight:500;color:var(--text-dim);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;line-height:1.25;';
+          projSpan.textContent = t.projectTitle;
+          titleWrap.appendChild(projSpan);
+        }
+        if (t.sourceId) {
+          titleWrap.style.cursor = 'pointer';
+          titleWrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const projectId = srcProject ? srcProject.id : t.sourceId;
+            const p = projects.find(pr => pr.id === projectId);
+            if (!p) { showToast('Source task no longer exists', true); return; }
+            closeAllModals();
+            if (!listViewActive) { document.getElementById('pf-collapse-cats').click(); }
+            splitSelectedId = projectId; splitMultiSelect = [];
+            searchTerm = t.title;
+            _searchAutoCollapseId = null;
+            renderSplitList(); renderSplitDetail();
+            root.classList.add('pf-detail-open');
+            if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
+            searchTerm = '';
+            const active = splitList.querySelector('.pf-split-active'); if (active) active.scrollIntoView({ block: 'nearest' });
+          });
+        }
         const delBtn = document.createElement('button');
         delBtn.textContent = '×';
-        delBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);font-size:14px;cursor:pointer;padding:0 2px;line-height:1;';
+        delBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);font-size:14px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;';
         delBtn.addEventListener('click', () => { weeklyData[ds] = weeklyData[ds].filter(x => x.id !== t.id); saveWeekly(); renderWeeklyPanel(); });
         row.appendChild(check);
-        row.appendChild(titleSpan);
+        row.appendChild(titleWrap);
         row.appendChild(delBtn);
         row.addEventListener('dragstart', (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('application/weekly-task', JSON.stringify({ id: t.id, fromDay: ds })); row.style.opacity = '0.4'; });
         row.addEventListener('dragend', () => { row.style.opacity = ''; });
@@ -4820,17 +4873,34 @@
         const projectId = e.dataTransfer.getData('text/plain');
         if (projectId) {
           const p = projects.find(pr => pr.id === projectId);
-          if (p) { addToWeekDay(ds, p.title, p.id, 'project'); renderWeeklyPanel(); }
+          if (p) { addToWeekDay(ds, p.title, p.id, 'project', null); renderWeeklyPanel(); }
         }
       });
       grid.appendChild(col);
     }
+  }
+  function clearWeek() {
+    const start = getWeekStart(weekOffset);
+    const dayKeys = [];
+    let count = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(d.getDate() + i);
+      const ds = weekDateStr(d);
+      if (weeklyData[ds] && weeklyData[ds].length) { count += weeklyData[ds].length; dayKeys.push(ds); }
+    }
+    if (!count) { showToast('No tasks to clear this week'); return; }
+    if (!confirm('Remove all ' + count + ' task' + (count > 1 ? 's' : '') + ' from this week? This cannot be undone.')) return;
+    dayKeys.forEach(ds => delete weeklyData[ds]);
+    saveWeekly();
+    renderWeeklyPanel();
+    showToast('Cleared ' + count + ' task' + (count > 1 ? 's' : '') + ' from this week');
   }
   document.getElementById('pf-weekly-btn').addEventListener('click', () => { loadWeekly().then(() => { renderWeeklyPanel(); openModal(weeklyPanel, 'flex'); }); });
   document.getElementById('pf-week-prev').addEventListener('click', () => { weekOffset--; renderWeeklyPanel(); });
   document.getElementById('pf-week-next').addEventListener('click', () => { weekOffset++; renderWeeklyPanel(); });
   document.getElementById('pf-week-today').addEventListener('click', () => { weekOffset = 0; renderWeeklyPanel(); });
   document.getElementById('pf-week-auto').addEventListener('click', () => { autoFillWeekly(); });
+  document.getElementById('pf-week-clear').addEventListener('click', () => { clearWeek(); });
 
   const REMINDERS_KEY = 'project-flow-reminders';
   let reminders = [];
