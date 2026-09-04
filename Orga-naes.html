@@ -2591,13 +2591,14 @@
   function emptyTrash() {
     if (!confirm('Permanently delete all ' + trash.length + ' item(s) in trash?')) return;
     _trashedItems = [...trash]; trash = []; saveTrash(); renderTrashList();
-    showToast('🗑 Trash emptied — <a href="#" id="pf-trash-undo-link" style="color:var(--accent);text-decoration:underline;">Undo (10s)</a>');
     if (_trashUndoTimer) clearTimeout(_trashUndoTimer);
-    _trashUndoTimer = setTimeout(() => { _trashedItems = null; }, 10000);
-    setTimeout(() => {
-      const link = document.getElementById('pf-trash-undo-link');
-      if (link) link.addEventListener('click', (e) => { e.preventDefault(); if (_trashedItems) { trash = _trashedItems; _trashedItems = null; saveTrash(); renderTrashList(); showToast('✓ Trash restored'); } });
-    }, 50);
+    _trashUndoTimer = setTimeout(() => { _trashedItems = null; }, 8000);
+    showToast('🗑 Trash emptied', false, false, () => {
+      if (!_trashedItems) return;
+      clearTimeout(_trashUndoTimer);
+      trash = _trashedItems; _trashedItems = null; saveTrash(); renderTrashList();
+      showToast('✓ Trash restored');
+    }, 'Undo');
   }
   function renderTrashList() {
     const list = document.getElementById('pf-trash-list');
@@ -6280,6 +6281,31 @@ if ('serviceWorker' in navigator) {
   function archiveRef() { return db.ref('users/' + _fbUser.uid + '/archive'); }
   function trashRef() { return db.ref('users/' + _fbUser.uid + '/trash'); }
 
+  const LAST_UID_KEY = 'pf-firebase-last-uid';
+
+  // Wipes the local-first cache (projects/categories/archive/trash + related
+  // caches) so the next account to sign in doesn't inherit the previous
+  // account's data. Does NOT touch device-only prefs (theme, size, etc).
+  function clearLocalUserData() {
+    [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
+     'pf-firebase-last-sync-time', ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY,
+     REMINDERS_KEY, COLLAPSED_CAT_KEY].forEach(function(k) {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+    if (window._pf) {
+      if (window._pf.setProjects) window._pf.setProjects([]);
+      if (window._pf.setCategories) window._pf.setCategories([]);
+      if (window._pf.setArchive) window._pf.setArchive([]);
+      if (window._pf.setTrash) window._pf.setTrash([]);
+      if (window._pf.render) window._pf.render();
+      if (window._pf.renderSplitList) window._pf.renderSplitList();
+    }
+    _lastSyncTime = 0;
+  }
+
+  let _switchingAccount = false;
+  let _pendingSwitchUser = null;
+
   function setSignedIn(user) {
     _fbUser = user;
     statusEl.textContent = '✓ Signed in as ' + (user.displayName || user.email);
@@ -6288,8 +6314,55 @@ if ('serviceWorker' in navigator) {
     signoutBtn.style.display = '';
     pushBtn.disabled = false;
     pullBtn.disabled = false;
-    // Auto-pull if device hasn't synced in over 1 hour (skip on page refresh)
     if (!window._pfLoaded) { setTimeout(function() { setSignedIn(user); }, 500); return; }
+
+    // If this is a different account than was last signed in on this device,
+    // the local cache belongs to the previous account — wipe it and force a
+    // fresh pull instead of relying on the elapsed-time heuristic below.
+    const lastUid = localStorage.getItem(LAST_UID_KEY);
+    if (lastUid && lastUid !== user.uid) {
+      if (_switchingAccount) {
+        // A previous switch is still pulling data; remember this user and
+        // re-run once that pull finishes so the two pulls can't interleave.
+        _pendingSwitchUser = user;
+        return;
+      }
+      _switchingAccount = true;
+      clearLocalUserData();
+      window._pf.snapshot && window._pf.snapshot();
+      Promise.all([
+        userRef().once('value'),
+        catRef().once('value'),
+        archiveRef().once('value'),
+        trashRef().once('value')
+      ]).then(function(results) {
+        const projVal = results[0].val();
+        const catVal = results[1].val();
+        const archVal = results[2].val();
+        const trashVal = results[3].val();
+        if (catVal) { window._pf.setCategories(Array.isArray(catVal) ? catVal : Object.values(catVal)); window._pf.saveCategories(); }
+        if (projVal) window._pf.setProjects(Array.isArray(projVal) ? projVal : Object.values(projVal));
+        if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal : Object.values(archVal));
+        if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal : Object.values(trashVal));
+        window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
+        updateLastSync();
+        window._pf.showToast('☁ Loaded ' + (user.displayName || user.email) + '\u2019s data');
+      }).finally(function() {
+        _switchingAccount = false;
+        localStorage.setItem(LAST_UID_KEY, user.uid);
+        if (_pendingSwitchUser && _pendingSwitchUser.uid !== user.uid) {
+          const next = _pendingSwitchUser;
+          _pendingSwitchUser = null;
+          setSignedIn(next);
+        } else {
+          _pendingSwitchUser = null;
+        }
+      });
+      return;
+    }
+    localStorage.setItem(LAST_UID_KEY, user.uid);
+
+    // Auto-pull if device hasn't synced in over 1 hour (skip on page refresh)
     const isReload = performance && performance.navigation && performance.navigation.type === 1 || (performance.getEntriesByType && performance.getEntriesByType('navigation')[0] && performance.getEntriesByType('navigation')[0].type === 'reload');
     if (isReload) return;
     const lastSync = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0');
@@ -6353,6 +6426,8 @@ if ('serviceWorker' in navigator) {
   function _doSignout() {
     if (window._pf && window._pf.stopAutoBackup) window._pf.stopAutoBackup();
     auth.signOut().then(function() {
+      clearLocalUserData();
+      localStorage.removeItem(LAST_UID_KEY);
       window._pf.showToast('🚪 Signed out');
     }).catch(function(err) {
       window._pf.showToast('⚠ Sign out failed: ' + err.message, true);
