@@ -6500,6 +6500,20 @@ if ('serviceWorker' in navigator) {
 
   const LAST_UID_KEY = 'pf-firebase-last-uid';
 
+  // Storage key constants (duplicated from main IIFE scope for cross-IIFE access)
+  const STORE_KEY        = 'project-flow-graph-v2';
+  const CATEGORIES_KEY   = 'project-flow-categories';
+  const CAT_EMOJI_KEY    = 'project-flow-cat-emojis';
+  const ARCHIVE_KEY      = 'project-flow-archive';
+  const TRASH_KEY        = 'project-flow-trash';
+  const ACTIVITY_KEY     = 'project-flow-activity';
+  const TODAY_KEY        = 'project-flow-today';
+  const WEEKLY_KEY       = 'project-flow-weekly';
+  const REMINDERS_KEY    = 'project-flow-reminders';
+  const COLLAPSED_CAT_KEY = 'project-flow-collapsed-categories';
+  // Debounce constant used by the autosync push hook below
+  const PUSH_DEBOUNCE_MS = 3000;
+
   // Wipes the local-first cache (projects/categories/archive/trash + related
   // caches) so the next account to sign in doesn't inherit the previous
   // account's data. Does NOT touch device-only prefs (theme, size, etc).
