@@ -3044,7 +3044,7 @@
 
   function advanceDueDate(iso, interval) {
     const d = iso ? new Date(iso + 'T00:00:00') : new Date();
-    if (isNaN(d)) return new Date().toISOString().slice(0, 10);
+    if (isNaN(d)) return todayLocalStr();
     switch (interval) {
       case 'daily': d.setDate(d.getDate() + 1); break;
       case 'weekdays':
@@ -3057,7 +3057,7 @@
       case 'quarterly': d.setMonth(d.getMonth() + 3); break;
       case 'yearly': d.setFullYear(d.getFullYear() + 1); break;
     }
-    return d.toISOString().slice(0, 10);
+    return localDateStr(d);
   }
 
   function handleRecurrence(node) {
@@ -4574,7 +4574,7 @@
   let todayDate = '';
     // SUBSECTION: Today's Focus
   function autoPopulateToday() {
-    const now = new Date().toISOString().slice(0, 10);
+    const now = todayLocalStr();
     projects.forEach(p => {
       if (p.dueAt === now && p.status !== 'completed' && !todayTasks.find(t => t.sourceId === p.id)) {
         todayTasks.push({ id: uid(), title: p.title, sourceId: p.id, sourceType: 'project', done: false });
@@ -4597,11 +4597,11 @@
       const res = await safeGet(TODAY_KEY, false);
       if (res && res.value) {
         const data = JSON.parse(res.value);
-        const now = new Date().toISOString().slice(0, 10);
+        const now = todayLocalStr();
         if (data.date === now) { todayTasks = data.tasks || []; todayDate = data.date; }
         else { todayTasks = []; todayDate = now; }
-      } else { todayDate = new Date().toISOString().slice(0, 10); }
-    } catch (e) { todayTasks = []; todayDate = new Date().toISOString().slice(0, 10); }
+      } else { todayDate = todayLocalStr(); }
+    } catch (e) { todayTasks = []; todayDate = todayLocalStr(); }
     autoPopulateToday();
   }
   function saveToday() { safeSet(TODAY_KEY, JSON.stringify({ date: todayDate, tasks: todayTasks }), false); }
@@ -4618,7 +4618,7 @@
   function clearToday() { todayTasks = []; saveToday(); renderTodayList(); }
   function carryOverToday() {
     todayTasks = todayTasks.filter(t => !t.done);
-    todayDate = new Date().toISOString().slice(0, 10);
+    todayDate = todayLocalStr();
     saveToday(); renderTodayList(); showToast('Incomplete tasks carried over');
   }
   function renderTodayList() {
@@ -4746,7 +4746,7 @@
     monthLabel.textContent = monthNames[calMonth] + ' ' + calYear;
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = todayLocalStr();
     const dueMap = collectDueMap();
     let html = DAYS.map(d => '<div style="text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);padding:8px 0;border-bottom:1px solid var(--sub-border);">' + d + '</div>').join('');
     for (let i = 0; i < firstDay; i++) html += '<div></div>';
@@ -4880,7 +4880,10 @@
     d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + (offset * 7));
     return d;
   }
-  function weekDateStr(d) { const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; }
+  function localDateStr(d) { const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; }
+  function todayLocalStr() { return localDateStr(new Date()); }
+  function daysAgoLocalStr(n) { const d = new Date(); d.setDate(d.getDate() - n); return localDateStr(d); }
+  function weekDateStr(d) { return localDateStr(d); }
   async function loadWeekly() {
     try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = JSON.parse(res.value); } catch (e) { weeklyData = {}; }
   }
@@ -4916,7 +4919,7 @@
     const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     label.textContent = monthNames[start.getMonth()] + ' ' + start.getDate() + ' – ' + monthNames[end.getMonth()] + ' ' + end.getDate() + ', ' + end.getFullYear();
     grid.innerHTML = '';
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = todayLocalStr();
     for (let i = 0; i < 7; i++) {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const ds = weekDateStr(d);
@@ -5509,7 +5512,7 @@
     saveCategories(); saveCollapsedCategories(); scheduleSave(); autoArrangeProjects(true);
     let restoredExtras = 0;
     if (Array.isArray(importedTrash)) { trash = importedTrash; saveTrash(); renderTrashList(); restoredExtras++; }
-    if (importedToday && Array.isArray(importedToday.tasks)) { todayTasks = importedToday.tasks; todayDate = typeof importedToday.date === 'string' ? importedToday.date : new Date().toISOString().slice(0, 10); saveToday(); renderTodayList(); restoredExtras++; }
+    if (importedToday && Array.isArray(importedToday.tasks)) { todayTasks = importedToday.tasks; todayDate = typeof importedToday.date === 'string' ? importedToday.date : todayLocalStr(); saveToday(); renderTodayList(); restoredExtras++; }
     if (importedWeekly) { weeklyData = importedWeekly; saveWeekly(); renderWeeklyPanel(); restoredExtras++; }
     if (Array.isArray(importedReminders)) { reminders = importedReminders; saveReminders(); restoredExtras++; }
     if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); restoredExtras++; }
@@ -5543,7 +5546,7 @@
   let _streakFreezes = 2;
   let _freezeWeek = '';
   const MILESTONES = [10, 25, 50, 100, 250, 500, 1000];
-  function getMonday(d) { const dt = new Date(d); const day = dt.getDay(); const diff = dt.getDate() - day + (day === 0 ? -6 : 1); dt.setDate(diff); return dt.toISOString().slice(0, 10); }
+  function getMonday(d) { const dt = new Date(d); const day = dt.getDay(); const diff = dt.getDate() - day + (day === 0 ? -6 : 1); dt.setDate(diff); return localDateStr(dt); }
   (function loadGamification() {
     try { const s = localStorage.getItem('project-flow-streak'); if (s) _streak = JSON.parse(s); } catch(e) {}
     try { const x = localStorage.getItem('project-flow-xp'); if (x) _xp = parseInt(x, 10) || 0; } catch(e) {}
@@ -5559,11 +5562,11 @@
     localStorage.setItem('project-flow-streak-freezes', JSON.stringify({ count: _streakFreezes, week: _freezeWeek }));
   }
   function onTaskCompleted(isProject) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayLocalStr();
     if (_streak.lastDate === today) { /* already counted */ }
-    else if (_streak.lastDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10)) { _streak.count++; _streak.lastDate = today; }
+    else if (_streak.lastDate === daysAgoLocalStr(1)) { _streak.count++; _streak.lastDate = today; }
     else {
-      const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
+      const twoDaysAgo = daysAgoLocalStr(2);
       if (_streak.lastDate === twoDaysAgo && _streakFreezes > 0 && _streak.count > 0) {
         _streakFreezes--;
         _streak.count++;
@@ -6381,7 +6384,7 @@
       activityLog.length = 0;
       renderActivityList();
       todayTasks = [];
-      todayDate = new Date().toISOString().slice(0, 10);
+      todayDate = todayLocalStr();
       renderTodayList();
       weeklyData = {};
       renderWeeklyPanel();
@@ -6968,7 +6971,7 @@ if ('serviceWorker' in navigator) {
   // #13 Auto-backup to Firebase (once per day, keeps last 7 backups)
   function autoBackupToFirebase() {
     if (!_fbUser) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayLocalStr();
     const lastBackup = localStorage.getItem('pf-firebase-last-backup');
     if (lastBackup === today) return;
     const backupRef = db.ref('users/' + _fbUser.uid + '/backups/' + today);
