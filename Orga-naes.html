@@ -4877,28 +4877,30 @@
     // SUBSECTION: Weekly Planner
   function getWeekStart(offset) {
     const d = new Date(); d.setHours(0,0,0,0);
-    d.setDate(d.getDate() - d.getDay() + 1 + (offset * 7));
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + (offset * 7));
     return d;
   }
-  function weekDateStr(d) { return d.toISOString().slice(0, 10); }
+  function weekDateStr(d) { const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; }
   async function loadWeekly() {
     try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = JSON.parse(res.value); } catch (e) { weeklyData = {}; }
   }
   function saveWeekly() { safeSet(WEEKLY_KEY, JSON.stringify(weeklyData), false); }
   function addToWeekDay(dayStr, title, sourceId, sourceType, projectTitle) {
     if (!weeklyData[dayStr]) weeklyData[dayStr] = [];
-    if (weeklyData[dayStr].some(t => t.sourceId === sourceId)) return;
-    weeklyData[dayStr].push({ id: uid(), title, sourceId, sourceType, done: false, projectTitle: projectTitle || null });
+    if (sourceId && weeklyData[dayStr].some(t => t.sourceId === sourceId)) return;
+    weeklyData[dayStr].push({ id: uid(), title, sourceId: sourceId || null, sourceType: sourceType || null, done: false, projectTitle: projectTitle || null });
     saveWeekly();
   }
   function autoFillWeekly() {
     const start = getWeekStart(weekOffset);
+    const existingSourceIds = new Set();
+    Object.values(weeklyData).forEach(arr => arr.forEach(t => { if (t.sourceId) existingSourceIds.add(t.sourceId); }));
     for (let i = 0; i < 7; i++) {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const ds = weekDateStr(d);
       projects.forEach(p => {
-        if (p.dueAt === ds && p.status !== 'completed') addToWeekDay(ds, p.title, p.id, 'project', null);
-        (function walk(subs) { subs.forEach(s => { if (s.dueAt === ds && s.status !== 'completed') addToWeekDay(ds, s.title, s.id, 'subtask', p.title); if (s.subtasks) walk(s.subtasks); }); })(p.subtasks || []);
+        if (p.dueAt === ds && p.status !== 'completed' && !existingSourceIds.has(p.id)) addToWeekDay(ds, p.title, p.id, 'project', null);
+        (function walk(subs) { subs.forEach(s => { if (s.dueAt === ds && s.status !== 'completed' && !existingSourceIds.has(s.id)) addToWeekDay(ds, s.title, s.id, 'subtask', p.title); if (s.subtasks) walk(s.subtasks); }); })(p.subtasks || []);
       });
     }
     saveWeekly();
