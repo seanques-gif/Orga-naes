@@ -2381,6 +2381,20 @@
     return false;
   }
 
+  // Wipes the auto-backup snapshot store. Without this, signing out or
+  // switching accounts leaves the previous account's data sitting in this
+  // (separate) IndexedDB database, and the very next page load sees an
+  // empty `projects` and "recovers" it right back via recoverFromIDB()
+  // above — silently undoing the sign-out on refresh.
+  async function clearIdbSnapshots() {
+    try {
+      const db = await openIDB();
+      if (!db) return;
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).clear();
+    } catch (e) {}
+  }
+
   function uid() { return 'n' + Math.random().toString(36).slice(2, 10); }
 
   const SIZE_KEY = 'project-flow-size'; const resizeHandle = document.getElementById('pf-resize-handle');
@@ -6393,7 +6407,8 @@
       collapsedCategories = {};
     },
     escapeHtml: (s) => escapeHtml(s),
-    todayLocalStr: () => todayLocalStr()
+    todayLocalStr: () => todayLocalStr(),
+    clearIdbSnapshots: () => clearIdbSnapshots()
   };
 
   // Pull-to-refresh (disabled)
@@ -6546,6 +6561,9 @@ if ('serviceWorker' in navigator) {
         } catch (e) {}
       }).catch(function(e) {});
     } catch (e) {}
+    // Also wipe the separate auto-backup snapshot store — see the comment
+    // on clearIdbSnapshots() for why this is required, not optional.
+    try { window._pf.clearIdbSnapshots(); } catch (e) {}
     if (window._pf) {
       if (window._pf.setProjects) window._pf.setProjects([]);
       if (window._pf.setCategories) window._pf.setCategories([]);
