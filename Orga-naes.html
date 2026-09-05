@@ -1399,6 +1399,106 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Nunito', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 
+  /* SUBSECTION: Calendar View & Weekly Planner — state-driven classes, replacing
+     per-cell inline cssText strings previously built in renderCalendar() /
+     renderWeeklyPanel(). Layout/spacing rules live here; only genuinely
+     per-item data (a project's custom color, a status dot's color) stays inline. */
+
+  .pf-cal-day {
+    min-height: 44px; padding: 4px; border-radius: 6px;
+    border: 1px solid var(--card-border); background: transparent;
+    overflow: hidden; cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .pf-cal-day-today { border-color: var(--ongoing); background: rgba(245,184,77,0.08); }
+  .pf-cal-day-selected { border-color: var(--accent); background: rgba(123,104,238,0.15); }
+  .pf-cal-day-num { font-size: 11px; font-weight: 500; color: var(--text); }
+  .pf-cal-day-today .pf-cal-day-num { font-weight: 700; color: var(--ongoing); }
+  .pf-cal-day-selected .pf-cal-day-num { font-weight: 700; color: var(--accent); }
+  .pf-cal-day-dots { display: flex; flex-wrap: wrap; gap: 2px; }
+  .pf-cal-day-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  .pf-cal-task-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 4px;
+    border-radius: 6px; background: var(--card); border: 1px solid var(--card-border);
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .pf-cal-task-item:hover { border-color: var(--hover-border); }
+  .pf-cal-task-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .pf-cal-task-title { flex: 1; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .pf-week-col {
+    display: flex; flex-direction: column; border-radius: 6px;
+    background: var(--sub-bg); border: 1.5px solid var(--sub-border);
+    padding: 10px 8px; height: 100%; overflow-y: auto;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .pf-week-col-today {
+    background: rgba(149,128,255,0.06); border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(149,128,255,0.15);
+  }
+  .pf-week-col-dragover { border-color: var(--accent) !important; }
+
+  .pf-week-col-header {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    text-align: center; margin-bottom: 8px; padding: 4px 0 6px;
+    border-bottom: 1px solid var(--sub-border); color: var(--text-dim);
+    position: relative;
+  }
+  .pf-week-col-today .pf-week-col-header { border-bottom-color: rgba(149,128,255,0.3); color: var(--accent); }
+  .pf-week-col-daynum { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 2px; }
+  .pf-week-col-today .pf-week-col-daynum { color: var(--accent); }
+
+  .pf-week-day-badge {
+    position: absolute; top: 0; right: 2px; font-size: 9px; font-weight: 700;
+    color: var(--text-dim); background: var(--card); border-radius: 8px; padding: 1px 6px;
+  }
+  .pf-week-col-today .pf-week-day-badge { color: var(--accent); background: rgba(149,128,255,0.15); }
+  .pf-week-day-clear {
+    position: absolute; top: 0; left: 2px; font-size: 11px; color: var(--text-dim);
+    cursor: pointer; padding: 0 3px;
+  }
+
+  .pf-week-empty {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--text-dim); opacity: 0.5; font-style: italic;
+    text-align: center; padding: 8px;
+  }
+
+  .pf-week-task {
+    font-size: 12px; padding: 7px 8px 7px 8px; border-radius: 6px;
+    background: var(--card); border: 1px solid var(--card-border);
+    margin-bottom: 5px; display: flex; align-items: flex-start; gap: 6px;
+    cursor: grab; transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  }
+  .pf-week-task-accent { padding-left: 7px; border-left: 3px solid var(--pf-task-accent, transparent); }
+  .pf-week-task:not(.pf-week-task-done):hover { border-color: var(--hover-border); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+  .pf-week-task-done { opacity: 0.5; text-decoration: line-through; }
+  .pf-week-task-check { margin: 2px 0 0; cursor: pointer; flex-shrink: 0; }
+  .pf-week-task-title-wrap { flex: 1; min-width: 0; }
+  .pf-week-task-title-wrap.pf-clickable { cursor: pointer; }
+  .pf-week-task-title {
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden; line-height: 1.35; word-break: break-word;
+  }
+  .pf-week-task-project {
+    font-size: 10px; font-weight: 500; color: var(--text-dim); margin-top: 2px;
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    word-break: break-word; line-height: 1.25;
+  }
+  .pf-week-task-del {
+    background: none; border: none; color: var(--text-dim); font-size: 14px;
+    cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0;
+  }
+
+  .pf-week-add-btn {
+    font-size: 11px; background: none; border: 1px dashed var(--sub-border);
+    color: var(--text-dim); cursor: pointer; padding: 6px 8px; text-align: center;
+    margin-top: auto; border-radius: 6px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .pf-week-add-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(149,128,255,0.06); }
+
 </style>
 
 <!-- SECTION: HTML SHELL — application root, toolbar, panels, and modals -->
@@ -1833,6 +1933,16 @@
   const STATUS_LABEL = { planned: 'Planned', ongoing: 'Ongoing', waiting: 'Waiting', completed: 'Completed' };
   const STORE_KEY = 'project-flow-graph-v2';
 
+  // Named constants (no magic numbers)
+  const LONG_PRESS_MS = 600;
+  const NAV_AUTO_HIDE_MS = 1500;
+  const PUSH_DEBOUNCE_MS = 3000;
+  const TRASH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+  const UNDO_STACK_MAX = 100;
+
+  // Throttle utility — trailing-edge, skips if already pending
+  function throttle(fn, ms) { let pending = false; return function() { if (pending) return; pending = true; setTimeout(() => { fn(); pending = false; }, ms); }; }
+
   const canvas = document.getElementById('pf-canvas');
   const canvasWrap = document.getElementById('pf-canvas-wrap');
   const root = document.getElementById('pf-root');
@@ -1845,13 +1955,13 @@
     if (hasTouch && w <= 600) device = 'mobile';
     else if (hasTouch && w <= 1400) device = 'tablet';
     root.classList.add('pf-device-' + device);
-    window.addEventListener('resize', () => {
+    window.addEventListener('resize', throttle(() => {
       root.classList.remove('pf-device-mobile', 'pf-device-tablet', 'pf-device-desktop');
       const vw = window.innerWidth;
       if (hasTouch && vw <= 600) root.classList.add('pf-device-mobile');
       else if (hasTouch && vw <= 1400) root.classList.add('pf-device-tablet');
       else root.classList.add('pf-device-desktop');
-    });
+    }, 200));
   })();
 
   const statsEl = document.getElementById('pf-stats');
@@ -1864,14 +1974,63 @@
   let saveTimer = null;
   let undoStack = [];
   let redoStack = [];
+  let _lastProjectId = null; // tracks last-interacted project for per-project undo snapshots
   const undoBtn = document.getElementById('pf-undo');
   const redoBtn = document.getElementById('pf-redo');
 
   function updateHistoryButtons() { undoBtn.disabled = undoStack.length === 0; redoBtn.disabled = redoStack.length === 0; }
   function cloneProjects(data) { if (typeof structuredClone === 'function') return structuredClone(data); return JSON.parse(JSON.stringify(data)); }
-  function snapshot() { undoStack.push(cloneProjects(projects)); if (undoStack.length > 100) undoStack.shift(); redoStack = []; updateHistoryButtons(); }
-  function undo() { if (!undoStack.length) return; redoStack.push(cloneProjects(projects)); if (redoStack.length > 100) redoStack.shift(); projects = undoStack.pop(); _completedCollapseId = null; updateHistoryButtons(); scheduleSave(); render(); if (listViewActive) { renderSplitList(); renderSplitDetail(); } if (window._firebasePushNow) window._firebasePushNow(); showToast('↩ Undo (' + undoStack.length + ' left)'); }
-  function redo() { if (!redoStack.length) return; undoStack.push(cloneProjects(projects)); if (undoStack.length > 100) undoStack.shift(); projects = redoStack.pop(); _completedCollapseId = null; updateHistoryButtons(); scheduleSave(); render(); if (listViewActive) { renderSplitList(); renderSplitDetail(); } if (window._firebasePushNow) window._firebasePushNow(); showToast('↪ Redo (' + redoStack.length + ' left)'); }
+  // Per-project undo: store only the touched project when possible (saves ~90% memory)
+  // Structural changes (add/delete/reorder) still store the full array.
+  function snapshot() {
+    const pid = _lastProjectId;
+    _lastProjectId = null;
+    if (pid && projects.some(p => p.id === pid)) {
+      const idx = projects.findIndex(p => p.id === pid);
+      undoStack.push({ _pp: true, idx: idx, id: pid, data: cloneProjects(projects[idx]) });
+    } else {
+      undoStack.push({ _pp: false, data: cloneProjects(projects) });
+    }
+    if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
+    redoStack = [];
+    updateHistoryButtons();
+  }
+  function undo() {
+    if (!undoStack.length) return;
+    redoStack.push(cloneProjects(projects)); // always store full for redo safety
+    if (redoStack.length > UNDO_STACK_MAX) redoStack.shift();
+    const entry = undoStack.pop();
+    if (entry._pp) {
+      const curIdx = projects.findIndex(p => p.id === entry.id);
+      if (curIdx > -1) projects[curIdx] = entry.data;
+      else projects.splice(Math.min(entry.idx, projects.length), 0, entry.data); // project was added; re-insert
+    } else {
+      projects = entry.data;
+    }
+    _completedCollapseId = null;
+    updateHistoryButtons(); scheduleSave(); render();
+    if (listViewActive) { renderSplitList(); renderSplitDetail(); }
+    if (window._firebasePushNow) window._firebasePushNow();
+    showToast('↩ Undo (' + undoStack.length + ' left)');
+  }
+  function redo() {
+    if (!redoStack.length) return;
+    undoStack.push(cloneProjects(projects));
+    if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
+    const entry = redoStack.pop();
+    if (entry._pp) {
+      const curIdx = projects.findIndex(p => p.id === entry.id);
+      if (curIdx > -1) projects[curIdx] = entry.data;
+      else projects.splice(Math.min(entry.idx, projects.length), 0, entry.data);
+    } else {
+      projects = entry.data;
+    }
+    _completedCollapseId = null;
+    updateHistoryButtons(); scheduleSave(); render();
+    if (listViewActive) { renderSplitList(); renderSplitDetail(); }
+    if (window._firebasePushNow) window._firebasePushNow();
+    showToast('↪ Redo (' + redoStack.length + ' left)');
+  }
 
   let _longPressTimer = null;
   let _longPressTarget = null;
@@ -1884,7 +2043,7 @@
       const evt = new MouseEvent('contextmenu', { bubbles: true, clientX: touch.clientX, clientY: touch.clientY });
       node.dispatchEvent(evt);
       _longPressTarget = null;
-    }, 600);
+    }, LONG_PRESS_MS);
   }, { passive: true });
   root.addEventListener('touchend', () => { if (_longPressTimer) { clearTimeout(_longPressTimer); _longPressTimer = null; } });
   root.addEventListener('touchmove', () => { if (_longPressTimer) { clearTimeout(_longPressTimer); _longPressTimer = null; } });
@@ -2127,9 +2286,16 @@
   }
   async function safeSet(key, value, shared) {
     let lsOk = false;
-    if (hasStorage()) { try { localStorage.setItem(key, value); _checkStorageQuota(); lsOk = true; } catch (e) {} }
-    try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); tx.objectStore('kv').put({ key: key, value: value }); } } catch (e) {}
-    if (!lsOk) { showToast('⚠ localStorage full — saved to IndexedDB fallback', true); }
+    let lsQuotaErr = false;
+    if (hasStorage()) {
+      try { localStorage.setItem(key, value); _checkStorageQuota(); lsOk = true; }
+      catch (e) { lsQuotaErr = e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014; }
+    }
+    let idbOk = false;
+    try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); tx.objectStore('kv').put({ key: key, value: value }); idbOk = true; } } catch (e) {}
+    if (!lsOk && !idbOk) { showToast('⚠ Storage full — data may not persist. Export your data soon.', true); }
+    else if (!lsOk && idbOk) { showToast('⚠ localStorage full — using IndexedDB fallback', true); }
+    else if (lsQuotaErr && idbOk) { /* both work, but LS hit quota on this write — silent */ }
     return true;
   }
 
@@ -2583,7 +2749,7 @@
   let trash = [];
   async function loadTrash() { try { const res = await safeGet(TRASH_KEY, false); if (res && res.value) trash = JSON.parse(res.value); } catch (e) { trash = []; } purgeOldTrash(); }
   function saveTrash() { safeSet(TRASH_KEY, JSON.stringify(trash), false); }
-  function purgeOldTrash() { const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000; const before = trash.length; trash = trash.filter(t => new Date(t.deletedAt).getTime() > cutoff); const purged = before - trash.length; if (purged > 0) { saveTrash(); showToast('🗑 ' + purged + ' item' + (purged > 1 ? 's' : '') + ' auto-removed from trash (older than 30 days)'); } }
+  function purgeOldTrash() { const cutoff = Date.now() - TRASH_TTL_MS; const before = trash.length; trash = trash.filter(t => new Date(t.deletedAt).getTime() > cutoff); const purged = before - trash.length; if (purged > 0) { saveTrash(); showToast('🗑 ' + purged + ' item' + (purged > 1 ? 's' : '') + ' auto-removed from trash (older than 30 days)'); } }
   function trashProject(p) { trash.push({ ...JSON.parse(JSON.stringify(p)), deletedAt: new Date().toISOString() }); saveTrash(); }
   function restoreFromTrash(id) { const idx = trash.findIndex(t => t.id === id); if (idx < 0) return; const item = trash.splice(idx, 1)[0]; delete item.deletedAt; projects.push(item); saveTrash(); scheduleSave(); render(); renderTrashList(); showToast('"' + item.title + '" restored'); }
   function permanentDeleteFromTrash(id) { trash = trash.filter(t => t.id !== id); saveTrash(); renderTrashList(); }
@@ -2807,7 +2973,7 @@
   function escapeHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function highlightMatch(escaped, term) { if (!term) return escaped; const re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'); return escaped.replace(re, '<mark style="background:var(--accent);color:#fff;border-radius:2px;padding:0 2px;">$1</mark>'); }
   function formatTime(sec) { const d = Math.floor(sec / 86400); const h = Math.floor((sec % 86400) / 3600); const m = Math.floor((sec % 3600) / 60); if (d > 0) return d + 'd ' + h + 'h ' + m + 'm'; if (h > 0) return h + 'h ' + m + 'm'; return m + 'm'; }
-  function toggleTimer(p, s) { snapshot(); if (s.timerStart) { s.timeLogged = (s.timeLogged || 0) + Math.floor((Date.now() - s.timerStart) / 1000); s.timerStart = null; } else { s.timerStart = Date.now(); } scheduleSave(); render(); }
+  function toggleTimer(p, s) { _lastProjectId = p.id; snapshot(); if (s.timerStart) { s.timeLogged = (s.timeLogged || 0) + Math.floor((Date.now() - s.timerStart) / 1000); s.timerStart = null; } else { s.timerStart = Date.now(); } scheduleSave(); render(); }
 
   const LEVEL_MARKERS = ['\u25CF', '\u25C6', '\u25B6', '\u25B8']; const LEVEL_COLORS = ['var(--depth0)', 'var(--depth1)', 'var(--depth2)', 'var(--depth3)'];
   function levelMarkerFor(depth) { return { marker: LEVEL_MARKERS[Math.min(depth, LEVEL_MARKERS.length - 1)], color: LEVEL_COLORS[Math.min(depth, LEVEL_COLORS.length - 1)] }; }
@@ -3014,8 +3180,8 @@
     titleEl.addEventListener('pointerdown', (e) => { if (titleEl.contentEditable === 'true') e.stopPropagation(); });
     titleEl.addEventListener('click', (e) => { e.stopPropagation(); if (titleEl.contentEditable === 'true') return; titleClickCount++; if (titleClickCount === 1) { titleClickTimer = setTimeout(() => { titleClickCount = 0; if (!listViewActive) toggleExpand(p.id); }, 200); } else if (titleClickCount === 2) { clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } });
     titleEl.addEventListener('touchend', (e) => { if (titleEl.contentEditable === 'true') return; _titleTapCount++; if (_titleTapCount === 2) { clearTimeout(_titleTapTimer); _titleTapCount = 0; e.preventDefault(); clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } else { clearTimeout(_titleTapTimer); _titleTapTimer = setTimeout(() => { _titleTapCount = 0; }, 350); } });
-    titleEl.addEventListener('blur', () => { titleEl.contentEditable = 'false'; const val = titleEl.textContent.trim() || 'Untitled'; if (val !== p.title) { snapshot(); p.title = val; scheduleSave(); } }); titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
-    const descEl = div.querySelector('.pf-node-desc'); descEl.addEventListener('pointerdown', (e) => e.stopPropagation()); descEl.addEventListener('click', (e) => e.stopPropagation()); descEl.addEventListener('blur', () => { const val = descEl.textContent.trim(); if (val !== (p.description || '')) { snapshot(); p.description = val || ''; scheduleSave(); } }); descEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); descEl.blur(); } });
+    titleEl.addEventListener('blur', () => { titleEl.contentEditable = 'false'; const val = titleEl.textContent.trim() || 'Untitled'; if (val !== p.title) { _lastProjectId = p.id; snapshot(); p.title = val; scheduleSave(); } }); titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
+    const descEl = div.querySelector('.pf-node-desc'); descEl.addEventListener('pointerdown', (e) => e.stopPropagation()); descEl.addEventListener('click', (e) => e.stopPropagation()); descEl.addEventListener('blur', () => { const val = descEl.textContent.trim(); if (val !== (p.description || '')) { _lastProjectId = p.id; snapshot(); p.description = val || ''; scheduleSave(); } }); descEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); descEl.blur(); } });
     div.querySelector('.pf-node-header').addEventListener('click', (e) => { if (_pasteArmed && _taskClipboard && _taskClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; } if (e.target.closest('.pf-node-title') || e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; toggleExpand(p.id); }, true);
     makeDraggable(div, p); makeResizable(div, p); return div;
   }
@@ -3158,7 +3324,7 @@
     t.addEventListener('click', (e) => { if (e.ctrlKey || e.metaKey) return; e.stopPropagation(); if (t.contentEditable === 'true') return; if (e.detail >= 2) return; if (window._splitSelectSuppressed) { window._splitSelectSuppressed = false; return; } if (subMultiSelect.length > 0) { const idx = subMultiSelect.indexOf(s.id); if (idx > -1) { subMultiSelect.splice(idx, 1); row.classList.remove('pf-sub-selected'); } else { subMultiSelect.push(s.id); row.classList.add('pf-sub-selected'); } renderSubSelectBar(p); return; } clearTimeout(_subTitleClickTimer); _subTitleClickTimer = setTimeout(() => { if (hasChildren) toggleSubExpand(p.id, s.id); }, 200); });
     t.addEventListener('dblclick', (e) => { e.stopPropagation(); clearTimeout(_subTitleClickTimer); clearTimeout(_subTitleTapTimer); _subTitleTapCount = 0; t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); });
     t.addEventListener('touchend', (e) => { if (t.contentEditable === 'true') return; _subTitleTapCount++; if (_subTitleTapCount === 2) { clearTimeout(_subTitleTapTimer); _subTitleTapCount = 0; e.preventDefault(); clearTimeout(_subTitleClickTimer); t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } else { clearTimeout(_subTitleTapTimer); _subTitleTapTimer = setTimeout(() => { _subTitleTapCount = 0; }, 350); } });
-    t.addEventListener('blur', () => { const val = t.textContent.trim() || 'Untitled'; t.contentEditable = 'false'; if (val !== s.title) { snapshot(); s.title = val; scheduleSave(); } }); t.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); t.blur(); } if (e.key === 'Escape') { t.textContent = s.title; t.blur(); } }); return row;
+    t.addEventListener('blur', () => { const val = t.textContent.trim() || 'Untitled'; t.contentEditable = 'false'; if (val !== s.title) { _lastProjectId = p.id; snapshot(); s.title = val; scheduleSave(); } }); t.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); t.blur(); } if (e.key === 'Escape') { t.textContent = s.title; t.blur(); } }); return row;
   }
 
   let dragProjectId = null; let dragHandleArmedProject = false;
@@ -4043,7 +4209,7 @@
       { label: '✏️ Rename', action: () => { const item = splitList.querySelector('[data-project-id="' + p.id + '"]'); if (item) _inlineRename(item, p); } },
       { label: '⭐ Add to Today', action: () => { addToToday(p.title, p.id, 'project'); } },
       { label: '⏰ Set Reminder', action: () => { promptReminder(p.id, p.title, 'project'); } },
-      { label: '→ ' + STATUS_LABEL[statusNext], action: () => { snapshot(); p.status = statusNext; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
+      { label: '→ ' + STATUS_LABEL[statusNext], action: () => { _lastProjectId = p.id; snapshot(); p.status = statusNext; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
       { label: '📋 Duplicate', action: () => { snapshot(); const dup = JSON.parse(JSON.stringify(p)); dup.id = uid(); dup.title += ' (copy)'; projects.push(dup); scheduleSave(); renderSplitList(); } },
     ];
 
@@ -4088,7 +4254,7 @@
       ...(!isMobile ? [{ label: '✏️ Edit Title', action: () => { const row = root.querySelector('[data-sub-title-id="' + s.id + '"]'); if (row) { row.contentEditable = 'true'; row.focus(); const range = document.createRange(); range.selectNodeContents(row); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } } }] : []),
       { label: '⭐ Add to Today', action: () => { addToToday(s.title, s.id, 'subtask'); } },
       { label: '⏰ Set Reminder', action: () => { promptReminder(s.id, s.title, 'subtask'); } },
-      { label: '→ ' + STATUS_LABEL[statusNext], action: () => { snapshot(); s.status = statusNext; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
+      { label: '→ ' + STATUS_LABEL[statusNext], action: () => { _lastProjectId = p.id; snapshot(); s.status = statusNext; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
       ...(!isMobile ? [{ label: '🔗 Dependencies', action: () => { const chip = root.querySelector('[data-sub-id="' + s.id + '"] .pf-dep-chip'); if (chip) chip.click(); else { const row = root.querySelector('[data-sub-id="' + s.id + '"]'); if (row) { const tempChip = buildDependencyChip(p, s); tempChip.style.position = 'absolute'; tempChip.style.opacity = '0'; row.appendChild(tempChip); tempChip.click(); } } } }] : []),
       ...(!isMobile ? [{ label: '⬆ Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
       { label: '📋 Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
@@ -4590,15 +4756,14 @@
       const isSelected = dateStr === calSelectedDate;
       const items = dueMap[dateStr] || [];
       const hasItems = items.length > 0;
-      const borderCol = isSelected ? 'var(--accent)' : isToday ? 'var(--ongoing)' : 'var(--card-border)';
-      const bgCol = isSelected ? 'rgba(123,104,238,0.15)' : isToday ? 'rgba(245,184,77,0.08)' : 'transparent';
-      html += '<div class="pf-cal-day" data-cal-date="' + dateStr + '" style="min-height:44px;padding:4px;border-radius:6px;border:1px solid ' + borderCol + ';background:' + bgCol + ';overflow:hidden;cursor:pointer;transition:background 0.12s,border-color 0.12s;">';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;"><span style="font-size:11px;font-weight:' + (isToday || isSelected ? '700' : '500') + ';color:' + (isSelected ? 'var(--accent)' : isToday ? 'var(--ongoing)' : 'var(--text)') + ';">' + d + '</span></div>';
+      const dayClass = 'pf-cal-day' + (isToday ? ' pf-cal-day-today' : '') + (isSelected ? ' pf-cal-day-selected' : '');
+      html += '<div class="' + dayClass + '" data-cal-date="' + dateStr + '">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;"><span class="pf-cal-day-num">' + d + '</span></div>';
       if (hasItems) {
-        html += '<div style="display:flex;flex-wrap:wrap;gap:2px;">';
+        html += '<div class="pf-cal-day-dots">';
         items.forEach(item => {
           const col = item.status === 'completed' ? 'var(--completed)' : item.status === 'ongoing' ? 'var(--ongoing)' : item.status === 'waiting' ? 'var(--waiting)' : 'var(--planned)';
-          html += '<span style="width:6px;height:6px;border-radius:50%;background:' + col + ';flex-shrink:0;"></span>';
+          html += '<span class="pf-cal-day-dot" style="background:' + col + '"></span>';
         });
         html += '</div>';
       }
@@ -4623,9 +4788,9 @@
     listEl.innerHTML = items.map((item, i) => {
       const col = item.status === 'completed' ? 'var(--completed)' : item.status === 'ongoing' ? 'var(--ongoing)' : 'var(--planned)';
       const statusLabel = STATUS_LABEL[item.status] || 'Planned';
-      return '<div class="pf-activity-item pf-cal-task-item" data-cal-project="' + (item.projectId || '') + '" style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:4px;border-radius:6px;background:var(--card);border:1px solid var(--card-border);cursor:pointer;transition:border-color 0.15s;" onmouseenter="this.style.borderColor=\'var(--hover-border)\'" onmouseleave="this.style.borderColor=\'var(--card-border)\'">' +
-        '<span style="width:8px;height:8px;border-radius:50%;background:' + col + ';flex-shrink:0;"></span>' +
-        '<span style="flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(item.title) + '</span>' +
+      return '<div class="pf-activity-item pf-cal-task-item" data-cal-project="' + (item.projectId || '') + '">' +
+        '<span class="pf-cal-task-dot" style="background:' + col + '"></span>' +
+        '<span class="pf-cal-task-title">' + escapeHtml(item.title) + '</span>' +
         '</div>';
     }).join('');
     listEl.querySelectorAll('.pf-cal-task-item').forEach(el => {
@@ -4634,7 +4799,7 @@
         if (!projectId) return;
         const p = projects.find(pr => pr.id === projectId);
         if (!p) return;
-        const taskTitle = el.querySelector('span[style*="flex:1"]').textContent.trim();
+        const taskTitle = el.querySelector('.pf-cal-task-title').textContent.trim();
         closeAllModals();
         _calendarReturnOnEsc = true;
         if (!root.classList.contains('pf-device-mobile') && !root.classList.contains('pf-device-tablet')) showToast('Press Esc to go back to Calendar');
@@ -4755,13 +4920,13 @@
       const ds = weekDateStr(d);
       const isToday = ds === todayStr;
       const col = document.createElement('div');
-      col.style.cssText = 'display:flex;flex-direction:column;border-radius:6px;background:' + (isToday ? 'rgba(149,128,255,0.06)' : 'var(--sub-bg)') + ';border:1.5px solid ' + (isToday ? 'var(--accent)' : 'var(--sub-border)') + ';padding:10px 8px;height:100%;overflow-y:auto;transition:border-color 0.2s,box-shadow 0.2s;' + (isToday ? 'box-shadow:0 0 12px rgba(149,128,255,0.15);' : '');
+      col.className = 'pf-week-col' + (isToday ? ' pf-week-col-today' : '');
       const header = document.createElement('div');
-      header.style.cssText = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;text-align:center;margin-bottom:8px;padding:4px 0 6px;border-bottom:1px solid ' + (isToday ? 'rgba(149,128,255,0.3)' : 'var(--sub-border)') + ';color:' + (isToday ? 'var(--accent)' : 'var(--text-dim)') + ';position:relative;';
+      header.className = 'pf-week-col-header';
       const tasksForBadge = weeklyData[ds] || [];
-      const badgeHtml = tasksForBadge.length ? '<span style="position:absolute;top:0;right:2px;font-size:9px;font-weight:700;color:' + (isToday ? 'var(--accent)' : 'var(--text-dim)') + ';background:' + (isToday ? 'rgba(149,128,255,0.15)' : 'var(--card)') + ';border-radius:8px;padding:1px 6px;">' + tasksForBadge.length + '</span>' : '';
-      const clearDayHtml = tasksForBadge.length ? '<span class="pf-week-day-clear" data-day="' + ds + '" title="Clear this day" style="position:absolute;top:0;left:2px;font-size:11px;color:var(--text-dim);cursor:pointer;padding:0 3px;">🗑</span>' : '';
-      header.innerHTML = clearDayHtml + badgeHtml + '<div style="font-size:18px;font-weight:800;color:' + (isToday ? 'var(--accent)' : 'var(--text)') + ';line-height:1;margin-bottom:2px;">' + d.getDate() + '</div>' + DAYS[i];
+      const badgeHtml = tasksForBadge.length ? '<span class="pf-week-day-badge">' + tasksForBadge.length + '</span>' : '';
+      const clearDayHtml = tasksForBadge.length ? '<span class="pf-week-day-clear" data-day="' + ds + '" title="Clear this day">🗑</span>' : '';
+      header.innerHTML = clearDayHtml + badgeHtml + '<div class="pf-week-col-daynum">' + d.getDate() + '</div>' + DAYS[i];
       col.appendChild(header);
       const dayClearBtn = header.querySelector('.pf-week-day-clear');
       if (dayClearBtn) {
@@ -4778,7 +4943,7 @@
       const tasks = weeklyData[ds] || [];
       if (!tasks.length) {
         const empty = document.createElement('div');
-        empty.style.cssText = 'flex:1;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);opacity:0.5;font-style:italic;text-align:center;padding:8px;';
+        empty.className = 'pf-week-empty';
         empty.textContent = 'Nothing scheduled';
         col.appendChild(empty);
       }
@@ -4790,28 +4955,26 @@
         row.dataset.taskId = t.id;
         row.dataset.day = ds;
         row.title = t.title + (t.projectTitle ? ' — ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '');
-        row.style.cssText = 'font-size:12px;padding:7px 8px 7px ' + (accentColor ? '7px' : '8px') + ';border-radius:6px;background:var(--card);border:1px solid var(--card-border);' + (accentColor ? 'border-left:3px solid ' + accentColor + ';' : '') + 'margin-bottom:5px;display:flex;align-items:flex-start;gap:6px;cursor:grab;transition:border-color 0.15s,transform 0.1s,box-shadow 0.15s;' + (t.done ? 'opacity:0.5;text-decoration:line-through;' : '');
-        row.addEventListener('mouseenter', () => { if (!t.done) { row.style.borderColor = 'var(--hover-border)'; row.style.transform = 'translateY(-1px)'; row.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)'; } });
-        row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; row.style.transform = ''; row.style.boxShadow = ''; });
+        row.className = 'pf-week-task' + (accentColor ? ' pf-week-task-accent' : '') + (t.done ? ' pf-week-task-done' : '');
+        if (accentColor) row.style.setProperty('--pf-task-accent', accentColor);
         const check = document.createElement('input');
         check.type = 'checkbox';
         check.checked = t.done;
-        check.style.cssText = 'margin:2px 0 0;cursor:pointer;flex-shrink:0;';
+        check.className = 'pf-week-task-check';
         check.addEventListener('change', () => { t.done = check.checked; saveWeekly(); renderWeeklyPanel(); });
         const titleWrap = document.createElement('div');
-        titleWrap.style.cssText = 'flex:1;min-width:0;';
+        titleWrap.className = 'pf-week-task-title-wrap' + (t.sourceId ? ' pf-clickable' : '');
         const titleSpan = document.createElement('span');
-        titleSpan.style.cssText = 'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;word-break:break-word;';
+        titleSpan.className = 'pf-week-task-title';
         titleSpan.textContent = t.title;
         titleWrap.appendChild(titleSpan);
         if (t.projectTitle) {
           const projSpan = document.createElement('div');
-          projSpan.style.cssText = 'font-size:10px;font-weight:500;color:var(--text-dim);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;line-height:1.25;';
+          projSpan.className = 'pf-week-task-project';
           projSpan.textContent = t.projectTitle;
           titleWrap.appendChild(projSpan);
         }
         if (t.sourceId) {
-          titleWrap.style.cursor = 'pointer';
           titleWrap.addEventListener('click', (e) => {
             e.stopPropagation();
             const projectId = srcProject ? srcProject.id : t.sourceId;
@@ -4831,7 +4994,7 @@
         }
         const delBtn = document.createElement('button');
         delBtn.textContent = '×';
-        delBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);font-size:14px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;';
+        delBtn.className = 'pf-week-task-del';
         delBtn.addEventListener('click', () => { weeklyData[ds] = weeklyData[ds].filter(x => x.id !== t.id); saveWeekly(); renderWeeklyPanel(); });
         row.appendChild(check);
         row.appendChild(titleWrap);
@@ -4842,9 +5005,7 @@
       });
       const addBtn = document.createElement('button');
       addBtn.textContent = '+ Add task';
-      addBtn.style.cssText = 'font-size:11px;background:none;border:1px dashed var(--sub-border);color:var(--text-dim);cursor:pointer;padding:6px 8px;text-align:center;margin-top:auto;border-radius:6px;transition:border-color 0.15s,color 0.15s,background 0.15s;';
-      addBtn.addEventListener('mouseenter', () => { addBtn.style.borderColor = 'var(--accent)'; addBtn.style.color = 'var(--accent)'; addBtn.style.background = 'rgba(149,128,255,0.06)'; });
-      addBtn.addEventListener('mouseleave', () => { addBtn.style.borderColor = 'var(--sub-border)'; addBtn.style.color = 'var(--text-dim)'; addBtn.style.background = 'none'; });
+      addBtn.className = 'pf-week-add-btn';
       addBtn.addEventListener('click', () => {
         const title = prompt('Task name:');
         if (!title || !title.trim()) return;
@@ -4853,11 +5014,11 @@
         saveWeekly(); renderWeeklyPanel();
       });
       col.appendChild(addBtn);
-      col.addEventListener('dragover', (e) => { e.preventDefault(); col.style.borderColor = 'var(--accent)'; });
-      col.addEventListener('dragleave', () => { col.style.borderColor = isToday ? 'var(--accent)' : 'var(--sub-border)'; });
+      col.addEventListener('dragover', (e) => { e.preventDefault(); col.classList.add('pf-week-col-dragover'); });
+      col.addEventListener('dragleave', () => { col.classList.remove('pf-week-col-dragover'); });
       col.addEventListener('drop', (e) => {
         e.preventDefault();
-        col.style.borderColor = isToday ? 'var(--accent)' : 'var(--sub-border)';
+        col.classList.remove('pf-week-col-dragover');
         const raw = e.dataTransfer.getData('application/weekly-task');
         if (raw) {
           const { id, fromDay } = JSON.parse(raw);
@@ -5019,14 +5180,14 @@
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx);
         const newText = prompt('Edit comment:', commentTarget.sub.comments[idx].text);
-        if (newText !== null && newText.trim()) { snapshot(); commentTarget.sub.comments[idx].text = newText.trim(); scheduleSave(); renderComments(); render(); }
+        if (newText !== null && newText.trim()) { _lastProjectId = commentTarget.project.id; snapshot(); commentTarget.sub.comments[idx].text = newText.trim(); scheduleSave(); renderComments(); render(); }
       });
     });
     listEl.querySelectorAll('.pf-comment-del').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx);
         if (!confirm('Delete this comment?')) return;
-        snapshot(); commentTarget.sub.comments.splice(idx, 1); scheduleSave(); renderComments(); render();
+        _lastProjectId = commentTarget.project.id; snapshot(); commentTarget.sub.comments.splice(idx, 1); scheduleSave(); renderComments(); render();
       });
     });
     listEl.scrollTop = listEl.scrollHeight;
@@ -5064,11 +5225,11 @@
   }
   document.getElementById('pf-color-modal-ok').addEventListener('click', () => {
     if (!colorTarget) return;
-    snapshot(); colorTarget.color = selectedColor; scheduleSave(); closeAllModals(); render(); autoArrangeProjects(true);
+    _lastProjectId = colorTarget.id; snapshot(); colorTarget.color = selectedColor; scheduleSave(); closeAllModals(); render(); autoArrangeProjects(true);
   });
   document.getElementById('pf-color-modal-clear').addEventListener('click', () => {
     if (!colorTarget) return;
-    snapshot(); colorTarget.color = null; scheduleSave(); closeAllModals(); render(); autoArrangeProjects(true);
+    _lastProjectId = colorTarget.id; snapshot(); colorTarget.color = null; scheduleSave(); closeAllModals(); render(); autoArrangeProjects(true);
   });
   document.getElementById('pf-color-modal-cancel').addEventListener('click', () => { closeAllModals(); });
 
@@ -5444,7 +5605,7 @@
     PROJECT_EMOJIS.forEach(em => {
       const s = document.createElement('span');
       s.textContent = em;
-      s.addEventListener('click', (e) => { e.stopPropagation(); snapshot(); p.emoji = em; scheduleSave(); render(); _closeCtx(); });
+      s.addEventListener('click', (e) => { e.stopPropagation(); _lastProjectId = p.id; snapshot(); p.emoji = em; scheduleSave(); render(); _closeCtx(); });
       picker.appendChild(s);
     });
     const clearBtn = document.createElement('span');
@@ -5979,14 +6140,14 @@
       bottomNav.classList.remove('pf-nav-hidden');
       if (fab) fab.classList.remove('pf-fab-hidden');
       clearTimeout(_navTimer);
-      if (!_navPressed) _navTimer = setTimeout(hideNavAndFab, 1500);
+      if (!_navPressed) _navTimer = setTimeout(hideNavAndFab, NAV_AUTO_HIDE_MS);
     }
     let _navPressed = false;
     bottomNav.addEventListener('touchstart', function() { _navPressed = true; clearTimeout(_navTimer); }, { passive: true });
-    bottomNav.addEventListener('touchend', function() { _navPressed = false; _navTimer = setTimeout(hideNavAndFab, 1500); }, { passive: true });
+    bottomNav.addEventListener('touchend', function() { _navPressed = false; _navTimer = setTimeout(hideNavAndFab, NAV_AUTO_HIDE_MS); }, { passive: true });
     window._navAutoHideRestart = function() {
       clearTimeout(_navTimer);
-      _navTimer = setTimeout(hideNavAndFab, 1500);
+      _navTimer = setTimeout(hideNavAndFab, NAV_AUTO_HIDE_MS);
     };
     showNavAndFab();
     let _swipeStartY = 0;
@@ -6726,7 +6887,7 @@ if ('serviceWorker' in navigator) {
       userRef().set(JSON.parse(JSON.stringify(projects)));
       hasChanges = true;
     } else if (hasChanges) {
-      db.ref().update(updates);
+      db.ref('users/' + _fbUser.uid).update(updates);
     }
     _lastPushedIdOrder = currentIdOrder;
 
@@ -6766,7 +6927,7 @@ if ('serviceWorker' in navigator) {
     return writePromise;
   }
 
-  // Hook into scheduleSave to push on every change when autosync is on (debounced 3s)
+  // Hook into scheduleSave to push on every change when autosync is on (debounced)
   let _fbPushTimer = null;
   window._firebasePull = function() { if (pullBtn) pullBtn.click(); };
   window._firebasePush = function() {
@@ -6776,7 +6937,7 @@ if ('serviceWorker' in navigator) {
     clearTimeout(_fbPushTimer);
     _fbPushTimer = setTimeout(function() {
       pushSelective();
-    }, 3000);
+    }, PUSH_DEBOUNCE_MS);
   };
   window._firebasePushNow = function() {
     if (!_fbAutosync || !_fbUser) return;
@@ -6960,7 +7121,7 @@ if ('serviceWorker' in navigator) {
 
   // Version display
   const APP_VERSION = document.querySelector('meta[name="version"]').content;
-  db.ref('users/' + (_fbUser ? _fbUser.uid : '__none') + '/appVersion').set(APP_VERSION);
+  if (_fbUser) db.ref('users/' + _fbUser.uid + '/appVersion').set(APP_VERSION);
   auth.onAuthStateChanged(function(u) { if (u) db.ref('users/' + u.uid + '/appVersion').set(APP_VERSION); });
 })();
 </script>
