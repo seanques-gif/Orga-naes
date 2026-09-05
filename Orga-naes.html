@@ -6370,6 +6370,7 @@
     render: () => render(),
     showToast: (msg) => showToast(msg),
     snapshot: () => snapshot(),
+    openIDB_KV: () => openIDB_KV(),
     getCategoryEmojis: () => categoryEmojis,
     setCategoryEmojis: (e) => { categoryEmojis = e; saveCatEmojis(); },
     stopAutoBackup: () => { if (_autoBackupTimer) { clearInterval(_autoBackupTimer); _autoBackupTimer = null; } },
@@ -6529,7 +6530,7 @@ if ('serviceWorker' in navigator) {
     // is missing. Clearing only localStorage above isn't enough — without
     // this, a later load can silently resurrect the previous account's
     // data from IndexedDB. Delete the mirrored entries directly.
-    openIDB_KV().then(function(db) {
+    window._pf.openIDB_KV().then(function(db) {
       if (!db) return;
       try {
         const tx = db.transaction('kv', 'readwrite');
@@ -6967,13 +6968,13 @@ if ('serviceWorker' in navigator) {
   };
   // Manual "Push to Cloud" (Ctrl+S dialog): only requires being signed in — must work even with autosync off.
   window._firebasePushManual = function() {
-    if (!_fbUser) { showToast('⚠ Sign in first to push', true); return; }
-    if (!navigator.onLine) { showToast('⚠ You are offline — will sync when back online', true); _fbOfflineQueue = true; return; }
+    if (!_fbUser) { window._pf.showToast('⚠ Sign in first to push', true); return; }
+    if (!navigator.onLine) { window._pf.showToast('⚠ You are offline — will sync when back online', true); _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
     pushWithTimestamp().then(function() {
-      showToast('☁ Pushed to cloud');
+      window._pf.showToast('☁ Pushed to cloud');
     }).catch(function(err) {
-      showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+      window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
     });
   };
   if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
