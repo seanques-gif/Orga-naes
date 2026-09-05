@@ -6368,7 +6368,7 @@
     scheduleSave: () => scheduleSave(),
     saveCategories: () => saveCategories(),
     render: () => render(),
-    showToast: (msg) => showToast(msg),
+    showToast: (msg, isError, undoable, actionCallback, actionLabel) => showToast(msg, isError, undoable, actionCallback, actionLabel),
     snapshot: () => snapshot(),
     openIDB_KV: () => openIDB_KV(),
     getCategoryEmojis: () => categoryEmojis,
@@ -6391,7 +6391,9 @@
       renderWeeklyPanel();
       reminders = [];
       collapsedCategories = {};
-    }
+    },
+    escapeHtml: (s) => escapeHtml(s),
+    todayLocalStr: () => todayLocalStr()
   };
 
   // Pull-to-refresh (disabled)
@@ -6530,14 +6532,20 @@ if ('serviceWorker' in navigator) {
     // is missing. Clearing only localStorage above isn't enough — without
     // this, a later load can silently resurrect the previous account's
     // data from IndexedDB. Delete the mirrored entries directly.
-    window._pf.openIDB_KV().then(function(db) {
-      if (!db) return;
-      try {
-        const tx = db.transaction('kv', 'readwrite');
-        const store = tx.objectStore('kv');
-        keysToClear.forEach(function(k) { try { store.delete(k); } catch (e) {} });
-      } catch (e) {}
-    });
+    // Wrapped in try/catch: this must never throw synchronously and abort
+    // the in-memory clear + render below — a previous bug (calling an
+    // out-of-scope openIDB_KV) did exactly that, silently leaving the old
+    // account's data on screen after sign-out/account-switch.
+    try {
+      window._pf.openIDB_KV().then(function(db) {
+        if (!db) return;
+        try {
+          const tx = db.transaction('kv', 'readwrite');
+          const store = tx.objectStore('kv');
+          keysToClear.forEach(function(k) { try { store.delete(k); } catch (e) {} });
+        } catch (e) {}
+      }).catch(function(e) {});
+    } catch (e) {}
     if (window._pf) {
       if (window._pf.setProjects) window._pf.setProjects([]);
       if (window._pf.setCategories) window._pf.setCategories([]);
@@ -6578,7 +6586,7 @@ if ('serviceWorker' in navigator) {
       stopListener(); // tear down the previous account's realtime listener first —
                        // otherwise it can keep firing against the old account's data
                        // after we've already switched to the new one
-      clearLocalUserData();
+      try { clearLocalUserData(); } catch (e) {}
       window._pf.snapshot && window._pf.snapshot();
       Promise.all([
         userRef().once('value'),
@@ -6605,6 +6613,8 @@ if ('serviceWorker' in navigator) {
         window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
         updateLastSync();
         window._pf.showToast('☁ Loaded ' + (user.displayName || user.email) + '\u2019s data');
+      }).catch(function(err) {
+        window._pf.showToast('⚠ Failed to load ' + (user.displayName || user.email) + '\u2019s data: ' + (err && err.message ? err.message : 'unknown error'), true);
       }).finally(function() {
         _switchingAccount = false;
         localStorage.setItem(LAST_UID_KEY, user.uid);
@@ -6648,9 +6658,11 @@ if ('serviceWorker' in navigator) {
             window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
             updateLastSync();
             window._pf.showToast('☁ Auto-pulled latest data from cloud');
+          }).catch(function(err) {
+            window._pf.showToast('⚠ Auto-pull failed: ' + (err && err.message ? err.message : 'unknown error'), true);
           });
         }
-      });
+      }).catch(function(err) {});
     }
     if (_fbAutosync) startListener();
   }
@@ -6685,7 +6697,7 @@ if ('serviceWorker' in navigator) {
   function _doSignout() {
     if (window._pf && window._pf.stopAutoBackup) window._pf.stopAutoBackup();
     auth.signOut().then(function() {
-      clearLocalUserData();
+      try { clearLocalUserData(); } catch (e) {}
       localStorage.removeItem(LAST_UID_KEY);
       window._pf.showToast('🚪 Signed out');
     }).catch(function(err) {
@@ -6952,7 +6964,7 @@ if ('serviceWorker' in navigator) {
   window._firebasePull = function() { if (pullBtn) pullBtn.click(); };
   window._firebasePush = function() {
     if (!_fbAutosync || !_fbUser) return;
-    if (!window._pf.getProjects().length) return;
+    if (!window._pfLoaded) return;
     if (!navigator.onLine) { _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
     _fbPushTimer = setTimeout(function() {
@@ -6961,7 +6973,7 @@ if ('serviceWorker' in navigator) {
   };
   window._firebasePushNow = function() {
     if (!_fbAutosync || !_fbUser) return;
-    if (!window._pf.getProjects().length) return;
+    if (!window._pfLoaded) return;
     if (!navigator.onLine) { _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
     pushSelective();
@@ -6986,7 +6998,7 @@ if ('serviceWorker' in navigator) {
   // #13 Auto-backup to Firebase (once per day, keeps last 7 backups)
   function autoBackupToFirebase() {
     if (!_fbUser) return;
-    const today = todayLocalStr();
+    const today = window._pf.todayLocalStr();
     const lastBackup = localStorage.getItem('pf-firebase-last-backup');
     if (lastBackup === today) return;
     const backupRef = db.ref('users/' + _fbUser.uid + '/backups/' + today);
@@ -7096,9 +7108,9 @@ if ('serviceWorker' in navigator) {
     }
     const diffs = findDiffs(local, remote);
     let diffHtml = '';
-    if (diffs.changed.length) diffHtml += '<b>Modified (' + diffs.changed.length + '):</b><br>' + diffs.changed.slice(0, 5).map(p => '• ' + escapeHtml(p.title || 'Untitled')).join('<br>') + (diffs.changed.length > 5 ? '<br>…+' + (diffs.changed.length - 5) + ' more' : '') + '<br>';
-    if (diffs.added.length) diffHtml += '<b>Added in cloud (' + diffs.added.length + '):</b><br>' + diffs.added.slice(0, 3).map(p => '• ' + escapeHtml(p.title || 'Untitled')).join('<br>') + '<br>';
-    if (diffs.removed.length) diffHtml += '<b>Removed in cloud (' + diffs.removed.length + '):</b><br>' + diffs.removed.slice(0, 3).map(p => '• ' + escapeHtml(p.title || 'Untitled')).join('<br>') + '<br>';
+    if (diffs.changed.length) diffHtml += '<b>Modified (' + diffs.changed.length + '):</b><br>' + diffs.changed.slice(0, 5).map(p => '• ' + window._pf.escapeHtml(p.title || 'Untitled')).join('<br>') + (diffs.changed.length > 5 ? '<br>…+' + (diffs.changed.length - 5) + ' more' : '') + '<br>';
+    if (diffs.added.length) diffHtml += '<b>Added in cloud (' + diffs.added.length + '):</b><br>' + diffs.added.slice(0, 3).map(p => '• ' + window._pf.escapeHtml(p.title || 'Untitled')).join('<br>') + '<br>';
+    if (diffs.removed.length) diffHtml += '<b>Removed in cloud (' + diffs.removed.length + '):</b><br>' + diffs.removed.slice(0, 3).map(p => '• ' + window._pf.escapeHtml(p.title || 'Untitled')).join('<br>') + '<br>';
     if (!diffHtml) diffHtml = 'Minor differences detected';
     localEl.innerHTML = '<b>Local:</b> ' + local.length + ' projects · ' + localStats.tasks + ' tasks · ' + localStats.completed + ' done' + (localBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + localBadge + '</span>' : '');
     remoteEl.innerHTML = '<b>Cloud:</b> ' + remote.length + ' projects · ' + remoteStats.tasks + ' tasks · ' + remoteStats.completed + ' done' + (remoteBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + remoteBadge + '</span>' : '') + '<br><br>' + diffHtml;
