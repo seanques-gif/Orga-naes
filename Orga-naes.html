@@ -6517,6 +6517,13 @@ if ('serviceWorker' in navigator) {
   function trashRef() { return db.ref('users/' + _fbUser.uid + '/trash'); }
 
   const LAST_UID_KEY = 'pf-firebase-last-uid';
+  // Set whenever clearLocalUserData() wipes the local cache (sign-out or a
+  // detected account switch), cleared only once a pull has actually
+  // repopulated it. This is deliberately independent of LAST_UID_KEY: a
+  // same-account re-login also needs a forced pull after sign-out (local
+  // data was just cleared regardless of whose account it is), and uid
+  // comparison alone can't tell you that.
+  const NEEDS_PULL_KEY = 'pf-firebase-needs-pull';
 
   // Storage key constants (duplicated from main IIFE scope for cross-IIFE access)
   const STORE_KEY        = 'project-flow-graph-v2';
@@ -6536,6 +6543,7 @@ if ('serviceWorker' in navigator) {
   // caches) so the next account to sign in doesn't inherit the previous
   // account's data. Does NOT touch device-only prefs (theme, size, etc).
   function clearLocalUserData() {
+    localStorage.setItem(NEEDS_PULL_KEY, '1');
     const keysToClear = [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
      'pf-firebase-last-sync-time', ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY,
      REMINDERS_KEY, COLLAPSED_CAT_KEY];
@@ -6589,11 +6597,15 @@ if ('serviceWorker' in navigator) {
     pullBtn.disabled = false;
     if (!window._pfLoaded) { setTimeout(function() { setSignedIn(user); }, 500); return; }
 
-    // If this is a different account than was last signed in on this device,
-    // the local cache belongs to the previous account — wipe it and force a
-    // fresh pull instead of relying on the elapsed-time heuristic below.
+    // Force a fresh pull whenever either: (a) this is a different account
+    // than was last cached — its local data belongs to someone else — or
+    // (b) NEEDS_PULL_KEY is set, meaning the local cache was wiped by a
+    // sign-out and hasn't been repopulated yet, even if it's the *same*
+    // account signing back in. Relying on uid comparison alone missed
+    // that second case entirely.
     const lastUid = localStorage.getItem(LAST_UID_KEY);
-    if (lastUid && lastUid !== user.uid) {
+    const needsPull = localStorage.getItem(NEEDS_PULL_KEY) === '1';
+    if (needsPull || (lastUid && lastUid !== user.uid)) {
       if (_switchingAccount) {
         // A previous switch is still pulling data; remember this user and
         // re-run once that pull finishes so the two pulls can't interleave.
@@ -6630,6 +6642,7 @@ if ('serviceWorker' in navigator) {
         window._pf.setTrash(trashVal ? (Array.isArray(trashVal) ? trashVal : Object.values(trashVal)) : []);
         window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
         updateLastSync();
+        localStorage.removeItem(NEEDS_PULL_KEY);
         window._pf.showToast('☁ Loaded ' + (user.displayName || user.email) + '\u2019s data');
       }).catch(function(err) {
         window._pf.showToast('⚠ Failed to load ' + (user.displayName || user.email) + '\u2019s data: ' + (err && err.message ? err.message : 'unknown error'), true);
@@ -6675,6 +6688,7 @@ if ('serviceWorker' in navigator) {
             if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal : Object.values(trashVal));
             window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
             updateLastSync();
+            localStorage.removeItem(NEEDS_PULL_KEY);
             window._pf.showToast('☁ Auto-pulled latest data from cloud');
           }).catch(function(err) {
             window._pf.showToast('⚠ Auto-pull failed: ' + (err && err.message ? err.message : 'unknown error'), true);
@@ -6721,7 +6735,13 @@ if ('serviceWorker' in navigator) {
     if (window._pf && window._pf.stopAutoBackup) window._pf.stopAutoBackup();
     auth.signOut().then(function() {
       try { clearLocalUserData(); } catch (e) {}
-      localStorage.removeItem(LAST_UID_KEY);
+      // Deliberately NOT clearing LAST_UID_KEY here. Its whole purpose is
+      // to survive the sign-out so the *next* setSignedIn() can tell "this
+      // is a different account than was last cached" and force a clear +
+      // fresh pull. Wiping it here defeats that check on the very next
+      // login, which is exactly what caused account-switch auto-pull to
+      // silently stop working (falling through to the much weaker
+      // idle->1hr auto-pull heuristic instead).
       window._pf.showToast('🚪 Signed out');
     }).catch(function(err) {
       window._pf.showToast('⚠ Sign out failed: ' + err.message, true);
@@ -6824,6 +6844,7 @@ if ('serviceWorker' in navigator) {
       });
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
       updateLastSync();
+      localStorage.removeItem(NEEDS_PULL_KEY);
       window._pf.showToast('⬇ Pulled from cloud');
     }).catch(function(err) {
       window._pf.showToast('⚠ Pull failed: ' + (err.message || err), true);
