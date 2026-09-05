@@ -6525,6 +6525,38 @@ if ('serviceWorker' in navigator) {
   // comparison alone can't tell you that.
   const NEEDS_PULL_KEY = 'pf-firebase-needs-pull';
 
+  // Normalizes a Firebase-shaped subtasks value into a real, fully-formed
+  // JS array recursively. Firebase Realtime Database stores arrays as
+  // sparse objects (or omits the field entirely) once there are gaps or
+  // it's empty, so a project pulled straight from `.val()` can have
+  // `subtasks` as `undefined` or a plain object instead of an array.
+  // Every pull path MUST run projects through this before handing them to
+  // the rest of the app — code elsewhere (render, renderStats,
+  // validateAndRepair, etc.) calls `.forEach()` on `p.subtasks` and
+  // `s.subtasks` unconditionally, and throws "Cannot read properties of
+  // undefined (reading 'forEach')" otherwise. This used to only exist
+  // inside _doPull(); the account-switch and hourly auto-pull paths were
+  // missing it entirely.
+  function fixSubtasks(list) {
+    if (!list) return [];
+    if (!Array.isArray(list)) list = Object.values(list);
+    return list.filter(Boolean).map(function(s) {
+      if (s.subtasks) s.subtasks = fixSubtasks(s.subtasks);
+      else s.subtasks = [];
+      return s;
+    });
+  }
+  function fixProjects(val) {
+    if (!val) return [];
+    var arr = Array.isArray(val) ? val : Object.values(val);
+    return arr.filter(Boolean).map(function(p) {
+      if (p && p.subtasks) p.subtasks = fixSubtasks(p.subtasks);
+      if (p && !p.subtasks) p.subtasks = [];
+      p.expanded = false;
+      return p;
+    });
+  }
+
   // Storage key constants (duplicated from main IIFE scope for cross-IIFE access)
   const STORE_KEY        = 'project-flow-graph-v2';
   const CATEGORIES_KEY   = 'project-flow-categories';
@@ -6637,9 +6669,9 @@ if ('serviceWorker' in navigator) {
         // resurrecting the previous account's data.
         window._pf.setCategories(catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)) : []);
         window._pf.saveCategories();
-        window._pf.setProjects(projVal ? (Array.isArray(projVal) ? projVal : Object.values(projVal)) : []);
-        window._pf.setArchive(archVal ? (Array.isArray(archVal) ? archVal : Object.values(archVal)) : []);
-        window._pf.setTrash(trashVal ? (Array.isArray(trashVal) ? trashVal : Object.values(trashVal)) : []);
+        window._pf.setProjects(fixProjects(projVal));
+        window._pf.setArchive(fixProjects(archVal));
+        window._pf.setTrash(fixProjects(trashVal));
         window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
         updateLastSync();
         localStorage.removeItem(NEEDS_PULL_KEY);
@@ -6683,9 +6715,9 @@ if ('serviceWorker' in navigator) {
             const archVal = results[2].val();
             const trashVal = results[3].val();
             if (catVal) { window._pf.setCategories(Array.isArray(catVal) ? catVal : Object.values(catVal)); window._pf.saveCategories(); }
-            if (projVal) { window._pf.setProjects(Array.isArray(projVal) ? projVal : Object.values(projVal)); }
-            if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal : Object.values(archVal));
-            if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal : Object.values(trashVal));
+            if (projVal) { window._pf.setProjects(fixProjects(projVal)); }
+            if (archVal) window._pf.setArchive(fixProjects(archVal));
+            if (trashVal) window._pf.setTrash(fixProjects(trashVal));
             window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
             updateLastSync();
             localStorage.removeItem(NEEDS_PULL_KEY);
@@ -6732,6 +6764,7 @@ if ('serviceWorker' in navigator) {
   });
 
   function _doSignout() {
+    if (!confirm('Sign out? Your local data on this device will be cleared until you sign back in.')) return;
     if (window._pf && window._pf.stopAutoBackup) window._pf.stopAutoBackup();
     auth.signOut().then(function() {
       try { clearLocalUserData(); } catch (e) {}
@@ -6806,23 +6839,6 @@ if ('serviceWorker' in navigator) {
       const archVal = results[2].val();
       const trashVal = results[3].val();
       if (!projVal && !catVal) { window._pf.showToast('⚠ No data found in cloud', true); return; }
-      function fixSubtasks(list) {
-        if (!list) return [];
-        if (!Array.isArray(list)) list = Object.values(list);
-        return list.map(function(s) {
-          if (s && s.subtasks) s.subtasks = fixSubtasks(s.subtasks);
-          return s;
-        });
-      }
-      function fixProjects(val) {
-        var arr = Array.isArray(val) ? val : Object.values(val);
-        return arr.filter(Boolean).map(function(p) {
-          if (p && p.subtasks) p.subtasks = fixSubtasks(p.subtasks);
-          if (!p.subtasks) p.subtasks = [];
-          p.expanded = false;
-          return p;
-        });
-      }
       if (catVal) {
         const c = Array.isArray(catVal) ? catVal : Object.values(catVal);
         window._pf.setCategories(c.filter(Boolean));
@@ -6837,8 +6853,8 @@ if ('serviceWorker' in navigator) {
           if (uniqueCats.length) { window._pf.setCategories(uniqueCats); window._pf.saveCategories(); }
         }
       }
-      if (archVal) window._pf.setArchive(Array.isArray(archVal) ? archVal.filter(Boolean) : Object.values(archVal).filter(Boolean));
-      if (trashVal) window._pf.setTrash(Array.isArray(trashVal) ? trashVal.filter(Boolean) : Object.values(trashVal).filter(Boolean));
+      if (archVal) window._pf.setArchive(fixProjects(archVal));
+      if (trashVal) window._pf.setTrash(fixProjects(trashVal));
       db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
         if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
       });
@@ -6862,7 +6878,7 @@ if ('serviceWorker' in navigator) {
     _fbListener = _fbListenerUserRef.on('value', function(snap) {
       const val = snap.val();
       if (!val) return;
-      const remote = Array.isArray(val) ? val : Object.values(val);
+      const remote = fixProjects(val);
       const localStr = JSON.stringify(window._pf.getProjects());
       const remoteStr = JSON.stringify(remote);
       if (remoteStr !== localStr) {
