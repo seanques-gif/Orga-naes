@@ -6703,6 +6703,11 @@ if ('serviceWorker' in navigator) {
 
   signinBtn.addEventListener('click', function() {
     const provider = new firebase.auth.GoogleAuthProvider();
+    // Without this, Google silently reuses whatever account is already
+    // cached in the browser/OS session instead of showing the account
+    // chooser — on iOS Safari especially, this means sign-in always
+    // lands on the same account with no way to pick a different one.
+    provider.setCustomParameters({ prompt: 'select_account' });
     auth.signInWithPopup(provider).catch(function(err) {
       if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
         auth.signInWithRedirect(provider);
