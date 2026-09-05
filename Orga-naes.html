@@ -6826,8 +6826,7 @@ if ('serviceWorker' in navigator) {
 
   function _doPull() {
     if (!_fbUser) { window._pf.showToast('⚠ Sign in first to pull', true); return; }
-    window._pf.showToast('☁ Pulling from cloud...');
-    if (window._pf && window._pf.snapshot) window._pf.snapshot();
+    window._pf.showToast('☁ Checking cloud data...');
     Promise.all([
       userRef().once('value'),
       catRef().once('value'),
@@ -6839,29 +6838,55 @@ if ('serviceWorker' in navigator) {
       const archVal = results[2].val();
       const trashVal = results[3].val();
       if (!projVal && !catVal) { window._pf.showToast('⚠ No data found in cloud', true); return; }
-      if (catVal) {
-        const c = Array.isArray(catVal) ? catVal : Object.values(catVal);
-        window._pf.setCategories(c.filter(Boolean));
-        window._pf.saveCategories();
-      }
-      if (projVal) {
-        const p = fixProjects(projVal);
-        window._pf.setProjects(p);
-        const cats = window._pf.getCategories();
-        if (!cats || !cats.length) {
-          const uniqueCats = [...new Set(p.map(pr => pr.category).filter(Boolean))];
-          if (uniqueCats.length) { window._pf.setCategories(uniqueCats); window._pf.saveCategories(); }
-        }
-      }
-      if (archVal) window._pf.setArchive(fixProjects(archVal));
-      if (trashVal) window._pf.setTrash(fixProjects(trashVal));
+
+      const remoteProjects = fixProjects(projVal);
+      const localProjects = window._pf.getProjects();
+      const localStr = JSON.stringify(localProjects);
+      const remoteStr = JSON.stringify(remoteProjects);
+
+      const remoteCategories = catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)).filter(Boolean) : [];
+      const remoteArchive = fixProjects(archVal);
+      const remoteTrash = fixProjects(trashVal);
+      const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
+      const archMatch = JSON.stringify(remoteArchive) === JSON.stringify(window._pf.getArchive() || []);
+      const trashMatch = JSON.stringify(remoteTrash) === JSON.stringify(window._pf.getTrash() || []);
+
       db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
         if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
       });
+
+      if (remoteStr === localStr && catsMatch && archMatch && trashMatch) {
+        window._pf.showToast('✅ Local data already matches the cloud');
+        localStorage.removeItem(NEEDS_PULL_KEY);
+        return;
+      }
+
+      if (remoteStr !== localStr) {
+        // Projects differ from what's on this device — show the same
+        // local-vs-cloud comparison the realtime listener uses instead of
+        // silently overwriting. The user picks which side to keep.
+        // "Keep Remote" also needs categories/archive/trash, which aren't
+        // otherwise available to that handler — stash them here.
+        if (window._pf && window._pf.snapshot) window._pf.snapshot();
+        _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, trash: remoteTrash };
+        showConflictModal(localProjects, remoteProjects);
+        localStorage.removeItem(NEEDS_PULL_KEY);
+        return;
+      }
+
+      // Projects match, but categories/archive/trash don't — there's
+      // nothing for the project-comparison modal to show here, so just
+      // pull in whichever of these differ and say exactly what changed,
+      // rather than reporting "already up to date" while quietly leaving
+      // them stale (the bug this replaces).
+      const updated = [];
+      if (!catsMatch) { window._pf.setCategories(remoteCategories); window._pf.saveCategories(); updated.push('categories'); }
+      if (!archMatch) { window._pf.setArchive(remoteArchive); updated.push('archive'); }
+      if (!trashMatch) { window._pf.setTrash(remoteTrash); updated.push('trash'); }
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
       updateLastSync();
       localStorage.removeItem(NEEDS_PULL_KEY);
-      window._pf.showToast('⬇ Pulled from cloud');
+      window._pf.showToast('⬇ Updated from cloud: ' + updated.join(', '));
     }).catch(function(err) {
       window._pf.showToast('⚠ Pull failed: ' + (err.message || err), true);
     });
@@ -7043,10 +7068,55 @@ if ('serviceWorker' in navigator) {
     if (!_fbUser) { window._pf.showToast('⚠ Sign in first to push', true); return; }
     if (!navigator.onLine) { window._pf.showToast('⚠ You are offline — will sync when back online', true); _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
-    pushWithTimestamp().then(function() {
-      window._pf.showToast('☁ Pushed to cloud');
+    window._pf.showToast('☁ Checking cloud data...');
+    Promise.all([
+      userRef().once('value'),
+      catRef().once('value'),
+      archiveRef().once('value'),
+      trashRef().once('value')
+    ]).then(function(results) {
+      const projVal = results[0].val();
+      const catVal = results[1].val();
+      const archVal = results[2].val();
+      const trashVal = results[3].val();
+      const remoteProjects = fixProjects(projVal);
+      const localProjects = window._pf.getProjects();
+      const localStr = JSON.stringify(localProjects);
+      const remoteStr = JSON.stringify(remoteProjects);
+
+      const remoteCategories = catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)).filter(Boolean) : [];
+      const remoteArchive = fixProjects(archVal);
+      const remoteTrash = fixProjects(trashVal);
+      const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
+      const archMatch = JSON.stringify(remoteArchive) === JSON.stringify(window._pf.getArchive() || []);
+      const trashMatch = JSON.stringify(remoteTrash) === JSON.stringify(window._pf.getTrash() || []);
+      const fullMatch = remoteStr === localStr && catsMatch && archMatch && trashMatch;
+
+      if (projVal && fullMatch) {
+        window._pf.showToast('✅ Already up to date with cloud');
+        return;
+      }
+
+      if (!projVal || remoteStr === localStr) {
+        // Nothing in the cloud yet, or projects already match this device
+        // (though categories/archive/trash may not — pushWithTimestamp()
+        // sends all of it, so this still resolves that divergence too).
+        pushWithTimestamp().then(function() {
+          window._pf.showToast('☁ Pushed to cloud');
+        }).catch(function(err) {
+          window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+        });
+        return;
+      }
+
+      // Cloud has different project data than this device — probably
+      // edited on another device since the last sync. Show the same
+      // local-vs-cloud comparison instead of silently overwriting it.
+      if (window._pf && window._pf.snapshot) window._pf.snapshot();
+      _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, trash: remoteTrash };
+      showConflictModal(localProjects, remoteProjects);
     }).catch(function(err) {
-      window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+      window._pf.showToast('⚠ Failed to check cloud data: ' + (err && err.message ? err.message : 'unknown error'), true);
     });
   };
   if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
@@ -7141,6 +7211,12 @@ if ('serviceWorker' in navigator) {
   // Conflict modal logic
   let _lastPushedSnapshot = '';
   let _pendingRemote = null;
+  // Populated only when the conflict modal was opened from a manual Pull
+  // (which also fetched categories/archive/trash alongside projects) so
+  // "Keep Remote" can apply all of it, not just projects. Left null when
+  // the modal was opened from the realtime listener or a manual Push,
+  // neither of which have this extra data on hand.
+  let _pendingPullExtras = null;
   // Presents local versus cloud state; the user explicitly chooses which version wins.
   function showConflictModal(local, remote) {
     _pendingRemote = remote;
@@ -7178,6 +7254,8 @@ if ('serviceWorker' in navigator) {
   }
   document.getElementById('pf-conflict-keep-local').addEventListener('click', function() {
     document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
+    _pendingRemote = null;
+    _pendingPullExtras = null;
     pushWithTimestamp().then(function() {
       window._pf.showToast('✅ Kept local data & pushed to cloud');
     }).catch(function(err) {
@@ -7188,12 +7266,18 @@ if ('serviceWorker' in navigator) {
     document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
     if (_pendingRemote) {
       window._pf.setProjects(_pendingRemote);
-      window._pf.scheduleSave(); window._pf.render();
+      if (_pendingPullExtras) {
+        if (_pendingPullExtras.categories) { window._pf.setCategories(_pendingPullExtras.categories); window._pf.saveCategories(); }
+        window._pf.setArchive(_pendingPullExtras.archive);
+        window._pf.setTrash(_pendingPullExtras.trash);
+      }
+      window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
       _lastPushedSnapshot = JSON.stringify(_pendingRemote);
       updateLastSync();
       window._pf.showToast('☁ Using cloud data');
     }
     _pendingRemote = null;
+    _pendingPullExtras = null;
   });
 
   // Connection indicator
