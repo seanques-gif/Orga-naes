@@ -2182,6 +2182,34 @@
     if (listViewActive) { renderSplitList(); renderSplitDetail(); }
     else { autoArrangeProjects(true); }
   }
+  // Foreground-first Escape support: a handful of overlay "kinds" (the
+  // modal group, the project detail view, and — registered from outside
+  // this closure — the sync conflict modal) can all be open at once,
+  // stacked on top of each other in whatever order the user opened them.
+  // Escape must always close whichever of those is actually on top, not
+  // whichever happens to sit first in the fixed _escDismissables list
+  // below. _markOverlayOpen() is called at every place one of these kinds
+  // opens; handleEscape() then picks, among the tagged entries that are
+  // still open, the one with the highest (most recent) stamp.
+  //
+  // That stamped comparison only decides ordering AMONG the tagged kinds
+  // themselves, though — it says nothing about the small transient
+  // floating elements below (context menus, dropdowns, the status menu,
+  // multi-select bars, the paste-armed hint, the save dialog). Those are
+  // rendered on top of literally everything else, including an open modal
+  // or the detail view, the instant they appear, so they must always be
+  // checked — and closed — before any tagged/stamped entry is even
+  // considered, no matter which has the newer stamp. Likewise `search` and
+  // the final catch-all are intentionally lower priority than the tagged
+  // kinds (matching the original behavior), so they're checked last of all.
+  //
+  // Hence three tiers, checked in this order:
+  //   1. untagged, non-`low` entries — always-topmost transient popovers
+  //   2. `key`-tagged entries — stackable overlays, most-recent stamp wins
+  //   3. `low`-tagged entries — search, then the closeAllModals() catch-all
+  let _overlayCounter = 0;
+  const _overlayStamps = {};
+  function _markOverlayOpen(key) { _overlayStamps[key] = ++_overlayCounter; }
   const _escDismissables = [
     { check: () => _pasteArmed, run: () => { _pasteArmed = false; root.classList.remove('pf-paste-armed'); showToast('Paste canceled'); } },
     { check: () => !!_saveModalEl, run: () => { if (_saveModalEl) { _saveModalEl.remove(); _saveModalEl = null; } } },
@@ -2190,20 +2218,43 @@
     { check: () => !!root.querySelector('.pf-dep-dropdown'), run: () => { const dd = root.querySelector('.pf-dep-dropdown'); if (dd) dd.remove(); } },
     { check: () => _splitCatMultiSelect.length, run: () => { _splitCatMultiSelect = []; renderSplitList(); } },
     { check: () => splitMultiSelect.length, run: () => { splitMultiSelect = []; renderSplitList(); renderSplitDetail(); } },
-    { check: () => todayPanel && todayPanel.style.display !== 'none', run: () => { closeAllModals(); } },
-    { check: () => duelistPanel && duelistPanel.style.display !== 'none', run: () => { closeAllModals(); } },
-    { check: () => calendarPanel && calendarPanel.style.display !== 'none', run: () => { closeAllModals(); } },
+    { key: 'modals', check: () => todayPanel && todayPanel.style.display !== 'none', run: () => { closeAllModals(); } },
+    { key: 'modals', check: () => duelistPanel && duelistPanel.style.display !== 'none', run: () => { closeAllModals(); } },
+    { key: 'modals', check: () => calendarPanel && calendarPanel.style.display !== 'none', run: () => { closeAllModals(); } },
     { check: () => _duelistReturnOnEsc, run: () => { _duelistReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderDueList(); openModal(duelistPanel, 'flex'); showToast('Press Esc to exit Tasks by Due Date'); } },
     { check: () => _todayReturnOnEsc, run: () => { _todayReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderTodayList(); openModal(todayPanel, 'flex'); showToast('Press Esc to exit Today\'s Focus'); } },
     { check: () => _calendarReturnOnEsc, run: () => { _calendarReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderCalendar(); openModal(calendarPanel, 'flex'); showToast('Press Esc to exit Calendar'); } },
     { check: () => subMultiSelect.length, run: () => { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); } },
-    { check: () => ALL_MODALS.some(m => m && m.style.display !== 'none'), run: () => { closeAllModals(); } },
-    { check: () => root.classList.contains('pf-detail-open'), run: () => { _goBackToProjects(); } },
-    { check: () => searchTerm || searchWrap.classList.contains('pf-search-open'), run: () => { _clearSearch(); _refreshView(); } },
-    { check: () => true, run: () => { closeAllModals(); } }
+    { key: 'modals', check: () => ALL_MODALS.some(m => m && m.style.display !== 'none'), run: () => { closeAllModals(); } },
+    { key: 'detail', check: () => root.classList.contains('pf-detail-open'), run: () => { _goBackToProjects(); } },
+    { low: true, check: () => searchTerm || searchWrap.classList.contains('pf-search-open'), run: () => { _clearSearch(); _refreshView(); } },
+    { low: true, check: () => true, run: () => { closeAllModals(); } }
   ];
   function handleEscape() {
-    for (const d of _escDismissables) { if (d.check()) { d.run(); return; } }
+    // Tier 1: always-topmost transient popovers, in their original order —
+    // these sit visually above everything else the instant they're open,
+    // so they must win over a modal/detail view underneath them regardless
+    // of stamps.
+    for (const d of _escDismissables) {
+      if (!d.key && !d.low && d.check()) { d.run(); return; }
+    }
+    // Tier 2: tagged stackable overlays — the most recently opened one
+    // wins, so e.g. a sync conflict modal opened on top of the detail view
+    // closes before the detail view does, even though the detail-view
+    // check sits earlier in the array above.
+    let best = null;
+    for (const d of _escDismissables) {
+      if (d.key && d.check()) {
+        const stamp = _overlayStamps[d.key] || 0;
+        if (!best || stamp > best.stamp) best = { entry: d, stamp: stamp };
+      }
+    }
+    if (best) { best.entry.run(); return; }
+    // Tier 3: low-priority fallbacks (search, then the generic catch-all),
+    // in their original order.
+    for (const d of _escDismissables) {
+      if (d.low && d.check()) { d.run(); return; }
+    }
   }
   // Dev-only self-check: warns if a modal/panel/popover-like element exists
   // that isn't covered by ALL_MODALS (the generic Escape fallback) and isn't
@@ -2479,7 +2530,7 @@
   const copyModal = document.getElementById('pf-copy-modal');
   const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal];
   function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
-  function openModal(el, displayValue) { closeAllModals(); el.style.display = displayValue; modalBackdrop.style.display = 'block'; }
+  function openModal(el, displayValue) { closeAllModals(); el.style.display = displayValue; modalBackdrop.style.display = 'block'; _markOverlayOpen('modals'); }
   modalBackdrop.addEventListener('click', closeAllModals);
 
   ALL_MODALS.forEach(panel => {
@@ -3779,7 +3830,7 @@
       splitMultiSelect = [];
       splitSelectedId = id;
       renderSplitList(); renderSplitDetail();
-      root.classList.add('pf-detail-open');
+      root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
       if (window.innerWidth <= 1024 && 'ontouchstart' in window) root.classList.add('pf-mobile-detail-open');
       if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = '';
     }, 200);
@@ -4699,7 +4750,7 @@
         searchTerm = t.title;
         _searchAutoCollapseId = null;
         renderSplitList(); renderSplitDetail();
-        root.classList.add('pf-detail-open');
+        root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
         if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
         searchTerm = '';
         const el = splitList.querySelector('.pf-split-active'); if (el) el.scrollIntoView({ block: 'nearest' });
@@ -4756,7 +4807,7 @@
           searchTerm = it.subTitle || it.title;
           _searchAutoCollapseId = null;
           renderSplitList(); renderSplitDetail();
-          root.classList.add('pf-detail-open');
+          root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
           if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
           searchTerm = '';
         } else {
@@ -4854,7 +4905,7 @@
         searchTerm = taskTitle;
         _searchAutoCollapseId = null;
         renderSplitList(); renderSplitDetail();
-        root.classList.add('pf-detail-open');
+        root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
         if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
         searchTerm = '';
         const active = splitList.querySelector('.pf-split-active'); if (active) active.scrollIntoView({ block: 'nearest' });
@@ -5037,7 +5088,7 @@
             searchTerm = t.title;
             _searchAutoCollapseId = null;
             renderSplitList(); renderSplitDetail();
-            root.classList.add('pf-detail-open');
+            root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
             if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
             searchTerm = '';
             const active = splitList.querySelector('.pf-split-active'); if (active) active.scrollIntoView({ block: 'nearest' });
@@ -6452,9 +6503,18 @@
     // Lets code outside this IIFE (e.g. the Firebase sync conflict modal,
     // which isn't part of ALL_MODALS) add its own Escape-key dismissal
     // without this closure needing to know about that modal directly.
-    // Registered entries are checked before the generic modal fallback so
-    // a blocking modal like the conflict dialog takes priority.
-    registerEscDismissable: (entry) => { _escDismissables.splice(_escDismissables.length - 1, 0, entry); }
+    // Position in this array no longer determines priority for tagged,
+    // stackable overlays (see `key`/_markOverlayOpen in handleEscape) — the
+    // conflict modal is tagged 'conflict' by the Firebase sync IIFE (via
+    // markOverlayOpen below) at the moment it's actually shown, so Escape
+    // correctly closes it first whenever it's opened on top of something
+    // else (e.g. the project detail view), regardless of where this entry
+    // sits in the list.
+    registerEscDismissable: (entry) => { _escDismissables.unshift(entry); },
+    // Lets code outside this closure (e.g. the sync conflict modal) record
+    // the moment it opened, so handleEscape can tell it apart from other
+    // stackable overlays that may already be open underneath it.
+    markOverlayOpen: (key) => _markOverlayOpen(key)
   };
 
   // Pull-to-refresh (disabled)
@@ -7313,6 +7373,7 @@ if ('serviceWorker' in navigator) {
   }
   if (window._pf && window._pf.registerEscDismissable) {
     window._pf.registerEscDismissable({
+      key: 'conflict',
       check: () => document.getElementById('pf-conflict-modal').classList.contains('pf-conflict-open'),
       run: dismissConflictModal
     });
@@ -7459,6 +7520,7 @@ if ('serviceWorker' in navigator) {
     localEl.innerHTML = '<b>Local:</b> ' + local.length + ' projects · ' + localStats.tasks + ' tasks · ' + localStats.completed + ' done' + (localBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + localBadge + '</span>' : '');
     remoteEl.innerHTML = '<b>Cloud:</b> ' + remote.length + ' projects · ' + remoteStats.tasks + ' tasks · ' + remoteStats.completed + ' done' + (remoteBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + remoteBadge + '</span>' : '') + '<br><br>' + diffHtml;
     modal.classList.add('pf-conflict-open');
+    if (window._pf && window._pf.markOverlayOpen) window._pf.markOverlayOpen('conflict');
   }
   document.getElementById('pf-conflict-keep-local').addEventListener('click', function() {
     // Overwriting the cloud can permanently discard changes that only
