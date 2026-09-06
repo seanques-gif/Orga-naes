@@ -8,7 +8,21 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((c) =>
+      Promise.all(
+        ASSETS.map((url) =>
+          c.add(url).catch((err) => {
+            // Don't let one missing/failed asset abort the entire install —
+            // addAll() is all-or-nothing and a single 404 would otherwise
+            // leave the service worker permanently stuck at "installing",
+            // which shows as the app hanging on its launch icon.
+            console.warn('[sw] failed to precache', url, err);
+          })
+        )
+      )
+    )
+  );
   self.skipWaiting();
 });
 
