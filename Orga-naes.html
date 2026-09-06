@@ -7552,6 +7552,22 @@ if ('serviceWorker' in navigator) {
       }
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
       _lastPushedSnapshot = JSON.stringify(normalizeForSync(remoteToApply));
+      // scheduleSave() above will fire the debounced autosync push a few
+      // seconds from now (fsAutoSaveHook -> _firebasePush -> pushSelective).
+      // pushSelective() decides what's "changed" by diffing against
+      // _lastPushedHash/_lastPushedIdOrder/_lastPushedCatHash — if those are
+      // left stale from before this resolution, they still reflect the OLD
+      // local data, so the freshly-adopted (and already-matching-cloud)
+      // data looks like unpushed local edits. That triggers a needless
+      // partial/index-keyed push moments later, which can nudge the cloud
+      // just enough that the next manual push/pull sees a phantom conflict
+      // again — exactly what "Keep Local & Push" avoids by calling
+      // pushWithTimestamp() (which resets all three). Reset them here too,
+      // to what was actually just adopted, so the pending autosync push
+      // correctly finds nothing left to do.
+      _lastPushedHash = buildHashMap(remoteToApply);
+      _lastPushedIdOrder = remoteToApply.map(p => p.id);
+      _lastPushedCatHash = JSON.stringify((extrasToApply && extrasToApply.categories) ? extrasToApply.categories : window._pf.getCategories());
       updateLastSync();
       window._pf.showToast('☁ Using cloud data');
     }
