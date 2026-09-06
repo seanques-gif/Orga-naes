@@ -7642,6 +7642,21 @@ if ('serviceWorker' in navigator) {
       resetPushBookkeeping(preMutationProjects, categoriesToApply, archiveToApply, trashToApply);
       updateLastSync();
       window._pf.showToast('☁ Using cloud data');
+      // scheduleSave() above runs autoUpdateStatuses() synchronously (before its
+      // own debounced localStorage write), so if it "corrected" a project's
+      // status/completedAt, that correction already exists in the live
+      // `projects` array right now — it just hasn't reached the cloud yet.
+      // Left alone, that only happens via the normal autosync hook, which is
+      // debounced twice (scheduleSave's 350ms, then pushSelective's own
+      // PUSH_DEBOUNCE_MS on top) — a window of a few seconds where local and
+      // cloud genuinely differ. A manual push (Ctrl+S) inside that window reads
+      // the still-stale cloud value and reopens this same conflict modal for
+      // data that's about to reconcile itself anyway. Pushing immediately here
+      // (bypassing the debounce) closes that window instead of waiting it out.
+      if (_fbAutosync && _fbUser) {
+        clearTimeout(_fbPushTimer);
+        pushSelective();
+      }
     }
   });
 
