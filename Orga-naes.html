@@ -7513,7 +7513,15 @@ if ('serviceWorker' in navigator) {
         if (key === 'status') return { label: 'status', val: val };
         if (key === 'title') return { label: 'title', val: '"' + val + '"' };
         if (key === 'dueAt') return { label: 'due date', val: val ? new Date(val).toLocaleDateString() : 'none' };
-        return null; // other fields (createdAt, completedAt, expanded, id) are noise, not worth naming
+        // completedAt is tracked (see the fields list below) because the app's
+        // auto-status-correction logic (checkAllCompleted/autoUpdateStatuses)
+        // can silently rewrite it independent of any field a user edited
+        // directly. Leaving it untracked meant a project could be flagged
+        // "Modified (in both, but different)" with literally nothing shown
+        // in the diff — which is confusing and looks like a false positive
+        // even when the underlying mismatch is real.
+        if (key === 'completedAt') return { label: 'completed on', val: val ? new Date(val).toLocaleDateString() : 'not completed' };
+        return null; // other fields (createdAt, expanded, id) are noise, not worth naming
       }
       function diffSubtasks(localSubs, remoteSubs) {
         const entries = []; // { title, kind: 'added'|'removed'|'changed', fields: [{label, from, to}] }
@@ -7524,7 +7532,7 @@ if ('serviceWorker' in navigator) {
           const r = rMap[s.id];
           if (!r) { entries.push({ title: s.title || 'Untitled', kind: 'removed' }); return; }
           const fields = [];
-          ['title', 'status', 'dueAt'].forEach(function(key) {
+          ['title', 'status', 'dueAt', 'completedAt'].forEach(function(key) {
             // Normalize null/undefined/'' to the same sentinel before comparing —
             // Firebase strips `null` fields on write, so a local `dueAt: null`
             // and a remote missing `dueAt` key are the same "no due date", not a
