@@ -7365,16 +7365,28 @@ if ('serviceWorker' in navigator) {
           if (!r) { entries.push({ title: s.title || 'Untitled', kind: 'removed' }); return; }
           const fields = [];
           ['title', 'status', 'dueAt'].forEach(function(key) {
-            // Normalize null/undefined to the same sentinel before comparing —
+            // Normalize null/undefined/'' to the same sentinel before comparing —
             // Firebase strips `null` fields on write, so a local `dueAt: null`
-            // and a remote missing `dueAt` key are the same "no due date",
-            // not a real change.
-            const sVal = (s[key] === null || typeof s[key] === 'undefined') ? null : s[key];
-            const rVal = (r[key] === null || typeof r[key] === 'undefined') ? null : r[key];
-            if (JSON.stringify(sVal) !== JSON.stringify(rVal)) {
-              const from = fieldLabel(key, sVal);
-              const to = fieldLabel(key, rVal);
-              if (from && to) fields.push({ label: from.label, from: from.val, to: to.val });
+            // and a remote missing `dueAt` key are the same "no due date", not a
+            // real change. Empty string is included too: it's another "empty"
+            // representation that fieldLabel() below renders identically to
+            // null/undefined, so it must be treated the same way going in.
+            function norm(v) {
+              if (v === null || typeof v === 'undefined' || v === '') return null;
+              if (key === 'title' && typeof v === 'string') return v.trim();
+              return v;
+            }
+            const sVal = norm(s[key]);
+            const rVal = norm(r[key]);
+            const from = fieldLabel(key, sVal);
+            const to = fieldLabel(key, rVal);
+            // Compare the rendered label, not the raw value. This is the real
+            // safeguard: even if some other falsy variant slips past norm(),
+            // two values that display identically (e.g. both show as "none")
+            // can never be reported as a "changed" field — which previously
+            // produced unresolvable phantom conflicts like "due date: none → none".
+            if (from && to && JSON.stringify(from.val) !== JSON.stringify(to.val)) {
+              fields.push({ label: from.label, from: from.val, to: to.val });
             }
           });
           if (fields.length) entries.push({ title: s.title || 'Untitled', kind: 'changed', fields: fields });
