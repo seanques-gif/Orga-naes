@@ -3213,8 +3213,7 @@
     const btn = document.createElement('button');
     btn.type = 'button';
     function refresh() {
-      if (!subtask.blockedBy) subtask.blockedBy = [];
-      const count = subtask.blockedBy.length;
+      const count = subtask.blockedBy ? subtask.blockedBy.length : 0;
       const unresolved = getUnresolvedBlockers(project, subtask);
       btn.textContent = '🔗';
       btn.className = 'pf-dep-chip' + (unresolved.length ? ' pf-dep-blocked' : (count ? ' pf-dep-set' : ''));
@@ -6737,6 +6736,13 @@ if ('serviceWorker' in navigator) {
       Object.keys(copy).forEach(function(key) {
         if (copy[key] === null || typeof copy[key] === 'undefined') delete copy[key];
       });
+      // An empty blockedBy array is equivalent to no dependency at all — but
+      // some render/init code has historically written blockedBy: [] onto a
+      // subtask just to give it a default, with no real edit involved. If we
+      // compared that raw, an untouched subtask could look "changed" purely
+      // because it was rendered once. Normalize the empty-array case away so
+      // only an actual dependency (non-empty blockedBy) counts as a change.
+      if (Array.isArray(copy.blockedBy) && copy.blockedBy.length === 0) delete copy.blockedBy;
       if (Array.isArray(copy.subtasks)) copy.subtasks = normalizeForSync(copy.subtasks);
       return copy;
     });
