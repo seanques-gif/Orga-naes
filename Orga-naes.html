@@ -6408,7 +6408,13 @@
     },
     escapeHtml: (s) => escapeHtml(s),
     todayLocalStr: () => todayLocalStr(),
-    clearIdbSnapshots: () => clearIdbSnapshots()
+    clearIdbSnapshots: () => clearIdbSnapshots(),
+    // Lets code outside this IIFE (e.g. the Firebase sync conflict modal,
+    // which isn't part of ALL_MODALS) add its own Escape-key dismissal
+    // without this closure needing to know about that modal directly.
+    // Registered entries are checked before the generic modal fallback so
+    // a blocking modal like the conflict dialog takes priority.
+    registerEscDismissable: (entry) => { _escDismissables.splice(_escDismissables.length - 1, 0, entry); }
   };
 
   // Pull-to-refresh (disabled)
@@ -7217,6 +7223,21 @@ if ('serviceWorker' in navigator) {
   // the modal was opened from the realtime listener or a manual Push,
   // neither of which have this extra data on hand.
   let _pendingPullExtras = null;
+  // Closes the modal without applying either side — the Escape-key
+  // equivalent of Cancel. Safe to leave unresolved: the same conflict
+  // will simply be re-detected and re-shown on the next sync/listener
+  // event, since neither local nor cloud data was touched.
+  function dismissConflictModal() {
+    document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
+    _pendingRemote = null;
+    _pendingPullExtras = null;
+  }
+  if (window._pf && window._pf.registerEscDismissable) {
+    window._pf.registerEscDismissable({
+      check: () => document.getElementById('pf-conflict-modal').classList.contains('pf-conflict-open'),
+      run: dismissConflictModal
+    });
+  }
   // Presents local versus cloud state; the user explicitly chooses which version wins.
   function showConflictModal(local, remote) {
     _pendingRemote = remote;
@@ -7353,9 +7374,7 @@ if ('serviceWorker' in navigator) {
     // matching the pattern used elsewhere (backup restore) for
     // destructive, one-way actions.
     if (!confirm('This will overwrite the cloud with your local data. Any cloud-only changes will be lost. Continue?')) return;
-    document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
-    _pendingRemote = null;
-    _pendingPullExtras = null;
+    dismissConflictModal();
     pushWithTimestamp().then(function() {
       window._pf.showToast('✅ Kept local data & pushed to cloud');
     }).catch(function(err) {
@@ -7367,21 +7386,21 @@ if ('serviceWorker' in navigator) {
     // (local-only projects, unsynced edits). Confirm first, same as
     // Keep Local, so neither side of this decision is a single misclick.
     if (!confirm('This will replace your local data with the cloud version. Any local-only changes will be lost. Continue?')) return;
-    document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
-    if (_pendingRemote) {
-      window._pf.setProjects(_pendingRemote);
-      if (_pendingPullExtras) {
-        if (_pendingPullExtras.categories) { window._pf.setCategories(_pendingPullExtras.categories); window._pf.saveCategories(); }
-        window._pf.setArchive(_pendingPullExtras.archive);
-        window._pf.setTrash(_pendingPullExtras.trash);
+    const remoteToApply = _pendingRemote;
+    const extrasToApply = _pendingPullExtras;
+    dismissConflictModal();
+    if (remoteToApply) {
+      window._pf.setProjects(remoteToApply);
+      if (extrasToApply) {
+        if (extrasToApply.categories) { window._pf.setCategories(extrasToApply.categories); window._pf.saveCategories(); }
+        window._pf.setArchive(extrasToApply.archive);
+        window._pf.setTrash(extrasToApply.trash);
       }
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
-      _lastPushedSnapshot = JSON.stringify(_pendingRemote);
+      _lastPushedSnapshot = JSON.stringify(remoteToApply);
       updateLastSync();
       window._pf.showToast('☁ Using cloud data');
     }
-    _pendingRemote = null;
-    _pendingPullExtras = null;
   });
 
   // Connection indicator
