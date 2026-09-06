@@ -1846,7 +1846,7 @@
         <div class="pf-conflict-col"><div class="pf-conflict-col-title">☁️ Cloud</div><div id="pf-conflict-remote"></div></div>
       </div>
       <div class="pf-conflict-btns">
-        <button id="pf-conflict-keep-local">Keep Local</button>
+        <button id="pf-conflict-keep-local">Keep Local &amp; Push</button>
         <button id="pf-conflict-keep-remote" class="pf-conflict-primary">Use Cloud</button>
       </div>
     </div>
@@ -7223,6 +7223,7 @@ if ('serviceWorker' in navigator) {
     const modal = document.getElementById('pf-conflict-modal');
     const localEl = document.getElementById('pf-conflict-local');
     const remoteEl = document.getElementById('pf-conflict-remote');
+    const diffDetails = {};
     function countChanges(list) {
       let tasks = 0, completed = 0, ongoing = 0;
       list.forEach(p => { if (p.subtasks) p.subtasks.forEach(function walk(s) { tasks++; if (s.status === 'completed') completed++; if (s.status === 'ongoing') ongoing++; if (s.subtasks) s.subtasks.forEach(walk); }); });
@@ -7235,24 +7236,117 @@ if ('serviceWorker' in navigator) {
     const localBadge = localMore ? ' ⭐ More changes' : '';
     const remoteBadge = remoteMore ? ' ⭐ More changes' : '';
     function findDiffs(localList, remoteList) {
+      // Remote projects always come through fixProjects() with expanded
+      // forced to false, while local keeps whatever expand/collapse state
+      // the user left it in. Comparing raw JSON therefore flags a project
+      // as "Modified" just because it's expanded locally, even when
+      // nothing the user actually edited has changed. Strip UI-only state
+      // before comparing so the diff reflects real content differences.
+      function forDiff(p) {
+        if (!p || typeof p !== 'object') return p;
+        const copy = Array.isArray(p) ? p.map(forDiff) : Object.assign({}, p);
+        if (!Array.isArray(copy)) delete copy.expanded;
+        Object.keys(copy).forEach(function(key) {
+          if (key === 'subtasks' && Array.isArray(copy[key])) copy[key] = copy[key].map(forDiff);
+        });
+        return copy;
+      }
+      // Walks two subtask trees (by id) to describe what changed below a
+      // modified project — not just how many subtasks differ, but which
+      // ones and which fields, since "2 changed" alone isn't actionable.
+      function fieldLabel(key, val) {
+        if (key === 'status') return { label: 'status', val: val };
+        if (key === 'title') return { label: 'title', val: '"' + val + '"' };
+        if (key === 'dueAt') return { label: 'due date', val: val ? new Date(val).toLocaleDateString() : 'none' };
+        return null; // other fields (createdAt, completedAt, expanded, id) are noise, not worth naming
+      }
+      function diffSubtasks(localSubs, remoteSubs) {
+        const entries = []; // { title, kind: 'added'|'removed'|'changed', fields: [{label, from, to}] }
+        const lMap = {}; (localSubs || []).forEach(s => { lMap[s.id] = s; });
+        const rMap = {}; (remoteSubs || []).forEach(s => { rMap[s.id] = s; });
+        (remoteSubs || []).forEach(s => { if (!lMap[s.id]) entries.push({ title: s.title || 'Untitled', kind: 'added' }); });
+        (localSubs || []).forEach(s => {
+          const r = rMap[s.id];
+          if (!r) { entries.push({ title: s.title || 'Untitled', kind: 'removed' }); return; }
+          const fields = [];
+          ['title', 'status', 'dueAt'].forEach(function(key) {
+            if (JSON.stringify(s[key]) !== JSON.stringify(r[key])) {
+              const from = fieldLabel(key, s[key]);
+              const to = fieldLabel(key, r[key]);
+              if (from && to) fields.push({ label: from.label, from: from.val, to: to.val });
+            }
+          });
+          if (fields.length) entries.push({ title: s.title || 'Untitled', kind: 'changed', fields: fields });
+          entries.push.apply(entries, diffSubtasks(s.subtasks, r.subtasks));
+        });
+        return entries;
+      }
       const localMap = {}; localList.forEach(p => { localMap[p.id] = p; });
       const remoteMap = {}; remoteList.forEach(p => { remoteMap[p.id] = p; });
       const added = remoteList.filter(p => !localMap[p.id]);
       const removed = localList.filter(p => !remoteMap[p.id]);
-      const changed = localList.filter(p => remoteMap[p.id] && JSON.stringify(p) !== JSON.stringify(remoteMap[p.id]));
+      const changed = localList.filter(p => remoteMap[p.id] && JSON.stringify(forDiff(p)) !== JSON.stringify(forDiff(remoteMap[p.id])));
+      // Attach a subtask diff + whether the project's own fields (title,
+      // status, due date, etc.) changed, for display in the modal.
+      changed.forEach(p => {
+        const r = remoteMap[p.id];
+        const lShallow = Object.assign({}, p); delete lShallow.subtasks; delete lShallow.expanded;
+        const rShallow = Object.assign({}, r); delete rShallow.subtasks; delete rShallow.expanded;
+        diffDetails[p.id] = {
+          ownFields: JSON.stringify(lShallow) !== JSON.stringify(rShallow),
+          subtaskEntries: diffSubtasks(p.subtasks, r.subtasks)
+        };
+      });
       return { added, removed, changed };
     }
     const diffs = findDiffs(local, remote);
+    // Different projects can share the same title — most commonly several
+    // untitled cards all still called "New project". Listing bare titles
+    // then makes unrelated entries in different sections (or even the same
+    // section) look like duplicates or contradictions. When a title repeats
+    // within the full diff, tag each occurrence with a short id fragment so
+    // it's clear they're distinct projects.
+    const allDiffed = diffs.changed.concat(diffs.added, diffs.removed);
+    const titleCounts = {};
+    allDiffed.forEach(p => { const t = p.title || 'Untitled'; titleCounts[t] = (titleCounts[t] || 0) + 1; });
+    function labelFor(p) {
+      const t = p.title || 'Untitled';
+      const esc = window._pf.escapeHtml(t);
+      let label = esc;
+      if (titleCounts[t] > 1 && p.id) label += ' <span style="opacity:0.6;">(#' + window._pf.escapeHtml(p.id.slice(-4)) + ')</span>';
+      const details = diffDetails[p.id] || {};
+      if (details.ownFields) label += ' <span style="opacity:0.6;">(details changed)</span>';
+      const entries = details.subtaskEntries;
+      if (entries && entries.length) {
+        const shown = entries.slice(0, 4).map(function(e) {
+          const et = window._pf.escapeHtml(e.title);
+          if (e.kind === 'added') return '&nbsp;&nbsp;+ ' + et + ' <span style="opacity:0.6;">(added)</span>';
+          if (e.kind === 'removed') return '&nbsp;&nbsp;− ' + et + ' <span style="opacity:0.6;">(removed)</span>';
+          const fieldStr = e.fields.map(function(f) {
+            return f.label + ': ' + window._pf.escapeHtml(String(f.from)) + ' → ' + window._pf.escapeHtml(String(f.to));
+          }).join(', ');
+          return '&nbsp;&nbsp;~ ' + et + ' <span style="opacity:0.6;">(' + fieldStr + ')</span>';
+        });
+        const more = entries.length > 4 ? '<br>&nbsp;&nbsp;…+' + (entries.length - 4) + ' more' : '';
+        label += '<br>' + shown.join('<br>') + more;
+      }
+      return label;
+    }
     let diffHtml = '';
-    if (diffs.changed.length) diffHtml += '<b>Modified (' + diffs.changed.length + '):</b><br>' + diffs.changed.slice(0, 5).map(p => '• ' + window._pf.escapeHtml(p.title || 'Untitled')).join('<br>') + (diffs.changed.length > 5 ? '<br>…+' + (diffs.changed.length - 5) + ' more' : '') + '<br>';
-    if (diffs.added.length) diffHtml += '<b>Added in cloud (' + diffs.added.length + '):</b><br>' + diffs.added.slice(0, 3).map(p => '• ' + window._pf.escapeHtml(p.title || 'Untitled')).join('<br>') + '<br>';
-    if (diffs.removed.length) diffHtml += '<b>Removed in cloud (' + diffs.removed.length + '):</b><br>' + diffs.removed.slice(0, 3).map(p => '• ' + window._pf.escapeHtml(p.title || 'Untitled')).join('<br>') + '<br>';
+    if (diffs.changed.length) diffHtml += '<b>Modified (' + diffs.changed.length + '):</b><br>' + diffs.changed.slice(0, 5).map(p => '• ' + labelFor(p)).join('<br>') + (diffs.changed.length > 5 ? '<br>…+' + (diffs.changed.length - 5) + ' more' : '') + '<br>';
+    if (diffs.added.length) diffHtml += '<b>Added in cloud (' + diffs.added.length + '):</b><br>' + diffs.added.slice(0, 3).map(p => '• ' + labelFor(p)).join('<br>') + '<br>';
+    if (diffs.removed.length) diffHtml += '<b>Removed in cloud (' + diffs.removed.length + '):</b><br>' + diffs.removed.slice(0, 3).map(p => '• ' + labelFor(p)).join('<br>') + '<br>';
     if (!diffHtml) diffHtml = 'Minor differences detected';
     localEl.innerHTML = '<b>Local:</b> ' + local.length + ' projects · ' + localStats.tasks + ' tasks · ' + localStats.completed + ' done' + (localBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + localBadge + '</span>' : '');
     remoteEl.innerHTML = '<b>Cloud:</b> ' + remote.length + ' projects · ' + remoteStats.tasks + ' tasks · ' + remoteStats.completed + ' done' + (remoteBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + remoteBadge + '</span>' : '') + '<br><br>' + diffHtml;
     modal.classList.add('pf-conflict-open');
   }
   document.getElementById('pf-conflict-keep-local').addEventListener('click', function() {
+    // Overwriting the cloud can permanently discard changes that only
+    // exist there (e.g. edits made on another device). Confirm first,
+    // matching the pattern used elsewhere (backup restore) for
+    // destructive, one-way actions.
+    if (!confirm('This will overwrite the cloud with your local data. Any cloud-only changes will be lost. Continue?')) return;
     document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
     _pendingRemote = null;
     _pendingPullExtras = null;
