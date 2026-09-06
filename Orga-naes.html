@@ -1012,8 +1012,9 @@
   #pf-root .pf-subrow:last-child { margin-bottom: 0; }
   #pf-root .pf-subrow:hover { border-color: var(--hover-border); transform: translateX(2px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
   #pf-root .pf-subrow.pf-sub-has-children { cursor: pointer; }
-  #pf-root .pf-sub-comment { background: transparent; color: var(--text-dim); font-size: 9.5px; cursor: pointer; opacity: 0.6; transition: opacity 0.15s; flex-shrink: 0; padding: 2px 7px; text-align: center; min-width: 18px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--card-border); border-radius: 100px; }
-  #pf-root .pf-sub-comment:hover { opacity: 1; }
+  #pf-root .pf-sub-comment { background: transparent; color: var(--text-dim); font-size: 9.5px; cursor: pointer; opacity: 1; transition: opacity 0.15s, background 0.3s ease, border-color 0.3s ease, color 0.3s ease; flex-shrink: 0; padding: 2px 7px; text-align: center; min-width: 18px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--card-border); border-radius: 100px; }
+  #pf-root .pf-sub-comment:hover { border-color: var(--hover-border); }
+  #pf-root .pf-sub-comment.pf-comment-set { opacity: 1; color: var(--depth3); border-color: rgba(91,168,200,0.55); background: rgba(91,168,200,0.16); font-weight: 600; }
   #pf-root .pf-sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; cursor: pointer; border: 1.5px solid var(--planned); transition: background 0.3s ease, border-color 0.3s ease; align-self: center; }
   #pf-root .pf-sub-dates { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: clamp(9px, 1.3vw, 12px); margin-left: auto; height: 20px; }
   #pf-root .pf-sub-dates .pf-due-chip { text-align: center; justify-content: center; }
@@ -1121,7 +1122,7 @@
     transition: color 0.15s, border-color 0.15s, background 0.15s;
   }
   #pf-root .pf-dep-chip:hover { color: var(--text); border-color: var(--hover-border); }
-  #pf-root .pf-dep-chip.pf-dep-set { color: var(--waiting); border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.1); }
+  #pf-root .pf-dep-chip.pf-dep-set { color: var(--waiting); border-color: rgba(167,139,250,0.65); background: rgba(167,139,250,0.18); font-weight: 700; }
   #pf-root .pf-dep-chip.pf-dep-blocked { color: var(--danger); border-color: rgba(224,80,63,0.4); background: rgba(224,80,63,0.1); }
   #pf-root .pf-dep-dropdown {
     position: fixed; z-index: 300; background: var(--card); border: 1px solid var(--card-border);
@@ -3135,7 +3136,7 @@
       if (!subtask.blockedBy) subtask.blockedBy = [];
       const count = subtask.blockedBy.length;
       const unresolved = getUnresolvedBlockers(project, subtask);
-      btn.textContent = '🔗' + (count ? ' ' + count : '');
+      btn.textContent = '🔗';
       btn.className = 'pf-dep-chip' + (unresolved.length ? ' pf-dep-blocked' : (count ? ' pf-dep-set' : ''));
       btn.title = unresolved.length ? ('Blocked by ' + unresolved.length + ' task(s)') : (count ? (count + ' dependency/ies') : 'Add dependency');
     }
@@ -3301,7 +3302,7 @@
     const dotEl = document.createElement('span'); dotEl.className = 'pf-sub-dot' + (_hasBlockers ? ' pf-blocked' : ''); dotEl.title = _hasBlockers ? 'Blocked' : 'Set status'; dotEl.style.background = s.status === 'planned' ? 'transparent' : statusDotColor(s.status); dotEl.style.borderColor = statusDotColor(s.status); subDatesEl.appendChild(dotEl);
     if (s.status === 'completed' && s.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(s.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); s.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); subDatesEl.appendChild(doneLabel); } else { subDatesEl.appendChild(buildDueChip(s, (val) => { snapshot(); s.dueAt = val; scheduleSave(); render(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }, false)); }
     subDatesEl.appendChild(buildDependencyChip(p, s));
-    const commentBtn = document.createElement('button'); commentBtn.className = 'pf-sub-comment'; commentBtn.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; commentBtn.textContent = '💬'; commentBtn.style.whiteSpace = 'nowrap'; if (s.comments && s.comments.length) { commentBtn.style.opacity = '1'; commentBtn.style.color = 'var(--text)'; } commentBtn.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(commentBtn);
+    const commentBtn = document.createElement('button'); commentBtn.className = 'pf-sub-comment' + (s.comments && s.comments.length ? ' pf-comment-set' : ''); commentBtn.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; commentBtn.textContent = '💬'; commentBtn.style.whiteSpace = 'nowrap'; commentBtn.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(commentBtn);
     const promoteBtn = document.createElement('button'); promoteBtn.className = 'pf-sub-promote'; promoteBtn.title = 'Promote to Project'; promoteBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'; promoteBtn.addEventListener('click', (e) => { e.stopPropagation(); promoteSubToProject(p, s); }); subDatesEl.appendChild(promoteBtn);
 
     row.dataset.subId = s.id;
@@ -3329,7 +3330,7 @@
       })();
       dueIcon.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.dueAt || ''; input.style.position = 'absolute'; input.style.opacity = '0'; input.style.pointerEvents = 'none'; dueIcon.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch(err){} input.addEventListener('change', () => { snapshot(); s.dueAt = input.value || null; scheduleSave(); render(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }); input.addEventListener('blur', () => { input.remove(); }); });
       subDatesEl.appendChild(dueIcon);
-      const cm = document.createElement('span'); cm.textContent = '💬'; cm.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;'; cm.classList.add('pf-ext-comment'); cm.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; if (!s.comments || !s.comments.length) cm.style.opacity = '0.4'; cm.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(cm);
+      const cm = document.createElement('span'); cm.textContent = '💬'; cm.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;'; cm.classList.add('pf-ext-comment'); if (s.comments && s.comments.length) cm.classList.add('pf-comment-set'); cm.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; cm.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(cm);
       // Extend-meta with dependency only (revealed on swipe)
       const extMeta = document.createElement('span');
       extMeta.className = 'pf-sub-extend-meta';
