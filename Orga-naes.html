@@ -6817,7 +6817,7 @@ if ('serviceWorker' in navigator) {
         // Fresh account's data just silently replaced local state — reset push
         // bookkeeping to match it so the next autosync tick doesn't diff against
         // the previous account's stale baseline.
-        resetPushBookkeeping(window._pf.getProjects(), window._pf.getCategories());
+        resetPushBookkeeping(window._pf.getProjects(), window._pf.getCategories(), window._pf.getArchive(), window._pf.getTrash());
         window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
         updateLastSync();
         localStorage.removeItem(NEEDS_PULL_KEY);
@@ -6866,7 +6866,7 @@ if ('serviceWorker' in navigator) {
             if (trashVal) window._pf.setTrash(fixProjects(trashVal));
             // Silent background adoption of remote data — reset bookkeeping so
             // this doesn't masquerade as unpushed local edits on the next tick.
-            resetPushBookkeeping(window._pf.getProjects(), window._pf.getCategories());
+            resetPushBookkeeping(window._pf.getProjects(), window._pf.getCategories(), window._pf.getArchive(), window._pf.getTrash());
             window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
             updateLastSync();
             localStorage.removeItem(NEEDS_PULL_KEY);
@@ -7035,7 +7035,7 @@ if ('serviceWorker' in navigator) {
       // Projects didn't change, but categories may have — resync bookkeeping
       // against what's now actually on both sides so a stale _lastPushedCatHash
       // doesn't cause a redundant categories re-push on the next autosync tick.
-      resetPushBookkeeping(window._pf.getProjects(), window._pf.getCategories());
+      resetPushBookkeeping(window._pf.getProjects(), window._pf.getCategories(), window._pf.getArchive(), window._pf.getTrash());
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
       updateLastSync();
       localStorage.removeItem(NEEDS_PULL_KEY);
@@ -7135,11 +7135,17 @@ if ('serviceWorker' in navigator) {
   // deliberate full push, etc). Without this the next autosync tick diffs against
   // a stale pre-pull baseline and can echo a partial/incorrect write back up, or
   // spuriously trigger the conflict modal.
-  function resetPushBookkeeping(projects, categories) {
+  // archive/trash are optional: pass them whenever the call site actually knows
+  // both sides now match (e.g. after writing/adopting them); omit them when this
+  // call site only touched projects/categories, so their bookkeeping is left as
+  // whatever it already correctly was rather than being guessed at.
+  function resetPushBookkeeping(projects, categories, archive, trash) {
     _lastPushedHash = buildHashMap(projects);
     _lastPushedIdOrder = projects.map(p => p.id);
     _lastPushedCatHash = JSON.stringify(categories);
     _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
+    if (typeof archive !== 'undefined') _lastPushedArchiveHash = JSON.stringify(normalizeForSync(archive));
+    if (typeof trash !== 'undefined') _lastPushedTrashHash = JSON.stringify(normalizeForSync(trash));
   }
 
   // Pushes only changed project records where possible; deletions or reordering fall back to a full project write
@@ -7195,11 +7201,13 @@ if ('serviceWorker' in navigator) {
     _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
   }
   let _lastPushedCatHash = '';
+  let _lastPushedArchiveHash = '';
+  let _lastPushedTrashHash = '';
 
   // Performs a deliberate full cloud save of projects, categories, archive, and trash.
   function pushWithTimestamp() {
     const projects = window._pf.getProjects();
-    resetPushBookkeeping(projects, window._pf.getCategories());
+    resetPushBookkeeping(projects, window._pf.getCategories(), window._pf.getArchive(), window._pf.getTrash());
     const writePromise = Promise.all([
       userRef().set(JSON.parse(JSON.stringify(projects))),
       catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories()))),
@@ -7208,7 +7216,6 @@ if ('serviceWorker' in navigator) {
       trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
     ]);
-    _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
     writePromise.then(function() { updateLastSync(); });
     return writePromise;
   }
@@ -7237,6 +7244,23 @@ if ('serviceWorker' in navigator) {
     if (!_fbUser) { window._pf.showToast('⚠ Sign in first to push', true); return; }
     if (!navigator.onLine) { window._pf.showToast('⚠ You are offline — will sync when back online', true); _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
+    // Fast path: if local data hasn't moved since our own last known-good push,
+    // we already know we match the cloud — no need to ask it. Skipping the round
+    // trip here isn't just an optimization: it avoids a real race where pressing
+    // this again right after a push (e.g. right after "Keep Local & Push") reads
+    // the cloud before that write has finished landing, sees the old value, and
+    // pops a phantom conflict for data that's actually identical.
+    // All four tracked slices must match — checking only projects/categories
+    // would let a genuine archive/trash divergence slip past unsynced.
+    const localSnapshotNow = JSON.stringify(normalizeForSync(window._pf.getProjects()));
+    const localCatHashNow = JSON.stringify(window._pf.getCategories());
+    const localArchiveHashNow = JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
+    const localTrashHashNow = JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
+    if (localSnapshotNow === _lastPushedSnapshot && localCatHashNow === _lastPushedCatHash &&
+        localArchiveHashNow === _lastPushedArchiveHash && localTrashHashNow === _lastPushedTrashHash) {
+      window._pf.showToast('✅ Already up to date with cloud');
+      return;
+    }
     window._pf.showToast('☁ Checking cloud data...');
     Promise.all([
       userRef().once('value'),
@@ -7589,7 +7613,7 @@ if ('serviceWorker' in navigator) {
       // pushWithTimestamp() (which resets all three). Reset them here too,
       // to what was actually just adopted, so the pending autosync push
       // correctly finds nothing left to do.
-      resetPushBookkeeping(remoteToApply, (extrasToApply && extrasToApply.categories) ? extrasToApply.categories : window._pf.getCategories());
+      resetPushBookkeeping(remoteToApply, (extrasToApply && extrasToApply.categories) ? extrasToApply.categories : window._pf.getCategories(), (extrasToApply && extrasToApply.archive) ? extrasToApply.archive : window._pf.getArchive(), (extrasToApply && extrasToApply.trash) ? extrasToApply.trash : window._pf.getTrash());
       updateLastSync();
       window._pf.showToast('☁ Using cloud data');
     }
