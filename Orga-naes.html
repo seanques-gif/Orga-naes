@@ -6603,21 +6603,38 @@ if ('serviceWorker' in navigator) {
     });
   }
 
-  // `expanded` (project- and subtask-level) is transient canvas UI state, not
-  // sync-worthy data — fixProjects() always forces it to false on data pulled
-  // from the cloud. Comparing raw local/remote JSON (which still has the
-  // user's real expanded state) against that forced-false remote shape made
-  // an open card look like a "change" on every listener event, including the
-  // echo of the user's own push, which then got treated as an incoming
-  // update and silently collapsed whatever was open. Strip `expanded` deeply
-  // before any equality check or hash so real card state can never trigger a
-  // false diff, conflict, or push.
-  function stripExpandedDeep(list) {
+  // Two normalizations needed before ANY local/remote equality check or hash:
+  //
+  // 1. `expanded` (project- and subtask-level) is transient canvas UI state —
+  //    fixProjects() always forces it to false on data pulled from the cloud,
+  //    while local keeps the user's real expand/collapse state. Comparing raw
+  //    JSON made an open card look like a "change" on every listener event
+  //    (including the echo of the user's own push), which then got treated as
+  //    an incoming update and silently collapsed whatever was open.
+  //
+  // 2. Firebase Realtime Database treats any field set to `null` as "delete
+  //    this key" — it is never actually written. Locally, an empty due date
+  //    or completed date is always stored as an explicit `null`; after a
+  //    round trip through Firebase that same field comes back simply absent
+  //    (`undefined`) rather than `null`. JSON.stringify(null) !== JSON.
+  //    stringify(undefined), so every project/subtask with an empty date
+  //    field looked permanently "changed" no matter which side you picked —
+  //    the conflict could never actually resolve.
+  //
+  // Deleting `expanded` and any null-valued key (recursively) from both sides
+  // before comparing makes local's explicit null and remote's missing key
+  // collapse into the same "absent" shape, so only real content differences
+  // remain.
+  function normalizeForSync(list) {
     if (!Array.isArray(list)) return list;
     return list.map(function(item) {
+      if (!item || typeof item !== 'object') return item;
       var copy = Object.assign({}, item);
       delete copy.expanded;
-      if (Array.isArray(copy.subtasks)) copy.subtasks = stripExpandedDeep(copy.subtasks);
+      Object.keys(copy).forEach(function(key) {
+        if (copy[key] === null || typeof copy[key] === 'undefined') delete copy[key];
+      });
+      if (Array.isArray(copy.subtasks)) copy.subtasks = normalizeForSync(copy.subtasks);
       return copy;
     });
   }
@@ -6906,15 +6923,15 @@ if ('serviceWorker' in navigator) {
 
       const remoteProjects = fixProjects(projVal);
       const localProjects = window._pf.getProjects();
-      const localStr = JSON.stringify(stripExpandedDeep(localProjects));
-      const remoteStr = JSON.stringify(stripExpandedDeep(remoteProjects));
+      const localStr = JSON.stringify(normalizeForSync(localProjects));
+      const remoteStr = JSON.stringify(normalizeForSync(remoteProjects));
 
       const remoteCategories = catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)).filter(Boolean) : [];
       const remoteArchive = fixProjects(archVal);
       const remoteTrash = fixProjects(trashVal);
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
-      const archMatch = JSON.stringify(stripExpandedDeep(remoteArchive)) === JSON.stringify(stripExpandedDeep(window._pf.getArchive() || []));
-      const trashMatch = JSON.stringify(stripExpandedDeep(remoteTrash)) === JSON.stringify(stripExpandedDeep(window._pf.getTrash() || []));
+      const archMatch = JSON.stringify(normalizeForSync(remoteArchive)) === JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
+      const trashMatch = JSON.stringify(normalizeForSync(remoteTrash)) === JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
 
       db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
         if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
@@ -6963,14 +6980,14 @@ if ('serviceWorker' in navigator) {
   function startListener() {
     if (_fbListener || !_fbUser) return;
     if (!window._pfLoaded) { setTimeout(startListener, 500); return; }
-    if (!_lastPushedSnapshot) _lastPushedSnapshot = JSON.stringify(stripExpandedDeep(window._pf.getProjects()));
+    if (!_lastPushedSnapshot) _lastPushedSnapshot = JSON.stringify(normalizeForSync(window._pf.getProjects()));
     _fbListenerUserRef = userRef();
     _fbListener = _fbListenerUserRef.on('value', function(snap) {
       const val = snap.val();
       if (!val) return;
       const remote = fixProjects(val);
-      const localStr = JSON.stringify(stripExpandedDeep(window._pf.getProjects()));
-      const remoteStr = JSON.stringify(stripExpandedDeep(remote));
+      const localStr = JSON.stringify(normalizeForSync(window._pf.getProjects()));
+      const remoteStr = JSON.stringify(normalizeForSync(remote));
       if (remoteStr !== localStr) {
         const localProjects = JSON.parse(localStr);
         const localChanged = localStr !== _lastPushedSnapshot;
@@ -7032,7 +7049,7 @@ if ('serviceWorker' in navigator) {
   // Selective sync: track last pushed state, only push changed projects
   let _lastPushedHash = {};
   let _lastPushedIdOrder = [];
-  function hashProject(p) { return JSON.stringify(stripExpandedDeep([p])[0]); }
+  function hashProject(p) { return JSON.stringify(normalizeForSync([p])[0]); }
   function buildHashMap(projects) {
     const map = {};
     projects.forEach(p => { map[p.id] = hashProject(p); });
@@ -7089,7 +7106,7 @@ if ('serviceWorker' in navigator) {
       _lastPushedHash = currentHash;
       updateLastSync();
     }
-    _lastPushedSnapshot = JSON.stringify(stripExpandedDeep(projects));
+    _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
   }
   let _lastPushedCatHash = '';
 
@@ -7107,7 +7124,7 @@ if ('serviceWorker' in navigator) {
       trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
     ]);
-    _lastPushedSnapshot = JSON.stringify(stripExpandedDeep(projects));
+    _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
     writePromise.then(function() { updateLastSync(); });
     return writePromise;
   }
@@ -7149,15 +7166,15 @@ if ('serviceWorker' in navigator) {
       const trashVal = results[3].val();
       const remoteProjects = fixProjects(projVal);
       const localProjects = window._pf.getProjects();
-      const localStr = JSON.stringify(stripExpandedDeep(localProjects));
-      const remoteStr = JSON.stringify(stripExpandedDeep(remoteProjects));
+      const localStr = JSON.stringify(normalizeForSync(localProjects));
+      const remoteStr = JSON.stringify(normalizeForSync(remoteProjects));
 
       const remoteCategories = catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)).filter(Boolean) : [];
       const remoteArchive = fixProjects(archVal);
       const remoteTrash = fixProjects(trashVal);
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
-      const archMatch = JSON.stringify(stripExpandedDeep(remoteArchive)) === JSON.stringify(stripExpandedDeep(window._pf.getArchive() || []));
-      const trashMatch = JSON.stringify(stripExpandedDeep(remoteTrash)) === JSON.stringify(stripExpandedDeep(window._pf.getTrash() || []));
+      const archMatch = JSON.stringify(normalizeForSync(remoteArchive)) === JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
+      const trashMatch = JSON.stringify(normalizeForSync(remoteTrash)) === JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
       const fullMatch = remoteStr === localStr && catsMatch && archMatch && trashMatch;
 
       if (projVal && fullMatch) {
@@ -7319,20 +7336,15 @@ if ('serviceWorker' in navigator) {
     const localBadge = localMore ? ' ⭐ More changes' : '';
     const remoteBadge = remoteMore ? ' ⭐ More changes' : '';
     function findDiffs(localList, remoteList) {
-      // Remote projects always come through fixProjects() with expanded
-      // forced to false, while local keeps whatever expand/collapse state
-      // the user left it in. Comparing raw JSON therefore flags a project
-      // as "Modified" just because it's expanded locally, even when
-      // nothing the user actually edited has changed. Strip UI-only state
-      // before comparing so the diff reflects real content differences.
+      // Reuse the same normalization used for the top-level sync decision:
+      // strip transient `expanded` state, and treat a `null` field the same
+      // as a missing one (Firebase deletes any key set to `null`, so an
+      // empty due date always comes back from the cloud as an absent key,
+      // not `null` — comparing them raw made every empty-due-date subtask
+      // look permanently "changed").
       function forDiff(p) {
         if (!p || typeof p !== 'object') return p;
-        const copy = Array.isArray(p) ? p.map(forDiff) : Object.assign({}, p);
-        if (!Array.isArray(copy)) delete copy.expanded;
-        Object.keys(copy).forEach(function(key) {
-          if (key === 'subtasks' && Array.isArray(copy[key])) copy[key] = copy[key].map(forDiff);
-        });
-        return copy;
+        return normalizeForSync([p])[0];
       }
       // Walks two subtask trees (by id) to describe what changed below a
       // modified project — not just how many subtasks differ, but which
@@ -7353,9 +7365,15 @@ if ('serviceWorker' in navigator) {
           if (!r) { entries.push({ title: s.title || 'Untitled', kind: 'removed' }); return; }
           const fields = [];
           ['title', 'status', 'dueAt'].forEach(function(key) {
-            if (JSON.stringify(s[key]) !== JSON.stringify(r[key])) {
-              const from = fieldLabel(key, s[key]);
-              const to = fieldLabel(key, r[key]);
+            // Normalize null/undefined to the same sentinel before comparing —
+            // Firebase strips `null` fields on write, so a local `dueAt: null`
+            // and a remote missing `dueAt` key are the same "no due date",
+            // not a real change.
+            const sVal = (s[key] === null || typeof s[key] === 'undefined') ? null : s[key];
+            const rVal = (r[key] === null || typeof r[key] === 'undefined') ? null : r[key];
+            if (JSON.stringify(sVal) !== JSON.stringify(rVal)) {
+              const from = fieldLabel(key, sVal);
+              const to = fieldLabel(key, rVal);
               if (from && to) fields.push({ label: from.label, from: from.val, to: to.val });
             }
           });
@@ -7373,8 +7391,8 @@ if ('serviceWorker' in navigator) {
       // status, due date, etc.) changed, for display in the modal.
       changed.forEach(p => {
         const r = remoteMap[p.id];
-        const lShallow = Object.assign({}, p); delete lShallow.subtasks; delete lShallow.expanded;
-        const rShallow = Object.assign({}, r); delete rShallow.subtasks; delete rShallow.expanded;
+        const lShallow = forDiff(Object.assign({}, p, { subtasks: [] }));
+        const rShallow = forDiff(Object.assign({}, r, { subtasks: [] }));
         diffDetails[p.id] = {
           ownFields: JSON.stringify(lShallow) !== JSON.stringify(rShallow),
           subtaskEntries: diffSubtasks(p.subtasks, r.subtasks)
@@ -7459,7 +7477,7 @@ if ('serviceWorker' in navigator) {
         window._pf.setTrash(extrasToApply.trash);
       }
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
-      _lastPushedSnapshot = JSON.stringify(stripExpandedDeep(remoteToApply));
+      _lastPushedSnapshot = JSON.stringify(normalizeForSync(remoteToApply));
       updateLastSync();
       window._pf.showToast('☁ Using cloud data');
     }
