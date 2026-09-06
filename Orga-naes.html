@@ -6663,7 +6663,7 @@ if ('serviceWorker' in navigator) {
     });
   }
 
-  // Two normalizations needed before ANY local/remote equality check or hash:
+  // Three normalizations needed before ANY local/remote equality check or hash:
   //
   // 1. `expanded` (project- and subtask-level) is transient canvas UI state —
   //    fixProjects() always forces it to false on data pulled from the cloud,
@@ -6681,16 +6681,30 @@ if ('serviceWorker' in navigator) {
   //    field looked permanently "changed" no matter which side you picked —
   //    the conflict could never actually resolve.
   //
-  // Deleting `expanded` and any null-valued key (recursively) from both sides
-  // before comparing makes local's explicit null and remote's missing key
-  // collapse into the same "absent" shape, so only real content differences
-  // remain.
+  // 3. `x`/`y` (canvas position) are auto-computed layout, not user content —
+  //    autoArrangeProjects() recalculates them from each device's own
+  //    canvas width/zoom any time cards resize, overlap, get filtered by
+  //    search, etc (see its many call sites), and it always calls
+  //    scheduleSave() when it does. That included simply clicking a card to
+  //    expand it — the resulting reflow shifted x/y on that card (and often
+  //    others below it in the same row), which then registered as a real,
+  //    syncable "modification" and could pop the conflict modal even though
+  //    the user only looked at something. Since position is recomputed
+  //    per-device anyway (a value that fits one screen's width is meaningless
+  //    on another's), it should never be part of the sync diff.
+  //
+  // Deleting `expanded`, `x`/`y`, and any null-valued key (recursively) from
+  // both sides before comparing makes local's explicit null and remote's
+  // missing key collapse into the same "absent" shape, so only real content
+  // differences remain.
   function normalizeForSync(list) {
     if (!Array.isArray(list)) return list;
     return list.map(function(item) {
       if (!item || typeof item !== 'object') return item;
       var copy = Object.assign({}, item);
       delete copy.expanded;
+      delete copy.x;
+      delete copy.y;
       Object.keys(copy).forEach(function(key) {
         if (copy[key] === null || typeof copy[key] === 'undefined') delete copy[key];
       });
