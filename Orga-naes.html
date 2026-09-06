@@ -2184,6 +2184,7 @@
   const _escDismissables = [
     { check: () => _pasteArmed, run: () => { _pasteArmed = false; root.classList.remove('pf-paste-armed'); showToast('Paste canceled'); } },
     { check: () => !!_saveModalEl, run: () => { if (_saveModalEl) { _saveModalEl.remove(); _saveModalEl = null; } } },
+    { check: () => !!_statusMenuEl, run: () => { closeStatusMenu(); } },
     { check: () => !!root.querySelector('.pf-ctx-menu'), run: () => { const m = root.querySelector('.pf-ctx-menu'); if (m) m.remove(); if (typeof _closeCtx === 'function') _closeCtx(); } },
     { check: () => !!root.querySelector('.pf-dep-dropdown'), run: () => { const dd = root.querySelector('.pf-dep-dropdown'); if (dd) dd.remove(); } },
     { check: () => _splitCatMultiSelect.length, run: () => { _splitCatMultiSelect = []; renderSplitList(); } },
@@ -2203,6 +2204,34 @@
   function handleEscape() {
     for (const d of _escDismissables) { if (d.check()) { d.run(); return; } }
   }
+  // Dev-only self-check: warns if a modal/panel/popover-like element exists
+  // that isn't covered by ALL_MODALS (the generic Escape fallback) and isn't
+  // one of the known exceptions handled by their own dedicated mechanism.
+  // This is exactly the class of bug that let the sync conflict modal and
+  // the status-cycle popup go without Escape support until someone noticed
+  // by hand — this check exists so the next one doesn't need to be found
+  // the same way. Console-only; never shown to end users.
+  (function auditEscCoverage() {
+    try {
+      const KNOWN_EXCEPTIONS = [
+        'pf-conflict-modal',   // registered via window._pf.registerEscDismissable (Firebase sync IIFE)
+        'pf-search-wrap',      // covered by the searchTerm/pf-search-open check above
+        'pf-emoji-picker',     // dynamic; goes through the separate _ctxEl Escape listener
+        'pf-status-menu',      // dynamic; registered via _statusMenuEl check above
+        'pf-ctx-menu',         // dynamic; covered by _ctxEl listener + explicit check above
+        'pf-dep-dropdown'      // dynamic; explicit check above
+      ];
+      const modalLikeEls = Array.from(document.querySelectorAll('[id^="pf-"]')).filter(function(el) {
+        return /-(modal|panel|popover)$/.test(el.id);
+      });
+      const uncovered = modalLikeEls.filter(function(el) {
+        return !ALL_MODALS.includes(el) && !KNOWN_EXCEPTIONS.includes(el.id);
+      });
+      if (uncovered.length) {
+        console.warn('[Orga-naes] Escape-key audit: element(s) named like a modal/panel/popover aren\'t in ALL_MODALS and aren\'t a known exception — Escape may not close them. Add to ALL_MODALS, call window._pf.registerEscDismissable(), or add to KNOWN_EXCEPTIONS in auditEscCoverage() if handled elsewhere:', uncovered.map(function(el) { return '#' + el.id; }));
+      }
+    } catch (e) {}
+  })();
   function _exitMultiSelectMode() {
     if (_splitCatMultiSelect.length) { _splitCatMultiSelect = []; renderSplitList(); }
     if (splitMultiSelect.length) { splitMultiSelect = []; renderSplitList(); renderSplitDetail(); }
@@ -5560,20 +5589,28 @@
   let _streakFreezes = 2;
   let _freezeWeek = '';
   const MILESTONES = [10, 25, 50, 100, 250, 500, 1000];
+  const STREAK_KEY = 'project-flow-streak';
+  const XP_KEY = 'project-flow-xp';
+  const MILESTONES_KEY = 'project-flow-milestones';
+  const STREAK_FREEZES_KEY = 'project-flow-streak-freezes';
   function getMonday(d) { const dt = new Date(d); const day = dt.getDay(); const diff = dt.getDate() - day + (day === 0 ? -6 : 1); dt.setDate(diff); return localDateStr(dt); }
-  (function loadGamification() {
-    try { const s = localStorage.getItem('project-flow-streak'); if (s) _streak = JSON.parse(s); } catch(e) {}
-    try { const x = localStorage.getItem('project-flow-xp'); if (x) _xp = parseInt(x, 10) || 0; } catch(e) {}
-    try { const m = localStorage.getItem('project-flow-milestones'); if (m) _totalCompletions = parseInt(m, 10) || 0; } catch(e) {}
-    try { const f = localStorage.getItem('project-flow-streak-freezes'); if (f) { const parsed = JSON.parse(f); _streakFreezes = parsed.count; _freezeWeek = parsed.week; } } catch(e) {}
+  // Was raw localStorage-only, so a completed streak/XP/milestone total
+  // could silently fail to persist (and fail to restore) anywhere
+  // localStorage isn't available. safeGet/safeSet fall back to IndexedDB
+  // the same way every other piece of app state already does.
+  (async function loadGamification() {
+    try { const s = await safeGet(STREAK_KEY, false); if (s && s.value) _streak = JSON.parse(s.value); } catch(e) {}
+    try { const x = await safeGet(XP_KEY, false); if (x && x.value) _xp = parseInt(x.value, 10) || 0; } catch(e) {}
+    try { const m = await safeGet(MILESTONES_KEY, false); if (m && m.value) _totalCompletions = parseInt(m.value, 10) || 0; } catch(e) {}
+    try { const f = await safeGet(STREAK_FREEZES_KEY, false); if (f && f.value) { const parsed = JSON.parse(f.value); _streakFreezes = parsed.count; _freezeWeek = parsed.week; } } catch(e) {}
     const thisWeek = getMonday(new Date());
     if (_freezeWeek !== thisWeek) { _streakFreezes = 2; _freezeWeek = thisWeek; saveGamification(); }
   })();
   function saveGamification() {
-    localStorage.setItem('project-flow-streak', JSON.stringify(_streak));
-    localStorage.setItem('project-flow-xp', String(_xp));
-    localStorage.setItem('project-flow-milestones', String(_totalCompletions));
-    localStorage.setItem('project-flow-streak-freezes', JSON.stringify({ count: _streakFreezes, week: _freezeWeek }));
+    safeSet(STREAK_KEY, JSON.stringify(_streak), false);
+    safeSet(XP_KEY, String(_xp), false);
+    safeSet(MILESTONES_KEY, String(_totalCompletions), false);
+    safeSet(STREAK_FREEZES_KEY, JSON.stringify({ count: _streakFreezes, week: _freezeWeek }), false);
   }
   function onTaskCompleted(isProject) {
     const today = todayLocalStr();
