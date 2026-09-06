@@ -7530,13 +7530,18 @@ if ('serviceWorker' in navigator) {
         return null; // other fields (createdAt, expanded, id) are noise, not worth naming
       }
       function diffSubtasks(localSubs, remoteSubs) {
-        const entries = []; // { title, kind: 'added'|'removed'|'changed', fields: [{label, from, to}] }
+        const entries = []; // { title, kind: 'local-only'|'cloud-only'|'changed', fields: [{label, from, to}] }
         const lMap = {}; (localSubs || []).forEach(s => { lMap[s.id] = s; });
         const rMap = {}; (remoteSubs || []).forEach(s => { rMap[s.id] = s; });
-        (remoteSubs || []).forEach(s => { if (!lMap[s.id]) entries.push({ title: s.title || 'Untitled', kind: 'added' }); });
+        // A subtask only in remote doesn't exist locally yet — from the
+        // local device's point of view that's "cloud-only", not "added"
+        // (added/removed has no fixed side and was being read backwards:
+        // a subtask the user just created locally, never pushed, showed
+        // up as "(removed)" here even though nothing was removed).
+        (remoteSubs || []).forEach(s => { if (!lMap[s.id]) entries.push({ title: s.title || 'Untitled', kind: 'cloud-only' }); });
         (localSubs || []).forEach(s => {
           const r = rMap[s.id];
-          if (!r) { entries.push({ title: s.title || 'Untitled', kind: 'removed' }); return; }
+          if (!r) { entries.push({ title: s.title || 'Untitled', kind: 'local-only' }); return; }
           const fields = [];
           ['title', 'status', 'dueAt', 'completedAt'].forEach(function(key) {
             // Normalize null/undefined/'' to the same sentinel before comparing —
@@ -7607,8 +7612,8 @@ if ('serviceWorker' in navigator) {
       if (entries && entries.length) {
         const shown = entries.slice(0, 4).map(function(e) {
           const et = window._pf.escapeHtml(e.title);
-          if (e.kind === 'added') return '&nbsp;&nbsp;+ ' + et + ' <span style="opacity:0.6;">(added)</span>';
-          if (e.kind === 'removed') return '&nbsp;&nbsp;− ' + et + ' <span style="opacity:0.6;">(removed)</span>';
+          if (e.kind === 'local-only') return '&nbsp;&nbsp;+ ' + et + ' <span style="opacity:0.6;">(new, local only)</span>';
+          if (e.kind === 'cloud-only') return '&nbsp;&nbsp;− ' + et + ' <span style="opacity:0.6;">(cloud only)</span>';
           const fieldStr = e.fields.map(function(f) {
             return f.label + ': ' + window._pf.escapeHtml(String(f.from)) + ' → ' + window._pf.escapeHtml(String(f.to));
           }).join(', ');
