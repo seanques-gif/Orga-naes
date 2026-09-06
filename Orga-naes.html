@@ -7001,25 +7001,15 @@ if ('serviceWorker' in navigator) {
   showLastSync();
   setInterval(showLastSync, 30000);
 
+  // Uses the same path as the Ctrl+S "Push to Cloud" button (_firebasePushManual)
+  // rather than a separate direct write. The old inline version here skipped
+  // categoryEmojis, had no real conflict diff (just a timestamp-newer confirm),
+  // and no "already up to date" short-circuit — all of which the Ctrl+S path
+  // already handles correctly, so this button now goes through it instead of
+  // duplicating (and drifting from) that logic.
   pushBtn.addEventListener('click', function() {
     if (!_fbUser) return;
-    db.ref('users/' + _fbUser.uid + '/updatedAt').once('value').then(function(snap) {
-      const remoteTime = snap.val() || 0;
-      const localTime = _lastSyncTime || 0;
-      if (remoteTime > localTime && !confirm('⚠ Cloud data is newer than your last sync.\nPush anyway and overwrite cloud?')) return;
-      Promise.all([
-        userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects()))),
-        catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories()))),
-        archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive()))),
-        trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
-        db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
-      ]).then(function() {
-        updateLastSync();
-        window._pf.showToast('⬆ Pushed to cloud');
-      }).catch(function(err) {
-        window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
-      });
-    });
+    window._firebasePushManual();
   });
 
   function _doPull() {
