@@ -2396,6 +2396,27 @@
     });
   }
 
+  // Strips transient, non-content fields before comparing snapshots so that
+  // merely viewing/expanding a project (which sets `expanded`, and can shift
+  // `x`/`y` on the canvas) doesn't make the periodic auto-snapshot think real
+  // data changed. Mirrors normalizeForSync() in the Firebase sync section,
+  // which solves the identical problem for cloud conflict detection.
+  function _snapshotNormalize(list) {
+    if (!Array.isArray(list)) return list;
+    return list.map(function(item) {
+      if (!item || typeof item !== 'object') return item;
+      const copy = Object.assign({}, item);
+      delete copy.expanded;
+      delete copy.x;
+      delete copy.y;
+      Object.keys(copy).forEach(function(key) {
+        if (copy[key] === null || typeof copy[key] === 'undefined') delete copy[key];
+      });
+      if (Array.isArray(copy.subtasks)) copy.subtasks = _snapshotNormalize(copy.subtasks);
+      return copy;
+    });
+  }
+  let _lastIdbSnapshotHash = null;
   async function idbSaveSnapshot(data) {
     const db = await openIDB();
     if (!db) return;
@@ -2442,12 +2463,20 @@
   }
 
   let _autoBackupTimer = null;
+  // Only writes a new snapshot when the actual project content differs from
+  // the last one saved — skips false positives caused by transient UI state
+  // (e.g. a project's `expanded` flag flipping just from clicking to view it).
+  function _maybeSaveSnapshot() {
+    if (!projects.length) return;
+    const hash = JSON.stringify(_snapshotNormalize(projects));
+    if (hash === _lastIdbSnapshotHash) return;
+    _lastIdbSnapshotHash = hash;
+    idbSaveSnapshot(JSON.parse(JSON.stringify(projects)));
+  }
   function startIdbSnapshotBackup() {
     if (_autoBackupTimer) clearInterval(_autoBackupTimer);
-    _autoBackupTimer = setInterval(() => {
-      if (projects.length) idbSaveSnapshot(JSON.parse(JSON.stringify(projects)));
-    }, AUTO_BACKUP_INTERVAL);
-    idbSaveSnapshot(JSON.parse(JSON.stringify(projects)));
+    _autoBackupTimer = setInterval(_maybeSaveSnapshot, AUTO_BACKUP_INTERVAL);
+    _maybeSaveSnapshot();
   }
 
   async function recoverFromIDB() {
