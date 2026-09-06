@@ -6603,6 +6603,25 @@ if ('serviceWorker' in navigator) {
     });
   }
 
+  // `expanded` (project- and subtask-level) is transient canvas UI state, not
+  // sync-worthy data — fixProjects() always forces it to false on data pulled
+  // from the cloud. Comparing raw local/remote JSON (which still has the
+  // user's real expanded state) against that forced-false remote shape made
+  // an open card look like a "change" on every listener event, including the
+  // echo of the user's own push, which then got treated as an incoming
+  // update and silently collapsed whatever was open. Strip `expanded` deeply
+  // before any equality check or hash so real card state can never trigger a
+  // false diff, conflict, or push.
+  function stripExpandedDeep(list) {
+    if (!Array.isArray(list)) return list;
+    return list.map(function(item) {
+      var copy = Object.assign({}, item);
+      delete copy.expanded;
+      if (Array.isArray(copy.subtasks)) copy.subtasks = stripExpandedDeep(copy.subtasks);
+      return copy;
+    });
+  }
+
   // Storage key constants (duplicated from main IIFE scope for cross-IIFE access)
   const STORE_KEY        = 'project-flow-graph-v2';
   const CATEGORIES_KEY   = 'project-flow-categories';
@@ -6887,15 +6906,15 @@ if ('serviceWorker' in navigator) {
 
       const remoteProjects = fixProjects(projVal);
       const localProjects = window._pf.getProjects();
-      const localStr = JSON.stringify(localProjects);
-      const remoteStr = JSON.stringify(remoteProjects);
+      const localStr = JSON.stringify(stripExpandedDeep(localProjects));
+      const remoteStr = JSON.stringify(stripExpandedDeep(remoteProjects));
 
       const remoteCategories = catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)).filter(Boolean) : [];
       const remoteArchive = fixProjects(archVal);
       const remoteTrash = fixProjects(trashVal);
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
-      const archMatch = JSON.stringify(remoteArchive) === JSON.stringify(window._pf.getArchive() || []);
-      const trashMatch = JSON.stringify(remoteTrash) === JSON.stringify(window._pf.getTrash() || []);
+      const archMatch = JSON.stringify(stripExpandedDeep(remoteArchive)) === JSON.stringify(stripExpandedDeep(window._pf.getArchive() || []));
+      const trashMatch = JSON.stringify(stripExpandedDeep(remoteTrash)) === JSON.stringify(stripExpandedDeep(window._pf.getTrash() || []));
 
       db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
         if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
@@ -6944,14 +6963,14 @@ if ('serviceWorker' in navigator) {
   function startListener() {
     if (_fbListener || !_fbUser) return;
     if (!window._pfLoaded) { setTimeout(startListener, 500); return; }
-    if (!_lastPushedSnapshot) _lastPushedSnapshot = JSON.stringify(window._pf.getProjects());
+    if (!_lastPushedSnapshot) _lastPushedSnapshot = JSON.stringify(stripExpandedDeep(window._pf.getProjects()));
     _fbListenerUserRef = userRef();
     _fbListener = _fbListenerUserRef.on('value', function(snap) {
       const val = snap.val();
       if (!val) return;
       const remote = fixProjects(val);
-      const localStr = JSON.stringify(window._pf.getProjects());
-      const remoteStr = JSON.stringify(remote);
+      const localStr = JSON.stringify(stripExpandedDeep(window._pf.getProjects()));
+      const remoteStr = JSON.stringify(stripExpandedDeep(remote));
       if (remoteStr !== localStr) {
         const localProjects = JSON.parse(localStr);
         const localChanged = localStr !== _lastPushedSnapshot;
@@ -7001,9 +7020,11 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('online', function() {
     if (_fbOfflineQueue && _fbAutosync && _fbUser) {
       _fbOfflineQueue = false;
-      userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects())));
-      catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories())));
-      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
+      // Route through pushSelective() rather than writing directly, so
+      // _lastPushedSnapshot/_lastPushedHash/_lastPushedIdOrder/_lastPushedCatHash
+      // stay in sync — a direct write here left them stale and could cause
+      // a false conflict-modal trigger on the next listener event.
+      pushSelective();
       window._pf.showToast('☁ Offline changes synced');
     }
   });
@@ -7011,7 +7032,7 @@ if ('serviceWorker' in navigator) {
   // Selective sync: track last pushed state, only push changed projects
   let _lastPushedHash = {};
   let _lastPushedIdOrder = [];
-  function hashProject(p) { return JSON.stringify(p); }
+  function hashProject(p) { return JSON.stringify(stripExpandedDeep([p])[0]); }
   function buildHashMap(projects) {
     const map = {};
     projects.forEach(p => { map[p.id] = hashProject(p); });
@@ -7068,7 +7089,7 @@ if ('serviceWorker' in navigator) {
       _lastPushedHash = currentHash;
       updateLastSync();
     }
-    _lastPushedSnapshot = JSON.stringify(projects);
+    _lastPushedSnapshot = JSON.stringify(stripExpandedDeep(projects));
   }
   let _lastPushedCatHash = '';
 
@@ -7086,6 +7107,7 @@ if ('serviceWorker' in navigator) {
       trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
     ]);
+    _lastPushedSnapshot = JSON.stringify(stripExpandedDeep(projects));
     writePromise.then(function() { updateLastSync(); });
     return writePromise;
   }
@@ -7127,15 +7149,15 @@ if ('serviceWorker' in navigator) {
       const trashVal = results[3].val();
       const remoteProjects = fixProjects(projVal);
       const localProjects = window._pf.getProjects();
-      const localStr = JSON.stringify(localProjects);
-      const remoteStr = JSON.stringify(remoteProjects);
+      const localStr = JSON.stringify(stripExpandedDeep(localProjects));
+      const remoteStr = JSON.stringify(stripExpandedDeep(remoteProjects));
 
       const remoteCategories = catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)).filter(Boolean) : [];
       const remoteArchive = fixProjects(archVal);
       const remoteTrash = fixProjects(trashVal);
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
-      const archMatch = JSON.stringify(remoteArchive) === JSON.stringify(window._pf.getArchive() || []);
-      const trashMatch = JSON.stringify(remoteTrash) === JSON.stringify(window._pf.getTrash() || []);
+      const archMatch = JSON.stringify(stripExpandedDeep(remoteArchive)) === JSON.stringify(stripExpandedDeep(window._pf.getArchive() || []));
+      const trashMatch = JSON.stringify(stripExpandedDeep(remoteTrash)) === JSON.stringify(stripExpandedDeep(window._pf.getTrash() || []));
       const fullMatch = remoteStr === localStr && catsMatch && archMatch && trashMatch;
 
       if (projVal && fullMatch) {
@@ -7437,7 +7459,7 @@ if ('serviceWorker' in navigator) {
         window._pf.setTrash(extrasToApply.trash);
       }
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
-      _lastPushedSnapshot = JSON.stringify(remoteToApply);
+      _lastPushedSnapshot = JSON.stringify(stripExpandedDeep(remoteToApply));
       updateLastSync();
       window._pf.showToast('☁ Using cloud data');
     }
