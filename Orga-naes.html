@@ -7079,13 +7079,21 @@ if ('serviceWorker' in navigator) {
         if (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr) {
           showConflictModal(localProjects, remote);
         } else {
+          // Snapshot the incoming remote's normalized shape BEFORE scheduleSave()/
+          // render() run — scheduleSave() calls autoUpdateStatuses(), which can
+          // mutate this same object (setProjects() assigns it by reference) to
+          // correct a project's status/completedAt. Resetting bookkeeping from
+          // that post-mutation state would make it look like the correction
+          // already matches the cloud, when it was only ever applied locally —
+          // so the correction would never actually get pushed up.
+          const preMutationRemote = JSON.parse(JSON.stringify(remote));
           window._pf.setProjects(remote);
           window._pf.scheduleSave(); window._pf.render();
           updateLastSync();
           // Reset all push bookkeeping (not just the snapshot) to what was just
           // silently adopted — otherwise the next autosync tick diffs against a
           // stale pre-listener baseline and can echo a partial write back up.
-          resetPushBookkeeping(remote, window._pf.getCategories());
+          resetPushBookkeeping(preMutationRemote, window._pf.getCategories());
           window._pf.showToast('☁ Synced from cloud');
         }
       }
@@ -7606,6 +7614,24 @@ if ('serviceWorker' in navigator) {
     const extrasToApply = _pendingPullExtras;
     dismissConflictModal();
     if (remoteToApply) {
+      const categoriesToApply = (extrasToApply && extrasToApply.categories) ? extrasToApply.categories : window._pf.getCategories();
+      const archiveToApply = (extrasToApply && extrasToApply.archive) ? extrasToApply.archive : window._pf.getArchive();
+      const trashToApply = (extrasToApply && extrasToApply.trash) ? extrasToApply.trash : window._pf.getTrash();
+      // Snapshot exactly what the cloud actually has, BEFORE adopting it locally.
+      // setProjects() below assigns this same array into the live `projects`
+      // reference, and scheduleSave()/render() that follow can immediately
+      // mutate it in place — scheduleSave() runs autoUpdateStatuses(), which
+      // silently "corrects" a project's status/completedAt if its subtasks
+      // don't match it, and render() can trigger a layout pass too. Capturing
+      // the baseline from the (already-mutated) same reference afterwards made
+      // bookkeeping think that correction already matched the cloud, when it
+      // was actually only ever applied locally — so pushSelective() never sent
+      // it up, and the next check found a real, unsynced difference and
+      // reopened the conflict modal. Cloning here, before any of that runs,
+      // means a real correction shows up as a real diff and actually gets
+      // pushed.
+      const preMutationProjects = JSON.parse(JSON.stringify(remoteToApply));
+
       window._pf.setProjects(remoteToApply);
       if (extrasToApply) {
         if (extrasToApply.categories) { window._pf.setCategories(extrasToApply.categories); window._pf.saveCategories(); }
@@ -7613,21 +7639,7 @@ if ('serviceWorker' in navigator) {
         window._pf.setTrash(extrasToApply.trash);
       }
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
-      _lastPushedSnapshot = JSON.stringify(normalizeForSync(remoteToApply));
-      // scheduleSave() above will fire the debounced autosync push a few
-      // seconds from now (fsAutoSaveHook -> _firebasePush -> pushSelective).
-      // pushSelective() decides what's "changed" by diffing against
-      // _lastPushedHash/_lastPushedIdOrder/_lastPushedCatHash — if those are
-      // left stale from before this resolution, they still reflect the OLD
-      // local data, so the freshly-adopted (and already-matching-cloud)
-      // data looks like unpushed local edits. That triggers a needless
-      // partial/index-keyed push moments later, which can nudge the cloud
-      // just enough that the next manual push/pull sees a phantom conflict
-      // again — exactly what "Keep Local & Push" avoids by calling
-      // pushWithTimestamp() (which resets all three). Reset them here too,
-      // to what was actually just adopted, so the pending autosync push
-      // correctly finds nothing left to do.
-      resetPushBookkeeping(remoteToApply, (extrasToApply && extrasToApply.categories) ? extrasToApply.categories : window._pf.getCategories(), (extrasToApply && extrasToApply.archive) ? extrasToApply.archive : window._pf.getArchive(), (extrasToApply && extrasToApply.trash) ? extrasToApply.trash : window._pf.getTrash());
+      resetPushBookkeeping(preMutationProjects, categoriesToApply, archiveToApply, trashToApply);
       updateLastSync();
       window._pf.showToast('☁ Using cloud data');
     }
