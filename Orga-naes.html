@@ -2841,7 +2841,8 @@
   function _flashStatusTransition(selector) { requestAnimationFrame(() => { const el = document.querySelector(selector); if (el) { el.classList.remove('pf-status-transitioning'); void el.offsetWidth; el.classList.add('pf-status-transitioning'); el.addEventListener('animationend', () => el.classList.remove('pf-status-transitioning'), { once: true }); } }); }
   function cycleProjectStatus(id, targetStatus) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = targetStatus || STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; if (p.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); _flashStatusTransition('[data-id="' + id + '"]'); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
   let _statusMenuEl = null;
-  function closeStatusMenu() { if (_statusMenuEl) { _statusMenuEl.remove(); _statusMenuEl = null; document.removeEventListener('click', closeStatusMenu, true); document.removeEventListener('scroll', closeStatusMenu, true); window.removeEventListener('resize', closeStatusMenu); } }
+  function _statusMenuEscHandler(e) { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); closeStatusMenu(); } }
+  function closeStatusMenu() { if (_statusMenuEl) { _statusMenuEl.remove(); _statusMenuEl = null; document.removeEventListener('click', closeStatusMenu, true); document.removeEventListener('scroll', closeStatusMenu, true); window.removeEventListener('resize', closeStatusMenu); document.removeEventListener('keydown', _statusMenuEscHandler, true); } }
   let _statusMenuToken = 0;
   function openStatusMenu(anchorEl, currentStatus, onPick) {
     closeStatusMenu();
@@ -2875,6 +2876,7 @@
       document.addEventListener('click', closeStatusMenu, true);
       document.addEventListener('scroll', closeStatusMenu, true);
       window.addEventListener('resize', closeStatusMenu);
+      document.addEventListener('keydown', _statusMenuEscHandler, true);
     }, 0);
   }
   function checkAllCompleted(p) {
