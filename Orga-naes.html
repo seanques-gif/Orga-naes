@@ -2890,7 +2890,8 @@
 
   async function load() {
     try { const res = await safeGet(STORE_KEY, false); if (res && res.value) projects = JSON.parse(res.value); } catch (e) {
-      try { const legacy = await safeGet('project-flow-graph', false); if (legacy && legacy.value) { const flat = JSON.parse(legacy.value); const tops = flat.filter(n => !n.parentId); projects = tops.map(t => ({ id: t.id, title: t.title, status: t.status, x: t.x, y: t.y, expanded: false, subtasks: flat.filter(c => c.parentId === t.id).map(c => ({ id: c.id, title: c.title, status: c.status })) })); } } catch (e2) { projects = []; }
+      logError('Load projects (main store corrupt, falling back to legacy)', e);
+      try { const legacy = await safeGet('project-flow-graph', false); if (legacy && legacy.value) { const flat = JSON.parse(legacy.value); const tops = flat.filter(n => !n.parentId); projects = tops.map(t => ({ id: t.id, title: t.title, status: t.status, x: t.x, y: t.y, expanded: false, subtasks: flat.filter(c => c.parentId === t.id).map(c => ({ id: c.id, title: c.title, status: c.status })) })); } } catch (e2) { projects = []; logError('Load projects (legacy fallback also failed — data may be lost)', e2); }
     }
     if (!projects.length) { await recoverFromIDB(); }
     const result = validateAndRepair(projects);
@@ -5727,7 +5728,7 @@
         safeSet(AUTOBACKUP_LAST_KEY, new Date().toISOString(), false);
         showToast('Auto-backup saved to folder.');
         return;
-      } catch (err) { showToast('Backup folder error, using download.', true); autoBackupDirHandle = null; }
+      } catch (err) { showToast('Backup folder error, using download.', true); autoBackupDirHandle = null; logError('Auto-backup to folder', err); }
     }
     doFallbackDownload(json, filename);
   }
@@ -7451,7 +7452,7 @@ if ('serviceWorker' in navigator) {
       catRef().set(JSON.parse(JSON.stringify(categories)));
       _lastPushedCatHash = catHash;
     }
-    try { db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))); } catch(e) {}
+    try { db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))); } catch(e) { logError('Firebase push (categoryEmojis)', e); }
 
     if (hasChanges || catChanged) {
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
