@@ -1239,6 +1239,8 @@
   #pf-root .pf-due-table th { text-align: left; padding: 8px 12px; font-size: 10.5px; color: var(--text-dim); font-weight: 600; border-bottom: 1px solid var(--card-border); }
   #pf-root .pf-due-table td { padding: 7px 12px; border-bottom: 1px solid var(--card-border); color: var(--text); vertical-align: middle; }
   #pf-root .pf-due-table tr:hover td { background: rgba(123,104,238,0.05); }
+  #pf-root .pf-due-table .pf-due-row-clickable { cursor: pointer; }
+  #pf-root .pf-due-table .pf-due-row-clickable:hover td { background: rgba(255,255,255,0.05); }
   #pf-root .pf-due-table .pf-due-row-overdue td:last-child { color: var(--danger); font-weight: 600; }
   #pf-root .pf-due-table .pf-due-row-soon td:last-child { color: var(--ongoing); font-weight: 600; }
   #pf-root .pf-due-empty { padding: 24px 12px; text-align: center; color: var(--text-dim); font-size: 12px; }
@@ -2254,6 +2256,7 @@
     { key: 'modals', check: () => duelistPanel && duelistPanel.style.display !== 'none', run: () => { closeAllModals(); } },
     { key: 'modals', check: () => calendarPanel && calendarPanel.style.display !== 'none', run: () => { closeAllModals(); } },
     { check: () => _duelistReturnOnEsc, run: () => { _duelistReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderDueList(); openModal(duelistPanel, 'flex'); showToast('Press Esc to exit Tasks by Due Date'); } },
+    { check: () => _weeklyReturnOnEsc, run: () => { _weeklyReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderWeeklyPanel(); openModal(weeklyPanel, 'flex'); showToast('Press Esc to exit Weekly Planner'); } },
     { check: () => _todayReturnOnEsc, run: () => { _todayReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderTodayList(); openModal(todayPanel, 'flex'); showToast('Press Esc to exit Today\'s Focus'); } },
     { check: () => _calendarReturnOnEsc, run: () => { _calendarReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderCalendar(); openModal(calendarPanel, 'flex'); showToast('Press Esc to exit Calendar'); } },
     { check: () => subMultiSelect.length, run: () => { clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); } },
@@ -2637,8 +2640,13 @@
       const cls = dueStatusClass(it.dueAt, false);
       const rowCls = cls === 'pf-due-overdue' ? 'pf-due-row-overdue' : (cls === 'pf-due-soon' ? 'pf-due-row-soon' : '');
       const path = it.projectTitle ? '<span class="pf-due-path">' + escapeHtml(it.projectTitle) + '</span>' : '';
-      return '<tr class="' + rowCls + '"><td>' + escapeHtml(it.title) + path + '</td><td>' + formatDateShort(it.dueAt) + '</td></tr>';
+      return '<tr class="' + rowCls + ' pf-due-row-clickable" data-project-id="' + it.projectId + '" data-title="' + escapeHtml(it.title) + '" title="Click to open"><td>' + escapeHtml(it.title) + path + '</td><td>' + formatDateShort(it.dueAt) + '</td></tr>';
     }).join('');
+    tbody.querySelectorAll('tr[data-project-id]').forEach(row => {
+      row.addEventListener('click', () => {
+        jumpToTask(row.dataset.projectId, row.dataset.title);
+      });
+    });
   }
 
   if (duePanelClose) duePanelClose.addEventListener('click', closeAllModals);
@@ -4896,6 +4904,7 @@
   let _duelistReturnOnEsc = false;
   let _todayReturnOnEsc = false;
   let _calendarReturnOnEsc = false;
+  let _weeklyReturnOnEsc = false;
     // SUBSECTION: Due List (Tasks by Due Date)
   function renderDueList() {
     const list = document.getElementById('pf-duelist-list');
@@ -5136,6 +5145,22 @@
     renderWeeklyPanel();
     showToast('Week auto-filled from due dates.');
   }
+  function jumpToTask(projectId, taskTitle) {
+    const p = projects.find(pr => pr.id === projectId);
+    if (!p) { showToast('Source task no longer exists', true); return; }
+    closeAllModals();
+    _weeklyReturnOnEsc = true;
+    if (!root.classList.contains('pf-device-mobile') && !root.classList.contains('pf-device-tablet')) showToast('Press Esc to go back to Weekly Planner');
+    if (!listViewActive) { document.getElementById('pf-collapse-cats').click(); }
+    splitSelectedId = projectId; splitMultiSelect = [];
+    searchTerm = taskTitle;
+    _searchAutoCollapseId = null;
+    renderSplitList(); renderSplitDetail();
+    root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
+    if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
+    searchTerm = '';
+    const active = splitList.querySelector('.pf-split-active'); if (active) active.scrollIntoView({ block: 'nearest' });
+  }
   function renderWeeklyPanel() {
     const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     const grid = document.getElementById('pf-week-grid');
@@ -5209,18 +5234,7 @@
           titleWrap.addEventListener('click', (e) => {
             e.stopPropagation();
             const projectId = srcProject ? srcProject.id : t.sourceId;
-            const p = projects.find(pr => pr.id === projectId);
-            if (!p) { showToast('Source task no longer exists', true); return; }
-            closeAllModals();
-            if (!listViewActive) { document.getElementById('pf-collapse-cats').click(); }
-            splitSelectedId = projectId; splitMultiSelect = [];
-            searchTerm = t.title;
-            _searchAutoCollapseId = null;
-            renderSplitList(); renderSplitDetail();
-            root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
-            if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
-            searchTerm = '';
-            const active = splitList.querySelector('.pf-split-active'); if (active) active.scrollIntoView({ block: 'nearest' });
+            jumpToTask(projectId, t.title);
           });
         }
         const delBtn = document.createElement('button');
