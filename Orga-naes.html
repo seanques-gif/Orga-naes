@@ -128,6 +128,15 @@
     .pf-connection-dot.pf-online { background: #4ade80; }
     .pf-connection-dot.pf-offline { background: #ef4444; animation: pf-offline-blink 1.5s infinite; }
     @keyframes pf-offline-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .pf-error-dot {
+      position: absolute; top: -3px; right: -3px; min-width: 14px; height: 14px;
+      background: var(--danger, #ef4444); color: #fff; font-size: 8px; font-weight: 700;
+      border-radius: 7px; display: none; align-items: center; justify-content: center;
+      padding: 0 3px; line-height: 1; z-index: 1;
+    }
+    .pf-error-item { border-left: 3px solid var(--danger, #ef4444); padding-left: 8px !important; }
+    .pf-error-item .pf-error-ctx { font-weight: 700; color: var(--danger, #ef4444); }
+    .pf-error-item .pf-error-msg { font-size: 11.5px; color: var(--text-dim); word-break: break-word; }
 
     .pf-fab {
       display: flex; position: fixed; bottom: 84px; right: 16px; z-index: 9001;
@@ -1544,7 +1553,7 @@
     <div class="pf-tb-group" id="pf-tb-undoredo">
       <button class="pf-undo-btn" id="pf-undo" title="Undo (Ctrl+Z)" disabled>↶</button>
       <button class="pf-undo-btn" id="pf-redo" title="Redo (Ctrl+Y)" disabled>↷</button>
-      <button class="pf-undo-btn pf-options-desktop" id="pf-options-btn-desktop" title="Options">☰</button>
+      <button class="pf-undo-btn pf-options-desktop" id="pf-options-btn-desktop" title="Options" style="position:relative;">☰<span class="pf-error-dot" id="pf-error-dot-desktop"></span></button>
     </div>
     <div class="pf-tb-group" id="pf-tb-duefilter">
       <select class="pf-due-filter" id="pf-due-filter" title="Filter by due date">
@@ -1573,7 +1582,7 @@
     <div class="pf-stats" id="pf-stats"></div>
     <div class="pf-save" id="pf-save"></div>
     <div class="pf-tb-group pf-options-mobile" style="margin-left:auto;">
-      <button class="pf-undo-btn" id="pf-options-btn" title="Options">☰</button>
+      <button class="pf-undo-btn" id="pf-options-btn" title="Options" style="position:relative;">☰<span class="pf-error-dot" id="pf-error-dot-mobile"></span></button>
     </div>
     <button class="pf-undo-btn pf-back-btn" id="pf-toolbar-back" title="Back to projects" style="display:none;margin-left:auto;">←</button>
     <span id="pf-theme-toggle" title="Toggle theme" style="display:none;"></span>
@@ -1640,6 +1649,7 @@
         <button class="pf-undo-btn" id="pf-archive-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">📦</span> Archive</button>
         <button class="pf-undo-btn" id="pf-trash-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">🗑</span> Trash</button>
         <button class="pf-undo-btn" id="pf-snapshots-btn" style="justify-content:flex-start;"><span style="display:inline-block;width:20px;text-align:center;">🕒</span> Version History</button>
+        <button class="pf-undo-btn" id="pf-error-btn" style="justify-content:flex-start;position:relative;"><span style="display:inline-block;width:20px;text-align:center;">⚠️</span> Error Log<span class="pf-error-dot" id="pf-error-dot-btn" style="top:2px;right:4px;"></span></button>
       </div>
     </div>
 
@@ -1819,6 +1829,14 @@
   <div class="pf-activity-panel" id="pf-snapshots-panel" style="display:none;width:min(500px,90vw);max-height:min(80vh,700px);">
     <div class="pf-options-title">🕒 Version History <span id="pf-snapshots-count" style="font-size:11px;color:var(--text-dim);font-weight:400;"></span></div>
     <div class="pf-activity-list" id="pf-snapshots-list" style="overflow-y:auto;flex:1;min-height:0;"><div class="pf-activity-empty">No snapshots yet.</div></div>
+  </div>
+  <div class="pf-activity-panel" id="pf-error-panel" style="display:none;width:min(560px,90vw);max-height:min(80vh,700px);">
+    <div class="pf-options-title">⚠️ Error Log <span id="pf-error-count" style="font-size:11px;color:var(--text-dim);font-weight:400;"></span></div>
+    <div class="pf-activity-list" id="pf-error-list" style="overflow-y:auto;flex:1;min-height:0;"><div class="pf-activity-empty">No errors logged. 🎉</div></div>
+    <div style="padding-top:8px;border-top:1px solid var(--card-border);margin-top:8px;display:flex;gap:6px;">
+      <button class="pf-undo-btn" id="pf-error-clear-btn" style="color:var(--danger);">Clear Log</button>
+      <span style="flex:1;font-size:10px;color:var(--text-dim);align-self:center;text-align:right;">Keeps the most recent 200 entries</span>
+    </div>
   </div>
   <div class="pf-shortcuts-panel" id="pf-shortcuts-panel" style="display:none">
     <div class="pf-options-title">Keyboard Shortcuts</div>
@@ -2384,8 +2402,8 @@
         const req = indexedDB.open('orga-naes-kv', 1);
         req.onupgradeneeded = (e) => { const db = e.target.result; if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv', { keyPath: 'key' }); };
         req.onsuccess = (e) => { _idbKV = e.target.result; resolve(_idbKV); };
-        req.onerror = () => resolve(null);
-      } catch (e) { resolve(null); }
+        req.onerror = (e) => { if (typeof logError === 'function') logError('IndexedDB open (kv)', (e.target && e.target.error) || new Error('Failed to open kv DB')); resolve(null); };
+      } catch (e) { if (typeof logError === 'function') logError('IndexedDB open (kv)', e); resolve(null); }
     });
   }
   async function safeGet(key, shared) {
@@ -2408,8 +2426,8 @@
       catch (e) { lsQuotaErr = e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014; }
     }
     let idbOk = false;
-    try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); tx.objectStore('kv').put({ key: key, value: value }); idbOk = true; } } catch (e) {}
-    if (!lsOk && !idbOk) { showToast('⚠ Storage full — data may not persist. Export your data soon.', true); }
+    try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); tx.objectStore('kv').put({ key: key, value: value }); idbOk = true; } } catch (e) { if (typeof logError === 'function') logError('IndexedDB write (' + key + ')', e); }
+    if (!lsOk && !idbOk) { showToast('⚠ Storage full — data may not persist. Export your data soon.', true); if (typeof logError === 'function') logError('Storage write failed (' + key + ')', new Error('Both localStorage and IndexedDB unavailable')); }
     else if (!lsOk && idbOk) { showToast('⚠ localStorage full — using IndexedDB fallback', true); }
     else if (lsQuotaErr && idbOk) { /* both work, but LS hit quota on this write — silent */ }
     return true;
@@ -2427,7 +2445,7 @@
       const req = indexedDB.open(IDB_NAME, 1);
       req.onupgradeneeded = (e) => { const db = e.target.result; if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE, { keyPath: 'id', autoIncrement: true }); };
       req.onsuccess = (e) => { _idb = e.target.result; resolve(_idb); };
-      req.onerror = () => resolve(null);
+      req.onerror = (e) => { if (typeof logError === 'function') logError('IndexedDB open (snapshots)', (e.target && e.target.error) || new Error('Failed to open snapshots DB')); resolve(null); };
     });
   }
 
@@ -2592,7 +2610,8 @@
   const duelistPanel = document.getElementById('pf-duelist-panel');
   const snapshotsPanel = document.getElementById('pf-snapshots-panel');
   const copyModal = document.getElementById('pf-copy-modal');
-  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal];
+  const errorPanel = document.getElementById('pf-error-panel');
+  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal, errorPanel];
   function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
   function openModal(el, displayValue) { closeAllModals(); el.style.display = displayValue; modalBackdrop.style.display = 'block'; _markOverlayOpen('modals'); }
   modalBackdrop.addEventListener('click', closeAllModals);
@@ -3408,7 +3427,7 @@
             subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.status = st; s.completedAt = st === 'completed' ? new Date().toISOString() : null; touched.add(owner); } });
             scheduleSave(); render(); touched.forEach(pr => checkAllCompleted(pr));
             requestAnimationFrame(() => renderSubSelectBar(p));
-          } catch (err) { console.error('[Orga-naes] Bulk set status failed:', err); showToast('⚠ Set status failed — see console', true); }
+          } catch (err) { logError('Bulk set status', err); showToast('⚠ Set status failed — see console', true); }
         });
       } else if (action === 'due') {
         const input = document.createElement('input');
@@ -4561,7 +4580,7 @@
       const el = projectEl(p);
       el.style.cssText = 'position: relative; left: auto; top: auto; width: 100%; min-width: 0; max-width: 100%;';
       splitDetail.appendChild(el);
-    } catch (e) { console.error('[Orga-naes] renderSplitDetail failed:', e); splitDetail.innerHTML = '<div class="pf-empty" style="display:block;">Error rendering project. Check console for details.</div>'; }
+    } catch (e) { logError('renderSplitDetail', e); splitDetail.innerHTML = '<div class="pf-empty" style="display:block;">Error rendering project. Check console for details.</div>'; }
     if (subMultiSelect.length > 0) renderSubSelectBar(p);
     requestAnimationFrame(() => { requestAnimationFrame(_equalizeColumnWidths); });
   }
@@ -4802,6 +4821,64 @@
   (async function loadActivity() { try { const res = await safeGet(ACTIVITY_KEY, false); if (res && res.value) { const parsed = JSON.parse(res.value); activityLog.push(...parsed); } } catch (e) {} })();
   loadArchive();
   loadTrash();
+
+  // SUBSECTION: Error Log
+  // Centralized silent-failure surfacing. Route meaningful catch blocks (sync/push/pull,
+  // import/export, render failures, IndexedDB) through logError() so they show up here
+  // instead of vanishing into the console. Piggybacks on the ACTIVITY_KEY/safeSet pattern.
+  const ERROR_KEY = 'project-flow-errors';
+  const ERROR_LOG_MAX = 200;
+  let errorLog = [];
+  let unreadErrorCount = 0;
+  function logError(context, err) {
+    try {
+      const message = err && err.message ? err.message : String(err == null ? 'Unknown error' : err);
+      const stack = err && err.stack ? String(err.stack) : '';
+      const entry = { time: new Date().toISOString(), context: String(context || 'Unknown'), message: message, stack: stack };
+      errorLog.unshift(entry);
+      if (errorLog.length > ERROR_LOG_MAX) errorLog.length = ERROR_LOG_MAX;
+      unreadErrorCount++;
+      updateErrorBadge();
+      safeSet(ERROR_KEY, JSON.stringify(errorLog), false);
+      console.error('[Orga-naes] ' + context + ':', err);
+    } catch (loggingFailure) {
+      // Never let the error logger itself throw.
+      console.error('[Orga-naes] logError failed:', loggingFailure);
+    }
+  }
+  function updateErrorBadge() {
+    const dots = [document.getElementById('pf-error-dot-desktop'), document.getElementById('pf-error-dot-mobile'), document.getElementById('pf-error-dot-btn')];
+    dots.forEach(dot => {
+      if (!dot) return;
+      if (unreadErrorCount > 0) { dot.textContent = unreadErrorCount > 99 ? '99+' : String(unreadErrorCount); dot.style.display = 'flex'; }
+      else { dot.style.display = 'none'; }
+    });
+  }
+  function renderErrorList() {
+    const listEl = document.getElementById('pf-error-list');
+    const countEl = document.getElementById('pf-error-count');
+    countEl.textContent = errorLog.length ? '(' + errorLog.length + ')' : '';
+    if (!errorLog.length) { listEl.innerHTML = '<div class="pf-activity-empty">No errors logged. 🎉</div>'; return; }
+    listEl.innerHTML = errorLog.map(e => '<div class="pf-activity-item pf-error-item"><span class="pf-activity-time">' + formatDateTime(e.time) + '</span><div class="pf-error-ctx">' + escapeHtml(e.context) + '</div><div class="pf-error-msg">' + escapeHtml(e.message) + '</div></div>').join('');
+  }
+  document.getElementById('pf-error-btn').addEventListener('click', () => {
+    _exitMultiSelectMode();
+    closeAllModals(); renderErrorList(); openModal(errorPanel, 'flex');
+    unreadErrorCount = 0; updateErrorBadge();
+  });
+  document.getElementById('pf-error-clear-btn').addEventListener('click', () => {
+    if (!confirm('Clear the error log?')) return;
+    errorLog = []; unreadErrorCount = 0; updateErrorBadge(); renderErrorList();
+    safeSet(ERROR_KEY, JSON.stringify(errorLog), false);
+  });
+  (async function loadErrorLog() { try { const res = await safeGet(ERROR_KEY, false); if (res && res.value) { errorLog = JSON.parse(res.value) || []; } } catch (e) {} })();
+  // Global handlers: catch anything that slips past the try/catch blocks entirely.
+  window.addEventListener('error', function(event) {
+    logError('Uncaught error', event && event.error ? event.error : new Error(event && event.message ? event.message : 'Unknown window error'));
+  });
+  window.addEventListener('unhandledrejection', function(event) {
+    logError('Unhandled promise rejection', event && event.reason ? event.reason : new Error('Unknown rejection'));
+  });
 
   const TODAY_KEY = 'project-flow-today';
   let todayTasks = [];
@@ -5607,7 +5684,7 @@
         await writable.write(json);
         await writable.close();
         showToast('Exported successfully.');
-      } catch (err) { if (err.name !== 'AbortError') showToast('Export failed: ' + err.message, true); }
+      } catch (err) { if (err.name !== 'AbortError') { showToast('Export failed: ' + err.message, true); logError('Export', err); } }
     } else {
       const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'project-flow.json'; a.click(); URL.revokeObjectURL(url);
     }
@@ -5786,7 +5863,7 @@
         const { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis } = extractImportData(parsed);
         if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis); }
         else { showToast('No valid project arrays found in JSON.', true); }
-      } catch (err) { showToast('Import failed: ' + err.message, true); }
+      } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
     };
     reader.onerror = () => { showToast('Could not read that file.', true); };
     reader.readAsText(file);
@@ -6633,6 +6710,7 @@
     saveCategories: () => saveCategories(),
     render: () => render(),
     showToast: (msg, isError, undoable, actionCallback, actionLabel) => showToast(msg, isError, undoable, actionCallback, actionLabel),
+    logError: (context, err) => logError(context, err),
     snapshot: () => snapshot(),
     openIDB_KV: () => openIDB_KV(),
     getCategoryEmojis: () => categoryEmojis,
@@ -7212,6 +7290,7 @@ if ('serviceWorker' in navigator) {
       window._pf.showToast('⬇ Updated from cloud: ' + updated.join(', '));
     }).catch(function(err) {
       window._pf.showToast('⚠ Pull failed: ' + (err.message || err), true);
+      if (window._pf.logError) window._pf.logError('Firebase pull', err);
     });
   }
   pullBtn.addEventListener('click', _doPull);
@@ -7329,6 +7408,9 @@ if ('serviceWorker' in navigator) {
   // Pushes only changed project records where possible; deletions or reordering fall back to a full project write
   // (index-keyed partial updates can't safely represent an order change on their own).
   function pushSelective() {
+    try { _pushSelectiveInner(); } catch (err) { window._pf.showToast('⚠ Push failed: ' + (err.message || err), true); logError('Firebase push', err); }
+  }
+  function _pushSelectiveInner() {
     const projects = window._pf.getProjects();
     const categories = window._pf.getCategories();
     const currentHash = buildHashMap(projects);
