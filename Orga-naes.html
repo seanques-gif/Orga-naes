@@ -5217,7 +5217,16 @@
         check.type = 'checkbox';
         check.checked = t.done;
         check.className = 'pf-week-task-check';
-        check.addEventListener('change', () => { t.done = check.checked; saveWeekly(); renderWeeklyPanel(); });
+        check.addEventListener('change', () => {
+          t.done = check.checked;
+          if (t.done) {
+            weeklyData[ds] = (weeklyData[ds] || []).filter(x => x.id !== t.id);
+            saveWeekly(); renderWeeklyPanel();
+            showToast('"' + t.title + '" completed and removed from planner');
+            return;
+          }
+          saveWeekly(); renderWeeklyPanel();
+        });
         const titleWrap = document.createElement('div');
         titleWrap.className = 'pf-week-task-title-wrap' + (t.sourceId ? ' pf-clickable' : '');
         const titleSpan = document.createElement('span');
@@ -5274,6 +5283,13 @@
           const task = fromArr.splice(taskIdx, 1)[0];
           if (!weeklyData[ds]) weeklyData[ds] = [];
           weeklyData[ds].push(task);
+          if (task.sourceId) {
+            const srcProject = projects.find(pr => pr.id === task.sourceId || (pr.subtasks && findSubNode(pr.subtasks, task.sourceId)));
+            if (srcProject) {
+              const node = srcProject.id === task.sourceId ? srcProject : findSubNode(srcProject.subtasks, task.sourceId);
+              if (node) { snapshot(); node.dueAt = ds; scheduleSave(); render(); }
+            }
+          }
           saveWeekly(); renderWeeklyPanel();
           return;
         }
