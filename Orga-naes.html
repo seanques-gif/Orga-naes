@@ -3329,7 +3329,10 @@
     const spansMultiple = projectIds.size > 1;
     const bar = document.createElement('div');
     bar.className = 'pf-sub-select-bar';
-    bar.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(123,104,238,0.1);border:1px solid var(--accent);border-radius:6px;margin:6px 0;flex-wrap:wrap;';
+    // Fixed to the viewport (not sticky within the sublist) so it stays visible
+    // no matter which ancestor is actually scrolling (list/detail/canvas all
+    // have different scroll containers depending on layout mode).
+    bar.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(30,26,46,0.96);border:1px solid var(--accent);border-radius:10px;flex-wrap:wrap;position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9200;backdrop-filter:blur(8px);box-shadow:0 8px 28px rgba(0,0,0,0.45);max-width:calc(100vw - 24px);';
     bar.innerHTML = '<span style="font-size:11px;color:var(--text-dim);">' + subMultiSelect.length + ' selected' + (spansMultiple ? ' (' + projectIds.size + ' projects)' : '') + '</span>' +
       '<button class="pf-undo-btn" data-sub-action="cycle" style="font-size:10px;padding:3px 8px;">Set Status</button>' +
       '<button class="pf-undo-btn" data-sub-action="due" style="font-size:10px;padding:3px 8px;">Set Due</button>' +
@@ -3343,7 +3346,9 @@
     bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); const touched = new Set(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.dueAt = val; touched.add(owner); } }); clearSubSelect(); scheduleSave(); render(); touched.forEach(pr => { if (pr._manualStatus) { delete pr._manualStatus; } checkAllCompleted(pr); }); } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
     bar.querySelector('[data-sub-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return; snapshot(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const arr = findSubParentArray(owner.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } }); clearSubSelect(); scheduleSave(); render(); });
     bar.querySelector('[data-sub-action="clear"]').addEventListener('click', (e) => { e.stopPropagation(); clearSubSelect(); const existing2 = root.querySelector('.pf-sub-select-bar'); if (existing2) existing2.remove(); });
-    sublist.insertBefore(bar, sublist.firstChild);
+    // Append to root (not into the scrolling sublist) so position:fixed is
+    // relative to the viewport and the bar can't be scrolled out of view.
+    root.appendChild(bar);
   }
   let draggingSubId = null; let draggingProjectId = null; let dragHandleArmed = false; let _draggingSubIds = [];
     // SUBSECTION: Drag & Drop
