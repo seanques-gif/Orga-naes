@@ -4024,7 +4024,7 @@
             projects.forEach(p => { if (p.category === cat) p.category = trimmed; });
             if (splitCollapsedCats[cat]) { splitCollapsedCats[trimmed] = true; delete splitCollapsedCats[cat]; }
             if (categoryEmojis[cat]) { categoryEmojis[trimmed] = categoryEmojis[cat]; delete categoryEmojis[cat]; saveCatEmojis(); }
-            saveCategories(); scheduleSave(); render();
+            saveCategories(); scheduleSave(); render(); renderSplitList();
           });
           menu.appendChild(renItem);
           const delItem = document.createElement('div');
