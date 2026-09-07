@@ -901,6 +901,38 @@
     background: var(--card); border: 1.5px solid var(--card-border); border-radius: 12px;
     z-index: 2; box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px rgba(149,128,255,0.04); transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s, max-width 0.2s ease;
   }
+
+  /* Multi-select action bar (fixed, floating) */
+  #pf-root {
+    --selbar-bottom-offset: 78px;
+  }
+  @media (min-width: 1401px) {
+    #pf-root { --selbar-bottom-offset: 20px; } /* no bottom-nav on desktop */
+  }
+  @keyframes pf-selbar-in {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  #pf-root .pf-sub-select-bar {
+    /* Edge fade so the horizontally-scrollable bar hints there's more
+       content off-screen, instead of clipping abruptly. */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  }
+  #pf-root .pf-sub-select-bar::-webkit-scrollbar { display: none; }
+  #pf-root .pf-selbar-btn {
+    font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text);
+    background: rgba(123,104,238,0.14); border: 1px solid transparent; border-radius: 8px;
+    padding: 7px 11px; white-space: nowrap; flex-shrink: 0; cursor: pointer;
+    min-width: 0; min-height: 0; line-height: 1.2; transition: background 0.15s, border-color 0.15s;
+  }
+  #pf-root .pf-selbar-btn:hover, #pf-root .pf-selbar-btn:focus-visible { background: rgba(123,104,238,0.26); border-color: var(--accent); }
+  #pf-root .pf-selbar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #pf-root .pf-selbar-btn.pf-selbar-close { background: transparent; color: var(--text-dim); padding: 7px 8px; font-size: 13px; }
+  #pf-root .pf-selbar-btn.pf-selbar-close:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+  @media (max-width: 900px) {
+    #pf-root .pf-selbar-btn { font-size: 12.5px; padding: 8px 10px; }
+  }
   #pf-root .pf-node.pf-expanded { min-width: 380px; max-width: 500px; }
   #pf-root .pf-node:hover { border-color: var(--hover-border); box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(149,128,255,0.1); transform: translateY(-1px); }
   #pf-root .pf-node.pf-node-selected { border-color: #ffffff; box-shadow: 0 0 0 2px #ffffff, 0 2px 10px rgba(0,0,0,0.25); }
@@ -2110,7 +2142,7 @@
       if (!clip || !clip.length) return;
       _taskClipboard = clip;
       const n = clip.length;
-      clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove();
+      clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
       splitMultiSelect = []; if (listViewActive) { renderSplitList(); renderSplitDetail(); }
       showToast((n > 1 ? n + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it');
     }
@@ -2224,7 +2256,7 @@
     { check: () => _duelistReturnOnEsc, run: () => { _duelistReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderDueList(); openModal(duelistPanel, 'flex'); showToast('Press Esc to exit Tasks by Due Date'); } },
     { check: () => _todayReturnOnEsc, run: () => { _todayReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderTodayList(); openModal(todayPanel, 'flex'); showToast('Press Esc to exit Today\'s Focus'); } },
     { check: () => _calendarReturnOnEsc, run: () => { _calendarReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderCalendar(); openModal(calendarPanel, 'flex'); showToast('Press Esc to exit Calendar'); } },
-    { check: () => subMultiSelect.length, run: () => { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); } },
+    { check: () => subMultiSelect.length, run: () => { clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); } },
     { key: 'modals', check: () => ALL_MODALS.some(m => m && m.style.display !== 'none'), run: () => { closeAllModals(); } },
     { key: 'detail', check: () => root.classList.contains('pf-detail-open'), run: () => { _goBackToProjects(); } },
     { low: true, check: () => searchTerm || searchWrap.classList.contains('pf-search-open'), run: () => { _clearSearch(); _refreshView(); } },
@@ -2287,7 +2319,7 @@
   function _exitMultiSelectMode() {
     if (_splitCatMultiSelect.length) { _splitCatMultiSelect = []; renderSplitList(); }
     if (splitMultiSelect.length) { splitMultiSelect = []; renderSplitList(); renderSplitDetail(); }
-    if (subMultiSelect.length) { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); }
+    if (subMultiSelect.length) { clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); }
   }
 
   let panActive = false, panStartX = 0, panStartY = 0, scrollStartX = 0, scrollStartY = 0;
@@ -3091,7 +3123,7 @@
           '<span style="color:var(--text-dim);font-size:10px;flex-shrink:0;">' + countLabel + '</span>';
         row.addEventListener('mouseenter', () => { row.style.borderColor = 'var(--hover-border)'; });
         row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; });
-        row.addEventListener('click', () => { closeAllModals(); copySubtasksToProject(sourceProject, subtaskIds, pr.id); clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); });
+        row.addEventListener('click', () => { closeAllModals(); copySubtasksToProject(sourceProject, subtaskIds, pr.id); clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); });
         list.appendChild(row);
       });
     }
@@ -3302,7 +3334,7 @@
       const sourceProject = projects.find(pr => pr.id === draggingProjectId);
       const ids = _draggingSubIds.length ? _draggingSubIds.slice() : [draggingSubId];
       draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; clearIndicators();
-      if (sourceProject) { copySubtasksToProject(sourceProject, ids, p.id); clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); }
+      if (sourceProject) { copySubtasksToProject(sourceProject, ids, p.id); clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); }
     });
     const titleEl = div.querySelector('.pf-node-title'); let titleClickCount = 0; let titleClickTimer = null; let _titleTapCount = 0; let _titleTapTimer = null;
     titleEl.addEventListener('pointerdown', (e) => { if (titleEl.contentEditable === 'true') e.stopPropagation(); });
@@ -3320,8 +3352,9 @@
   function subSelectOwnerProject(id) { return projects.find(pr => pr.subtasks && findSubNode(pr.subtasks, id)); }
   function subSelectProjectIds() { const ids = new Set(); subMultiSelect.forEach(id => { const pr = subSelectOwnerProject(id); if (pr) ids.add(pr.id); }); return ids; }
   function renderSubSelectBar(p) {
-    const existing = root.querySelector('.pf-sub-select-bar');
-    if (existing) existing.remove();
+    // Remove any existing bar(s) defensively — guards against duplicates if
+    // this fires twice before a prior removal has committed to the DOM.
+    root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
     if (subMultiSelect.length < 1) return;
     const sublist = root.querySelector('.pf-node[data-id="' + p.id + '"] .pf-sublist');
     if (!sublist) return;
@@ -3331,24 +3364,84 @@
     bar.className = 'pf-sub-select-bar';
     // Fixed to the viewport (not sticky within the sublist) so it stays visible
     // no matter which ancestor is actually scrolling (list/detail/canvas all
-    // have different scroll containers depending on layout mode).
-    bar.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(30,26,46,0.96);border:1px solid var(--accent);border-radius:10px;flex-wrap:wrap;position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9200;backdrop-filter:blur(8px);box-shadow:0 8px 28px rgba(0,0,0,0.45);max-width:calc(100vw - 24px);';
-    bar.innerHTML = '<span style="font-size:11px;color:var(--text-dim);">' + subMultiSelect.length + ' selected' + (spansMultiple ? ' (' + projectIds.size + ' projects)' : '') + '</span>' +
-      '<button class="pf-undo-btn" data-sub-action="cycle" style="font-size:10px;padding:3px 8px;">Set Status</button>' +
-      '<button class="pf-undo-btn" data-sub-action="due" style="font-size:10px;padding:3px 8px;">Set Due</button>' +
-      '<button class="pf-undo-btn" data-sub-action="copy" style="font-size:10px;padding:3px 8px;"' + (spansMultiple ? ' title="Copy to… only works from a single project — narrow your selection to one project"' : '') + '>Copy to…</button>' +
-      '<button class="pf-undo-btn" data-sub-action="copy-clip" style="font-size:10px;padding:3px 8px;" title="Ctrl+C">📄 Copy</button>' +
-      '<button class="pf-undo-btn" data-sub-action="delete" style="font-size:10px;padding:3px 8px;color:var(--danger);">Delete</button>' +
-      '<button class="pf-undo-btn" data-sub-action="clear" style="font-size:10px;padding:3px 6px;">✕</button>';
-    bar.querySelector('[data-sub-action="copy"]').addEventListener('click', (e) => { e.stopPropagation(); if (spansMultiple) { showToast('⚠ "Copy to…" needs a single-project selection — narrow your selection first', true); return; } openCopyToProjectModal(p, subMultiSelect.slice()); });
-    bar.querySelector('[data-sub-action="copy-clip"]').addEventListener('click', (e) => { e.stopPropagation(); const clip = buildClipboardFromSelection(); if (!clip || !clip.length) return; _taskClipboard = clip; showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it'); });
-    bar.querySelector('[data-sub-action="cycle"]').addEventListener('click', (e) => { e.stopPropagation(); openStatusMenu(e.currentTarget, null, (st) => { try { snapshot(); const touched = new Set(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.status = st; s.completedAt = st === 'completed' ? new Date().toISOString() : null; touched.add(owner); } }); scheduleSave(); render(); touched.forEach(pr => checkAllCompleted(pr)); requestAnimationFrame(() => renderSubSelectBar(p)); } catch (err) { console.error('[Orga-naes] Bulk set status failed:', err); showToast('⚠ Set status failed — see console', true); } }); });
-    bar.querySelector('[data-sub-action="due"]').addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.style.cssText = 'position:absolute;z-index:100;'; bar.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch (err) {} function commit() { const val = input.value || null; snapshot(); const touched = new Set(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.dueAt = val; touched.add(owner); } }); clearSubSelect(); scheduleSave(); render(); touched.forEach(pr => { if (pr._manualStatus) { delete pr._manualStatus; } checkAllCompleted(pr); }); } input.addEventListener('change', commit); input.addEventListener('blur', () => { input.remove(); }); });
-    bar.querySelector('[data-sub-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return; snapshot(); subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const arr = findSubParentArray(owner.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } }); clearSubSelect(); scheduleSave(); render(); });
-    bar.querySelector('[data-sub-action="clear"]').addEventListener('click', (e) => { e.stopPropagation(); clearSubSelect(); const existing2 = root.querySelector('.pf-sub-select-bar'); if (existing2) existing2.remove(); });
+    // have different scroll containers depending on layout mode). Sits above
+    // the bottom nav / browser chrome via safe-area padding, and scrolls
+    // horizontally on narrow screens instead of wrapping into a grid.
+    bar.style.cssText = 'display:flex;align-items:center;gap:4px;padding:8px 10px;background:rgba(24,21,38,0.97);border:1px solid var(--accent);border-radius:14px;position:fixed;left:50%;bottom:calc(var(--selbar-bottom-offset, 78px) + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);z-index:9200;backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,0.5);max-width:calc(100vw - 20px);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;animation:pf-selbar-in 0.16s ease-out;';
+    bar.innerHTML = '<span style="font-size:11px;color:var(--text-dim);white-space:nowrap;padding:0 4px 0 2px;flex-shrink:0;">' + subMultiSelect.length + ' selected' + (spansMultiple ? ' (' + projectIds.size + ')' : '') + '</span>' +
+      '<span style="width:1px;align-self:stretch;background:var(--card-border);flex-shrink:0;"></span>' +
+      '<button class="pf-selbar-btn" data-sub-action="cycle">Status</button>' +
+      '<button class="pf-selbar-btn" data-sub-action="due">Due</button>' +
+      '<button class="pf-selbar-btn" data-sub-action="copy"' + (spansMultiple ? ' title="Copy to… only works from a single project — narrow your selection to one project"' : '') + '>Copy to…</button>' +
+      '<button class="pf-selbar-btn" data-sub-action="copy-clip" title="Ctrl+C">Copy</button>' +
+      '<button class="pf-selbar-btn" data-sub-action="delete" style="color:var(--danger);">Delete</button>' +
+      '<button class="pf-selbar-btn pf-selbar-close" data-sub-action="clear" title="Clear selection">✕</button>';
+    // Single delegated listener instead of one per button — also means the
+    // old bar's listeners don't need explicit teardown since the whole node
+    // (and this one listener) is discarded together on removal.
+    bar.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-sub-action]');
+      if (!btn) return;
+      e.stopPropagation();
+      const action = btn.dataset.subAction;
+      if (action === 'copy') {
+        if (spansMultiple) { showToast('⚠ "Copy to…" needs a single-project selection — narrow your selection first', true); return; }
+        openCopyToProjectModal(p, subMultiSelect.slice());
+      } else if (action === 'copy-clip') {
+        const clip = buildClipboardFromSelection();
+        if (!clip || !clip.length) return;
+        _taskClipboard = clip;
+        showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it');
+      } else if (action === 'cycle') {
+        openStatusMenu(btn, null, (st) => {
+          try {
+            snapshot();
+            const touched = new Set();
+            subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.status = st; s.completedAt = st === 'completed' ? new Date().toISOString() : null; touched.add(owner); } });
+            scheduleSave(); render(); touched.forEach(pr => checkAllCompleted(pr));
+            requestAnimationFrame(() => renderSubSelectBar(p));
+          } catch (err) { console.error('[Orga-naes] Bulk set status failed:', err); showToast('⚠ Set status failed — see console', true); }
+        });
+      } else if (action === 'due') {
+        const input = document.createElement('input');
+        input.type = 'date';
+        // Positioned as an overlay centered on the bar itself (its fixed
+        // ancestor), rather than left to default static flow.
+        input.style.cssText = 'position:fixed;left:50%;bottom:calc(var(--selbar-bottom-offset, 78px) + env(safe-area-inset-bottom, 0px) + 48px);transform:translateX(-50%);z-index:9300;';
+        root.appendChild(input);
+        input.focus();
+        try { input.showPicker && input.showPicker(); } catch (err) {}
+        function commit() {
+          const val = input.value || null;
+          snapshot();
+          const touched = new Set();
+          subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.dueAt = val; touched.add(owner); } });
+          clearSubSelect(); scheduleSave(); render();
+          touched.forEach(pr => { if (pr._manualStatus) { delete pr._manualStatus; } checkAllCompleted(pr); });
+        }
+        input.addEventListener('change', commit);
+        input.addEventListener('blur', () => { input.remove(); });
+      } else if (action === 'delete') {
+        if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return;
+        snapshot();
+        subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const arr = findSubParentArray(owner.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } });
+        clearSubSelect(); scheduleSave(); render();
+      } else if (action === 'clear') {
+        clearSubSelect();
+        root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
+      }
+    });
     // Append to root (not into the scrolling sublist) so position:fixed is
     // relative to the viewport and the bar can't be scrolled out of view.
     root.appendChild(bar);
+    // Basic focus management: move focus to the first action so keyboard/
+    // screen-reader users landing here aren't stranded with no indication
+    // the bar exists.
+    // Don't steal focus on every render (that would yank focus away on
+    // every tap while selecting) — just ensure the toolbar and its buttons
+    // are reachable via keyboard nav (Tab) once the user is done selecting.
+    bar.setAttribute('role', 'toolbar');
+    bar.setAttribute('aria-label', subMultiSelect.length + ' items selected');
   }
   let draggingSubId = null; let draggingProjectId = null; let dragHandleArmed = false; let _draggingSubIds = [];
     // SUBSECTION: Drag & Drop
@@ -3672,7 +3765,7 @@
     scheduleSave(); autoArrangeProjects(true); render();
     showToast((clones.length > 1 ? clones.length + ' tasks' : '"' + clones[0].title + '"') + ' copied to "' + targetProject.title + '"', false, true);
     _pasteArmed = false; root.classList.remove('pf-paste-armed');
-    clearSubSelect(); splitMultiSelect = []; const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove();
+    clearSubSelect(); splitMultiSelect = []; root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
   }
   function pasteClipboardUnder(targetProject, targetSub) {
     if (!_taskClipboard || !_taskClipboard.length) return;
@@ -3692,7 +3785,7 @@
     scheduleSave(); autoArrangeProjects(true); render();
     showToast((clones.length > 1 ? clones.length + ' tasks' : '"' + clones[0].title + '"') + ' pasted under "' + targetSub.title + '"', false, true);
     _pasteArmed = false; root.classList.remove('pf-paste-armed');
-    clearSubSelect(); splitMultiSelect = []; const bar2 = root.querySelector('.pf-sub-select-bar'); if (bar2) bar2.remove();
+    clearSubSelect(); splitMultiSelect = []; root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
   }
   function renderSelection() {
     canvas.querySelectorAll('.pf-node').forEach(n => {
@@ -4266,7 +4359,7 @@
     if (_ctxEl && !_ctxEl.contains(e.target)) { e.preventDefault(); e.stopPropagation(); _closeCtx(); }
   }, true);
   document.addEventListener('contextmenu', _closeCtx);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && _ctxEl) { _closeCtx(); e.stopImmediatePropagation(); return; } if (e.key === 'Escape' && (subMultiSelect.length > 0 || splitMultiSelect.length > 0)) { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); splitMultiSelect = []; splitSelectedId = null; renderSplitList(); renderSplitDetail(); e.stopImmediatePropagation(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && _ctxEl) { _closeCtx(); e.stopImmediatePropagation(); return; } if (e.key === 'Escape' && (subMultiSelect.length > 0 || splitMultiSelect.length > 0)) { clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); splitMultiSelect = []; splitSelectedId = null; renderSplitList(); renderSplitDetail(); e.stopImmediatePropagation(); } });
 
   splitList.addEventListener('contextmenu', (e) => {
     if (e.target.closest('.pf-split-list-item')) return;
@@ -4541,7 +4634,7 @@
       if (splitSelectedId) renderSplitDetail();
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      if (subMultiSelect.length) { clearSubSelect(); const bar = root.querySelector('.pf-sub-select-bar'); if (bar) bar.remove(); return; }
+      if (subMultiSelect.length) { clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); return; }
       if (splitMultiSelect.length) { splitMultiSelect = []; renderSplitList(); renderSplitDetail(); }
     } else if (e.key === 'Delete') {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
