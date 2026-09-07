@@ -2701,7 +2701,7 @@
   function saveCategories() { safeSet(CATEGORIES_KEY, JSON.stringify(categories), false); }
   async function loadCategories() {
     try { const res = await safeGet(CATEGORIES_KEY, false); categories = res && res.value ? JSON.parse(res.value) : []; }
-    catch (e) { categories = []; }
+    catch (e) { categories = []; logError('Load categories', e); }
   }
   const COLLAPSED_CAT_KEY = 'project-flow-collapsed-categories';
   function saveCollapsedCategories() { safeSet(COLLAPSED_CAT_KEY, JSON.stringify(collapsedCategories), false); }
@@ -2908,7 +2908,7 @@
   function addProject(category) { snapshot(); const p = { id: uid(), title: 'New project', status: 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: null, completedAt: null, category: category || null, subtasks: [] }; projects.push(p); logActivity('Created project "New project"' + (category ? ' in ' + category : '')); scheduleSave(); autoArrangeProjects(true); if (listViewActive) { splitSelectedId = p.id; renderSplitList(); renderSplitDetail(); } focusEl('[data-title-id="' + p.id + '"]'); }
   const ARCHIVE_KEY = 'project-flow-archive';
   let archive = [];
-  async function loadArchive() { try { const res = await safeGet(ARCHIVE_KEY, false); if (res && res.value) archive = JSON.parse(res.value); } catch (e) { archive = []; } }
+  async function loadArchive() { try { const res = await safeGet(ARCHIVE_KEY, false); if (res && res.value) archive = JSON.parse(res.value); } catch (e) { archive = []; logError('Load archive', e); } }
   function saveArchive() { safeSet(ARCHIVE_KEY, JSON.stringify(archive), false); }
   function archiveProject(p) { archive = archive.filter(a => a.id !== p.id); archive.push({ ...JSON.parse(JSON.stringify(p)), archivedAt: new Date().toISOString() }); saveArchive(); }
   function restoreFromArchive(id) { const idx = archive.findIndex(a => a.id === id); if (idx < 0) return; const item = archive.splice(idx, 1)[0]; delete item.archivedAt; projects.push(item); saveArchive(); scheduleSave(); render(); renderArchiveList(); showToast('"' + item.title + '" restored'); }
@@ -2931,7 +2931,7 @@
 
   const TRASH_KEY = 'project-flow-trash';
   let trash = [];
-  async function loadTrash() { try { const res = await safeGet(TRASH_KEY, false); if (res && res.value) trash = JSON.parse(res.value); } catch (e) { trash = []; } purgeOldTrash(); }
+  async function loadTrash() { try { const res = await safeGet(TRASH_KEY, false); if (res && res.value) trash = JSON.parse(res.value); } catch (e) { trash = []; logError('Load trash', e); } purgeOldTrash(); }
   function saveTrash() { safeSet(TRASH_KEY, JSON.stringify(trash), false); }
   function purgeOldTrash() { const cutoff = Date.now() - TRASH_TTL_MS; const before = trash.length; trash = trash.filter(t => new Date(t.deletedAt).getTime() > cutoff); const purged = before - trash.length; if (purged > 0) { saveTrash(); showToast('🗑 ' + purged + ' item' + (purged > 1 ? 's' : '') + ' auto-removed from trash (older than 30 days)'); } }
   function trashProject(p) { trash.push({ ...JSON.parse(JSON.stringify(p)), deletedAt: new Date().toISOString() }); saveTrash(); }
@@ -4819,7 +4819,7 @@
     closeAllModals(); renderSnapshotsList(); openModal(snapshotsPanel, 'flex');
   });
   document.getElementById('pf-trash-empty-btn').addEventListener('click', emptyTrash);
-  (async function loadActivity() { try { const res = await safeGet(ACTIVITY_KEY, false); if (res && res.value) { const parsed = JSON.parse(res.value); activityLog.push(...parsed); } } catch (e) {} })();
+  (async function loadActivity() { try { const res = await safeGet(ACTIVITY_KEY, false); if (res && res.value) { const parsed = JSON.parse(res.value); activityLog.push(...parsed); } } catch (e) { logError('Load activity log', e); } })();
   loadArchive();
   loadTrash();
 
@@ -4913,7 +4913,7 @@
         if (data.date === now) { todayTasks = data.tasks || []; todayDate = data.date; }
         else { todayTasks = []; todayDate = now; }
       } else { todayDate = todayLocalStr(); }
-    } catch (e) { todayTasks = []; todayDate = todayLocalStr(); }
+    } catch (e) { todayTasks = []; todayDate = todayLocalStr(); logError('Load today', e); }
     autoPopulateToday();
   }
   function saveToday() { safeSet(TODAY_KEY, JSON.stringify({ date: todayDate, tasks: todayTasks }), false); }
@@ -5198,7 +5198,7 @@
   function daysAgoLocalStr(n) { const d = new Date(); d.setDate(d.getDate() - n); return localDateStr(d); }
   function weekDateStr(d) { return localDateStr(d); }
   async function loadWeekly() {
-    try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = JSON.parse(res.value); } catch (e) { weeklyData = {}; }
+    try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = JSON.parse(res.value); } catch (e) { weeklyData = {}; logError('Load weekly planner', e); }
   }
   function saveWeekly() { safeSet(WEEKLY_KEY, JSON.stringify(weeklyData), false); }
   function addToWeekDay(dayStr, title, sourceId, sourceType, projectTitle) {
@@ -5405,7 +5405,7 @@
 
   const REMINDERS_KEY = 'project-flow-reminders';
   let reminders = [];
-  async function loadReminders() { try { const res = await safeGet(REMINDERS_KEY, false); if (res && res.value) reminders = JSON.parse(res.value); } catch (e) { reminders = []; } }
+  async function loadReminders() { try { const res = await safeGet(REMINDERS_KEY, false); if (res && res.value) reminders = JSON.parse(res.value); } catch (e) { reminders = []; logError('Load reminders', e); } }
     // SUBSECTION: Reminders
   function saveReminders() { safeSet(REMINDERS_KEY, JSON.stringify(reminders), false); }
   function promptReminder(sourceId, title, sourceType) {
@@ -5772,7 +5772,7 @@
         abPathEl.textContent = '📂 ' + autoBackupDirHandle.name;
         showToast('Backup folder set: ' + autoBackupDirHandle.name);
       } catch (err) {
-        if (err.name !== 'AbortError') showToast('Could not select folder.', true);
+        if (err.name !== 'AbortError') { showToast('Could not select folder.', true); logError('Auto-backup folder picker', err); }
       }
     });
     startAutoBackup();
@@ -5791,7 +5791,7 @@
     raw = raw.replace(/^\uFEFF/, '').trim();
     if (!raw) return { error: 'That file is empty.' };
     try { return { parsed: JSON.parse(raw) }; }
-    catch (e) { return { error: 'Failed to parse JSON: ' + e.message }; }
+    catch (e) { logError('Import JSON parse', e); return { error: 'Failed to parse JSON: ' + e.message }; }
   }
 
   function extractImportData(parsed) {
@@ -7083,6 +7083,7 @@ if ('serviceWorker' in navigator) {
         window._pf.showToast('☁ Loaded ' + (user.displayName || user.email) + '\u2019s data');
       }).catch(function(err) {
         window._pf.showToast('⚠ Failed to load ' + (user.displayName || user.email) + '\u2019s data: ' + (err && err.message ? err.message : 'unknown error'), true);
+        if (window._pf.logError) window._pf.logError('Firebase account-switch load', err);
       }).finally(function() {
         _switchingAccount = false;
         localStorage.setItem(LAST_UID_KEY, user.uid);
@@ -7132,9 +7133,12 @@ if ('serviceWorker' in navigator) {
             window._pf.showToast('☁ Auto-pulled latest data from cloud');
           }).catch(function(err) {
             window._pf.showToast('⚠ Auto-pull failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+            if (window._pf.logError) window._pf.logError('Firebase auto-pull', err);
           });
         }
-      }).catch(function(err) {});
+      }).catch(function(err) {
+        if (window._pf.logError) window._pf.logError('Firebase auto-pull check', err);
+      });
     }
     if (_fbAutosync) startListener();
   }
@@ -7167,6 +7171,7 @@ if ('serviceWorker' in navigator) {
         auth.signInWithRedirect(provider);
       } else {
         alert('Sign-in failed: ' + err.message);
+        if (window._pf && window._pf.logError) window._pf.logError('Firebase sign-in', err);
       }
     });
   });
@@ -7186,6 +7191,7 @@ if ('serviceWorker' in navigator) {
       window._pf.showToast('🚪 Signed out');
     }).catch(function(err) {
       window._pf.showToast('⚠ Sign out failed: ' + err.message, true);
+      if (window._pf.logError) window._pf.logError('Firebase sign out', err);
     });
   }
   signoutBtn.addEventListener('click', _doSignout);
@@ -7559,6 +7565,7 @@ if ('serviceWorker' in navigator) {
           window._pf.showToast('☁ Pushed to cloud');
         }).catch(function(err) {
           window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+          if (window._pf.logError) window._pf.logError('Firebase push', err);
         });
         return;
       }
@@ -7571,6 +7578,7 @@ if ('serviceWorker' in navigator) {
       showConflictModal(localProjects, remoteProjects);
     }).catch(function(err) {
       window._pf.showToast('⚠ Failed to check cloud data: ' + (err && err.message ? err.message : 'unknown error'), true);
+      if (window._pf.logError) window._pf.logError('Firebase check cloud data', err);
     });
   };
   if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
@@ -7855,6 +7863,7 @@ if ('serviceWorker' in navigator) {
       window._pf.showToast('✅ Kept local data & pushed to cloud');
     }).catch(function(err) {
       window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+      if (window._pf.logError) window._pf.logError('Firebase conflict push', err);
     });
   });
   document.getElementById('pf-conflict-keep-remote').addEventListener('click', function() {
