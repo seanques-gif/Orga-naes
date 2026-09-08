@@ -1504,6 +1504,7 @@
     box-shadow: 0 0 12px rgba(149,128,255,0.15);
   }
   .pf-week-col-dragover { border-color: var(--accent) !important; }
+  .pf-week-col-dragover-blocked { border-color: var(--danger, #ef4444) !important; cursor: not-allowed; }
 
   .pf-week-col-header {
     font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
@@ -1564,6 +1565,38 @@
     transition: border-color 0.15s, color 0.15s, background 0.15s;
   }
   .pf-week-add-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(149,128,255,0.06); }
+
+  /* Backlog — unstructured holding area for unfinished/past-due Weekly
+     Planner tasks, manually arranged from here into day columns above. */
+  .pf-week-backlog-list {
+    border: 1.5px dashed var(--sub-border); border-radius: 8px; padding: 8px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .pf-week-backlog-list.pf-week-col-dragover { border-color: var(--accent); background: rgba(149,128,255,0.06); }
+  .pf-week-backlog-empty {
+    font-size: 10px; color: var(--text-dim); opacity: 0.5; font-style: italic;
+    padding: 6px 4px;
+  }
+  .pf-week-backlog-chip {
+    font-size: 12px; padding: 6px 8px; border-radius: 14px;
+    background: var(--card); border: 1px solid var(--card-border);
+    display: flex; align-items: center; gap: 6px; max-width: 260px;
+    cursor: grab; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .pf-week-backlog-chip:hover { border-color: var(--hover-border); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+  .pf-week-backlog-chip-accent { border-left: 3px solid var(--pf-task-accent, transparent); }
+  .pf-week-backlog-chip-check { flex-shrink: 0; cursor: pointer; }
+  .pf-week-backlog-chip-title-wrap { min-width: 0; flex: 1; }
+  .pf-week-backlog-chip-title-wrap.pf-clickable { cursor: pointer; }
+  .pf-week-backlog-chip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-week-backlog-chip-project { font-size: 9px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-week-backlog-chip-del {
+    background: none; border: none; color: var(--text-dim); font-size: 13px;
+    cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0;
+  }
+  #pf-backlog-arrange-btn { border: 1px solid var(--sub-border); border-radius: 6px; background: none; color: var(--text-dim); cursor: pointer; }
+  #pf-backlog-arrange-btn:hover { border-color: var(--accent); color: var(--accent); }
+  #pf-backlog-arrange-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 </style>
 
@@ -1830,8 +1863,15 @@
       <button class="pf-undo-btn" id="pf-week-next" style="padding:4px 10px;font-size:14px;">▶</button>
     </div>
     <div id="pf-week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;gap:10px;flex:1;overflow-y:auto;min-height:0;padding:14px 12px;"></div>
+    <div id="pf-week-backlog" style="border-top:1px solid var(--card-border);padding:10px 16px;flex-shrink:0;max-height:190px;display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;font-weight:700;flex:1;">📥 Backlog <span id="pf-week-backlog-count" style="font-weight:400;color:var(--text-dim);"></span></span>
+        <button class="pf-undo-btn" id="pf-backlog-arrange-btn" style="padding:3px 10px;font-size:10px;font-weight:600;" title="Spread backlog tasks across the rest of this week, starting today">↻ Auto-arrange</button>
+      </div>
+      <div id="pf-week-backlog-list" class="pf-week-backlog-list" style="display:flex;flex-wrap:wrap;gap:6px;overflow-y:auto;min-height:38px;"></div>
+    </div>
     <div style="padding:10px 16px;border-top:1px solid var(--card-border);display:flex;gap:8px;align-items:center;flex-shrink:0;background:var(--header-bg);border-radius:0 0 10px 10px;">
-      <span style="flex:1;font-size:10px;color:var(--text-dim);text-align:right;font-style:italic;">Drag tasks between days · Click + to add manually</span>
+      <span style="flex:1;font-size:10px;color:var(--text-dim);text-align:right;font-style:italic;">Drag tasks between days or into Backlog · Click + to add manually</span>
     </div>
   </div>
   <div class="pf-activity-panel" id="pf-archive-panel" style="display:none;width:min(500px,90vw);max-height:min(80vh,700px);">
@@ -5262,18 +5302,93 @@
     try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = JSON.parse(res.value); } catch (e) { weeklyData = {}; logError('Load weekly planner', e); }
   }
   function saveWeekly() { safeSet(WEEKLY_KEY, JSON.stringify(weeklyData), false); }
+
+  // Backlog — a dedicated, unstructured holding area for unfinished/past-due
+  // Weekly Planner tasks, manually arranged from here into day columns.
+  // Deliberately kept as its own top-level key/array rather than a special
+  // entry inside weeklyData: weeklyData's keys are assumed to be day strings
+  // everywhere (relocation, pruning, and rollover in syncWeeklyWithTasks all
+  // iterate Object.keys(weeklyData) and treat every entry as a day array), so
+  // a 'backlog' property there would get silently swept up by that logic
+  // (e.g. relocated back onto a task's due date the moment syncWeeklyWithTasks
+  // ran, undoing the whole point of a manual holding area). A separate key
+  // avoids that entirely and keeps existing weekly-planner logic untouched.
+  const BACKLOG_KEY = 'project-flow-backlog';
+  let backlogData = [];
+  async function loadBacklog() {
+    try { const res = await safeGet(BACKLOG_KEY, false); if (res && res.value) backlogData = JSON.parse(res.value); } catch (e) { backlogData = []; logError('Load backlog', e); }
+  }
+  function saveBacklog() { safeSet(BACKLOG_KEY, JSON.stringify(backlogData), false); }
+
+  // Dismissal tracking — clicking '×' on a linked planner entry (one with a
+  // sourceId) should behave like "I don't want to see this occurrence again"
+  // rather than "add it right back on the next sync pass", which is what
+  // plain removal from weeklyData/backlogData would otherwise do since the
+  // source task's dueAt is untouched. Keyed by `sourceId|dueAt` (not just
+  // sourceId) so that if the user later changes the task's actual due date,
+  // that's a *new* occurrence the dismissal shouldn't suppress — the old key
+  // simply stops matching and is garbage-collected in sync step 2 below.
+  const DISMISSED_KEY = 'project-flow-dismissed-weekly';
+  let dismissedOccurrences = {}; // { [sourceId + '|' + dueAt]: true }
+  async function loadDismissed() {
+    try { const res = await safeGet(DISMISSED_KEY, false); if (res && res.value) dismissedOccurrences = JSON.parse(res.value); } catch (e) { dismissedOccurrences = {}; logError('Load dismissed', e); }
+  }
+  function saveDismissed() { safeSet(DISMISSED_KEY, JSON.stringify(dismissedOccurrences), false); }
+  function dismissalKey(sourceId, dueAt) { return sourceId + '|' + dueAt; }
+  function dismissOccurrence(sourceId, dueAt) {
+    if (!sourceId || !dueAt) return;
+    dismissedOccurrences[dismissalKey(sourceId, dueAt)] = true;
+    saveDismissed();
+  }
+  function undismissOccurrence(sourceId, dueAt) {
+    if (!sourceId || !dueAt) return;
+    delete dismissedOccurrences[dismissalKey(sourceId, dueAt)];
+    saveDismissed();
+  }
   // Snapshot/undo for destructive Weekly Planner edits (delete task, clear
   // day, clear week). Separate from the main projects undo stack (snapshot/
   // undo/redo above) since weeklyData isn't part of `projects` and isn't
   // covered by that stack at all — this is a single-level undo, surfaced
   // via the same toast "Undo" action pattern used elsewhere.
+  // Covers both weeklyData and backlogData in one snapshot — several
+  // actions (move to/from backlog, Auto-arrange) touch both at once, so a
+  // single combined undo keeps them consistent instead of only rolling
+  // back half the change. Also tracks any source task dueAt changes made
+  // while a snapshot is open (see _weeklyUndoDueAtReverts below): moving a
+  // task to a different day updates the linked task's real dueAt via the
+  // main project snapshot()/scheduleSave() — a separate undo stack from
+  // this one — so without reverting it too, undoing here would put the
+  // planner entry back but leave the task's actual due date pointing at
+  // wherever it was moved to, which the next sync pass would then use to
+  // silently re-add the "undone" entry right back.
   let _weeklyUndoSnapshot = null;
-  function weeklySnapshot() { _weeklyUndoSnapshot = JSON.parse(JSON.stringify(weeklyData)); }
+  let _backlogUndoSnapshot = null;
+  let _weeklyUndoDueAtReverts = null;
+  let _dismissedUndoSnapshot = null;
+  function weeklySnapshot() {
+    _weeklyUndoSnapshot = JSON.parse(JSON.stringify(weeklyData));
+    _backlogUndoSnapshot = JSON.parse(JSON.stringify(backlogData));
+    _dismissedUndoSnapshot = JSON.parse(JSON.stringify(dismissedOccurrences));
+    _weeklyUndoDueAtReverts = [];
+  }
   function weeklyUndo() {
     if (!_weeklyUndoSnapshot) return;
     weeklyData = _weeklyUndoSnapshot;
+    backlogData = _backlogUndoSnapshot || [];
+    dismissedOccurrences = _dismissedUndoSnapshot || {};
+    const dueAtReverts = _weeklyUndoDueAtReverts;
     _weeklyUndoSnapshot = null;
+    _backlogUndoSnapshot = null;
+    _dismissedUndoSnapshot = null;
+    _weeklyUndoDueAtReverts = null;
     saveWeekly();
+    saveBacklog();
+    saveDismissed();
+    if (dueAtReverts && dueAtReverts.length) {
+      dueAtReverts.forEach(({ node, prevDueAt }) => { node.dueAt = prevDueAt; });
+      scheduleSave();
+      render();
+    }
     renderWeeklyPanel();
   }
   // Moves (or reorders) a weekly task. targetTaskId + insertBefore describe
@@ -5301,7 +5416,10 @@
       const srcProject = projects.find(pr => pr.id === task.sourceId || (pr.subtasks && findSubNode(pr.subtasks, task.sourceId)));
       if (srcProject) {
         const node = srcProject.id === task.sourceId ? srcProject : findSubNode(srcProject.subtasks, task.sourceId);
-        if (node) { snapshot(); node.dueAt = toDay; scheduleSave(); render(); }
+        if (node) {
+          if (_weeklyUndoDueAtReverts) _weeklyUndoDueAtReverts.push({ node, prevDueAt: node.dueAt });
+          snapshot(); node.dueAt = toDay; scheduleSave(); render();
+        }
       }
     }
     saveWeekly();
@@ -5360,7 +5478,7 @@
   document.addEventListener('touchend', () => { if (_wtd) _cancelWeeklyTouchDrag(); }, { passive: true });
   function _clearWeeklyDragVisuals() {
     document.querySelectorAll('.pf-week-task').forEach(r => { r.style.borderTop = ''; r.style.borderBottom = ''; });
-    document.querySelectorAll('.pf-week-col').forEach(c => c.classList.remove('pf-week-col-dragover'));
+    document.querySelectorAll('.pf-week-col').forEach(c => { c.classList.remove('pf-week-col-dragover'); c.classList.remove('pf-week-col-dragover-blocked'); });
   }
   function _startWeeklyTouchDrag(row, t, ds, touch) {
     if (navigator.vibrate) navigator.vibrate(15);
@@ -5376,7 +5494,7 @@
     ghost.style.boxShadow = '0 6px 20px rgba(0,0,0,0.35)';
     document.body.appendChild(ghost);
     row.style.opacity = '0.3';
-    _wtd = { taskId: t.id, fromDay: ds, ghost, sourceRow: row, offsetX: touch.clientX - rect.left, offsetY: touch.clientY - rect.top, targetDay: null, targetTaskId: null, insertBefore: false };
+    _wtd = { taskId: t.id, fromDay: ds, ghost, sourceRow: row, offsetX: touch.clientX - rect.left, offsetY: touch.clientY - rect.top, targetDay: null, targetTaskId: null, insertBefore: false, blocked: false };
   }
   function _updateWeeklyTouchDrag(touch) {
     if (!_wtd) return;
@@ -5387,9 +5505,21 @@
     _wtd.ghost.style.display = '';
     _clearWeeklyDragVisuals();
     const targetCol = under && under.closest('.pf-week-col');
-    if (!targetCol) { _wtd.targetDay = null; _wtd.targetTaskId = null; return; }
+    if (!targetCol) { _wtd.targetDay = null; _wtd.targetTaskId = null; _wtd.blocked = false; return; }
+    const colDay = targetCol.dataset.day;
+    if (colDay < todayLocalStr()) {
+      // Finished week — mark visually blocked and refuse it as a drop
+      // target; a past-day entry would just get rolled forward to today
+      // by syncWeeklyWithTasks on the next save anyway.
+      targetCol.classList.add('pf-week-col-dragover-blocked');
+      _wtd.targetDay = null;
+      _wtd.targetTaskId = null;
+      _wtd.blocked = true;
+      return;
+    }
+    _wtd.blocked = false;
     targetCol.classList.add('pf-week-col-dragover');
-    _wtd.targetDay = targetCol.dataset.day;
+    _wtd.targetDay = colDay;
     const targetRow = under.closest('.pf-week-task');
     if (targetRow && targetRow.dataset.taskId !== _wtd.taskId) {
       const rect = targetRow.getBoundingClientRect();
@@ -5405,12 +5535,13 @@
   }
   function _endWeeklyTouchDrag() {
     if (!_wtd) return;
-    const { taskId, fromDay, targetDay, targetTaskId, insertBefore, ghost, sourceRow } = _wtd;
+    const { taskId, fromDay, targetDay, targetTaskId, insertBefore, ghost, sourceRow, blocked } = _wtd;
     ghost.remove();
     sourceRow.style.opacity = '';
     _clearWeeklyDragVisuals();
     _wtd = null;
     if (targetDay && !(targetDay === fromDay && targetTaskId === taskId)) moveWeeklyTask(taskId, fromDay, targetDay, targetTaskId, insertBefore);
+    else if (blocked) showToast("Can't move tasks to a finished week — they'd just roll forward to today", true);
   }
   function _cancelWeeklyTouchDrag() {
     if (!_wtd) return;
@@ -5479,7 +5610,10 @@
       changed = true;
     });
 
-    // 2. Prune completed.
+    // 2. Prune completed. Applies to the Backlog too — a source task can be
+    //    completed/archived/trashed directly (not through its planner
+    //    entry) while sitting in the Backlog, and without this it would
+    //    stay there forever since nothing else ever revisits backlogData.
     Object.keys(weeklyData).forEach(ds => {
       const before = weeklyData[ds].length;
       weeklyData[ds] = weeklyData[ds].filter(t => {
@@ -5493,32 +5627,83 @@
       if (weeklyData[ds].length !== before) changed = true;
       if (!weeklyData[ds].length) delete weeklyData[ds];
     });
+    {
+      const beforeBacklog = backlogData.length;
+      backlogData = backlogData.filter(t => {
+        if (!t.sourceId) return true;
+        const node = nodeById.get(t.sourceId);
+        return !!node && node.status !== 'completed';
+      });
+      if (backlogData.length !== beforeBacklog) { saveBacklog(); if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel(); }
+    }
+    // 2b. Garbage-collect stale dismissal keys. A dismissal is only ever
+    //     meant to suppress the exact occurrence (sourceId + dueAt) that was
+    //     active when '×' was clicked — once that's no longer the source
+    //     task's current due date (the user edited it, or it's since been
+    //     completed/archived/trashed and node is gone), the key can never
+    //     match anything step 4 checks again, so drop it now rather than
+    //     letting dismissedOccurrences grow forever.
+    {
+      let dismissedChanged = false;
+      Object.keys(dismissedOccurrences).forEach(key => {
+        const sep = key.lastIndexOf('|');
+        const sourceId = key.slice(0, sep);
+        const dueAt = key.slice(sep + 1);
+        const node = nodeById.get(sourceId);
+        if (!node || node.dueAt !== dueAt) { delete dismissedOccurrences[key]; dismissedChanged = true; }
+      });
+      if (dismissedChanged) saveDismissed();
+    }
 
-    // 3. Roll overdue entries forward to today.
+    // 3. Carry overdue entries into the Backlog instead of dumping them
+    //    onto today. Unlike the old auto-roll-to-today behavior, this
+    //    leaves them unscheduled so the user can manually sort them (or use
+    //    Auto-arrange) rather than having today silently pile up. Dedupe by
+    //    sourceId against what's already in the backlog so a repeated sync
+    //    pass doesn't create duplicate chips for the same source task.
     const todayStr = todayLocalStr();
-    let rolledCount = 0;
+    let carriedCount = 0;
+    let backlogChanged = false;
+    const backlogSourceIds = new Set(backlogData.filter(t => t.sourceId).map(t => t.sourceId));
     Object.keys(weeklyData).forEach(ds => {
       if (ds >= todayStr) return;
       const stale = weeklyData[ds];
       if (!stale || !stale.length) { delete weeklyData[ds]; return; }
-      if (!weeklyData[todayStr]) weeklyData[todayStr] = [];
-      weeklyData[todayStr].push(...stale);
-      rolledCount += stale.length;
+      stale.forEach(t => {
+        if (t.sourceId && backlogSourceIds.has(t.sourceId)) return; // already backlogged
+        backlogData.push(t);
+        if (t.sourceId) backlogSourceIds.add(t.sourceId);
+        carriedCount++;
+      });
       delete weeklyData[ds];
       changed = true;
+      backlogChanged = true;
     });
+    if (backlogChanged) saveBacklog();
 
-    // 4. Add missing due-date entries.
+    // 4. Add missing due-date entries. A source already sitting in the
+    //    Backlog (moved there by step 3 above, or manually dragged there)
+    //    still counts as "has an entry" — otherwise this pass doesn't see
+    //    it (it only scans weeklyData) and re-adds a fresh duplicate right
+    //    back onto the day it was just carried off of.
     const existingSourceIds = new Set();
     Object.values(weeklyData).forEach(arr => arr.forEach(t => { if (t.sourceId) existingSourceIds.add(t.sourceId); }));
+    backlogData.forEach(t => { if (t.sourceId) existingSourceIds.add(t.sourceId); });
     dueNodes.forEach(({ dueAt, title, sourceId, sourceType, projectTitle }) => {
-      if (!existingSourceIds.has(sourceId)) { addToWeekDay(dueAt, title, sourceId, sourceType, projectTitle); existingSourceIds.add(sourceId); changed = true; }
+      if (existingSourceIds.has(sourceId)) return;
+      // Skip occurrences the user explicitly dismissed via '×' — as long as
+      // the task's dueAt hasn't moved since (a dueAt change is a new
+      // occurrence, and dismissedOccurrences won't contain a key for it, so
+      // it's re-added normally; the stale key for the old dueAt was already
+      // swept up in step 2b above).
+      if (dismissedOccurrences[dismissalKey(sourceId, dueAt)]) return;
+      addToWeekDay(dueAt, title, sourceId, sourceType, projectTitle); existingSourceIds.add(sourceId); changed = true;
     });
 
     if (changed) {
       saveWeekly();
       if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel();
-      if (rolledCount) showToast('↻ Rolled ' + rolledCount + ' overdue planner task' + (rolledCount > 1 ? 's' : '') + ' to today');
+      if (carriedCount) showToast('📥 Moved ' + carriedCount + ' overdue planner task' + (carriedCount > 1 ? 's' : '') + ' to Backlog');
     }
   }
   function addToWeekDay(dayStr, title, sourceId, sourceType, projectTitle) {
@@ -5633,7 +5818,19 @@
         const delBtn = document.createElement('button');
         delBtn.textContent = '×';
         delBtn.className = 'pf-week-task-del';
-        delBtn.addEventListener('click', () => { weeklySnapshot(); weeklyData[ds] = weeklyData[ds].filter(x => x.id !== t.id); saveWeekly(); renderWeeklyPanel(); showToast('Removed "' + t.title + '"', false, false, weeklyUndo, 'Undo'); });
+        delBtn.addEventListener('click', () => {
+          weeklySnapshot();
+          weeklyData[ds] = weeklyData[ds].filter(x => x.id !== t.id);
+          // Linked entries get suppressed for this specific occurrence
+          // (sourceId + the day it was due) so the next sync pass doesn't
+          // just add it right back — see dismissOccurrence above. Unlinked
+          // ad-hoc entries have nothing to re-derive from, so plain removal
+          // is already permanent for them.
+          if (t.sourceId) dismissOccurrence(t.sourceId, ds);
+          saveWeekly();
+          renderWeeklyPanel();
+          showToast('Removed "' + t.title + '"', false, false, weeklyUndo, 'Undo');
+        });
         row.appendChild(check);
         row.appendChild(titleWrap);
         row.appendChild(delBtn);
@@ -5645,6 +5842,7 @@
         // appends to the end) from also firing for these in-list drops.
         row.addEventListener('dragover', (e) => {
           e.preventDefault(); e.stopPropagation();
+          if (ds < todayStr) { e.dataTransfer.dropEffect = 'none'; row.style.borderTop = ''; row.style.borderBottom = ''; col.classList.add('pf-week-col-dragover-blocked'); return; }
           e.dataTransfer.dropEffect = 'move';
           col.querySelectorAll('.pf-week-task').forEach(r => { if (r !== row) { r.style.borderTop = ''; r.style.borderBottom = ''; } });
           const rect = row.getBoundingClientRect();
@@ -5652,12 +5850,16 @@
           row.style.borderTop = before ? '2px solid var(--accent)' : '';
           row.style.borderBottom = before ? '' : '2px solid var(--accent)';
         });
-        row.addEventListener('dragleave', () => { row.style.borderTop = ''; row.style.borderBottom = ''; });
+        row.addEventListener('dragleave', () => { row.style.borderTop = ''; row.style.borderBottom = ''; col.classList.remove('pf-week-col-dragover-blocked'); });
         row.addEventListener('drop', (e) => {
           e.preventDefault(); e.stopPropagation();
           col.classList.remove('pf-week-col-dragover');
+          col.classList.remove('pf-week-col-dragover-blocked');
           const before = row.style.borderTop !== '';
           row.style.borderTop = ''; row.style.borderBottom = '';
+          if (ds < todayStr) { showToast("Can't move tasks to a finished week — they'd just roll forward to today", true); return; }
+          const backlogRaw = e.dataTransfer.getData('application/backlog-task');
+          if (backlogRaw) { const { id } = JSON.parse(backlogRaw); moveBacklogTaskToDay(id, ds); renderWeeklyPanel(); return; }
           const raw = e.dataTransfer.getData('application/weekly-task');
           if (!raw) return;
           const { id, fromDay } = JSON.parse(raw);
@@ -5678,11 +5880,27 @@
         saveWeekly(); renderWeeklyPanel();
       });
       col.appendChild(addBtn);
-      col.addEventListener('dragover', (e) => { e.preventDefault(); col.classList.add('pf-week-col-dragover'); });
-      col.addEventListener('dragleave', () => { col.classList.remove('pf-week-col-dragover'); });
+      col.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (ds < todayStr) { e.dataTransfer.dropEffect = 'none'; col.classList.add('pf-week-col-dragover-blocked'); return; }
+        col.classList.add('pf-week-col-dragover');
+      });
+      col.addEventListener('dragleave', () => { col.classList.remove('pf-week-col-dragover'); col.classList.remove('pf-week-col-dragover-blocked'); });
       col.addEventListener('drop', (e) => {
         e.preventDefault();
         col.classList.remove('pf-week-col-dragover');
+        col.classList.remove('pf-week-col-dragover-blocked');
+        if (ds < todayStr) {
+          if (e.dataTransfer.getData('application/weekly-task') || e.dataTransfer.getData('application/backlog-task') || e.dataTransfer.getData('text/plain')) showToast("Can't move tasks to a finished week — they'd just roll forward to today", true);
+          return;
+        }
+        const backlogRaw = e.dataTransfer.getData('application/backlog-task');
+        if (backlogRaw) {
+          const { id } = JSON.parse(backlogRaw);
+          moveBacklogTaskToDay(id, ds);
+          renderWeeklyPanel();
+          return;
+        }
         const raw = e.dataTransfer.getData('application/weekly-task');
         if (raw) {
           const { id, fromDay } = JSON.parse(raw);
@@ -5705,8 +5923,165 @@
       });
       grid.appendChild(col);
     }
+    renderBacklogSection(start);
   }
-  document.getElementById('pf-weekly-btn').addEventListener('click', () => { loadWeekly().then(() => { renderWeeklyPanel(); openModal(weeklyPanel, 'flex'); }); });
+  // Renders the Backlog strip beneath the day grid. weekStart is the Monday
+  // of the currently-viewed week (from renderWeeklyPanel), used by
+  // Auto-arrange to know which days it's allowed to spread into.
+  function renderBacklogSection(weekStart) {
+    const list = document.getElementById('pf-week-backlog-list');
+    const countEl = document.getElementById('pf-week-backlog-count');
+    const arrangeBtn = document.getElementById('pf-backlog-arrange-btn');
+    if (!list) return;
+    list.innerHTML = '';
+    countEl.textContent = backlogData.length ? '(' + backlogData.length + ')' : '';
+    arrangeBtn.disabled = !backlogData.length;
+    if (!backlogData.length) {
+      const empty = document.createElement('div');
+      empty.className = 'pf-week-backlog-empty';
+      empty.textContent = 'Nothing in backlog — overdue planner tasks land here to be sorted manually.';
+      list.appendChild(empty);
+    }
+    backlogData.forEach(t => {
+      const srcProject = t.sourceId ? projects.find(pr => pr.id === t.sourceId || (pr.subtasks && (function findIn(subs) { return subs.some(s => s.id === t.sourceId || (s.subtasks && findIn(s.subtasks))); })(pr.subtasks))) : null;
+      const accentColor = srcProject && srcProject.color ? srcProject.color : null;
+      const chip = document.createElement('div');
+      chip.draggable = true;
+      chip.dataset.taskId = t.id;
+      chip.className = 'pf-week-backlog-chip' + (accentColor ? ' pf-week-backlog-chip-accent' : '');
+      if (accentColor) chip.style.setProperty('--pf-task-accent', accentColor);
+      chip.title = t.title + (t.projectTitle ? ' — ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '');
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.className = 'pf-week-backlog-chip-check';
+      check.addEventListener('change', () => {
+        backlogData = backlogData.filter(x => x.id !== t.id);
+        saveBacklog(); renderBacklogSection(weekStart);
+        showToast('"' + t.title + '" completed and removed from backlog');
+      });
+      const titleWrap = document.createElement('div');
+      titleWrap.className = 'pf-week-backlog-chip-title-wrap' + (t.sourceId ? ' pf-clickable' : '');
+      const titleSpan = document.createElement('div');
+      titleSpan.className = 'pf-week-backlog-chip-title';
+      titleSpan.textContent = t.title;
+      titleWrap.appendChild(titleSpan);
+      if (t.projectTitle) {
+        const projSpan = document.createElement('div');
+        projSpan.className = 'pf-week-backlog-chip-project';
+        projSpan.textContent = t.projectTitle;
+        titleWrap.appendChild(projSpan);
+      }
+      if (t.sourceId) {
+        titleWrap.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const projectId = srcProject ? srcProject.id : t.sourceId;
+          jumpToTask(projectId, t.title);
+        });
+      }
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '×';
+      delBtn.className = 'pf-week-backlog-chip-del';
+      delBtn.addEventListener('click', () => {
+        weeklySnapshot();
+        backlogData = backlogData.filter(x => x.id !== t.id);
+        // Same dismissal suppression as the day-column delete button — key
+        // it off the source task's *current* dueAt (not the day it was
+        // carried from), since that's the value step 4 of syncWeeklyWithTasks
+        // actually re-checks against on the next pass.
+        if (t.sourceId) {
+          const node = srcProject ? (srcProject.id === t.sourceId ? srcProject : findSubNode(srcProject.subtasks, t.sourceId)) : null;
+          if (node && node.dueAt) dismissOccurrence(t.sourceId, node.dueAt);
+        }
+        saveBacklog(); renderBacklogSection(weekStart);
+        showToast('Removed "' + t.title + '" from backlog', false, false, weeklyUndo, 'Undo');
+      });
+      chip.appendChild(check);
+      chip.appendChild(titleWrap);
+      chip.appendChild(delBtn);
+      chip.addEventListener('dragstart', (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('application/backlog-task', JSON.stringify({ id: t.id })); chip.style.opacity = '0.4'; });
+      chip.addEventListener('dragend', () => { chip.style.opacity = ''; });
+      list.appendChild(chip);
+    });
+  }
+  // Moves a task already sitting on a day column into the Backlog, removing
+  // it from weeklyData. Shared by the Backlog drop handler below.
+  function moveWeeklyTaskToBacklog(taskId, fromDay) {
+    const fromArr = weeklyData[fromDay] || [];
+    const idx = fromArr.findIndex(x => x.id === taskId);
+    if (idx < 0) return;
+    const task = fromArr.splice(idx, 1)[0];
+    if (!fromArr.length) delete weeklyData[fromDay];
+    backlogData.push(task);
+    saveWeekly(); saveBacklog();
+    renderWeeklyPanel();
+  }
+  // Moves a backlog chip onto a specific day column (used by both the
+  // native drag/drop below and Auto-arrange).
+  function moveBacklogTaskToDay(taskId, toDay) {
+    const idx = backlogData.findIndex(x => x.id === taskId);
+    if (idx < 0) return;
+    const task = backlogData.splice(idx, 1)[0];
+    if (!weeklyData[toDay]) weeklyData[toDay] = [];
+    weeklyData[toDay].push(task);
+    if (task.sourceId) {
+      const srcProject = projects.find(pr => pr.id === task.sourceId || (pr.subtasks && findSubNode(pr.subtasks, task.sourceId)));
+      if (srcProject) {
+        const node = srcProject.id === task.sourceId ? srcProject : findSubNode(srcProject.subtasks, task.sourceId);
+        if (node) {
+          if (_weeklyUndoDueAtReverts) _weeklyUndoDueAtReverts.push({ node, prevDueAt: node.dueAt });
+          snapshot(); node.dueAt = toDay; scheduleSave(); render();
+        }
+      }
+    }
+    saveWeekly(); saveBacklog();
+  }
+  const backlogList = document.getElementById('pf-week-backlog-list');
+  backlogList.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (!e.dataTransfer.types.includes('application/weekly-task')) { e.dataTransfer.dropEffect = 'none'; return; }
+    e.dataTransfer.dropEffect = 'move';
+    backlogList.classList.add('pf-week-col-dragover');
+  });
+  backlogList.addEventListener('dragleave', () => { backlogList.classList.remove('pf-week-col-dragover'); });
+  backlogList.addEventListener('drop', (e) => {
+    e.preventDefault();
+    backlogList.classList.remove('pf-week-col-dragover');
+    const raw = e.dataTransfer.getData('application/weekly-task');
+    if (!raw) return;
+    const { id, fromDay } = JSON.parse(raw);
+    moveWeeklyTaskToBacklog(id, fromDay);
+  });
+  // Auto-arrange: spreads every backlog task across the remaining days of
+  // the currently-viewed week (today onward if this is the current week,
+  // otherwise the whole week), placing each on whichever of those days
+  // currently has the fewest planner tasks — a simple load-balance so
+  // carried-forward tasks don't all pile onto one day.
+  document.getElementById('pf-backlog-arrange-btn').addEventListener('click', () => {
+    if (!backlogData.length) return;
+    const start = getWeekStart(weekOffset);
+    const todayStr = todayLocalStr();
+    const candidateDays = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(d.getDate() + i);
+      const ds = weekDateStr(d);
+      if (ds >= todayStr) candidateDays.push(ds);
+    }
+    if (!candidateDays.length) { showToast("Can't auto-arrange into a finished week — switch to the current or a future week", true); return; }
+    weeklySnapshot();
+    const toPlace = backlogData.slice();
+    toPlace.forEach(t => {
+      let best = candidateDays[0];
+      let bestCount = (weeklyData[best] || []).length;
+      candidateDays.forEach(ds => {
+        const n = (weeklyData[ds] || []).length;
+        if (n < bestCount) { best = ds; bestCount = n; }
+      });
+      moveBacklogTaskToDay(t.id, best);
+    });
+    renderWeeklyPanel();
+    showToast('↻ Arranged ' + toPlace.length + ' backlog task' + (toPlace.length > 1 ? 's' : '') + ' across the week', false, false, weeklyUndo, 'Undo');
+  });
+  document.getElementById('pf-weekly-btn').addEventListener('click', () => { Promise.all([loadWeekly(), loadBacklog(), loadDismissed()]).then(() => { renderWeeklyPanel(); openModal(weeklyPanel, 'flex'); }); });
   document.getElementById('pf-week-prev').addEventListener('click', () => { weekOffset--; renderWeeklyPanel(); });
   document.getElementById('pf-week-next').addEventListener('click', () => { weekOffset++; renderWeeklyPanel(); });
   document.getElementById('pf-week-today').addEventListener('click', () => { weekOffset = 0; renderWeeklyPanel(); });
@@ -6357,7 +6732,7 @@
   })();
 
   window._pfLoaded = false;
-  loadSize().then(loadTheme).then(loadReminder).then(loadCategories).then(loadCatEmojis).then(loadCollapsedCategories).then(load).then(loadWeekly).then(async () => {
+  loadSize().then(loadTheme).then(loadReminder).then(loadCategories).then(loadCatEmojis).then(loadCollapsedCategories).then(load).then(loadWeekly).then(loadBacklog).then(loadDismissed).then(async () => {
     window._pfLoaded = true;
     let mode = 'focus';
     setViewMode('focus');
