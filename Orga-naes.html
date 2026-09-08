@@ -5774,7 +5774,7 @@
         row.draggable = true;
         row.dataset.taskId = t.id;
         row.dataset.day = ds;
-        row.title = t.title + (t.projectTitle ? ' — ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '');
+        row.title = t.title + (t.projectTitle ? ' — ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '') + ' • Drag to Backlog to remove, or check it off';
         row.className = 'pf-week-task' + (accentColor ? ' pf-week-task-accent' : '') + (t.done ? ' pf-week-task-done' : '');
         if (accentColor) row.style.setProperty('--pf-task-accent', accentColor);
         const check = document.createElement('input');
@@ -6034,6 +6034,12 @@
   // otherwise the whole week), placing each on whichever of those days
   // currently has the fewest planner tasks — a simple load-balance so
   // carried-forward tasks don't all pile onto one day.
+  // Note: this operates purely on the live backlogData array and knows
+  // nothing about dismissedOccurrences. Dismissal only suppresses re-adding
+  // a task via sync step 4 (see loadDismissed/dismissOccurrence above); it
+  // does not protect a task from being picked up here if it's back in
+  // backlogData (e.g. the user dragged it in again). That's intentional,
+  // not a gap — don't add a dismissal check here to "fix" it.
   document.getElementById('pf-backlog-arrange-btn').addEventListener('click', () => {
     if (!backlogData.length) return;
     const start = getWeekStart(weekOffset);
