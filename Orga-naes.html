@@ -1855,7 +1855,9 @@
   <div class="pf-activity-panel" id="pf-error-panel" style="display:none;width:min(560px,90vw);max-height:min(80vh,700px);">
     <div class="pf-options-title">⚠️ Error Log <span id="pf-error-count" style="font-size:11px;color:var(--text-dim);font-weight:400;"></span></div>
     <div class="pf-activity-list" id="pf-error-list" style="overflow-y:auto;flex:1;min-height:0;"><div class="pf-activity-empty">No errors logged. 🎉</div></div>
-    <div style="padding-top:8px;border-top:1px solid var(--card-border);margin-top:8px;display:flex;gap:6px;">
+    <div style="padding-top:8px;border-top:1px solid var(--card-border);margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="pf-undo-btn" id="pf-error-copy-btn">Copy</button>
+      <button class="pf-undo-btn" id="pf-error-export-btn">Export</button>
       <button class="pf-undo-btn" id="pf-error-clear-btn" style="color:var(--danger);">Clear Log</button>
       <span style="flex:1;font-size:10px;color:var(--text-dim);align-self:center;text-align:right;">Keeps the most recent 200 entries</span>
     </div>
@@ -4887,10 +4889,46 @@
     if (!errorLog.length) { listEl.innerHTML = '<div class="pf-activity-empty">No errors logged. 🎉</div>'; return; }
     listEl.innerHTML = errorLog.map(e => '<div class="pf-activity-item pf-error-item"><span class="pf-activity-time">' + formatDateTime(e.time) + '</span><div class="pf-error-ctx">' + escapeHtml(e.context) + '</div><div class="pf-error-msg">' + escapeHtml(e.message) + '</div></div>').join('');
   }
+  // Shared plain-text rendering for both Copy and Export, so what you
+  // paste into a bug report matches what you get in the downloaded file.
+  function errorLogAsText() {
+    if (!errorLog.length) return 'No errors logged.';
+    return errorLog.map(e => '[' + formatDateTime(e.time) + '] ' + e.context + ': ' + e.message).join('\n');
+  }
   document.getElementById('pf-error-btn').addEventListener('click', () => {
     _exitMultiSelectMode();
     closeAllModals(); renderErrorList(); openModal(errorPanel, 'flex');
     unreadErrorCount = 0; updateErrorBadge();
+  });
+  document.getElementById('pf-error-copy-btn').addEventListener('click', async () => {
+    const text = errorLogAsText();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      showToast(errorLog.length ? '📋 Error log copied' : '📋 Nothing to copy — log is empty');
+    } catch (err) {
+      showToast('⚠ Copy failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+      logError('Copy error log', err);
+    }
+  });
+  document.getElementById('pf-error-export-btn').addEventListener('click', () => {
+    if (!errorLog.length) { showToast('Nothing to export — log is empty'); return; }
+    const blob = new Blob([errorLogAsText()], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    a.href = url;
+    a.download = 'orga-naes-error-log-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('⬇ Error log exported');
   });
   document.getElementById('pf-error-clear-btn').addEventListener('click', () => {
     if (!confirm('Clear the error log?')) return;
@@ -7041,7 +7079,12 @@
     // Lets code outside this closure (e.g. the sync conflict modal) record
     // the moment it opened, so handleEscape can tell it apart from other
     // stackable overlays that may already be open underneath it.
-    markOverlayOpen: (key) => _markOverlayOpen(key)
+    markOverlayOpen: (key) => _markOverlayOpen(key),
+    // The Firebase sync IIFE (pull success, push-then-close-options-panel,
+    // etc.) runs outside this closure and previously called the bare
+    // closeAllModals() global, which only exists in here — that's what
+    // produced "closeAllModals is not defined" on push/pull.
+    closeAllModals: () => closeAllModals()
   };
 
   // Pull-to-refresh (disabled)
@@ -7570,7 +7613,7 @@ if ('serviceWorker' in navigator) {
       if (remoteStr === localStr && catsMatch && archMatch && trashMatch) {
         window._pf.showToast('✅ Local data already matches the cloud');
         localStorage.removeItem(NEEDS_PULL_KEY);
-        closeAllModals();
+        window._pf.closeAllModals();
         return;
       }
 
@@ -7604,7 +7647,7 @@ if ('serviceWorker' in navigator) {
       updateLastSync();
       localStorage.removeItem(NEEDS_PULL_KEY);
       window._pf.showToast('⬇ Updated from cloud: ' + updated.join(', '));
-      closeAllModals();
+      window._pf.closeAllModals();
     }).catch(function(err) {
       window._pf.showToast('⚠ Pull failed: ' + (err.message || err), true);
       if (window._pf.logError) window._pf.logError('Firebase pull', err);
@@ -8171,7 +8214,7 @@ if ('serviceWorker' in navigator) {
     dismissConflictModal();
     pushWithTimestamp().then(function() {
       window._pf.showToast('✅ Kept local data & pushed to cloud');
-      closeAllModals();
+      window._pf.closeAllModals();
     }).catch(function(err) {
       window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
       if (window._pf.logError) window._pf.logError('Firebase conflict push', err);
@@ -8229,7 +8272,7 @@ if ('serviceWorker' in navigator) {
         clearTimeout(_fbPushTimer);
         pushSelective();
       }
-      closeAllModals();
+      window._pf.closeAllModals();
     }
   });
 
