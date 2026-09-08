@@ -2928,7 +2928,7 @@
   }
 
   // Persists current projects locally, then triggers optional debounced cloud sync via fsAutoSaveHook.
-  function scheduleSave() { autoUpdateStatuses(); invalidateSearchCache(); if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const res = await safeSet(STORE_KEY, JSON.stringify(projects), false); if (res) { localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
+  function scheduleSave() { autoUpdateStatuses(); invalidateSearchCache(); if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } syncWeeklyWithTasks(); saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const res = await safeSet(STORE_KEY, JSON.stringify(projects), false); if (res) { localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
   // SUBSECTION: Project CRUD, Archive & Trash
   function addProject(category) { snapshot(); const p = { id: uid(), title: 'New project', status: 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: null, completedAt: null, category: category || null, subtasks: [] }; projects.push(p); logActivity('Created project "New project"' + (category ? ' in ' + category : '')); scheduleSave(); autoArrangeProjects(true); if (listViewActive) { splitSelectedId = p.id; renderSplitList(); renderSplitDetail(); } focusEl('[data-title-id="' + p.id + '"]'); }
   const ARCHIVE_KEY = 'project-flow-archive';
@@ -5226,6 +5226,236 @@
     try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = JSON.parse(res.value); } catch (e) { weeklyData = {}; logError('Load weekly planner', e); }
   }
   function saveWeekly() { safeSet(WEEKLY_KEY, JSON.stringify(weeklyData), false); }
+  // Snapshot/undo for destructive Weekly Planner edits (delete task, clear
+  // day, clear week). Separate from the main projects undo stack (snapshot/
+  // undo/redo above) since weeklyData isn't part of `projects` and isn't
+  // covered by that stack at all — this is a single-level undo, surfaced
+  // via the same toast "Undo" action pattern used elsewhere.
+  let _weeklyUndoSnapshot = null;
+  function weeklySnapshot() { _weeklyUndoSnapshot = JSON.parse(JSON.stringify(weeklyData)); }
+  function weeklyUndo() {
+    if (!_weeklyUndoSnapshot) return;
+    weeklyData = _weeklyUndoSnapshot;
+    _weeklyUndoSnapshot = null;
+    saveWeekly();
+    renderWeeklyPanel();
+  }
+  // Moves (or reorders) a weekly task. targetTaskId + insertBefore describe
+  // where within the destination day to place it — omit targetTaskId to
+  // append at the end. Shared by the native HTML5 drag/drop handlers
+  // (mouse, see renderWeeklyPanel below) and the touch/pen long-press-drag
+  // handler (weeklyTouchDragSupport) so both gestures move a task the same
+  // way instead of duplicating this logic.
+  function moveWeeklyTask(taskId, fromDay, toDay, targetTaskId, insertBefore) {
+    const fromArr = weeklyData[fromDay] || [];
+    const idx = fromArr.findIndex(x => x.id === taskId);
+    if (idx < 0) return;
+    const task = fromArr.splice(idx, 1)[0];
+    if (!weeklyData[toDay]) weeklyData[toDay] = [];
+    const targetArr = weeklyData[toDay];
+    let insertAt = targetArr.length;
+    if (targetTaskId) {
+      // Recompute the target's index now, after the splice above — if
+      // fromDay === toDay this is the same array and may have shifted.
+      const tIdx = targetArr.findIndex(x => x.id === targetTaskId);
+      if (tIdx >= 0) insertAt = insertBefore ? tIdx : tIdx + 1;
+    }
+    targetArr.splice(insertAt, 0, task);
+    if (fromDay !== toDay && task.sourceId) {
+      const srcProject = projects.find(pr => pr.id === task.sourceId || (pr.subtasks && findSubNode(pr.subtasks, task.sourceId)));
+      if (srcProject) {
+        const node = srcProject.id === task.sourceId ? srcProject : findSubNode(srcProject.subtasks, task.sourceId);
+        if (node) { snapshot(); node.dueAt = toDay; scheduleSave(); render(); }
+      }
+    }
+    saveWeekly();
+    renderWeeklyPanel();
+  }
+  // Touch/pen equivalent of the native HTML5 drag/drop wired up in
+  // renderWeeklyPanel below. Native HTML5 DnD (draggable=true, dragstart/
+  // dragover/drop) never fires on touch input at all, so without this a
+  // task could only be reordered or moved between days with a mouse —
+  // dead on phones/tablets, which this app's own CSS (bottom nav, FAB,
+  // pf-device-mobile) clearly expects to be a first-class target. Uses a
+  // long-press (so a normal scroll/tap through the day column isn't
+  // mistaken for a drag) followed by a floating clone that tracks the
+  // finger; drop target is resolved with elementFromPoint since touch
+  // events don't carry their own drop target the way mouse dragover does.
+  // Ends by calling the same moveWeeklyTask() the mouse path uses, so both
+  // gestures move a task identically.
+  let _wtd = null;
+  function weeklyTouchDragSupport(row, t, ds) {
+    let pressTimer = null;
+    let startX = 0, startY = 0;
+    let dragging = false;
+    const LONG_PRESS_MS = 300;
+    const MOVE_CANCEL_PX = 10;
+    row.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      startX = touch.clientX; startY = touch.clientY;
+      dragging = false;
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => { dragging = true; _startWeeklyTouchDrag(row, t, ds, touch); }, LONG_PRESS_MS);
+    }, { passive: true });
+    row.addEventListener('touchmove', (e) => {
+      if (!dragging) {
+        const touch = e.touches[0];
+        if (Math.abs(touch.clientX - startX) > MOVE_CANCEL_PX || Math.abs(touch.clientY - startY) > MOVE_CANCEL_PX) clearTimeout(pressTimer);
+        return;
+      }
+      e.preventDefault();
+      _updateWeeklyTouchDrag(e.touches[0]);
+    }, { passive: false });
+    row.addEventListener('touchend', (e) => {
+      clearTimeout(pressTimer);
+      if (dragging) { e.preventDefault(); _endWeeklyTouchDrag(); dragging = false; }
+    });
+    row.addEventListener('touchcancel', () => {
+      clearTimeout(pressTimer);
+      if (dragging) { _cancelWeeklyTouchDrag(); dragging = false; }
+    });
+  }
+  // Fallback for any touch sequence that ends without the row's own
+  // touchend/touchcancel firing (e.g. the OS intercepts the gesture, or a
+  // second touch starts mid-drag) — without this the ghost clone and its
+  // 0.3 opacity on the source row could be stranded indefinitely.
+  document.addEventListener('touchcancel', () => { if (_wtd) _cancelWeeklyTouchDrag(); }, { passive: true });
+  document.addEventListener('touchend', () => { if (_wtd) _cancelWeeklyTouchDrag(); }, { passive: true });
+  function _clearWeeklyDragVisuals() {
+    document.querySelectorAll('.pf-week-task').forEach(r => { r.style.borderTop = ''; r.style.borderBottom = ''; });
+    document.querySelectorAll('.pf-week-col').forEach(c => c.classList.remove('pf-week-col-dragover'));
+  }
+  function _startWeeklyTouchDrag(row, t, ds, touch) {
+    if (navigator.vibrate) navigator.vibrate(15);
+    const rect = row.getBoundingClientRect();
+    const ghost = row.cloneNode(true);
+    ghost.style.position = 'fixed';
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    ghost.style.width = rect.width + 'px';
+    ghost.style.zIndex = '99999';
+    ghost.style.opacity = '0.9';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.boxShadow = '0 6px 20px rgba(0,0,0,0.35)';
+    document.body.appendChild(ghost);
+    row.style.opacity = '0.3';
+    _wtd = { taskId: t.id, fromDay: ds, ghost, sourceRow: row, offsetX: touch.clientX - rect.left, offsetY: touch.clientY - rect.top, targetDay: null, targetTaskId: null, insertBefore: false };
+  }
+  function _updateWeeklyTouchDrag(touch) {
+    if (!_wtd) return;
+    _wtd.ghost.style.left = (touch.clientX - _wtd.offsetX) + 'px';
+    _wtd.ghost.style.top = (touch.clientY - _wtd.offsetY) + 'px';
+    _wtd.ghost.style.display = 'none';
+    const under = document.elementFromPoint(touch.clientX, touch.clientY);
+    _wtd.ghost.style.display = '';
+    _clearWeeklyDragVisuals();
+    const targetCol = under && under.closest('.pf-week-col');
+    if (!targetCol) { _wtd.targetDay = null; _wtd.targetTaskId = null; return; }
+    targetCol.classList.add('pf-week-col-dragover');
+    _wtd.targetDay = targetCol.dataset.day;
+    const targetRow = under.closest('.pf-week-task');
+    if (targetRow && targetRow.dataset.taskId !== _wtd.taskId) {
+      const rect = targetRow.getBoundingClientRect();
+      const before = (touch.clientY - rect.top) < rect.height / 2;
+      targetRow.style.borderTop = before ? '2px solid var(--accent)' : '';
+      targetRow.style.borderBottom = before ? '' : '2px solid var(--accent)';
+      _wtd.targetTaskId = targetRow.dataset.taskId;
+      _wtd.insertBefore = before;
+    } else {
+      _wtd.targetTaskId = null;
+      _wtd.insertBefore = false;
+    }
+  }
+  function _endWeeklyTouchDrag() {
+    if (!_wtd) return;
+    const { taskId, fromDay, targetDay, targetTaskId, insertBefore, ghost, sourceRow } = _wtd;
+    ghost.remove();
+    sourceRow.style.opacity = '';
+    _clearWeeklyDragVisuals();
+    _wtd = null;
+    if (targetDay && !(targetDay === fromDay && targetTaskId === taskId)) moveWeeklyTask(taskId, fromDay, targetDay, targetTaskId, insertBefore);
+  }
+  function _cancelWeeklyTouchDrag() {
+    if (!_wtd) return;
+    if (_wtd.ghost && _wtd.ghost.isConnected) _wtd.ghost.remove();
+    if (_wtd.sourceRow) _wtd.sourceRow.style.opacity = '';
+    _clearWeeklyDragVisuals();
+    _wtd = null;
+  }
+  // Single housekeeping pass that keeps the Weekly Planner in sync with
+  // task state, called from scheduleSave() after every mutation (and now
+  // also runs from app boot — see loadWeekly() in the startup chain — so
+  // it's live even before the planner has ever been opened this session):
+  //  1. Prunes entries whose linked task has since been completed.
+  //  2. Rolls any entry still sitting on a day before today forward onto
+  //     today, so a missed day doesn't just silently fall out of view.
+  //     This only moves the *planner* entry — it never touches the linked
+  //     task's real due date, so the Overdue badge/Due List elsewhere keep
+  //     reflecting the task's actual due date honestly.
+  //  3. Adds an entry for any project/subtask with a due date (any week,
+  //     not just the one currently open) that doesn't have one yet — this
+  //     also covers a recurring task's due date bumping forward, since
+  //     that just looks like "a due date changed" from here.
+  // Steps 1 and 3 used to be two separate full scans of the projects tree;
+  // merged into one walk (building a single id → node map) since this now
+  // runs on every save rather than only while the planner is open.
+  function syncWeeklyWithTasks() {
+    const nodeById = new Map();
+    const dueNodes = [];
+    projects.forEach(p => {
+      nodeById.set(p.id, p);
+      if (p.dueAt && p.status !== 'completed') dueNodes.push({ dueAt: p.dueAt, title: p.title, sourceId: p.id, sourceType: 'project', projectTitle: null });
+      (function walk(subs) {
+        subs.forEach(s => {
+          nodeById.set(s.id, s);
+          if (s.dueAt && s.status !== 'completed') dueNodes.push({ dueAt: s.dueAt, title: s.title, sourceId: s.id, sourceType: 'subtask', projectTitle: p.title });
+          if (s.subtasks) walk(s.subtasks);
+        });
+      })(p.subtasks || []);
+    });
+
+    let changed = false;
+
+    // 1. Prune completed.
+    Object.keys(weeklyData).forEach(ds => {
+      const before = weeklyData[ds].length;
+      weeklyData[ds] = weeklyData[ds].filter(t => {
+        if (!t.sourceId) return true;
+        const node = nodeById.get(t.sourceId);
+        return !(node && node.status === 'completed');
+      });
+      if (weeklyData[ds].length !== before) changed = true;
+      if (!weeklyData[ds].length) delete weeklyData[ds];
+    });
+
+    // 2. Roll overdue entries forward to today.
+    const todayStr = todayLocalStr();
+    let rolledCount = 0;
+    Object.keys(weeklyData).forEach(ds => {
+      if (ds >= todayStr) return;
+      const stale = weeklyData[ds];
+      if (!stale || !stale.length) { delete weeklyData[ds]; return; }
+      if (!weeklyData[todayStr]) weeklyData[todayStr] = [];
+      weeklyData[todayStr].push(...stale);
+      rolledCount += stale.length;
+      delete weeklyData[ds];
+      changed = true;
+    });
+
+    // 3. Add missing due-date entries.
+    const existingSourceIds = new Set();
+    Object.values(weeklyData).forEach(arr => arr.forEach(t => { if (t.sourceId) existingSourceIds.add(t.sourceId); }));
+    dueNodes.forEach(({ dueAt, title, sourceId, sourceType, projectTitle }) => {
+      if (!existingSourceIds.has(sourceId)) { addToWeekDay(dueAt, title, sourceId, sourceType, projectTitle); existingSourceIds.add(sourceId); changed = true; }
+    });
+
+    if (changed) {
+      saveWeekly();
+      if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel();
+      if (rolledCount) showToast('↻ Rolled ' + rolledCount + ' overdue planner task' + (rolledCount > 1 ? 's' : '') + ' to today');
+    }
+  }
   function addToWeekDay(dayStr, title, sourceId, sourceType, projectTitle) {
     if (!weeklyData[dayStr]) weeklyData[dayStr] = [];
     if (sourceId && weeklyData[dayStr].some(t => t.sourceId === sourceId)) return;
@@ -5248,6 +5478,12 @@
     renderWeeklyPanel();
     showToast('Week auto-filled from due dates.');
   }
+  // Companion to the manual "Auto-fill" button above: syncWeeklyWithTasks()
+  // (defined earlier) handles automatic due-date syncing for every week,
+  // continuously; this button is a manual one-shot for the currently
+  // visible week only, and is kept mainly so users get the immediate
+  // "Week auto-filled" confirmation and a way to trigger it before this
+  // session's automatic sync has caught up.
   function jumpToTask(projectId, taskTitle) {
     const p = projects.find(pr => pr.id === projectId);
     if (!p) { showToast('Source task no longer exists', true); return; }
@@ -5280,6 +5516,7 @@
       const isToday = ds === todayStr;
       const col = document.createElement('div');
       col.className = 'pf-week-col' + (isToday ? ' pf-week-col-today' : '');
+      col.dataset.day = ds;
       const header = document.createElement('div');
       header.className = 'pf-week-col-header';
       const tasksForBadge = weeklyData[ds] || [];
@@ -5294,9 +5531,10 @@
           const n = (weeklyData[ds] || []).length;
           if (!n) return;
           if (!confirm('Remove all ' + n + ' task' + (n > 1 ? 's' : '') + ' from ' + DAYS[i] + '?')) return;
+          weeklySnapshot();
           delete weeklyData[ds];
           saveWeekly(); renderWeeklyPanel();
-          showToast('Cleared ' + DAYS[i]);
+          showToast('Cleared ' + DAYS[i], false, false, weeklyUndo, 'Undo');
         });
       }
       const tasks = weeklyData[ds] || [];
@@ -5352,13 +5590,39 @@
         const delBtn = document.createElement('button');
         delBtn.textContent = '×';
         delBtn.className = 'pf-week-task-del';
-        delBtn.addEventListener('click', () => { weeklyData[ds] = weeklyData[ds].filter(x => x.id !== t.id); saveWeekly(); renderWeeklyPanel(); });
+        delBtn.addEventListener('click', () => { weeklySnapshot(); weeklyData[ds] = weeklyData[ds].filter(x => x.id !== t.id); saveWeekly(); renderWeeklyPanel(); showToast('Removed "' + t.title + '"', false, false, weeklyUndo, 'Undo'); });
         row.appendChild(check);
         row.appendChild(titleWrap);
         row.appendChild(delBtn);
         row.addEventListener('dragstart', (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('application/weekly-task', JSON.stringify({ id: t.id, fromDay: ds })); row.style.opacity = '0.4'; });
-        row.addEventListener('dragend', () => { row.style.opacity = ''; });
+        row.addEventListener('dragend', () => { row.style.opacity = ''; row.style.borderTop = ''; row.style.borderBottom = ''; });
+        // Per-row dragover/drop lets a task be reordered within the same
+        // day (dropped above/below a sibling), not just moved between days.
+        // stopPropagation keeps the column's own drop handler (which just
+        // appends to the end) from also firing for these in-list drops.
+        row.addEventListener('dragover', (e) => {
+          e.preventDefault(); e.stopPropagation();
+          e.dataTransfer.dropEffect = 'move';
+          col.querySelectorAll('.pf-week-task').forEach(r => { if (r !== row) { r.style.borderTop = ''; r.style.borderBottom = ''; } });
+          const rect = row.getBoundingClientRect();
+          const before = (e.clientY - rect.top) < rect.height / 2;
+          row.style.borderTop = before ? '2px solid var(--accent)' : '';
+          row.style.borderBottom = before ? '' : '2px solid var(--accent)';
+        });
+        row.addEventListener('dragleave', () => { row.style.borderTop = ''; row.style.borderBottom = ''; });
+        row.addEventListener('drop', (e) => {
+          e.preventDefault(); e.stopPropagation();
+          col.classList.remove('pf-week-col-dragover');
+          const before = row.style.borderTop !== '';
+          row.style.borderTop = ''; row.style.borderBottom = '';
+          const raw = e.dataTransfer.getData('application/weekly-task');
+          if (!raw) return;
+          const { id, fromDay } = JSON.parse(raw);
+          if (id === t.id) return;
+          moveWeeklyTask(id, fromDay, ds, t.id, before);
+        });
         col.appendChild(row);
+        weeklyTouchDragSupport(row, t, ds);
       });
       const addBtn = document.createElement('button');
       addBtn.textContent = '+ Add task';
@@ -5379,21 +5643,15 @@
         const raw = e.dataTransfer.getData('application/weekly-task');
         if (raw) {
           const { id, fromDay } = JSON.parse(raw);
-          if (fromDay === ds) return;
-          const fromArr = weeklyData[fromDay] || [];
-          const taskIdx = fromArr.findIndex(x => x.id === id);
-          if (taskIdx < 0) return;
-          const task = fromArr.splice(taskIdx, 1)[0];
-          if (!weeklyData[ds]) weeklyData[ds] = [];
-          weeklyData[ds].push(task);
-          if (task.sourceId) {
-            const srcProject = projects.find(pr => pr.id === task.sourceId || (pr.subtasks && findSubNode(pr.subtasks, task.sourceId)));
-            if (srcProject) {
-              const node = srcProject.id === task.sourceId ? srcProject : findSubNode(srcProject.subtasks, task.sourceId);
-              if (node) { snapshot(); node.dueAt = ds; scheduleSave(); render(); }
-            }
-          }
-          saveWeekly(); renderWeeklyPanel();
+          // Dropped on the column background (not on a specific row) —
+          // send it to the end of this day's list, whether that's this
+          // same day (a reorder-to-last) or a different one (a move).
+          // Skip when the task is already the last item in this same day —
+          // that's a true no-op and would otherwise trigger a pointless
+          // saveWeekly()+renderWeeklyPanel() flicker mid-drag.
+          const dayList = weeklyData[ds] || [];
+          const isAlreadyLastInSameDay = fromDay === ds && dayList.length && dayList[dayList.length - 1].id === id;
+          if (!isAlreadyLastInSameDay) moveWeeklyTask(id, fromDay, ds, null, false);
           return;
         }
         const projectId = e.dataTransfer.getData('text/plain');
@@ -5415,11 +5673,12 @@
       if (weeklyData[ds] && weeklyData[ds].length) { count += weeklyData[ds].length; dayKeys.push(ds); }
     }
     if (!count) { showToast('No tasks to clear this week'); return; }
-    if (!confirm('Remove all ' + count + ' task' + (count > 1 ? 's' : '') + ' from this week? This cannot be undone.')) return;
+    if (!confirm('Remove all ' + count + ' task' + (count > 1 ? 's' : '') + ' from this week?')) return;
+    weeklySnapshot();
     dayKeys.forEach(ds => delete weeklyData[ds]);
     saveWeekly();
     renderWeeklyPanel();
-    showToast('Cleared ' + count + ' task' + (count > 1 ? 's' : '') + ' from this week');
+    showToast('Cleared ' + count + ' task' + (count > 1 ? 's' : '') + ' from this week', false, false, weeklyUndo, 'Undo');
   }
   document.getElementById('pf-weekly-btn').addEventListener('click', () => { loadWeekly().then(() => { renderWeeklyPanel(); openModal(weeklyPanel, 'flex'); }); });
   document.getElementById('pf-week-prev').addEventListener('click', () => { weekOffset--; renderWeeklyPanel(); });
@@ -6074,7 +6333,7 @@
   })();
 
   window._pfLoaded = false;
-  loadSize().then(loadTheme).then(loadReminder).then(loadCategories).then(loadCatEmojis).then(loadCollapsedCategories).then(load).then(async () => {
+  loadSize().then(loadTheme).then(loadReminder).then(loadCategories).then(loadCatEmojis).then(loadCollapsedCategories).then(load).then(loadWeekly).then(async () => {
     window._pfLoaded = true;
     let mode = 'focus';
     setViewMode('focus');
@@ -6083,6 +6342,11 @@
     // Motivational quote in empty state
     const emptyEl = document.getElementById('pf-empty');
     if (emptyEl && !projects.length) { emptyEl.innerHTML = '<b>' + QUOTES[Math.floor(Math.random() * QUOTES.length)] + '</b><br><br>Click <b>+ New project</b> to get started.'; }
+    // Weekly Planner data is now loaded (see loadWeekly() above) even
+    // though the panel itself hasn't been opened — run one sync pass now
+    // so overdue rollover/pruning/auto-add are already current by the
+    // time the user opens it, instead of waiting for the first edit.
+    syncWeeklyWithTasks();
     // Start particles in card mode
     if (mode === 'card') startParticles();
   });
@@ -7306,6 +7570,7 @@ if ('serviceWorker' in navigator) {
       if (remoteStr === localStr && catsMatch && archMatch && trashMatch) {
         window._pf.showToast('✅ Local data already matches the cloud');
         localStorage.removeItem(NEEDS_PULL_KEY);
+        closeAllModals();
         return;
       }
 
@@ -7339,6 +7604,7 @@ if ('serviceWorker' in navigator) {
       updateLastSync();
       localStorage.removeItem(NEEDS_PULL_KEY);
       window._pf.showToast('⬇ Updated from cloud: ' + updated.join(', '));
+      closeAllModals();
     }).catch(function(err) {
       window._pf.showToast('⚠ Pull failed: ' + (err.message || err), true);
       if (window._pf.logError) window._pf.logError('Firebase pull', err);
@@ -7905,6 +8171,7 @@ if ('serviceWorker' in navigator) {
     dismissConflictModal();
     pushWithTimestamp().then(function() {
       window._pf.showToast('✅ Kept local data & pushed to cloud');
+      closeAllModals();
     }).catch(function(err) {
       window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
       if (window._pf.logError) window._pf.logError('Firebase conflict push', err);
@@ -7962,6 +8229,7 @@ if ('serviceWorker' in navigator) {
         clearTimeout(_fbPushTimer);
         pushSelective();
       }
+      closeAllModals();
     }
   });
 
