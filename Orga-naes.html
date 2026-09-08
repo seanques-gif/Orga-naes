@@ -4901,6 +4901,7 @@
     unreadErrorCount = 0; updateErrorBadge();
   });
   document.getElementById('pf-error-copy-btn').addEventListener('click', async () => {
+    if (!errorLog.length) { showToast('Nothing to copy — log is empty'); return; }
     const text = errorLogAsText();
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -4908,11 +4909,10 @@
       } else {
         const ta = document.createElement('textarea');
         ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy');
-        ta.remove();
+        document.body.appendChild(ta);
+        try { ta.select(); document.execCommand('copy'); } finally { ta.remove(); }
       }
-      showToast(errorLog.length ? '📋 Error log copied' : '📋 Nothing to copy — log is empty');
+      showToast('📋 Error log copied');
     } catch (err) {
       showToast('⚠ Copy failed: ' + (err && err.message ? err.message : 'unknown error'), true);
       logError('Copy error log', err);
@@ -7084,7 +7084,8 @@
     // etc.) runs outside this closure and previously called the bare
     // closeAllModals() global, which only exists in here — that's what
     // produced "closeAllModals is not defined" on push/pull.
-    closeAllModals: () => closeAllModals()
+    closeAllModals: () => closeAllModals(),
+    errorLogAsText: () => errorLogAsText()
   };
 
   // Pull-to-refresh (disabled)
