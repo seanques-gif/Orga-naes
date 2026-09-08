@@ -5425,7 +5425,9 @@
   // task state, called from scheduleSave() after every mutation (and now
   // also runs from app boot — see loadWeekly() in the startup chain — so
   // it's live even before the planner has ever been opened this session):
-  //  1. Prunes entries whose linked task has since been completed.
+  //  1. Prunes entries whose linked task has since been completed, or whose
+  //     linked task no longer exists in `projects` at all (archived or
+  //     trashed) — either way the task is gone from the active view.
   //  2. Rolls any entry still sitting on a day before today forward onto
   //     today, so a missed day doesn't just silently fall out of view.
   //     This only moves the *planner* entry — it never touches the linked
@@ -5461,7 +5463,10 @@
       weeklyData[ds] = weeklyData[ds].filter(t => {
         if (!t.sourceId) return true;
         const node = nodeById.get(t.sourceId);
-        return !(node && node.status === 'completed');
+        // node is undefined once its source task has been archived or
+        // trashed (both remove it from `projects` entirely) — treat that
+        // the same as "completed" instead of keeping the entry forever.
+        return !!node && node.status !== 'completed';
       });
       if (weeklyData[ds].length !== before) changed = true;
       if (!weeklyData[ds].length) delete weeklyData[ds];
