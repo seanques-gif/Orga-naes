@@ -1553,11 +1553,6 @@
     overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     word-break: break-word; line-height: 1.25;
   }
-  .pf-week-task-del {
-    background: none; border: none; color: var(--text-dim); font-size: 14px;
-    cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0;
-  }
-
   .pf-week-add-btn {
     font-size: 11px; background: none; border: 1px dashed var(--sub-border);
     color: var(--text-dim); cursor: pointer; padding: 6px 8px; text-align: center;
@@ -5815,25 +5810,8 @@
             jumpToTask(projectId, t.title);
           });
         }
-        const delBtn = document.createElement('button');
-        delBtn.textContent = '×';
-        delBtn.className = 'pf-week-task-del';
-        delBtn.addEventListener('click', () => {
-          weeklySnapshot();
-          weeklyData[ds] = weeklyData[ds].filter(x => x.id !== t.id);
-          // Linked entries get suppressed for this specific occurrence
-          // (sourceId + the day it was due) so the next sync pass doesn't
-          // just add it right back — see dismissOccurrence above. Unlinked
-          // ad-hoc entries have nothing to re-derive from, so plain removal
-          // is already permanent for them.
-          if (t.sourceId) dismissOccurrence(t.sourceId, ds);
-          saveWeekly();
-          renderWeeklyPanel();
-          showToast('Removed "' + t.title + '"', false, false, weeklyUndo, 'Undo');
-        });
         row.appendChild(check);
         row.appendChild(titleWrap);
-        row.appendChild(delBtn);
         row.addEventListener('dragstart', (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('application/weekly-task', JSON.stringify({ id: t.id, fromDay: ds })); row.style.opacity = '0.4'; });
         row.addEventListener('dragend', () => { row.style.opacity = ''; row.style.borderTop = ''; row.style.borderBottom = ''; });
         // Per-row dragover/drop lets a task be reordered within the same
