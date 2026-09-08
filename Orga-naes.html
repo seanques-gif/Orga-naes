@@ -1831,8 +1831,6 @@
     </div>
     <div id="pf-week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;gap:10px;flex:1;overflow-y:auto;min-height:0;padding:14px 12px;"></div>
     <div style="padding:10px 16px;border-top:1px solid var(--card-border);display:flex;gap:8px;align-items:center;flex-shrink:0;background:var(--header-bg);border-radius:0 0 10px 10px;">
-      <button class="pf-undo-btn" id="pf-week-auto" style="padding:5px 12px;font-size:11px;font-weight:600;background:rgba(149,128,255,0.12);color:var(--accent);border-radius:6px;">⚡ Auto-fill from due dates</button>
-      <button class="pf-undo-btn" id="pf-week-clear" style="padding:5px 12px;font-size:11px;font-weight:600;background:rgba(239,68,68,0.1);color:var(--danger,#ef4444);border-radius:6px;">🗑 Clear week</button>
       <span style="flex:1;font-size:10px;color:var(--text-dim);text-align:right;font-style:italic;">Drag tasks between days · Click + to add manually</span>
     </div>
   </div>
@@ -5425,19 +5423,22 @@
   // task state, called from scheduleSave() after every mutation (and now
   // also runs from app boot — see loadWeekly() in the startup chain — so
   // it's live even before the planner has ever been opened this session):
-  //  1. Prunes entries whose linked task has since been completed, or whose
+  //  1. Relocates entries whose linked task's due date has changed since
+  //     the entry was added, so editing a due date directly on the task
+  //     moves its Weekly Planner entry too.
+  //  2. Prunes entries whose linked task has since been completed, or whose
   //     linked task no longer exists in `projects` at all (archived or
   //     trashed) — either way the task is gone from the active view.
-  //  2. Rolls any entry still sitting on a day before today forward onto
+  //  3. Rolls any entry still sitting on a day before today forward onto
   //     today, so a missed day doesn't just silently fall out of view.
   //     This only moves the *planner* entry — it never touches the linked
   //     task's real due date, so the Overdue badge/Due List elsewhere keep
   //     reflecting the task's actual due date honestly.
-  //  3. Adds an entry for any project/subtask with a due date (any week,
+  //  4. Adds an entry for any project/subtask with a due date (any week,
   //     not just the one currently open) that doesn't have one yet — this
   //     also covers a recurring task's due date bumping forward, since
   //     that just looks like "a due date changed" from here.
-  // Steps 1 and 3 used to be two separate full scans of the projects tree;
+  // Steps 2 and 4 used to be two separate full scans of the projects tree;
   // merged into one walk (building a single id → node map) since this now
   // runs on every save rather than only while the planner is open.
   function syncWeeklyWithTasks() {
@@ -5457,7 +5458,28 @@
 
     let changed = false;
 
-    // 1. Prune completed.
+    // 1. Relocate entries whose linked task's due date has changed since
+    //    the entry was added — e.g. editing the due date directly on the
+    //    task (rather than dragging the planner entry, which already
+    //    updates dueAt the other direction via moveWeeklyTask) previously
+    //    left the old planner entry stuck on the original day.
+    const relocations = [];
+    Object.keys(weeklyData).forEach(ds => {
+      weeklyData[ds].forEach(t => {
+        if (!t.sourceId) return;
+        const node = nodeById.get(t.sourceId);
+        if (node && node.dueAt && node.dueAt !== ds) relocations.push({ from: ds, task: t, to: node.dueAt });
+      });
+    });
+    relocations.forEach(({ from, task, to }) => {
+      weeklyData[from] = weeklyData[from].filter(t => t !== task);
+      if (!weeklyData[from].length) delete weeklyData[from];
+      if (!weeklyData[to]) weeklyData[to] = [];
+      weeklyData[to].push(task);
+      changed = true;
+    });
+
+    // 2. Prune completed.
     Object.keys(weeklyData).forEach(ds => {
       const before = weeklyData[ds].length;
       weeklyData[ds] = weeklyData[ds].filter(t => {
@@ -5472,7 +5494,7 @@
       if (!weeklyData[ds].length) delete weeklyData[ds];
     });
 
-    // 2. Roll overdue entries forward to today.
+    // 3. Roll overdue entries forward to today.
     const todayStr = todayLocalStr();
     let rolledCount = 0;
     Object.keys(weeklyData).forEach(ds => {
@@ -5486,7 +5508,7 @@
       changed = true;
     });
 
-    // 3. Add missing due-date entries.
+    // 4. Add missing due-date entries.
     const existingSourceIds = new Set();
     Object.values(weeklyData).forEach(arr => arr.forEach(t => { if (t.sourceId) existingSourceIds.add(t.sourceId); }));
     dueNodes.forEach(({ dueAt, title, sourceId, sourceType, projectTitle }) => {
@@ -5505,28 +5527,6 @@
     weeklyData[dayStr].push({ id: uid(), title, sourceId: sourceId || null, sourceType: sourceType || null, done: false, projectTitle: projectTitle || null });
     saveWeekly();
   }
-  function autoFillWeekly() {
-    const start = getWeekStart(weekOffset);
-    const existingSourceIds = new Set();
-    Object.values(weeklyData).forEach(arr => arr.forEach(t => { if (t.sourceId) existingSourceIds.add(t.sourceId); }));
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(start); d.setDate(d.getDate() + i);
-      const ds = weekDateStr(d);
-      projects.forEach(p => {
-        if (p.dueAt === ds && p.status !== 'completed' && !existingSourceIds.has(p.id)) addToWeekDay(ds, p.title, p.id, 'project', null);
-        (function walk(subs) { subs.forEach(s => { if (s.dueAt === ds && s.status !== 'completed' && !existingSourceIds.has(s.id)) addToWeekDay(ds, s.title, s.id, 'subtask', p.title); if (s.subtasks) walk(s.subtasks); }); })(p.subtasks || []);
-      });
-    }
-    saveWeekly();
-    renderWeeklyPanel();
-    showToast('Week auto-filled from due dates.');
-  }
-  // Companion to the manual "Auto-fill" button above: syncWeeklyWithTasks()
-  // (defined earlier) handles automatic due-date syncing for every week,
-  // continuously; this button is a manual one-shot for the currently
-  // visible week only, and is kept mainly so users get the immediate
-  // "Week auto-filled" confirmation and a way to trigger it before this
-  // session's automatic sync has caught up.
   function jumpToTask(projectId, taskTitle) {
     const p = projects.find(pr => pr.id === projectId);
     if (!p) { showToast('Source task no longer exists', true); return; }
@@ -5706,29 +5706,10 @@
       grid.appendChild(col);
     }
   }
-  function clearWeek() {
-    const start = getWeekStart(weekOffset);
-    const dayKeys = [];
-    let count = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(start); d.setDate(d.getDate() + i);
-      const ds = weekDateStr(d);
-      if (weeklyData[ds] && weeklyData[ds].length) { count += weeklyData[ds].length; dayKeys.push(ds); }
-    }
-    if (!count) { showToast('No tasks to clear this week'); return; }
-    if (!confirm('Remove all ' + count + ' task' + (count > 1 ? 's' : '') + ' from this week?')) return;
-    weeklySnapshot();
-    dayKeys.forEach(ds => delete weeklyData[ds]);
-    saveWeekly();
-    renderWeeklyPanel();
-    showToast('Cleared ' + count + ' task' + (count > 1 ? 's' : '') + ' from this week', false, false, weeklyUndo, 'Undo');
-  }
   document.getElementById('pf-weekly-btn').addEventListener('click', () => { loadWeekly().then(() => { renderWeeklyPanel(); openModal(weeklyPanel, 'flex'); }); });
   document.getElementById('pf-week-prev').addEventListener('click', () => { weekOffset--; renderWeeklyPanel(); });
   document.getElementById('pf-week-next').addEventListener('click', () => { weekOffset++; renderWeeklyPanel(); });
   document.getElementById('pf-week-today').addEventListener('click', () => { weekOffset = 0; renderWeeklyPanel(); });
-  document.getElementById('pf-week-auto').addEventListener('click', () => { autoFillWeekly(); });
-  document.getElementById('pf-week-clear').addEventListener('click', () => { clearWeek(); });
 
   const REMINDERS_KEY = 'project-flow-reminders';
   let reminders = [];
