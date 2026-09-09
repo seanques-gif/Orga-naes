@@ -2327,6 +2327,11 @@
     { check: () => !!_saveModalEl, run: () => { if (_saveModalEl) { _saveModalEl.remove(); _saveModalEl = null; } } },
     { check: () => !!_statusMenuEl, run: () => { closeStatusMenu(); } },
     { check: () => !!root.querySelector('.pf-ctx-menu'), run: () => { const m = root.querySelector('.pf-ctx-menu'); if (m) m.remove(); if (typeof _closeCtx === 'function') _closeCtx(); } },
+    // Covers the emoji picker (and any other _ctxEl-tracked popover, e.g.
+    // context menus opened before .pf-ctx-menu is queryable) — folded in
+    // here so this goes through the one escape system instead of the old
+    // standalone _ctxEl keydown listener that used to live near _closeCtx.
+    { check: () => typeof _ctxEl !== 'undefined' && !!_ctxEl, run: () => { _closeCtx(); } },
     { check: () => !!root.querySelector('.pf-dep-dropdown'), run: () => { const dd = root.querySelector('.pf-dep-dropdown'); if (dd) dd.remove(); } },
     { check: () => _splitCatMultiSelect.length, run: () => { _splitCatMultiSelect = []; renderSplitList(); } },
     { check: () => splitMultiSelect.length, run: () => { splitMultiSelect = []; renderSplitList(); renderSplitDetail(); } },
@@ -2381,9 +2386,9 @@
       const KNOWN_EXCEPTIONS = [
         'pf-conflict-modal',   // registered via window._pf.registerEscDismissable (Firebase sync IIFE)
         'pf-search-wrap',      // covered by the searchTerm/pf-search-open check above
-        'pf-emoji-picker',     // dynamic; goes through the separate _ctxEl Escape listener
+        'pf-emoji-picker',     // dynamic; covered by the _ctxEl check in _escDismissables
         'pf-status-menu',      // dynamic; registered via _statusMenuEl check above
-        'pf-ctx-menu',         // dynamic; covered by _ctxEl listener + explicit check above
+        'pf-ctx-menu',         // dynamic; covered by the _ctxEl check + explicit check above
         'pf-dep-dropdown'      // dynamic; explicit check above
       ];
       const modalLikeEls = Array.from(document.querySelectorAll('[id^="pf-"]')).filter(function(el) {
@@ -4447,7 +4452,10 @@
     if (_ctxEl && !_ctxEl.contains(e.target)) { e.preventDefault(); e.stopPropagation(); _closeCtx(); }
   }, true);
   document.addEventListener('contextmenu', _closeCtx);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && _ctxEl) { _closeCtx(); e.stopImmediatePropagation(); return; } if (e.key === 'Escape' && (subMultiSelect.length > 0 || splitMultiSelect.length > 0)) { clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); splitMultiSelect = []; splitSelectedId = null; renderSplitList(); renderSplitDetail(); e.stopImmediatePropagation(); } });
+  // Escape handling for _ctxEl and the multi-select bars now lives entirely
+  // in handleEscape() / _escDismissables (see the Escape Dismissable Stack
+  // subsection) — this used to be a second, independent keydown listener
+  // that duplicated that logic and could race with it.
 
   splitList.addEventListener('contextmenu', (e) => {
     if (e.target.closest('.pf-split-list-item')) return;
