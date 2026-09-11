@@ -14,6 +14,10 @@
 4. Read `DESIGN.md` for the Mission Control design spec.
 5. Run `npm run verify` to confirm current state is green.
 
+## Pre-release audit (2026-09-12)
+
+Full security/release audit run before public GitHub publication. **Verdict: GO** (after decisions implemented in commit below). Working tree + full Git history secret sweep: clean (only the Firebase web config — public client config, RTDB verified 401 on anonymous read; no genuine secrets ever committed; `project-flow.json` personal data never entered history). Findings: F2 `escapeHtml` quote-escaping gap (fixed, self-XSS scope), F3 licensing (MIT added), F4 commit-email exposure (accepted as-is per owner), F1/T1 Firebase RTDB rules console check (owner, pending), F6–F8 INFO (deferred: SRI on Firebase CDN scripts, CSP candidate). New: `LICENSE` (MIT), `README.md`, `SECURITY.md`.
+
 ---
 
 ## Project rules (non-negotiable)
