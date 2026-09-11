@@ -233,3 +233,87 @@ in `src/`; live preview confirms `.pf-fab`/`.pf-bottom-nav` compute the token cu
 (Verdict-time note: the original audit required out-of-root selectors to stay literal
 per the then-#pf-root-only token scope; the `:root` move supersedes that rule —
 see HANDOFF.md "Token scope rule (UPDATED)".)
+
+
+---
+
+## impeccable audit — Phase 3F (2026-09-11)
+
+Detector: `impeccable detect --json Orga-naes.html` — 58 raw findings, all verified
+in context (live computed-style probes + source reading). After fixes and
+false-positive resolution: **3 real defects (fixed during this audit), rest
+accepted with evidence.**
+
+### Audit Health Score
+
+| # | Dimension | Score | Key Finding |
+|---|-----------|-------|-------------|
+| 1 | Accessibility | 4 | 0 AA failures across 6 themes (3D automated audit); detector contrast hits are static-analysis false positives (real pairing ~13:1) |
+| 2 | Performance | 3 | GPU-only transforms dominate; 3 accepted paint-only flashes; layout-property collapse transitions accepted with caveat |
+| 3 | Theming | 4 | Full token system + guard-enforced tints; the one real hole (undefined --panel token) fixed this pass |
+| 4 | Responsive Design | 3 | Fluid clamp type, 5 breakpoints, no horizontal overflow; 3 sub-24px desktop sort-bar targets flagged P3 |
+| 5 | Implementation Integrity | 4 | Coherent Mission Control system end-to-end; drift findings were 3 isolated defects, all fixed |
+| **Total** | | **18/20** | **Excellent (minor polish)** |
+
+### Implementation Integrity Verdict
+
+**PASS.** The implementation expresses a coherent, product-specific system:
+one cyan signal on near-black consoles, mono digits for measurement, a single
+authored motion curve, named z-ladder, 4/6/10/pill radii — all enforced by the
+design-token guard test. The detector's design-system-* classes found only 3
+genuine drift sites (all legacy literals surviving the retheme), fixed here;
+everything else was verified as token indirection the static analyzer cannot
+resolve, or documented exceptions.
+
+### Executive Summary
+
+- Audit Health Score: **18/20** (Excellent — minor polish)
+- Issues: 3 × P1 (**all fixed during audit**), 0 × P2, 5 × P3 (accepted/documented)
+- Detector raw counts: low-contrast 17 (false positives), gpt-thin-border-wide-shadow 20 (advisory; hairline+carried-shadow is the authored Mission Control recipe for held elements), design-system-color 15 → 14 (one real: update pill), radius 2 → 1 (9px sublist fixed; 2px mark is the documented inline-marker exception), font 1 (false positive: Arial only inside the exported HTML *report artifact*, not app UI), pulsing-dot 1 (justified status indicator), dark-glow 1 (the signal-ring token, by design), cramped-padding 1 (split-detail; the detail node inside provides the actual inset — visual verified).
+
+### Fixed during audit (P1)
+
+1. **Update pill rendered legacy ink on every theme** — `var(--panel, #1e1e2e)`:
+   `--panel` was never a token, so the pill always fell back to Night-Workshop
+   purple-dark. → `var(--toast-bg, #141a22)`, fallbacks re-aligned to Midnight; accent
+   fallbacks `#7b68ee→#2fd4ff` (01-chrome.css).
+2. **Body-appended surfaces lost #pf-root theming** — Ctrl+S save modal and both
+   drag ghosts (39-accessibility, 25-weekly-planner) appended to document.body,
+   where palette tokens don't resolve: modal rendered old purple ink (white
+   text on Daylight), ghosts rendered unstyled/hardcoded. → re-parented into
+   #pf-root (position:fixed keeps viewport placement) + tokens/honest fallbacks.
+3. **Off-scale 9px sublist radius** → `var(--radius-overlay)` (3C straggler).
+
+Plus: online connection dot hardcoded #4ade80 → `var(--completed, #4ade80)`
+(offline side already used --danger; system-health now semantic).
+
+### Accepted exceptions (P3, documented)
+
+- **17 contrast findings**: detector pairs literal #000000 text with dark bg —
+  it cannot resolve var()/color-mix tokens. Real values: #d7dde5 on #0a0d11
+  ≈ 13.4:1. 3D's rendered-render audit already proved 0 AA failures.
+- **20 hairline+shadow advisories**: the hairline edge + --shadow-carried combo
+  is the authored recipe for held/floating surfaces (modals, menus); rest stays flat.
+- **Category color presets + confetti palette** (06/27 JS): user-content color
+  pickers and celebratory particles — intentionally outside the chrome palette.
+- **HTML report export** (30): standalone artifact for sharing, system font
+  deliberate — not app chrome.
+- **Print sheet** (90-print): black-on-white is the point of print.
+- **3 desktop sort-bar buttons < 24px tall** (search toggle 24×23, collapse btns
+  ~20px): dense-console aesthetic; mobile variants carry min-height 24px+.
+  Only worth revisiting if touch mis-taps show up in real use.
+
+### Positive findings
+
+- The design-token guard test caught real drift twice this phase (select-bar
+  comment, Tint-Through-Token) — automation earning its keep.
+- Detector + live verification complement each other: every real finding this
+  pass was a *rendering-context* bug (undefined token, wrong append parent) —
+  exactly the class static analysis can see but eyeballs miss on the default theme.
+- Zero console errors across all preview sessions.
+
+### Recommended actions
+
+No impeccable fix-commands warranted — no open P0/P1/P2. Proceed to **Phase 4
+(verify & ship)**: screenshot matrix, reduced-motion pass, PWA offline check,
+manual smoke test. Re-run this audit only if Phase 4 turns up visual regressions.

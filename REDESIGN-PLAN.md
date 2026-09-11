@@ -133,7 +133,7 @@ migration notes. (Anti-reference preserved in `DESIGN-v1-night-workshop.md`.)
 | **3C** | Layout & scales: spacing scale, radius scale, z-index scale, retire resting shadows (F8/F9/F10/F12) | ✅ tokens on `:root`, z-ladder fully named (0 literals), radii converged (mark exception), F12 shadows retired; verified live |
 | **3D** | States & a11y: reduced-motion, hover-gate, focus-visible, AA across presets (F1/F2/F3/F4) | ✅ (0 AA failures across 6 themes) |
 | **3E** | Motion: one easing curve + springs; fix `ease-in`/keyframe entrances; `review-animations` verdict (F5/F17) | ✅ verdict written — APPROVE with findings (`REDESIGN-FINDINGS.md`) |
-| **3F** | Polish: impeccable detector; refresh `.impeccable/design.json` sidecar | ⬜ |
+| **3F** | Polish: impeccable detector; refresh `.impeccable/design.json` sidecar | ✅ DONE 2026-09-11: detector 56 findings → 3 real defects fixed (update-pill `--panel` undefined token, body-appended save modal + drag ghosts losing `#pf-root` theming, off-scale 9px sublist radius), online dot tokenized; rest verified as false positives or accepted exceptions. Sidecar regenerated for Mission Control. |
 
 ### Phase 4 — Verify & ship ⬜
 - `npm test` green; detector clean.

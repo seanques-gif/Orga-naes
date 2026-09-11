@@ -202,7 +202,8 @@
     ghost.style.opacity = '0.9';
     ghost.style.pointerEvents = 'none';
     ghost.style.boxShadow = '0 6px 20px rgba(0,0,0,0.35)';
-    document.body.appendChild(ghost);
+    // Inside #pf-root so the cloned row keeps its #pf-root-scoped styling.
+    document.getElementById('pf-root').appendChild(ghost);
     row.style.opacity = '0.3';
     _wtd = { taskId: t.id, fromDay: ds, ghost, sourceRow: row, offsetX: touch.clientX - rect.left, offsetY: touch.clientY - rect.top, targetDay: null, targetTaskId: null, insertBefore: false, blocked: false };
   }

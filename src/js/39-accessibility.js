@@ -152,9 +152,11 @@
         const label = titleEl ? titleEl.textContent.trim() : 'Moving...';
         const count = subMultiSelect.length > 1 ? subMultiSelect.length : (splitMultiSelect.length > 1 ? splitMultiSelect.length : 1);
         dragGhost = document.createElement('div');
-        dragGhost.style.cssText = 'position:fixed;pointer-events:none;z-index:var(--z-drag);transform:translate(10px,-50%);padding:8px 14px;background:#363636;color:#e0e0e0;border:1px solid var(--accent);border-radius:6px;font-size: calc(var(--font-size-base) - 2px);font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.4);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;';
+        dragGhost.style.cssText = 'position:fixed;pointer-events:none;z-index:var(--z-drag);transform:translate(10px,-50%);padding:8px 14px;background:var(--card,#12161c);color:var(--text,#d7dde5);border:1px solid var(--accent,#2fd4ff);border-radius:var(--radius-container,6px);font-size: calc(var(--font-size-base) - 2px);font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.4);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;';
         dragGhost.textContent = count > 1 ? count + ' items' : label;
-        document.body.appendChild(dragGhost);
+        // Appended inside #pf-root so palette tokens (--card/--text/--accent)
+        // resolve; position:fixed keeps placement viewport-relative.
+        document.getElementById('pf-root').appendChild(dragGhost);
       }
       dragGhost.style.left = e.clientX + 'px';
       dragGhost.style.top = e.clientY + 'px';

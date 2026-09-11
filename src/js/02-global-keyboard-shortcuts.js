@@ -9,13 +9,14 @@
       if (!root.classList.contains('pf-device-desktop')) return;
       const saveModal = document.createElement('div');
       saveModal.style.cssText = 'position:fixed;inset:0;z-index:calc(var(--z-drag) + 1);display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
-      saveModal.innerHTML = '<div style="background:var(--card,#2a2a3e);border:1px solid var(--card-border,#3a3a5e);border-radius:var(--radius-overlay);padding:24px;min-width:260px;text-align:center;color:var(--text,#fff);">' +
+      saveModal.innerHTML = '<div style="background:var(--card,#12161c);border:1px solid var(--card-border,#232a34);border-radius:var(--radius-overlay);padding:24px;min-width:260px;text-align:center;color:var(--text,#d7dde5);">' +
         '<div style="font-size: calc(var(--font-size-base) + 2px);font-weight:700;margin-bottom:16px;">Save</div>' +
-        '<button id="_save-local" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:var(--radius-container);background:var(--accent,#7b68ee);color:var(--accent-contrast,#fff);font-size:var(--font-size-base);font-weight:600;cursor:pointer;">💾 Save to Local (JSON)</button>' +
-        '<button id="_save-cloud" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:var(--radius-container);background:#4ade80;color:#000;font-size:var(--font-size-base);font-weight:600;cursor:pointer;">☁ Push to Cloud</button>' +
-        '<button id="_save-cancel" style="display:block;width:100%;padding:10px;border:none;border-radius:var(--radius-container);background:transparent;color:var(--text-dim,#aaa);font-size: calc(var(--font-size-base) - 1px);cursor:pointer;">Cancel</button>' +
+        '<button id="_save-local" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:var(--radius-container);background:var(--accent,#2fd4ff);color:var(--accent-contrast,#04141b);font-size:var(--font-size-base);font-weight:600;cursor:pointer;">💾 Save to Local (JSON)</button>' +
+        '<button id="_save-cloud" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:var(--radius-container);background:var(--accent,#2fd4ff);color:var(--accent-contrast,#04141b);font-size:var(--font-size-base);font-weight:600;cursor:pointer;">☁ Push to Cloud</button>' +
+        '<button id="_save-cancel" style="display:block;width:100%;padding:10px;border:none;border-radius:var(--radius-container);background:transparent;color:var(--text-dim,#8b95a3);font-size: calc(var(--font-size-base) - 1px);cursor:pointer;">Cancel</button>' +
         '</div>';
-      document.body.appendChild(saveModal);
+      // Inside #pf-root so palette tokens resolve on every theme.
+      document.getElementById('pf-root').appendChild(saveModal);
       _saveModalEl = saveModal;
       const _removeSaveModal = function() { saveModal.remove(); if (_saveModalEl === saveModal) _saveModalEl = null; };
       saveModal.querySelector('#_save-local').addEventListener('click', function() { _removeSaveModal(); document.getElementById('pf-export').click(); });

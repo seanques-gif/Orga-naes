@@ -1,7 +1,7 @@
 # Orga-naes — AI Handoff Document
 
 **Project:** Orga-naes — single-file vanilla JS personal project manager PWA
-**Phase:** 3B-4 (SVG icons) — **COMPLETE** (D10 resolved). 3E/3C done, verdict APPROVE. Next up: 3F (impeccable audit + design.json sidecar), then Phase 4 (verify & ship).
+**Phase:** 3F (impeccable audit + sidecar) — **COMPLETE** 2026-09-11. All design phases (3A–3F) done; verdict APPROVE with zero open findings. Next up: Phase 4 (verify & ship): screenshot matrix (desktop/tablet/phone × 5 presets × reduced-motion), INP/perf, PWA offline, manual smoke test, final commit.
 **Last updated:** 2026-09-11 (3E finished + verdict APPROVE; select-bar Daylight bug fixed & live-verified; motion smoke-tested in preview, console clean)
 
 ---
@@ -215,7 +215,7 @@ Key findings for the verdict:
 | **3B-3 rest** | Peel remaining inline styles → classes | ~129 in template, ~134 in JS. Select-bar violation FIXED (2026-09-11, peeled into `.pf-sub-select-bar`). |
 | **3B-4** | Replace emoji-as-icons with SVG | ✅ DONE 2026-09-11: D10 resolved — SVG chrome, emoji stays user content. Sprite + `pfIcon()` in `src/js/00-svg-icons.js` (first JS fragment); static markup hydrates via `[data-ic]` / `[data-ic-before]`; `.pf-ic` sizes to `1em`, ink = `currentColor`. Converted: toolbar, options panel, FAB menu, bottom nav, both ctx menus, sort bar, recur chip, dep/comment chips. Known remaining: transient toast prefixes kept by design; FAB trigger `+` and scroll-top `↑` ASCII glyphs kept; mobile-swipe ext-comment uses the same converted path. NOTE: `42-modal-helpers` now publishes `window._pf` via `Object.assign` so the icon export survives. |
 | **3C** | Spacing/radius/z-index scales, retire resting shadows | ✅ DONE 2026-09-11: `--space-*` + `--z-*` tokens (on `:root`, shared with body-level elements), z-ladder 0 literals, radii → 4/6/10/pill (+50% circles, 2px mark exception), F12 resting shadows retired (hover lift kept). |
-| **3F** | Polish: impeccable detector, design.json sidecar | Run impeccable audit, create sidecar. |
+| **3F** | Polish: impeccable detector, design.json sidecar | ✅ DONE 2026-09-11: 56 detector findings audited — 3 real fixes (update-pill undefined `--panel` → `--toast-bg`; body-appended save modal + drag ghosts re-parented into `#pf-root` so palette tokens resolve; sublist 9px → `--radius-overlay`), online dot → `var(--completed)`. `.impeccable/design.json` regenerated for Mission Control (rules include Token-Scope + SVG-Chrome). Remaining detector hits are static-analysis false positives (contrast can't see tokens) or accepted exceptions (confetti palette, HTML report export, print sheet, `#000` selection ring). |
 | **4** | Verify & ship | Screenshots (desktop/tablet/phone × themes × reduced-motion), INP/perf, PWA offline, manual smoke test, final commit. |
 
 ---

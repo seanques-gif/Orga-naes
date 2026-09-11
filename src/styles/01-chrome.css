@@ -50,7 +50,7 @@
       position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 8px; height: 8px;
       border-radius: 50%; z-index: var(--z-transient); transition: background 0.3s;
     }
-    .pf-connection-dot.pf-online { background: #4ade80; }
+    .pf-connection-dot.pf-online { background: var(--completed, #4ade80); }
     .pf-connection-dot.pf-offline { background: var(--danger, #ef4444); animation: pf-offline-blink 1.5s infinite; }
     @keyframes pf-offline-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
     .pf-error-dot {
@@ -66,8 +66,8 @@
     .pf-update-pill {
       position: fixed; top: 14px; right: 14px; z-index: var(--z-transient);
       display: flex; align-items: center; gap: var(--space-sm);
-      background: var(--panel, #1e1e2e); color: var(--text, #fff);
-      border: 1px solid color-mix(in srgb, var(--accent, #7b68ee) 45%, transparent);
+      background: var(--toast-bg, #141a22); color: var(--text, #d7dde5);
+      border: 1px solid color-mix(in srgb, var(--accent, #2fd4ff) 45%, transparent);
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
       border-radius: var(--radius-pill); padding: 7px 14px 7px 10px;
       font-size: calc(var(--font-size-base) - 1.5px); font-weight: 600; cursor: pointer;
@@ -75,10 +75,10 @@
        transition: opacity 0.25s var(--ease-console), transform 0.25s var(--ease-console);
     }
     .pf-update-pill.pf-update-pill-show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-    .pf-update-pill:hover { border-color: var(--accent, #7b68ee); }
+    .pf-update-pill:hover { border-color: var(--accent, #2fd4ff); }
     .pf-update-pill .pf-update-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent, #7b68ee); flex-shrink: 0;
+      background: var(--accent, #2fd4ff); flex-shrink: 0;
       animation: pf-offline-blink 1.5s infinite;
     }
     @media (max-width: 640px) {
