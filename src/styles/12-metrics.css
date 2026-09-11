@@ -1,0 +1,33 @@
+  /* SUBSECTION: Metrics & Numerals (Mission Control)
+     The Measurement Rule: numeric readouts use --font-mono + tabular figures so
+     columns and counters don't shift as values change. Prose and labels stay in
+     --font-sans. Keep this list to genuine data/measurement only — mono as a
+     "technical" costume on buttons/labels is out of bounds (craft floor). */
+  #pf-root { font-variant-numeric: tabular-nums; }
+
+  #pf-root .pf-stats,
+  #pf-root .pf-stat,
+  #pf-root .pf-streak-badge,
+  #pf-root .pf-xp-badge,
+  #pf-root .pf-freeze-badge,
+  #pf-root .pf-split-list-progress,
+  #pf-root .pf-split-list-progress-pct,
+  #pf-root .pf-split-list-due,
+  #pf-root .pf-count,
+  #pf-root .pf-due-chip,
+  #pf-root .pf-completed-date,
+  #pf-root .pf-week-col-daynum,
+  #pf-root .pf-week-day-badge,
+  #pf-root #pf-week-backlog-count,
+  #pf-root .pf-cal-day-num,
+  #pf-root #pf-cal-month,
+  #pf-root #pf-cal-detail-title,
+  #pf-root #pf-today-date,
+  #pf-root #pf-week-label,
+  #pf-root .pf-options-val,
+  #pf-root .pf-zoom-level,
+  #pf-root .pf-shortcut-key,
+  #pf-root .pf-remind-val,
+  #pf-root .pf-activity-time,
+  #pf-root .pf-comment-time,
+  #pf-root .pf-metric { font-family: var(--font-mono); }

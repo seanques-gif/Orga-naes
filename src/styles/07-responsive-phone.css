@@ -1,0 +1,66 @@
+  /* ===== PHONE BREAKPOINT (screen width ≤500px) =====
+     This is the block that actually applies to most phones, including
+     yours — it controls both the project LIST screen and the TASK
+     DETAIL screen (when a project is opened). Edit font-size / width /
+     height values below to resize things; #pf-root#pf-root is a
+     specificity trick that makes sure these values always win over a
+     conflicting rule elsewhere in the file. */
+  @media (max-width: 500px) {
+    #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
+    #pf-root#pf-root .pf-split-list-title { font-size: calc(var(--font-size-base) - 1px); } /* project name in the list (e.g. "Efficiency", "DS1922L - Battrip") */
+    #pf-root .pf-split-list-status { font-size: calc(var(--font-size-base) - 5px); padding: 2px 5px; }
+    #pf-root#pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 3px); } /* the "x/y" progress count next to each project */
+    #pf-root .pf-split-list-due { font-size: calc(var(--font-size-base) - 5px); }
+    #pf-root .pf-node { max-width: 100%; }
+    #pf-root .pf-node-header { padding: 8px; gap: 6px; flex-wrap: nowrap; }
+    /* --- Task detail screen text sizes (when a project is opened) --- */
+    #pf-root#pf-root .pf-node-title { font-size: max(14px, var(--font-size-base)); } /* the big task/project title at the very top of the detail screen */
+    #pf-root#pf-root .pf-subrow { font-size: calc(var(--font-size-base) - 1px); } /* the subtask row container */
+    #pf-root#pf-root .pf-subrow-title { font-size: calc(var(--font-size-base) - 1px); } /* the ACTUAL subtask text (what you actually read), e.g. "Waiting for Material" */
+    #pf-root#pf-root .pf-node-desc { font-size: calc(var(--font-size-base) - 2px); } /* the "Add description..." field under the title */
+    #pf-root .pf-badge { font-size: calc(var(--font-size-base) - 3px); padding: 4px 8px; }
+    #pf-root .pf-header-meta { gap: 4px; }
+    #pf-root .pf-split-detail { padding: 8px; }
+    #pf-root .pf-sublist { padding: 8px 0 8px 14px; }
+    #pf-root .pf-node-desc-row { padding: 0 12px 6px 14px; }
+    #pf-root .pf-split-collapse-btn { font-size: calc(var(--font-size-base) - 5px); padding: 2px 6px; }
+    #pf-root .pf-split-sort { display: none !important; }
+  }
+
+  #pf-root .pf-overdue-banner {
+    display: none !important;
+  }
+  #pf-root .pf-overdue-banner-icon { font-size: calc(var(--font-size-base) - 4px); flex-shrink: 0; }
+  #pf-root .pf-overdue-banner-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(var(--font-size-base) - 5px); }
+  #pf-root .pf-overdue-banner-dismiss { background: transparent; color: var(--danger); font-size: calc(var(--font-size-base) - 4px); cursor: pointer; border: none; opacity: 0.7; transition: opacity 0.15s; flex-shrink: 0; }
+  #pf-root .pf-overdue-banner-dismiss:hover { opacity: 1; }
+  #pf-root .pf-canvas-wrap {
+    flex: 1; overflow: auto; position: relative;
+    background-image: radial-gradient(var(--grid-dot) 1.2px, transparent 1.2px); background-size: 22px 22px;
+  }
+  #pf-root .pf-split-view {
+    display: flex; flex: 1; overflow: hidden; min-height: 0;
+  }
+  #pf-root .pf-canvas-wrap { display: none; }
+  #pf-root .pf-card-only { display: none; }
+  #pf-root.pf-card-mode .pf-split-view { display: none; }
+  #pf-root.pf-card-mode .pf-canvas-wrap { display: flex; flex: 1; }
+  #pf-root.pf-card-mode .pf-card-only { display: inline-flex; align-items: center; justify-content: center; }
+  #pf-root .pf-split-list {
+    width: 100%; min-width: 0; max-width: 100%; flex: 1; overflow-y: auto;
+    background: var(--bg); padding: 4px 0 4px 0;
+    scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+  #pf-root .pf-mobile-back { display: none; }
+  #pf-root.pf-detail-open .pf-split-list { display: none; }
+  #pf-root.pf-detail-open .pf-split-divider { display: none; }
+  #pf-root.pf-device-desktop .pf-split-divider { display: block; }
+  #pf-root.pf-device-tablet .pf-split-divider { display: block; }
+  #pf-root.pf-detail-open .pf-mobile-back { display: inline-flex !important; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: calc(var(--font-size-base) - 2px); padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
+  #pf-root .pf-split-list { animation: pf-list-slide var(--dur-surface) var(--ease-console); }
+  @keyframes pf-list-slide { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+  #pf-root .pf-split-divider {
+    display: none; width: 4px; background: var(--card-border); cursor: col-resize; flex-shrink: 0; transition: background 0.15s;
+  }
+  #pf-root .pf-split-divider:hover, #pf-root .pf-split-divider.pf-dragging { background: var(--accent); width: 5px; }

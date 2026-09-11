@@ -1,0 +1,167 @@
+  /* Category header (e.g. "For Disposition (2)", "Work (1)") — same size on all screens, not device-specific. */
+  #pf-root .pf-split-list-cat { padding: 6px 12px; font-size: calc(var(--font-size-base) + 1px); font-weight: 700; color: var(--text); text-transform: none; letter-spacing: 0.1px; margin: 6px 6px 0px 6px; border: none; border-top: 1px solid var(--card-border); border-radius: 6px; background: transparent; transition: background 0.15s, color 0.15s; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  #pf-root .pf-split-list-cat:first-of-type { margin-top: 4px; border-top: none; }
+  #pf-root .pf-split-list-cat:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  #pf-root .pf-split-list-item {
+    padding: 6px 12px 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 3px;
+    border-left: 2px solid transparent; border-radius: 6px; margin: 1px 4px 1px 16px;
+    transition: background 0.1s, border-color 0.1s;
+    position: relative;
+  }
+  /* List/subtask entrances removed: a blanket CSS animation re-fires on every
+     render (each data change re-creates the rows), which reads as flicker and
+     violates the frequency rule. The view-level entrance below covers loading. */
+  #pf-root .pf-split-list-item[hidden] { content-visibility: auto; contain-intrinsic-size: 0 40px; }
+  #pf-root .pf-split-list-item.pf-list-completed { opacity: 0.55; }
+  #pf-root .pf-split-list-item.pf-list-completed:hover { opacity: 0.8; }
+  #pf-root .pf-split-list-item.pf-due-today { border-left-color: var(--ongoing); }
+  /* Enter with a retargetable transition (not a keyframe) so it can be
+     interrupted; @starting-style supplies the initial frame without JS. */
+  #pf-root .pf-split-view, #pf-root .pf-canvas-wrap {
+    transition: opacity var(--dur-surface) var(--ease-console), transform var(--dur-surface) var(--ease-console);
+  }
+  @starting-style {
+    #pf-root .pf-split-view, #pf-root .pf-canvas-wrap { opacity: 0; transform: translateY(5px); }
+  }
+  #pf-root .pf-progress-ring { flex-shrink: 0; }
+  #pf-root .pf-progress-ring circle { transition: stroke-dashoffset 0.6s var(--ease-out-strong); }
+  #pf-root .pf-progress-ring.pf-ring-pulse circle:last-child { animation: pf-ring-pulse 0.6s var(--ease-out-strong); }
+  #pf-root .pf-progress-ring.pf-ring-complete circle:last-child { animation: pf-ring-complete 0.8s var(--ease-out-strong); }
+  @keyframes pf-ring-pulse {
+    0% { stroke-width: 2; opacity: 1; }
+    50% { stroke-width: 3.5; opacity: 0.8; }
+    100% { stroke-width: 2; opacity: 1; }
+  }
+  @keyframes pf-ring-complete {
+    0% { stroke-width: 2; opacity: 1; filter: none; }
+    30% { stroke-width: 4; opacity: 1; filter: drop-shadow(0 0 4px var(--completed)); }
+    60% { stroke-width: 3; opacity: 0.9; filter: drop-shadow(0 0 2px var(--completed)); }
+    100% { stroke-width: 2; opacity: 1; filter: none; }
+  }
+  #pf-root .pf-streak-badge { font-size: calc(var(--font-size-base) - 3px); padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--ongoing, #f5b84d) 15%, transparent); color: var(--ongoing, #f5b84d); font-weight: 700; margin-left: 6px; }
+  #pf-root .pf-xp-badge { font-size: calc(var(--font-size-base) - 3px); padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); font-weight: 700; margin-left: 4px; }
+  #pf-root .pf-freeze-badge { font-size: calc(var(--font-size-base) - 3px); padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--depth3) 15%, transparent); color: var(--depth3, #5cc8e8); font-weight: 700; margin-left: 4px; cursor: default; }
+  #pf-root .pf-emoji-btn { background: transparent; border: none; font-size: calc(var(--font-size-base) + 2px); cursor: pointer; padding: 0 2px; line-height: 1; transition: transform 0.15s; }
+  @media (hover: hover) and (pointer: fine) {
+    #pf-root .pf-emoji-btn:hover { transform: scale(1.2); }
+  }
+  #pf-root .pf-emoji-picker { position: absolute; top: 100%; left: 0; background: var(--card); border: 1px solid var(--card-border); border-radius: 6px; padding: 6px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; z-index: 100; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+  #pf-root .pf-emoji-picker span { cursor: pointer; padding: 4px; border-radius: 6px; text-align: center; font-size: calc(var(--font-size-base) + 2px); transition: background 0.1s; }
+  #pf-root .pf-emoji-picker span:hover { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+  #pf-root .pf-split-list-item:hover { background: rgba(255,255,255,0.04); }
+  #pf-root .pf-split-list-item.pf-split-active { background: color-mix(in srgb, var(--accent) 8%, transparent); border-left: 3px solid var(--accent); border-radius: 0; }
+  #pf-root .pf-split-list-item.pf-split-selected { background: rgba(255,255,255,0.06); border-left-color: var(--accent); touch-action: none; }
+  #pf-root .pf-split-delete-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid var(--accent); border-radius: 6px; margin: 6px 0; }
+  #pf-root .pf-split-delete-bar button { background: transparent; border: 1px solid var(--card-border); color: var(--text); border-radius: 6px; padding: 3px 8px; font-size: calc(var(--font-size-base) - 4px); cursor: pointer; font-weight: 500; transition: border-color 0.15s, background 0.15s; }
+  #pf-root .pf-split-delete-bar button:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  #pf-root .pf-split-delete-bar button[data-action="delete"] { color: var(--danger, #ef4444); border-color: var(--danger, #ef4444); }
+  #pf-root .pf-split-delete-bar button[data-action="delete"]:hover { background: color-mix(in srgb, var(--danger, #ef4444) 10%, transparent); }
+  #pf-root .pf-split-delete-bar span { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
+  #pf-root .pf-split-list-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 4px currentColor; transition: transform 0.15s; }
+  @media (hover: hover) and (pointer: fine) {
+    #pf-root .pf-split-list-item:hover .pf-split-list-dot { transform: scale(1.2); }
+  }
+  #pf-root .pf-split-list-title { flex: 1; font-size: calc(var(--font-size-base) - 2px); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
+  #pf-root .pf-split-list-item.pf-split-active .pf-split-list-title { font-weight: 500; color: var(--accent); }
+  #pf-root .pf-split-list-status { font-size: calc(var(--font-size-base) - 5.5px); padding: 2px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; width: 62px; text-align: center; display: inline-block; transition: background 0.3s var(--ease-console), color 0.3s var(--ease-console); }
+  #pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 36px; text-align: center; display: inline-block; }
+  #pf-root .pf-split-list-progress-pct { font-size: max(8.5px, calc(var(--font-size-base) - 5.5px)); font-weight: 500; color: var(--text-dim); opacity: 0.65; margin-left: 3px; }
+  #pf-root .pf-split-list-due { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px; width: 58px; text-align: right; }
+  #pf-root .pf-split-list-due.pf-overdue { color: var(--danger); font-weight: 600; }
+  #pf-root .pf-split-list-edit { display: none; }
+  #pf-root .pf-split-list-move { background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) - 6px); cursor: pointer; padding: 0 2px; flex-shrink: 0; display: none; line-height: 1; }
+  #pf-root .pf-split-list-move:hover { color: var(--accent); }
+  @media (pointer: coarse) {
+    #pf-root .pf-split-list-move { display: none; }
+    #pf-root .pf-split-list-edit { display: none; }
+    #pf-root .pf-undo-btn { min-height: 40px; min-width: 40px; padding: 8px 10px; }
+    #pf-root .pf-new-btn { min-height: 40px; min-width: 40px; }
+    #pf-root .pf-ctx-menu-item { padding: 8px 12px; min-height: 32px; font-size: calc(var(--font-size-base) - 1px); }
+    #pf-root .pf-split-list-item { min-height: 32px; padding: 4px 12px; }
+    #pf-root .pf-search-close { width: 28px; height: 28px; font-size: var(--font-size-base); }
+    #pf-root .pf-chevron { min-width: 36px; min-height: 36px; }
+    #pf-root .pf-node-del { min-width: 36px; min-height: 36px; }
+  }
+  @media (max-width: 600px) {
+    #pf-root .pf-activity-panel,
+    #pf-root .pf-category-popover,
+    #pf-root .pf-due-panel,
+    #pf-root .pf-reminder-popover {
+      max-height: 85vh; overflow-y: auto; max-width: 95vw; width: 95vw;
+    }
+    #pf-root .pf-options-panel {
+      max-height: 90vh; overflow-y: auto; max-width: 95vw; width: 95vw;
+    }
+  }
+  #pf-root .pf-ctx-menu {
+    position: fixed; z-index: 100; background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 6px 0; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    max-height: calc(100vh - 20px); overflow-y: auto;
+    transform-origin: top left;
+    animation: pf-ctx-fade var(--dur-state) var(--ease-out-strong);
+  }
+  #pf-root .pf-ctx-menu-item {
+    padding: 7px 14px; font-size: calc(var(--font-size-base) - 4px); cursor: pointer; display: flex;
+    align-items: center; gap: 8px; color: var(--text); transition: background 0.1s;
+  }
+  #pf-root .pf-ctx-menu-item:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  #pf-root .pf-ctx-menu-item.pf-ctx-danger { color: var(--danger); }
+  #pf-root .pf-ctx-menu-item.pf-ctx-danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+  /* Non-clickable "info" row in a ⋮ menu (e.g. "Created Aug 31, 2026, 3:45 PM") —
+     dimmed text, no pointer cursor, no hover highlight. Search "it.info" in
+     the JS to see where these lines are added. */
+  #pf-root .pf-ctx-menu-item.pf-ctx-info { opacity: 0.6; cursor: default; font-size: calc(var(--font-size-base) - 2px); }
+  #pf-root .pf-ctx-menu-item.pf-ctx-info:hover { background: transparent; }
+  #pf-root .pf-ctx-menu-sep { height: 1px; background: var(--card-border); margin: 4px 0; }
+  @keyframes pf-ctx-fade { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  #pf-root .pf-cat-items-wrap { overflow: hidden;     transition: max-height 0.3s var(--ease-console), opacity 0.25s var(--ease-console); max-height: 2000px; opacity: 1; }
+  #pf-root .pf-cat-items-wrap.pf-collapsed { max-height: 0; opacity: 0; }
+  #pf-root .pf-pull-indicator { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: 32px; height: 32px; border-radius: 50%; background: var(--card); border: 2px solid var(--accent); display: none; z-index: 200; font-size: calc(var(--font-size-base) + 4px); line-height: 28px; text-align: center; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none; }
+  #pf-root .pf-scroll-top { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(10px); width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--accent-contrast, #fff); border: none; font-size: calc(var(--font-size-base) + 4px); line-height: 40px; text-align: center; cursor: pointer; z-index: 90; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s var(--ease-out-strong), transform 0.25s var(--ease-out-strong); }
+  #pf-root .pf-scroll-top.pf-visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+  #pf-root.pf-device-mobile .pf-scroll-top { bottom: 80px; }
+  #pf-ctx-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; backdrop-filter: blur(2px); }
+  /* overscroll indicators disabled to prevent scroll shake */
+  #pf-root .pf-split-sort {
+    display: flex; align-items: center; gap: 8px; padding: 0 8px; margin: 0 6px; border-radius: 6px; background: rgba(0,0,0,0.08); min-height: 0; height: 28px;
+    cursor: default; user-select: none;
+  }
+  #pf-root .pf-split-sort-label { font-size: calc(var(--font-size-base) - 6px); color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  #pf-root .pf-split-sort select {
+    font-size: calc(var(--font-size-base) - 5px); background: var(--card); color: var(--text);
+    border: 1px solid var(--card-border); border-radius: 5px; padding: 0 6px; outline: none; cursor: pointer; transition: border-color 0.15s;
+    height: 20px; line-height: 1; box-sizing: border-box;
+  }
+  #pf-root .pf-split-sort select option {
+    background: var(--card); color: var(--text);
+  }
+  #pf-root .pf-split-sort select:hover { border-color: var(--accent); }
+  #pf-root .pf-split-collapse-btn {
+    background: transparent; border: 1px solid var(--card-border); color: var(--text-dim);
+    font-size: calc(var(--font-size-base) - 5px); padding: 0 8px; border-radius: 5px; cursor: pointer; font-weight: 600;
+    transition: color var(--dur-state) var(--ease-console), border-color var(--dur-state) var(--ease-console), background var(--dur-state) var(--ease-console);
+    height: 20px; box-sizing: border-box; line-height: 1;
+  }
+  #pf-root #pf-split-collapse-all { margin-right: auto; }
+  #pf-root .pf-split-collapse-btn:hover { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  #pf-root .pf-split-toggle-active { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  #pf-root .pf-split-detail {
+    display: none; overflow: auto; padding: 0; position: relative; flex-direction: column; transition: transform var(--dur-surface) var(--ease-console), opacity var(--dur-surface) var(--ease-console);
+    background: var(--bg); width: 100%; flex: 1;
+  }
+  #pf-root.pf-detail-open .pf-split-detail { display: flex; animation: pf-detail-slide var(--dur-surface) var(--ease-console); }
+  @keyframes pf-detail-slide { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+  #pf-root .pf-split-detail .pf-node { position: relative; left: auto; top: auto; width: 100%; min-width: 0; max-width: 100%; margin: 0; flex: none; display: flex; flex-direction: column; border-radius: 12px; border: none; }
+  #pf-root .pf-split-detail .pf-node .pf-sublist { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+  #pf-root .pf-canvas { position: relative; width: 2200px; height: 1600px; transform-origin: 0 0; transition: transform 0.1s; }
+  #pf-root .pf-zoom-controls { position: fixed; bottom: 14px; right: 14px; z-index: 10; display: flex; gap: 4px; align-items: center; }
+  #pf-root .pf-zoom-btn { background: var(--card); border: 1px solid var(--card-border); color: var(--text); width: 28px; height: 28px; border-radius: 6px; font-size: var(--font-size-base); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s; }
+  #pf-root .pf-zoom-btn:hover { border-color: var(--accent); color: var(--accent); }
+  #pf-root .pf-zoom-level { font-size: calc(var(--font-size-base) - 5px); color: var(--text-dim); min-width: 36px; text-align: center; }
+
+  #pf-root .pf-node {
+    position: absolute; width: auto; min-width: 420px; max-width: 420px;
+    background: var(--card); border: 1.5px solid var(--card-border); border-radius: 12px;
+    z-index: 2; box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px color-mix(in srgb, var(--accent) 4%, transparent); transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s, max-width 0.2s var(--ease-console);
+  }
+

@@ -1,0 +1,61 @@
+  /* ===== TABLET — TEXT & ICON SIZE (task detail view) =====
+     Unlike mobile, the tablet detail view uses a single CSS "zoom" value
+     to scale EVERYTHING at once — title text, subtask text, icons, badges,
+     spacing — all together, proportionally. This keeps every row aligned
+     (icons don't drift out of place relative to the text next to them).
+     To make tablet text/icons BIGGER: raise the number below (e.g. 0.88 → 0.95 → 1.0 → 1.1).
+     To make them SMALLER: lower it (e.g. 0.88 → 0.8).
+     1.0 = full/normal size, same as desktop. Don't remove this rule —
+     doing so previously caused icons and chips to misalign (they're
+     positioned assuming this zoom is active). */
+  #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { zoom: 0.88; }
+
+  #pf-root.pf-device-tablet .pf-split-view { overflow: hidden; min-height: 0; }
+  #pf-root.pf-device-tablet .pf-split-list { width: 30%; min-width: 200px; max-width: 35%; flex: none; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; border-right: 1px solid var(--card-border); }
+  /* Project LIST (left-hand panel, before opening a task) currently has no
+     tablet-specific font-size — it uses the desktop-size text by default.
+     To set a tablet-only size for the project name in the list, add e.g.:
+       #pf-root#pf-root.pf-device-tablet .pf-split-list-title { font-size: max(14px, var(--font-size-base)); }
+     and for the category headers ("For Disposition", "Work", etc.):
+       #pf-root#pf-root.pf-device-tablet .pf-split-list-cat { font-size: calc(var(--font-size-base) + 2px); }
+     (the doubled #pf-root#pf-root is needed so it reliably overrides other
+     rules elsewhere in the file — same pattern used for mobile above). */
+  #pf-root.pf-device-tablet .pf-split-detail { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
+
+
+
+  @media (orientation: portrait) {
+    #pf-root.pf-device-tablet .pf-split-list { width: 100%; max-width: 100%; flex: 1; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
+    #pf-root.pf-device-tablet .pf-split-divider { display: block; }
+    #pf-root.pf-device-tablet .pf-split-detail { display: none; }
+    #pf-root.pf-device-tablet.pf-detail-open .pf-split-list { display: none; }
+    #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root.pf-device-tablet.pf-detail-open .pf-mobile-back { display: inline-flex !important; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: calc(var(--font-size-base) - 2px); padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
+  }
+
+  #pf-root.pf-device-desktop .pf-split-list-item:hover { background: rgba(255,255,255,0.06); }
+  #pf-root.pf-device-desktop .pf-subrow:hover { border-color: var(--hover-border); }
+  #pf-root.pf-device-desktop .pf-split-list-item { transition: background 0.12s; }
+  #pf-root.pf-device-desktop .pf-split-list { width: 25%; min-width: 15%; max-width: 30%; flex: none; border-right: 1px solid var(--card-border); }
+  #pf-root.pf-device-desktop .pf-split-detail { display: flex; padding: 16px 24px; overflow-y: auto; min-height: 0; }
+  #pf-root.pf-device-desktop .pf-split-detail .pf-node .pf-sublist { overscroll-behavior-y: auto; }
+  #pf-root.pf-device-desktop .pf-split-divider { display: block; }
+  #pf-root.pf-device-desktop.pf-detail-open .pf-split-list { display: block; }
+  #pf-root.pf-device-desktop.pf-detail-open .pf-split-divider { display: block; }
+  #pf-root.pf-device-desktop .pf-mobile-back,
+  #pf-root.pf-device-desktop.pf-detail-open .pf-mobile-back { display: none !important; }
+  #pf-root.pf-device-desktop .pf-bottom-nav { display: none !important; }
+  #pf-root.pf-device-desktop .pf-toolbar { display: flex !important; flex-wrap: wrap; overflow-x: visible; }
+  #pf-root.pf-device-desktop #pf-today-btn { display: inline-flex !important; }
+  #pf-root.pf-device-desktop #pf-duelist-btn { display: inline-flex !important; }
+  #pf-root.pf-device-desktop #pf-calendar-btn { display: inline-flex !important; }
+  #pf-root.pf-device-desktop .pf-options-desktop { display: inline-flex !important; }
+  #pf-root.pf-device-desktop .pf-search-wrap { display: inline-flex !important; }
+  #pf-root .pf-shortcuts-hint { display: none !important; }
+  #pf-root.pf-device-desktop .pf-shortcuts-hint { display: inline-flex !important; font-size: calc(var(--font-size-base) - 3px); font-weight: 700; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; opacity: 0.5; }
+  #pf-root.pf-device-desktop .pf-shortcuts-hint:hover { opacity: 1; }
+  #pf-root.pf-device-desktop .pf-fab,
+  #pf-root.pf-device-desktop .pf-fab-menu,
+  #pf-root.pf-device-desktop .pf-fab-overlay { display: none !important; }

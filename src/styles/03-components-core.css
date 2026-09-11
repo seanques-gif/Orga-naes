@@ -1,0 +1,206 @@
+
+  #pf-root .pf-resize-handle {
+    position: absolute; right: 0; bottom: 0; width: 20px; height: 20px;
+    cursor: nwse-resize; z-index: 30; display: flex; align-items: flex-end;
+    justify-content: flex-end; padding: 3px; color: var(--text-dim);
+    opacity: 0.45; transition: opacity 0.15s, color 0.15s;
+  }
+  #pf-root .pf-resize-handle:hover { opacity: 1; color: var(--accent); }
+  #pf-root .pf-resize-handle svg { display: block; }
+  #pf-root.pf-resizing { user-select: none; }
+
+  #pf-root .pf-toolbar {
+    display: flex; flex-wrap: nowrap; align-items: center; gap: 6px;
+    padding: 4px 12px; border-bottom: 1px solid var(--card-border);
+    background: var(--header-bg); flex-shrink: 0; z-index: 5; overflow-x: auto;
+    font-size: calc(var(--font-size-base) - 2px);
+    cursor: default; user-select: none;
+  }
+  #pf-root .pf-toolbar::-webkit-scrollbar { height: 3px; }
+  #pf-root .pf-toolbar::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 6px; }
+  #pf-root ::-webkit-scrollbar { width: 5px; height: 5px; }
+  #pf-root ::-webkit-scrollbar-track { background: transparent; }
+  #pf-root ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 6px; }
+  #pf-root ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+  #pf-root * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
+  #pf-root .pf-tb-group {
+    display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+    padding: 2px; background: var(--sub-bg); border-radius: 6px; border: 1px solid var(--card-border);
+    overflow: visible;
+  }
+  #pf-root .pf-tb-sep { width: 1px; height: 20px; background: var(--card-border); margin: 0 4px; flex-shrink: 0; }
+  #pf-root .pf-title {
+    font-family: var(--font-sans); font-weight: 700; font-size: calc(var(--font-size-base) - 2px);
+    letter-spacing: 0.2px; display: flex; align-items: center; gap: 6px;
+    margin-right: 2px; white-space: nowrap;
+  }
+  #pf-root .pf-title .pf-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  }
+  #pf-root button { font-family: var(--font-sans); cursor: pointer; border: none; outline: none; }
+  #pf-root .pf-new-btn {
+    background: var(--accent); color: var(--accent-contrast); font-weight: 600;
+    font-size: calc(var(--font-size-base) - 4px); padding: 6px 10px; border-radius: 6px; transition: filter 0.15s; flex-shrink: 0;
+  }
+  #pf-root .pf-new-btn:hover { filter: brightness(1.15); }
+  #pf-root .pf-undo-btn {
+    background: transparent; color: var(--text-dim); font-weight: 500; font-size: clamp(11px, 1.6vw, 14px);
+    padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 8px); border-radius: 5px; border: none;
+    min-width: clamp(20px, 3.5vw, 26px); min-height: clamp(20px, 3.5vw, 26px);
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    transition: color 0.12s, background 0.12s; flex-shrink: 0; overflow: visible; line-height: 1.2;
+    position: relative;
+  }
+  #pf-root .pf-undo-btn[title] { --tooltip-delay: 0.2s; }
+  #pf-root .pf-undo-btn[title]:hover::after {
+    content: attr(title); position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%);
+    background: var(--card); color: var(--text); font-size: calc(var(--font-size-base) - 4px); font-weight: 500; padding: 3px 8px;
+    border-radius: 5px; border: 1px solid var(--card-border); white-space: nowrap; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); pointer-events: none;
+    max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
+    animation: pf-tooltip-in var(--tooltip-delay) var(--ease-out-strong) forwards; opacity: 0;
+  }
+  @keyframes pf-tooltip-in { to { opacity: 1; } }
+  #pf-root .pf-undo-btn:hover:not(:disabled) { color: var(--text); background: rgba(255,255,255,0.05); }
+  #pf-root .pf-undo-btn:active:not(:disabled) { opacity: 0.7; }
+  #pf-root .pf-undo-btn { touch-action: manipulation; }
+  #pf-root .pf-undo-btn:disabled { opacity: 0.3; cursor: default; }
+  #pf-root .pf-undo-btn.pf-tb-active { color: var(--text); background: rgba(255,255,255,0.08); }
+  #pf-root .pf-stats { display: flex; gap: 6px; margin-left: auto; font-size: calc(var(--font-size-base) - 5px); }
+  #pf-root .pf-stat {
+    padding: 3px 8px; border-radius: 100px; font-weight: 600; display: flex;
+    align-items: center; gap: 4px; white-space: nowrap;
+  }
+  #pf-root .pf-stat .pf-swatch { width: 5px; height: 5px; border-radius: 50%; }
+  #pf-root .pf-search-wrap { position: relative; display: inline-flex; align-items: center; }
+  #pf-root .pf-search-toggle { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); cursor: pointer; border: none; padding: 4px 6px; border-radius: 5px; transition: color 0.12s, background 0.12s; }
+  #pf-root .pf-search-toggle:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+  #pf-root .pf-search {
+    font-family: var(--font-sans); font-size: calc(var(--font-size-base) - 4px); padding: 5px 22px 5px 8px; border-radius: 6px;
+    border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text);
+    outline: none; width: 0; max-width: 0; opacity: 0; padding-left: 0; padding-right: 0; border: none;
+    caret-color: transparent; visibility: hidden;
+    transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s, visibility 0s linear 0.2s;
+  }
+  #pf-root .pf-search-wrap.pf-search-open .pf-search {
+    width: 160px; max-width: 160px; opacity: 1; padding: 5px 22px 5px 8px;
+    border: 1px solid var(--card-border);
+    caret-color: auto; visibility: visible; transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s;
+  }
+  #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { border-color: var(--accent); width: 190px; max-width: 190px; }
+  #pf-root .pf-search::placeholder { color: var(--text-dim); }
+  #pf-root .pf-search-clear {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 4px); line-height: 1;
+    width: 16px; height: 16px; border-radius: 50%; display: none; align-items: center;
+    justify-content: center; cursor: pointer; transition: color 0.15s, background 0.15s;
+  }
+  #pf-root .pf-search-clear:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+  #pf-root .pf-search-wrap.pf-has-value .pf-search-clear { display: flex; }
+  #pf-root .pf-search-close {
+    position: relative; background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); line-height: 1;
+    width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center;
+    justify-content: center; cursor: pointer; border: 1px solid var(--card-border); margin-left: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+  #pf-root .pf-search-close:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+  #pf-root .pf-search-wrap.pf-search-open .pf-search-close { display: flex; }
+  @media (max-width: 900px) {
+    #pf-root .pf-search-wrap.pf-search-open ~ .pf-tb-group,
+    #pf-root .pf-search-wrap.pf-search-open ~ .pf-options-mobile,
+    #pf-root .pf-search-wrap.pf-search-open ~ .pf-back-btn { display: none !important; }
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) #pf-tb-duefilter,
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) #pf-tb-viewtools,
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) #pf-today-btn,
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) #pf-duelist-btn,
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) #pf-calendar-btn,
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) #pf-toggle-all,
+    #pf-root .pf-toolbar:has(.pf-search-wrap.pf-search-open) #pf-toolbar-back { display: none !important; }
+  }
+  #pf-root .pf-due-filter {
+    font-family: var(--font-sans); font-size: calc(var(--font-size-base) - 4px); padding: 3px 6px; border-radius: 6px;
+    border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text);
+    outline: none; cursor: pointer; flex-shrink: 0; height: 26px; box-sizing: border-box;
+  }
+  #pf-root .pf-due-filter:focus { border-color: var(--accent); }
+  #pf-root .pf-save { font-size: calc(var(--font-size-base) - 6px); color: var(--text-dim); width: auto; min-width: 55px; text-align: right; flex-shrink: 0; padding: 2px 6px; border-radius: 6px; transition: background 0.3s, color 0.3s, transform 0.2s; }
+  #pf-root .pf-save.pf-save-fail { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger); font-weight: 700; animation: pf-save-shake 0.4s var(--ease-out-strong); }
+  #pf-root .pf-save.pf-save-ok { color: var(--completed); }
+  @keyframes pf-save-shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-3px); }
+    40%, 80% { transform: translateX(3px); }
+  }
+  @media (max-width: 1100px) {
+    #pf-root .pf-toolbar { gap: 4px; padding: 6px 8px; }
+    #pf-root .pf-stats { display: none; }
+    #pf-root .pf-search { width: 100px; }
+    #pf-root .pf-search:focus { width: 130px; }
+  }
+  @media (max-width: 800px) {
+    #pf-root .pf-toolbar { flex-wrap: wrap; overflow-x: visible; gap: 3px; padding: 5px 6px; }
+    #pf-root .pf-tb-group { padding: 1px; }
+    #pf-root .pf-tb-sep { display: none; }
+    #pf-root .pf-due-filter { display: none; }
+    #pf-root .pf-search-wrap { order: 0; width: auto; }
+    #pf-root .pf-search { width: 100%; }
+    #pf-root .pf-search:focus { width: 100%; }
+    #pf-root .pf-save { display: none; }
+  }
+  @media (max-width: 500px) {
+    #pf-root .pf-title { display: none; }
+    #pf-root .pf-toolbar { gap: 2px; padding: 4px 6px; flex-wrap: wrap; }
+    #pf-root .pf-undo-btn { padding: 4px 6px; font-size: calc(var(--font-size-base) - 3px); }
+    #pf-root .pf-new-btn { padding: 4px 8px; font-size: calc(var(--font-size-base) - 3px); }
+    #pf-root .pf-tb-group { gap: 1px; border: none; background: none; padding: 0; }
+    #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root .pf-split-view { flex-direction: column; min-width: 0; width: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root .pf-split-divider { display: none; }
+    #pf-root.pf-mobile-detail-open .pf-split-list { display: none; }
+    #pf-root.pf-mobile-detail-open .pf-split-detail { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root.pf-mobile-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root.pf-mobile-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root.pf-detail-open .pf-split-list { display: none; }
+    #pf-root.pf-detail-open .pf-split-detail { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root.pf-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+    #pf-root.pf-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #pf-root .pf-mobile-back { display: none; }
+    #pf-root.pf-mobile-detail-open .pf-mobile-back { display: inline-flex; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: calc(var(--font-size-base) - 2px); padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
+    #pf-tb-undoredo { display: flex !important; }
+    #pf-tb-duefilter { display: flex !important; }
+    #pf-tb-viewtools { display: flex !important; }
+
+  }
+  @media (max-width: 400px) {
+  }
+  @media (max-width: 600px) {
+    #pf-root .pf-cal-layout { flex-direction: column !important; }
+    #pf-root .pf-cal-left { flex: none !important; width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--card-border); padding-right: 0 !important; padding-bottom: 8px; max-height: 50%; }
+    #pf-root .pf-cal-right { padding-left: 0 !important; padding-top: 8px; }
+  }
+
+  /* Options button visibility - show all toolbar buttons on all devices */
+  #pf-root .pf-options-desktop { display: inline-flex; }
+  #pf-root .pf-options-mobile { display: none; }
+  #pf-root .pf-toggle-all-btn { display: none; }
+  #pf-root.pf-detail-open .pf-toggle-all-btn { display: inline-flex; }
+  #pf-root:not(.pf-detail-open) #pf-tb-viewtools { display: none !important; }
+
+  /* Context menu buttons */
+  #pf-root .pf-sub-ctx-btn,
+  #pf-root .pf-split-list-ctx {
+    background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) + 2px); font-weight: 700;
+    cursor: pointer; padding: 0 4px; flex-shrink: 0; line-height: 1; border-radius: 6px;
+    transition: color 0.12s, background 0.12s;
+  }
+  #pf-root .pf-sub-ctx-btn:hover,
+  #pf-root .pf-split-list-ctx:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+
+  /* Device-specific optimizations */
+  #pf-root.pf-device-mobile .pf-toolbar { gap: 2px; padding: 4px 6px; }
+  #pf-root.pf-device-mobile .pf-undo-btn { min-width: 32px; min-height: 32px; font-size: max(14px, var(--font-size-base)); }
+  #pf-root.pf-device-mobile .pf-split-list-item { padding: 4px 12px; gap: 6px; margin: 0 4px 0 16px; }
+  #pf-root.pf-device-mobile .pf-split-list-status { min-width: 0; padding: 0; font-size: 0; border-radius: 50%; width: 10px; height: 10px; display: inline-block; flex-shrink: 0; background: currentColor !important; }
+  #pf-root.pf-device-mobile .pf-subrow { padding: 10px 8px; }
+  #pf-root.pf-device-mobile .pf-chevron { width: 28px; height: 28px; }
+

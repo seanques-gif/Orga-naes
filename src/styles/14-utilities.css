@@ -1,0 +1,14 @@
+  /* SUBSECTION: Utilities — static patterns lifted out of inline styles.
+     Only theme-independent, non-dynamic styling belongs here. Anything the JS
+     sets per-render (positions, computed colors) stays inline by necessity. */
+  #pf-root .pf-opt-ico { display: inline-block; width: 20px; text-align: center; }
+  #pf-root .pf-opt-title {
+    font-size: calc(var(--font-size-base) - 3px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  #pf-root .pf-theme-btn { padding: 5px 12px; font-size: calc(var(--font-size-base) - 3px); }
+  #pf-root .pf-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }

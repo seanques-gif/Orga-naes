@@ -1,0 +1,288 @@
+  /* Multi-select action bar (fixed, floating) */
+  #pf-root {
+    --selbar-bottom-offset: 78px;
+  }
+  @media (min-width: 1401px) {
+    #pf-root { --selbar-bottom-offset: 20px; } /* no bottom-nav on desktop */
+  }
+  @keyframes pf-selbar-in {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  #pf-root .pf-sub-select-bar {
+    /* Full recipe lives here (peeled from JS inline cssText) so the bar follows
+       the theme on every preset — the old inline background hardcoded a
+       near-black stale-theme ink that rendered as a dark pill on Daylight.
+       Fixed to the viewport (not sticky within the sublist) so it stays visible
+       no matter which ancestor is actually scrolling (list/detail/canvas all
+       have different scroll containers depending on layout mode). Sits above
+       the bottom nav / browser chrome via safe-area padding, and scrolls
+       horizontally on narrow screens instead of wrapping into a grid. */
+    display: flex; align-items: center; gap: 4px; padding: 8px 10px;
+    background: color-mix(in srgb, var(--card) 97%, transparent);
+    border: 1px solid var(--accent); border-radius: 14px;
+    position: fixed; left: 50%; z-index: 9200;
+    bottom: calc(var(--selbar-bottom-offset, 78px) + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    max-width: calc(100vw - 20px); overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    animation: pf-selbar-in 0.16s var(--ease-out-strong);
+    /* Edge fade so the horizontally-scrollable bar hints there's more
+       content off-screen, instead of clipping abruptly. */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  }
+  #pf-root .pf-sub-select-bar::-webkit-scrollbar { display: none; }
+  #pf-root .pf-selbar-btn {
+    font-family: inherit; font-size: calc(var(--font-size-base) - 2px); font-weight: 600; color: var(--text);
+    background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid transparent; border-radius: 8px;
+    padding: 7px 11px; white-space: nowrap; flex-shrink: 0; cursor: pointer;
+    min-width: 0; min-height: 0; line-height: 1.2; transition: background 0.15s, border-color 0.15s;
+  }
+  #pf-root .pf-selbar-btn:hover, #pf-root .pf-selbar-btn:focus-visible { background: color-mix(in srgb, var(--accent) 26%, transparent); border-color: var(--accent); }
+  #pf-root .pf-selbar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #pf-root .pf-selbar-btn.pf-selbar-close { background: transparent; color: var(--text-dim); padding: 7px 8px; font-size: calc(var(--font-size-base) - 1px); }
+  #pf-root .pf-selbar-btn.pf-selbar-close:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+  @media (max-width: 900px) {
+    #pf-root .pf-selbar-btn { font-size: calc(var(--font-size-base) - 1.5px); padding: 8px 10px; }
+  }
+  #pf-root .pf-node.pf-expanded { min-width: 380px; max-width: 500px; }
+  @media (hover: hover) and (pointer: fine) {
+    #pf-root .pf-node:hover { border-color: var(--hover-border); box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent); transform: translateY(-1px); }
+  }
+  #pf-root .pf-node.pf-node-selected { border-color: #ffffff; box-shadow: 0 0 0 2px #ffffff, 0 2px 10px rgba(0,0,0,0.25); }
+  #pf-root.pf-theme-light .pf-node.pf-node-selected { border-color: #000000; box-shadow: 0 0 0 2px #000000, 0 2px 10px rgba(0,0,0,0.15); }
+  #pf-root .pf-node-resize {
+    position: absolute; right: 1px; bottom: 1px; width: 14px; height: 14px;
+    cursor: nwse-resize; z-index: 6; display: flex; align-items: flex-end;
+    justify-content: flex-end; padding: 2px; color: var(--text-dim); opacity: 0; transition: opacity 0.15s, color 0.15s;
+  }
+  #pf-root .pf-node:hover .pf-node-resize { opacity: 0.5; }
+  #pf-root .pf-node-resize:hover { opacity: 1 !important; color: var(--accent); }
+  #pf-root .pf-node-resize svg { display: block; }
+  #pf-root .pf-node.pf-dragging { opacity: 0.4; cursor: grabbing; box-shadow: 0 10px 28px rgba(0,0,0,0.45); z-index: 20; }
+  #pf-root .pf-node-header.pf-drop-copy-target { outline: 2px dashed var(--completed); outline-offset: -2px; border-radius: 8px 8px 0 0; background: color-mix(in srgb, var(--completed, #22a35e) 8%, transparent); }
+  #pf-root.pf-paste-armed .pf-node-header, #pf-root.pf-paste-armed .pf-subrow { cursor: copy; }
+  #pf-root.pf-paste-armed .pf-node-header:hover { outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: 8px 8px 0 0; }
+  #pf-root.pf-paste-armed .pf-subrow:hover { outline: 2px dashed var(--accent); outline-offset: -2px; }
+  #pf-root .pf-node.pf-node-drop-before { box-shadow: -4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
+  #pf-root .pf-node.pf-node-drop-after { box-shadow: 4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
+  #pf-root .pf-node.pf-drop-target::before, #pf-root .pf-node.pf-drop-target::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 4px; border-radius: 6px; background: var(--accent); opacity: 0; pointer-events: none;
+  }
+  #pf-root .pf-node.pf-drop-target::before { left: -14px; }
+  #pf-root .pf-node.pf-drop-target::after { right: -14px; opacity: 0.3; }
+  #pf-root .pf-node.pf-node-drop-before::before { opacity: 1; width: 5px; }
+  #pf-root .pf-node.pf-node-drop-after::after { opacity: 1; width: 5px; }
+
+  #pf-root .pf-node-header { display: flex; align-items: center; gap: clamp(4px, 1vw, 8px); padding: clamp(6px, 1.5vw, 12px) clamp(8px, 1.5vw, 14px); cursor: pointer; flex-wrap: nowrap; }
+  #pf-root .pf-drag-handle {
+    display: none;
+  }
+  #pf-root .pf-node:hover .pf-drag-handle { opacity: 0.6; }
+  #pf-root .pf-drag-handle:hover { opacity: 1; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  #pf-root .pf-drag-handle:active { cursor: grabbing; }
+  #pf-root .pf-chevron {
+    background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); font-size: calc(var(--font-size-base) - 5px);
+    width: clamp(16px, 2.5vw, 22px); height: clamp(16px, 2.5vw, 22px); border-radius: 5px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; transition: transform 0.18s, background 0.15s, color 0.15s;
+  }
+  #pf-root .pf-chevron:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+  #pf-root .pf-node.pf-expanded .pf-chevron { transform: rotate(90deg); }
+  #pf-root .pf-chevron svg, #pf-root .pf-sub-chevron svg { display: block; }
+  #pf-root .pf-node-title {
+    font-family: var(--font-sans); font-weight: 600; font-size: var(--font-size-base); line-height: 1.35;
+    outline: none; min-width: 0; flex: 1; padding-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #pf-root .pf-node-title:focus { white-space: normal; overflow: visible; }
+  #pf-root .pf-node-title:focus { color: var(--accent); }
+  #pf-root .pf-node-desc {
+    font-size: calc(var(--font-size-base) - 2px); color: var(--text-dim); outline: none; word-break: break-word;
+    line-height: 1.4; min-height: 16px; flex: 1; min-width: 0;
+  }
+  #pf-root .pf-node-desc:empty::before { content: 'Add description…'; opacity: 0.5; }
+  #pf-root .pf-node-desc:focus { color: var(--text); }
+  #pf-root .pf-node-desc-row { display: flex; align-items: center; gap: 8px; padding: 0 11px 8px 61px; }
+  #pf-root .pf-node-del {
+    background: transparent; color: var(--danger, #ef4444); font-size: calc(var(--font-size-base) - 1px); line-height: 1;
+    padding: 0 0 0 4px; opacity: 1; transition: color 0.15s; flex-shrink: 0;
+  }
+  #pf-root .pf-node-del:hover { color: var(--danger); }
+  #pf-root .pf-node-meta { display: flex; align-items: center; justify-content: space-between; padding: 0 11px 11px 37px; gap: 6px; }
+  #pf-root .pf-badge { font-size: clamp(9px, 1.4vw, 11px); font-weight: 600; padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 9px); border-radius: 100px; border: 1px solid transparent; cursor: pointer; letter-spacing: 0.2px; white-space: nowrap; margin-top: 0; line-height: 1.2; align-self: center; transition: transform 0.15s, filter 0.15s, background 0.3s var(--ease-console), color 0.3s var(--ease-console); flex-shrink: 0; }
+  @media (hover: hover) and (pointer: fine) {
+    #pf-root .pf-badge:hover { transform: scale(1.05); filter: brightness(1.15); }
+  }
+  #pf-root .pf-split-detail .pf-node > .pf-node-header > .pf-badge { display: none !important; }
+  #pf-root .pf-split-detail .pf-node > .pf-node-header .pf-cat-chip { display: none !important; }
+  #pf-root .pf-split-detail .pf-node > .pf-node-header .pf-recur-chip { display: none !important; }
+  #pf-root .pf-count { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 500; }
+
+  #pf-root .pf-sublist {
+    display: none; border-top: 1px solid var(--card-border); background: var(--sub-bg);
+    border-radius: 0 0 9px 9px; padding: 10px 0 10px 22px; position: relative;
+    animation: pf-expand var(--dur-surface) var(--ease-console);
+  }
+  @keyframes pf-expand {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  #pf-root .pf-node.pf-expanded .pf-sublist { display: block; }
+  #pf-root .pf-sublist::before {
+    content: ''; position: absolute; left: 11px; top: 14px; bottom: 14px; width: 2px;
+    background: var(--rail-color, var(--accent)); opacity: 0.3; border-radius: 6px;
+  }
+  #pf-root .pf-sublist-nested { position: relative; margin: 6px 0 6px 14px; padding: 10px 0 10px 22px; }
+  #pf-root .pf-sublist-nested::before {
+    content: ''; position: absolute; left: 11px; top: 14px; bottom: 14px; width: 2px;
+    background: var(--rail-color, var(--accent)); opacity: 0.3; border-radius: 6px;
+  }
+  #pf-root .pf-sublist-nested .pf-subrow:last-child { margin-bottom: 0; }
+
+  #pf-root .pf-subrow {
+    display: flex; align-items: center; gap: clamp(3px, 0.8vw, 7px); padding: clamp(4px, 1vw, 8px) clamp(6px, 1.2vw, 10px); border-radius: 6px;
+    cursor: default; background: var(--card); border: 1px solid var(--card-border);
+    margin-bottom: clamp(3px, 0.6vw, 6px); margin-right: clamp(2px, 1vw, 10px); position: relative;
+    transition: border-color var(--dur-state) var(--ease-console), background 0.3s var(--ease-console), opacity 0.3s var(--ease-console), transform 0.25s var(--ease-console); flex-wrap: nowrap; overflow: hidden;
+  }
+  @keyframes pf-status-flash { 0% { transform: scale(1); } 40% { transform: scale(1.02); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 30%, transparent); } 100% { transform: scale(1); box-shadow: none; } }
+  #pf-root .pf-subrow.pf-status-transitioning { animation: pf-status-flash 0.35s var(--ease-out-strong); }
+  #pf-root .pf-node.pf-status-transitioning { animation: pf-status-flash 0.35s var(--ease-out-strong); }
+  #pf-root .pf-split-list-item.pf-status-transitioning { animation: pf-status-flash 0.35s var(--ease-out-strong); }
+  #pf-root .pf-subrow::before {
+    content: ''; position: absolute; left: -15px; top: 50%; transform: translateY(-50%);
+    width: 7px; height: 7px; border-radius: 50%; background: var(--rail-color, var(--accent));
+    border: 2px solid var(--sub-bg);
+  }
+  #pf-root .pf-subrow:last-child { margin-bottom: 0; }
+  @media (hover: hover) and (pointer: fine) {
+    #pf-root .pf-subrow:hover { border-color: var(--hover-border); transform: translateX(2px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+  }
+  #pf-root .pf-subrow.pf-sub-has-children { cursor: pointer; }
+  #pf-root .pf-sub-comment { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 4.5px); cursor: pointer; opacity: 1; transition: opacity 0.15s, background 0.3s var(--ease-console), border-color 0.3s var(--ease-console), color 0.3s var(--ease-console); flex-shrink: 0; padding: 2px 7px; text-align: center; min-width: 18px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--card-border); border-radius: 100px; }
+  #pf-root .pf-sub-comment:hover { border-color: var(--hover-border); }
+  #pf-root .pf-sub-comment.pf-comment-set { opacity: 1; color: var(--depth3); border-color: color-mix(in srgb, var(--depth3) 55%, transparent); background: color-mix(in srgb, var(--depth3) 16%, transparent); font-weight: 600; }
+  #pf-root .pf-sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; cursor: pointer; border: 1.5px solid var(--planned); transition: background 0.3s var(--ease-console), border-color 0.3s var(--ease-console); align-self: center; }
+  #pf-root .pf-sub-dates { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: clamp(9px, 1.3vw, 12px); margin-left: auto; height: 20px; }
+  #pf-root .pf-sub-dates .pf-due-chip { text-align: center; justify-content: center; }
+  #pf-root .pf-subrow-title { font-size: calc(var(--font-size-base) - 1px); flex: 1; outline: none; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+  #pf-root .pf-subrow-title:focus { white-space: normal; overflow: visible; }
+  #pf-root .pf-subrow.pf-sub-completed .pf-subrow-title { color: var(--text-dim); text-decoration: line-through; }
+  #pf-root .pf-subrow { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+  #pf-root .pf-subrow .pf-subrow-title[contenteditable="true"] { -webkit-user-select: text; user-select: text; }
+  #pf-root .pf-split-list-item { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+  @media (pointer: coarse) {
+    #pf-root .pf-subrow[draggable] { -webkit-user-drag: none; }
+    #pf-root .pf-split-list-item[draggable] { -webkit-user-drag: none; }
+  }
+  #pf-root .pf-subrow.pf-sub-selected { background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 6px; touch-action: none; }
+  #pf-root .pf-subrow.pf-sub-search-match { background: color-mix(in srgb, var(--ongoing) 15%, transparent); border-radius: 6px; }
+  #pf-root .pf-subrow.pf-sub-search-match .pf-subrow-title { color: var(--accent); font-weight: 600; }
+  #pf-root .pf-subrow.pf-sub-status-match { background: color-mix(in srgb, var(--waiting) 12%, transparent); border-radius: 6px; border-left: 3px solid var(--waiting); }
+  #pf-root .pf-subrow.pf-sub-status-match .pf-subrow-title { font-weight: 600; }
+  #pf-root .pf-subrow-title:focus { color: var(--accent); text-decoration: none; }
+  #pf-root .pf-sub-edit { display: none; }
+  #pf-root .pf-sub-handle { color: var(--text-dim); font-size: calc(var(--font-size-base) - 5px); line-height: 1; width: 12px; flex-shrink: 0; text-align: center; cursor: grab; letter-spacing: -1px; opacity: 0.6; transition: opacity 0.15s, color 0.15s; }
+  #pf-root .pf-sub-handle:hover { opacity: 1 !important; color: var(--accent); }
+  #pf-root .pf-subrow.pf-sub-dragging { opacity: 0.35; }
+  #pf-root .pf-subrow.pf-drop-before, #pf-root .pf-split-list-item.pf-drop-before { box-shadow: inset 0 2px 0 0 var(--accent); }
+  #pf-root .pf-subrow.pf-drop-after, #pf-root .pf-split-list-item.pf-drop-after { box-shadow: inset 0 -2px 0 0 var(--accent); }
+  #pf-root .pf-subrow.pf-drop-nest { background: color-mix(in srgb, var(--accent) 14%, transparent); outline: 1.5px dashed var(--accent); outline-offset: -1.5px; }
+  #pf-root .pf-sublist.pf-drop-root { outline: 1.5px dashed var(--accent); outline-offset: -3px; border-radius: 0 0 9px 9px; }
+  #pf-root .pf-sub-chevron { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); font-size: calc(var(--font-size-base) - 7px); width: clamp(13px, 2vw, 16px); height: clamp(13px, 2vw, 16px); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: transform 0.15s, background 0.15s, color 0.15s; }
+  #pf-root .pf-sub-chevron:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+  #pf-root .pf-sub-chevron.pf-sub-expanded { transform: rotate(90deg); }
+  #pf-root .pf-sub-spacer { width: 16px; flex-shrink: 0; }
+  #pf-root .pf-sub-add { background: transparent; border: none; color: var(--text-dim); line-height: 0; opacity: 0.7; transition: opacity 0.15s, color 0.15s; flex-shrink: 0; cursor: pointer; padding: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; min-width: 18px; }
+  #pf-root .pf-sub-add:hover { color: var(--accent); }
+  #pf-root .pf-sub-del { display: none; }
+  #pf-root .pf-sub-promote { background: transparent; border: 1px solid var(--card-border); border-radius: 100px; color: var(--text-dim); cursor: pointer; opacity: 0.6; transition: opacity 0.15s; flex-shrink: 0; padding: 2px 7px; display: inline-flex; align-items: center; justify-content: center; min-width: 18px; }
+  #pf-root .pf-sub-promote:hover { opacity: 1; color: var(--accent); border-color: var(--hover-border); }
+  #pf-root.pf-device-mobile .pf-subrow .pf-sub-promote { display: none !important; }
+  #pf-root .pf-sub-del:hover { color: var(--danger); }
+  #pf-root .pf-add-sub { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2.5px); font-weight: 500; padding: 6px 6px; width: 100%; text-align: left; border-radius: 6px; transition: background 0.15s, color 0.15s; }
+  #pf-root .pf-add-sub:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
+  #pf-root .pf-color-btn { background: transparent; border: 2px solid var(--card-border); width: 16px; height: 16px; border-radius: 50%; cursor: pointer; flex-shrink: 0; padding: 0; transition: border-color 0.15s, transform 0.15s; }
+  @media (hover: hover) and (pointer: fine) {
+    #pf-root .pf-color-btn:hover { transform: scale(1.2); }
+  }
+  #pf-root .pf-color-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 60; padding: 18px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  #pf-root .pf-color-palette { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  #pf-root .pf-color-swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.15s, border-color 0.15s; }
+  @media (hover: hover) and (pointer: fine) {
+    #pf-root .pf-color-swatch:hover { transform: scale(1.2); }
+  }
+  #pf-root .pf-color-swatch.pf-swatch-selected { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+  #pf-root .pf-color-custom-row { display: flex; align-items: center; gap: 8px; }
+  #pf-root .pf-color-custom-row input[type="color"] { width: 32px; height: 32px; border: none; cursor: pointer; border-radius: 6px; background: none; padding: 0; }
+  #pf-root .pf-color-custom-label { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
+  #pf-root .pf-color-modal-btns { display: flex; gap: 8px; }
+  #pf-root .pf-header-meta { display: inline-flex; align-items: center; gap: clamp(3px, 0.7vw, 6px); flex-shrink: 0; font-size: clamp(9px, 1.4vw, 12px); }
+  #pf-root .pf-node-dates { padding: 0 11px 10px 37px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  #pf-root .pf-due-wrap { display: inline-flex; align-items: center; flex-shrink: 0; }
+
+  #pf-root .pf-due-chip {
+    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
+    padding: 4px 9px; border-radius: 100px; border: 1px solid var(--card-border); cursor: pointer;
+    white-space: nowrap; width: auto; box-sizing: border-box; text-align: center;
+    justify-content: center; line-height: 1.2;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  #pf-root .pf-due-chip:hover { color: var(--text); border-color: var(--hover-border); }
+  #pf-root .pf-due-chip.pf-due-set { color: var(--text); }
+  #pf-root .pf-due-chip.pf-due-icon-only { width: 26px; height: 22px; padding: 0; font-size: calc(var(--font-size-base) - 2px); border-radius: 6px; min-width: unset; }
+  #pf-root .pf-due-chip.pf-due-soon { color: var(--ongoing); border-color: color-mix(in srgb, var(--ongoing) 40%, transparent); background: var(--ongoing-bg); }
+  #pf-root .pf-due-chip.pf-due-overdue { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+  #pf-root .pf-due-input { font-size: calc(var(--font-size-base) - 2.5px); background: var(--card); color: var(--text); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 4px; color-scheme: dark; font-family: var(--font-sans); }
+  #pf-root .pf-recur-chip {
+    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
+    padding: 4px 9px; border-radius: 100px; border: 1px solid var(--card-border); cursor: pointer;
+    white-space: nowrap; text-align: center; line-height: 1.2;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  #pf-root .pf-recur-chip:hover { color: var(--text); border-color: var(--hover-border); }
+  #pf-root .pf-recur-chip.pf-recur-set { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  #pf-root .pf-recur-dropdown {
+    position: absolute; z-index: 300; background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 4px; min-width: 120px;
+  }
+  #pf-root .pf-recur-dropdown button {
+    display: block; width: 100%; text-align: left; padding: 6px 10px; font-size: calc(var(--font-size-base) - 2px);
+    background: transparent; color: var(--text); border: none; border-radius: 5px; cursor: pointer;
+  }
+  #pf-root .pf-recur-dropdown button:hover { background: rgba(255,255,255,0.06); }
+  #pf-root .pf-recur-dropdown button.pf-recur-active { color: var(--accent); font-weight: 600; }
+  #pf-root .pf-split-list-item.pf-dragging { opacity: 0.4; }
+  #pf-root .pf-split-drop-indicator {
+    height: 2px; background: var(--accent); border-radius: 6px; margin: 0 8px;
+    pointer-events: none; animation: pf-drop-indicator-pulse 0.6s var(--ease-out-strong) infinite alternate;
+  }
+  @keyframes pf-drop-indicator-pulse { from { opacity: 0.6; transform: scaleX(0.95); } to { opacity: 1; transform: scaleX(1); } }
+  #pf-root .pf-split-list-item.pf-dragging { opacity: 0.3; transform: scale(0.96); transition: opacity 0.2s, transform 0.2s; }
+    #pf-root .pf-split-list-item.pf-drop-settling { animation: pf-drop-settle var(--dur-surface) var(--ease-console); }
+  @keyframes pf-drop-settle { from { opacity: 0; transform: translateY(-8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  #pf-root .pf-dep-chip {
+    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
+    padding: 4px 9px; border-radius: 100px; border: 1px solid var(--card-border); cursor: pointer;
+    white-space: nowrap; text-align: center; line-height: 1.2;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  #pf-root .pf-dep-chip:hover { color: var(--text); border-color: var(--hover-border); }
+  #pf-root .pf-dep-chip.pf-dep-set { color: var(--waiting); border-color: color-mix(in srgb, var(--waiting) 65%, transparent); background: color-mix(in srgb, var(--waiting) 18%, transparent); font-weight: 700; }
+  #pf-root .pf-dep-chip.pf-dep-blocked { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+  #pf-root .pf-dep-dropdown {
+    position: fixed; z-index: 300; background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 8px; min-width: 180px; max-width: 90vw; max-height: 70vh; overflow-y: auto; width: clamp(220px, 50vw, 400px);
+  }
+  #pf-root .pf-dep-dropdown label {
+    display: flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: calc(var(--font-size-base) - 2px);
+    color: var(--text); border-radius: 5px; cursor: pointer;
+  }
+  #pf-root .pf-dep-dropdown label:hover { background: rgba(255,255,255,0.06); }
+  #pf-root .pf-sub-dot.pf-blocked { border-style: dashed !important; opacity: 0.5; }

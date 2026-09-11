@@ -1,0 +1,31 @@
+  /* SUBSECTION: Accessibility & Motion Preferences (F1/F2)
+     Reduced motion keeps opacity/color but removes movement: durations collapse
+     to ~0 (not `none`, so `animationend` listeners still fire). Hover motion is
+     gated in each component via @media (hover: hover) and (pointer: fine). */
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    #pf-ctx-backdrop { backdrop-filter: none; }
+    #pf-root .pf-fab-overlay,
+    #pf-root .pf-modal-backdrop { backdrop-filter: none; }
+  }
+
+  /* One visible focus ring for every interactive element. Specific components
+     may still override; this closes the coverage gaps. */
+  :focus-visible {
+    outline: 2px solid var(--accent, #2fd4ff);
+    outline-offset: 1px;
+  }
+  #pf-root .pf-node-title:focus-visible,
+  #pf-root .pf-subrow-title:focus-visible {
+    outline: 2px solid var(--accent, #2fd4ff);
+    outline-offset: 1px;
+  }

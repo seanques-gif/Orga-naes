@@ -1,0 +1,130 @@
+  /* SUBSECTION: Calendar View & Weekly Planner — state-driven classes, replacing
+     per-cell inline cssText strings previously built in renderCalendar() /
+     renderWeeklyPanel(). Layout/spacing rules live here; only genuinely
+     per-item data (a project's custom color, a status dot's color) stays inline. */
+
+  .pf-cal-day {
+    min-height: 44px; padding: 4px; border-radius: 6px;
+    border: 1px solid var(--card-border); background: transparent;
+    overflow: hidden; cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .pf-cal-day-today { border-color: var(--ongoing); background: color-mix(in srgb, var(--ongoing) 8%, transparent); }
+  .pf-cal-day-selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+  .pf-cal-day-num { font-size: calc(var(--font-size-base) - 3px); font-weight: 500; color: var(--text); }
+  .pf-cal-day-today .pf-cal-day-num { font-weight: 700; color: var(--ongoing); }
+  .pf-cal-day-selected .pf-cal-day-num { font-weight: 700; color: var(--accent); }
+  .pf-cal-day-dots { display: flex; flex-wrap: wrap; gap: 2px; }
+  .pf-cal-day-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  .pf-cal-task-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 4px;
+    border-radius: 6px; background: var(--card); border: 1px solid var(--card-border);
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .pf-cal-task-item:hover { border-color: var(--hover-border); }
+  .pf-cal-task-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .pf-cal-task-title { flex: 1; font-size: calc(var(--font-size-base) - 1px); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .pf-week-col {
+    display: flex; flex-direction: column; border-radius: 6px;
+    background: var(--sub-bg); border: 1.5px solid var(--sub-border);
+    padding: 10px 8px; height: 100%; overflow-y: auto;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .pf-week-col-today {
+    background: color-mix(in srgb, var(--accent) 6%, transparent); border-color: var(--accent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+  .pf-week-col-dragover { border-color: var(--accent) !important; }
+  .pf-week-col-dragover-blocked { border-color: var(--danger, #ef4444) !important; cursor: not-allowed; }
+
+  .pf-week-col-header {
+    font-size: calc(var(--font-size-base) - 4px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    text-align: center; margin-bottom: 8px; padding: 4px 0 6px;
+    border-bottom: 1px solid var(--sub-border); color: var(--text-dim);
+    position: relative;
+  }
+  .pf-week-col-today .pf-week-col-header { border-bottom-color: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--accent); }
+  .pf-week-col-daynum { font-size: calc(var(--font-size-base) + 4px); font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 2px; }
+  .pf-week-col-today .pf-week-col-daynum { color: var(--accent); }
+
+  .pf-week-day-badge {
+    position: absolute; top: 0; right: 2px; font-size: calc(var(--font-size-base) - 5px); font-weight: 700;
+    color: var(--text-dim); background: var(--card); border-radius: 8px; padding: 1px 6px;
+  }
+  .pf-week-col-today .pf-week-day-badge { color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+  .pf-week-day-clear {
+    position: absolute; top: 0; left: 2px; font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim);
+    cursor: pointer; padding: 0 3px;
+  }
+
+  .pf-week-empty {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); opacity: 0.5; font-style: italic;
+    text-align: center; padding: 8px;
+  }
+
+  .pf-week-task {
+    font-size: calc(var(--font-size-base) - 2px); padding: 7px 8px 7px 8px; border-radius: 6px;
+    background: var(--card); border: 1px solid var(--card-border);
+    margin-bottom: 5px; display: flex; align-items: flex-start; gap: 6px;
+    cursor: grab; transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  }
+  .pf-week-task-accent { padding-left: 7px; border-left: 3px solid var(--pf-task-accent, transparent); }
+  @media (hover: hover) and (pointer: fine) {
+    .pf-week-task:not(.pf-week-task-done):hover { border-color: var(--hover-border); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+  }
+  .pf-week-task-done { opacity: 0.5; text-decoration: line-through; }
+  .pf-week-task-check { margin: 2px 0 0; cursor: pointer; flex-shrink: 0; }
+  .pf-week-task-title-wrap { flex: 1; min-width: 0; }
+  .pf-week-task-title-wrap.pf-clickable { cursor: pointer; }
+  .pf-week-task-title {
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden; line-height: 1.35; word-break: break-word;
+  }
+  .pf-week-task-project {
+    font-size: calc(var(--font-size-base) - 4px); font-weight: 500; color: var(--text-dim); margin-top: 2px;
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    word-break: break-word; line-height: 1.25;
+  }
+  .pf-week-add-btn {
+    font-size: calc(var(--font-size-base) - 3px); background: none; border: 1px dashed var(--sub-border);
+    color: var(--text-dim); cursor: pointer; padding: 6px 8px; text-align: center;
+    margin-top: auto; border-radius: 6px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .pf-week-add-btn:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+  /* Backlog — unstructured holding area for unfinished/past-due Weekly
+     Planner tasks, manually arranged from here into day columns above. */
+  .pf-week-backlog-list {
+    border: 1.5px dashed var(--sub-border); border-radius: 8px; padding: 8px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .pf-week-backlog-list.pf-week-col-dragover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .pf-week-backlog-empty {
+    font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); opacity: 0.5; font-style: italic;
+    padding: 6px 4px;
+  }
+  .pf-week-backlog-chip {
+    font-size: calc(var(--font-size-base) - 2px); padding: 6px 8px; border-radius: 14px;
+    background: var(--card); border: 1px solid var(--card-border);
+    display: flex; align-items: center; gap: 6px; max-width: 260px;
+    cursor: grab; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .pf-week-backlog-chip:hover { border-color: var(--hover-border); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+  .pf-week-backlog-chip-accent { border-left: 3px solid var(--pf-task-accent, transparent); }
+  .pf-week-backlog-chip-check { flex-shrink: 0; cursor: pointer; }
+  .pf-week-backlog-chip-title-wrap { min-width: 0; flex: 1; }
+  .pf-week-backlog-chip-title-wrap.pf-clickable { cursor: pointer; }
+  .pf-week-backlog-chip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-week-backlog-chip-project { font-size: calc(var(--font-size-base) - 5px); color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-week-backlog-chip-del {
+    background: none; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) - 1px);
+    cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0;
+  }
+  #pf-backlog-arrange-btn { border: 1px solid var(--sub-border); border-radius: 6px; background: none; color: var(--text-dim); cursor: pointer; }
+  #pf-backlog-arrange-btn:hover { border-color: var(--accent); color: var(--accent); }
+  #pf-backlog-arrange-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+

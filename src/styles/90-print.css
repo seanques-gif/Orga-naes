@@ -1,0 +1,33 @@
+  .pf-conflict-modal {
+    display: none; position: fixed; inset: 0; z-index: 10001; background: rgba(0,0,0,0.7);
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .pf-conflict-modal.pf-conflict-open { display: flex; }
+  .pf-conflict-title { font-size: var(--font-size-base); font-weight: 700; color: var(--text); margin-bottom: 10px; text-align: center; }
+  .pf-conflict-cols { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: 12px; padding: 12px; font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); overflow: hidden; line-height: 1.5; }
+  .pf-conflict-col-title { font-size: calc(var(--font-size-base) - 2px); font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .pf-conflict-btns { display: flex; gap: 8px; justify-content: center; }
+  .pf-conflict-btns button { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: calc(var(--font-size-base) - 2px); font-weight: 600; cursor: pointer; flex: 1; }
+  .pf-conflict-btns button.pf-conflict-primary { background: var(--accent); color: var(--accent-contrast, #fff); border-color: var(--accent); }
+  @media print {
+    #pf-root { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
+    #pf-root .pf-toolbar, #pf-root .pf-resize-handle, #pf-root .pf-toast,
+    #pf-root .pf-modal-backdrop, #pf-root .pf-overdue-banner,
+    #pf-root .pf-split-list, #pf-root .pf-split-divider,
+    #pf-root .pf-canvas-wrap,
+    #pf-root .pf-add-sub, #pf-root .pf-sub-add, #pf-root .pf-sub-del,
+    #pf-root .pf-sub-edit, #pf-root .pf-node-del, #pf-root .pf-sub-handle,
+    #pf-root .pf-dep-chip, #pf-root .pf-recur-chip, #pf-root .pf-sub-comment,
+    #pf-root button { display: none !important; }
+    #pf-root .pf-split-view { display: block !important; overflow: visible !important; }
+    #pf-root .pf-split-detail { display: block !important; overflow: visible !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+    #pf-root .pf-node { position: static !important; width: 100% !important; max-width: 100% !important; margin-bottom: 16px; break-inside: avoid; border: 1px solid #ccc !important; background: #fff !important; }
+    #pf-root .pf-node-header { background: #f5f5f5 !important; }
+    #pf-root .pf-node-title { color: #000 !important; }
+    #pf-root .pf-sublist { display: block !important; overflow: visible !important; }
+    #pf-root .pf-subrow { border-color: #ddd !important; }
+    #pf-root .pf-subrow-title { color: #000 !important; }
+    #pf-root .pf-badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    #pf-root .pf-sub-dot { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }

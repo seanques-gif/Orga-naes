@@ -1,0 +1,12 @@
+{
+  "name": "orga-naes",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Orga-naes - Personal Project Manager. Source in src/, built to the single-file Orga-naes.html.",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node tests/design-tokens.test.mjs && node tests/date-utils.test.mjs",
+    "verify": "npm run build && npm test"
+  }
+}
