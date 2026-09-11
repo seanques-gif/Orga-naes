@@ -135,11 +135,11 @@ migration notes. (Anti-reference preserved in `DESIGN-v1-night-workshop.md`.)
 | **3E** | Motion: one easing curve + springs; fix `ease-in`/keyframe entrances; `review-animations` verdict (F5/F17) | ✅ verdict written — APPROVE with findings (`REDESIGN-FINDINGS.md`) |
 | **3F** | Polish: impeccable detector; refresh `.impeccable/design.json` sidecar | ✅ DONE 2026-09-11: detector 56 findings → 3 real defects fixed (update-pill `--panel` undefined token, body-appended save modal + drag ghosts losing `#pf-root` theming, off-scale 9px sublist radius), online dot tokenized; rest verified as false positives or accepted exceptions. Sidecar regenerated for Mission Control. |
 
-### Phase 4 — Verify & ship 🔶
+### Phase 4 — Verify & ship ✅ COMPLETE 2026-09-12
 - `npm test` green; detector clean.
 - Before/after screenshots (desktop/tablet/phone × themes × reduced-motion). ✅
-- INP/perf check ✅ (42-project stress: idle 60fps locked, list render 12.7ms, one documented ~55ms long task on full-app render); PWA offline check; manual smoke of every inventory surface.
-- Update `DESIGN.md` if drift; final commit.
+- INP/perf check ✅ (42-project stress: idle 60fps locked, list render 12.7ms, one documented ~55ms long task on full-app render); PWA offline check ✅ (runtime-verified on real localhost server: install, offline boot from cache, update flow + cache purge); manual smoke of every inventory surface ✅ (all flows on real UI paths, 2 themes; +1 a11y fix).
+- Update `DESIGN.md` if drift; final commit ✅ this commit.
 
 ### Formal skill passes (pending, slot around 3B/3E) 🔀
 Loaded so far: `impeccable` SKILL + `context` + `operate.md` + `craft-floor.md`,

@@ -378,7 +378,31 @@ manual smoke test. Re-run this audit only if Phase 4 turns up visual regressions
 - **A11y fix found by the smoke test:** the hidden update pill (`opacity:0`, `tabindex="0"`) stayed in the tab order — keyboard users landed on an invisible "Update ready" button. Fixed with a `visibility` toggle synced to the show class (delayed so the exit animation still plays). Verified: hidden pill no longer focusable; build + tests green.
 - Console clean after all flows.
 
+### PWA offline — RUNTIME VERIFICATION PASSED (real localhost server + preview bridge)
+
+All three local-run checks executed end-to-end on `http://127.0.0.1:8940` (temporary static server,
+driven through the preview bridge):
+
+1. **Install ✅** — `sw.js` registered and reached `activated`, `navigator.serviceWorker.controller`
+   true. Manifest parsed clean: name, 4 icon entries, `theme_color`/`background_color` `#0a0d11`.
+   Cache `orga-naes-2026-09-05-0001` populated with all four app assets plus a runtime-cached
+   Google Fonts file (network-first refresh working).
+2. **Offline ✅** — with the server killed, the page reloaded **fully from the SW cache**:
+   `readyState: complete`, both seeded projects intact, list + detail interactive. (Offline was
+   simulated at the socket level — connection reset — the same failure mode as a dead network;
+   the page-side `fetch().catch(caches.match)` path is identical.)
+3. **Update ✅** — bumped `CACHE_VERSION`, reloaded: the new worker installed, self-skipped
+   waiting, activated, the page auto-reloaded onto it via `controllerchange` (this is the shipped
+   update UX; the pill is a fallback that engages only if a worker ever waits), and activate
+   purged the old cache — only `…-0002` remained. Data survived the update. `sw.js` then reverted
+   and confirmed byte-identical to the committed version.
+
+The offline/update story is verified for real — nothing about the PWA remains unverified.
+
 ### Honest gaps (need a real browser, listed for the local-run checklist)
+
+Note: PWA offline/update checks 1–3 are now DONE (see the runtime verification section above);
+the items below are what remains of the original list.
 
 1. Visual captures at true >1400px and phone widths (resize a real window;
    the class-forced probe covers layout, not pixel detail).

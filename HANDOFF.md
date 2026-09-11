@@ -1,8 +1,8 @@
 # Orga-naes — AI Handoff Document
 
 **Project:** Orga-naes — single-file vanilla JS personal project manager PWA
-**Phase:** 3F (impeccable audit + sidecar) — **COMPLETE** 2026-09-11. All design phases (3A–3F) done; verdict APPROVE with zero open findings. **Phase 4 (verify & ship) in progress:** screenshot matrix + reduced-motion done (`2ed562f`), INP/perf done (`58dc947`), PWA offline statically verified, **manual smoke test passed** (all flows on real UI paths, 2 themes; 1 a11y fix: hidden update pill removed from tab order). Remaining: final ship commit + your local PWA run (checklist in findings).
-**Last updated:** 2026-09-11 (3E finished + verdict APPROVE; select-bar Daylight bug fixed & live-verified; motion smoke-tested in preview, console clean)
+**Phase:** 3F (impeccable audit + sidecar) — **COMPLETE** 2026-09-11. All design phases (3A–3F) done; verdict APPROVE with zero open findings. **Phase 4 (verify & ship): **COMPLETE — REDESIGN SHIPPED** — screenshot matrix + reduced-motion (`2ed562f`), INP/perf (`58dc947`), smoke test + pill a11y fix (`66f9d26`), PWA offline runtime-verified on a real localhost server (install ✅ / offline boot from cache ✅ / update flow + cache purge ✅ — full results in REDESIGN-FINDINGS.md). Known post-ship candidates (non-blocking, in findings): list-render chunking for very large datasets; remove `skipWaiting()` from sw.js install if the update pill should ask instead of auto-reloading.
+**Last updated:** 2026-09-12 — **REDESIGN SHIPPED.** All phases (0→4) complete: Mission Control retheme, motion (3E), scales (3C), SVG chrome (3B-4/D10), FAB tokenization, 3F audit + sidecar, and the full Phase 4 verification battery (5-preset screenshot matrix, reduced-motion rAF gates, 42-project perf check, all-flows smoke test, PWA offline runtime-verified).
 
 ---
 
