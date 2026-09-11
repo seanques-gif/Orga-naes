@@ -361,6 +361,23 @@ manual smoke test. Re-run this audit only if Phase 4 turns up visual regressions
 - Selection accent edge (3px accent border + 8% accent background on `.pf-split-active`) is a one-time paint on selection — long-task observer shows no per-frame ring work.
 - Synthetic 20-event search burst: 28.6ms total (~1.4ms/event); no human-speed typing creates long tasks.
 
+### PWA offline (static verification — sandbox serves only the HTML, so runtime SW checks are on the local-run checklist)
+
+- **Architecture is sound:** `sw.js` is **network-first with runtime-cache fallback** (fetch wins online + refreshes cache; cache serves offline) — the right strategy for a data app, so updates always land while offline still works. Explicitly bypasses `firebase`/`googleapis` (optional cloud sync never poisons the cache). Install is **fault-tolerant per-asset** (a single 404 can't wedge the SW at "installing"), activate purges stale cache versions, and the update flow is complete: updatefound → update pill + toast → `skipWaiting` via postMessage → `controllerchange` → auto-reload.
+- **Asset & wiring integrity (all verified on disk):** `sw.js`, `manifest.json`, `icon-192.png`, `icon-512.png` all present at root; template head has manifest link, favicon, apple-touch-icon, iOS standalone metas, and `theme-color #0a0d11`.
+- **Data layer is offline-proof by construction:** core state persists to `localStorage` with an IndexedDB mirror; zero network dependency for create/read/edit/complete/undo. The app is a single-file build — one fetch cached and it's fully functional.
+- **Drift found & fixed:** manifest `theme_color`/`background_color` were still pre-redesign `#1e1e1e` — corrected to Mission Control `#0a0d11` (matching the head meta), so the OS splash/titlebar tint now matches the app on install.
+- Preview sandbox confirmed: serves only `Orga-naes.html` (all sibling assets 404), `caches` API empty, SW not registrable — **nothing about the SW runtime can be validated here**; listed below for the local run.
+
+### Manual smoke test (real UI paths, seeded 42-project dataset)
+
+- **Create → Nest → Complete → Trash → Undo → Export: all pass**, on Midnight Cyan (full flows) and Daylight (condensed: create → toggle → undo ×2).
+- Create via `+` popover → category choice: project lands in the right category, detail auto-opens. Nesting via the row's add-subtask button: 3-level tree renders with nested rail. Trash via row ctx menu: removed + toast with Undo; undo via the toast action restores the full tree (statuses, nesting, category). Export button: complete 134KB backup payload (9 state keys, all 43 projects, categories, archive, trash).
+- **Complete flow verified the auto-status invariant for real:** completing a parent whose child is open is correctly refused, then silently reverts — the activity log shows `Ongoing → Completed` followed by `reverted to ongoing (no longer all subtasks complete)`. Completing child-first auto-completes the parent. This looked like a smoke-test failure twice before the log revealed it was the invariant working; **lesson recorded: verify against the activity log, not just final state.**
+- Daylight theming on dynamic surfaces: ctx menu renders white surface + token ink, SVG strokes follow `currentColor`.
+- **A11y fix found by the smoke test:** the hidden update pill (`opacity:0`, `tabindex="0"`) stayed in the tab order — keyboard users landed on an invisible "Update ready" button. Fixed with a `visibility` toggle synced to the show class (delayed so the exit animation still plays). Verified: hidden pill no longer focusable; build + tests green.
+- Console clean after all flows.
+
 ### Honest gaps (need a real browser, listed for the local-run checklist)
 
 1. Visual captures at true >1400px and phone widths (resize a real window;
@@ -369,3 +386,9 @@ manual smoke test. Re-run this audit only if Phase 4 turns up visual regressions
    click-through: confirm zero motion AND zero particles/confetti.
 3. Touch interaction pass on a real device (the preview has no touch: device
    class detection is touch-gated by design).
+4. PWA runtime: serve the folder (`npx serve` / `python -m http.server`) →
+   DevTools → Application → Manifest shows no errors and the Service Worker
+   activates → Network tab to **Offline**, reload → app boots from cache with
+   data intact → back online, make an edit, reload → update pill + "Refresh"
+   toast appear → click → version reloads clean.
+5. Optional: Lighthouse PWA category (installability + offline pass).
