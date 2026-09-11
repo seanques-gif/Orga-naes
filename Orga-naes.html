@@ -124,7 +124,7 @@
       position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 8px; height: 8px;
       border-radius: 50%; z-index: var(--z-transient); transition: background 0.3s;
     }
-    .pf-connection-dot.pf-online { background: #4ade80; }
+    .pf-connection-dot.pf-online { background: var(--completed, #4ade80); }
     .pf-connection-dot.pf-offline { background: var(--danger, #ef4444); animation: pf-offline-blink 1.5s infinite; }
     @keyframes pf-offline-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
     .pf-error-dot {
@@ -140,8 +140,8 @@
     .pf-update-pill {
       position: fixed; top: 14px; right: 14px; z-index: var(--z-transient);
       display: flex; align-items: center; gap: var(--space-sm);
-      background: var(--panel, #1e1e2e); color: var(--text, #fff);
-      border: 1px solid color-mix(in srgb, var(--accent, #7b68ee) 45%, transparent);
+      background: var(--toast-bg, #141a22); color: var(--text, #d7dde5);
+      border: 1px solid color-mix(in srgb, var(--accent, #2fd4ff) 45%, transparent);
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
       border-radius: var(--radius-pill); padding: 7px 14px 7px 10px;
       font-size: calc(var(--font-size-base) - 1.5px); font-weight: 600; cursor: pointer;
@@ -149,10 +149,10 @@
        transition: opacity 0.25s var(--ease-console), transform 0.25s var(--ease-console);
     }
     .pf-update-pill.pf-update-pill-show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-    .pf-update-pill:hover { border-color: var(--accent, #7b68ee); }
+    .pf-update-pill:hover { border-color: var(--accent, #2fd4ff); }
     .pf-update-pill .pf-update-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent, #7b68ee); flex-shrink: 0;
+      background: var(--accent, #2fd4ff); flex-shrink: 0;
       animation: pf-offline-blink 1.5s infinite;
     }
     @media (max-width: 640px) {
@@ -1086,7 +1086,7 @@
 
   #pf-root .pf-sublist {
     display: none; border-top: 1px solid var(--card-border); background: var(--sub-bg);
-    border-radius: 0 0 9px 9px; padding: 10px 0 10px 22px; position: relative;
+    border-radius: 0 0 var(--radius-overlay) var(--radius-overlay); padding: 10px 0 10px 22px; position: relative;
     animation: pf-expand var(--dur-surface) var(--ease-console);
   }
   @keyframes pf-expand {
@@ -1154,7 +1154,7 @@
   #pf-root .pf-subrow.pf-drop-before, #pf-root .pf-split-list-item.pf-drop-before { box-shadow: inset 0 2px 0 0 var(--accent); }
   #pf-root .pf-subrow.pf-drop-after, #pf-root .pf-split-list-item.pf-drop-after { box-shadow: inset 0 -2px 0 0 var(--accent); }
   #pf-root .pf-subrow.pf-drop-nest { background: color-mix(in srgb, var(--accent) 14%, transparent); outline: 1.5px dashed var(--accent); outline-offset: -1.5px; }
-  #pf-root .pf-sublist.pf-drop-root { outline: 1.5px dashed var(--accent); outline-offset: -3px; border-radius: 0 0 9px 9px; }
+  #pf-root .pf-sublist.pf-drop-root { outline: 1.5px dashed var(--accent); outline-offset: -3px; border-radius: 0 0 var(--radius-overlay) var(--radius-overlay); }
   #pf-root .pf-sub-chevron { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); font-size: calc(var(--font-size-base) - 7px); width: clamp(13px, 2vw, 16px); height: clamp(13px, 2vw, 16px); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: transform 0.15s, background 0.15s, color 0.15s; }
   #pf-root .pf-sub-chevron:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
   #pf-root .pf-sub-chevron.pf-sub-expanded { transform: rotate(90deg); }
@@ -2410,13 +2410,14 @@
       if (!root.classList.contains('pf-device-desktop')) return;
       const saveModal = document.createElement('div');
       saveModal.style.cssText = 'position:fixed;inset:0;z-index:calc(var(--z-drag) + 1);display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
-      saveModal.innerHTML = '<div style="background:var(--card,#2a2a3e);border:1px solid var(--card-border,#3a3a5e);border-radius:var(--radius-overlay);padding:24px;min-width:260px;text-align:center;color:var(--text,#fff);">' +
+      saveModal.innerHTML = '<div style="background:var(--card,#12161c);border:1px solid var(--card-border,#232a34);border-radius:var(--radius-overlay);padding:24px;min-width:260px;text-align:center;color:var(--text,#d7dde5);">' +
         '<div style="font-size: calc(var(--font-size-base) + 2px);font-weight:700;margin-bottom:16px;">Save</div>' +
-        '<button id="_save-local" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:var(--radius-container);background:var(--accent,#7b68ee);color:var(--accent-contrast,#fff);font-size:var(--font-size-base);font-weight:600;cursor:pointer;">💾 Save to Local (JSON)</button>' +
-        '<button id="_save-cloud" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:var(--radius-container);background:#4ade80;color:#000;font-size:var(--font-size-base);font-weight:600;cursor:pointer;">☁ Push to Cloud</button>' +
-        '<button id="_save-cancel" style="display:block;width:100%;padding:10px;border:none;border-radius:var(--radius-container);background:transparent;color:var(--text-dim,#aaa);font-size: calc(var(--font-size-base) - 1px);cursor:pointer;">Cancel</button>' +
+        '<button id="_save-local" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:var(--radius-container);background:var(--accent,#2fd4ff);color:var(--accent-contrast,#04141b);font-size:var(--font-size-base);font-weight:600;cursor:pointer;">💾 Save to Local (JSON)</button>' +
+        '<button id="_save-cloud" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:var(--radius-container);background:var(--accent,#2fd4ff);color:var(--accent-contrast,#04141b);font-size:var(--font-size-base);font-weight:600;cursor:pointer;">☁ Push to Cloud</button>' +
+        '<button id="_save-cancel" style="display:block;width:100%;padding:10px;border:none;border-radius:var(--radius-container);background:transparent;color:var(--text-dim,#8b95a3);font-size: calc(var(--font-size-base) - 1px);cursor:pointer;">Cancel</button>' +
         '</div>';
-      document.body.appendChild(saveModal);
+      // Inside #pf-root so palette tokens resolve on every theme.
+      document.getElementById('pf-root').appendChild(saveModal);
       _saveModalEl = saveModal;
       const _removeSaveModal = function() { saveModal.remove(); if (_saveModalEl === saveModal) _saveModalEl = null; };
       saveModal.querySelector('#_save-local').addEventListener('click', function() { _removeSaveModal(); document.getElementById('pf-export').click(); });
@@ -5713,7 +5714,8 @@
     ghost.style.opacity = '0.9';
     ghost.style.pointerEvents = 'none';
     ghost.style.boxShadow = '0 6px 20px rgba(0,0,0,0.35)';
-    document.body.appendChild(ghost);
+    // Inside #pf-root so the cloned row keeps its #pf-root-scoped styling.
+    document.getElementById('pf-root').appendChild(ghost);
     row.style.opacity = '0.3';
     _wtd = { taskId: t.id, fromDay: ds, ghost, sourceRow: row, offsetX: touch.clientX - rect.left, offsetY: touch.clientY - rect.top, targetDay: null, targetTaskId: null, insertBefore: false, blocked: false };
   }
@@ -7097,9 +7099,11 @@
         const label = titleEl ? titleEl.textContent.trim() : 'Moving...';
         const count = subMultiSelect.length > 1 ? subMultiSelect.length : (splitMultiSelect.length > 1 ? splitMultiSelect.length : 1);
         dragGhost = document.createElement('div');
-        dragGhost.style.cssText = 'position:fixed;pointer-events:none;z-index:var(--z-drag);transform:translate(10px,-50%);padding:8px 14px;background:#363636;color:#e0e0e0;border:1px solid var(--accent);border-radius:6px;font-size: calc(var(--font-size-base) - 2px);font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.4);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;';
+        dragGhost.style.cssText = 'position:fixed;pointer-events:none;z-index:var(--z-drag);transform:translate(10px,-50%);padding:8px 14px;background:var(--card,#12161c);color:var(--text,#d7dde5);border:1px solid var(--accent,#2fd4ff);border-radius:var(--radius-container,6px);font-size: calc(var(--font-size-base) - 2px);font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.4);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;';
         dragGhost.textContent = count > 1 ? count + ' items' : label;
-        document.body.appendChild(dragGhost);
+        // Appended inside #pf-root so palette tokens (--card/--text/--accent)
+        // resolve; position:fixed keeps placement viewport-relative.
+        document.getElementById('pf-root').appendChild(dragGhost);
       }
       dragGhost.style.left = e.clientX + 'px';
       dragGhost.style.top = e.clientY + 'px';
