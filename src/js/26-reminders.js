@@ -2,7 +2,7 @@
   function saveReminders() { safeSet(REMINDERS_KEY, JSON.stringify(reminders), false); }
   function promptReminder(sourceId, title, sourceType) {
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;padding:16px;border-radius:6px;border:1px solid var(--card-border);background:var(--card);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,0.5);display:flex;flex-direction:column;gap:10px;min-width:260px;';
+    wrap.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:var(--z-toast);padding:16px;border-radius:6px;border:1px solid var(--card-border);background:var(--card);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,0.5);display:flex;flex-direction:column;gap:10px;min-width:260px;';
     const now = new Date(); now.setMinutes(now.getMinutes() + 30);
     let rYear = now.getFullYear(), rMonth = now.getMonth() + 1, rDay = now.getDate(), rHour = now.getHours(), rMin = now.getMinutes(), rAmpm = now.getHours() >= 12 ? 'PM' : 'AM';
     rHour = rHour % 12 || 12;

@@ -1,7 +1,7 @@
 
   #pf-root .pf-resize-handle {
     position: absolute; right: 0; bottom: 0; width: 20px; height: 20px;
-    cursor: nwse-resize; z-index: 30; display: flex; align-items: flex-end;
+    cursor: nwse-resize; z-index: var(--z-sticky); display: flex; align-items: flex-end;
     justify-content: flex-end; padding: 3px; color: var(--text-dim);
     opacity: 0.45; transition: opacity 0.15s, color 0.15s;
   }
@@ -12,7 +12,7 @@
   #pf-root .pf-toolbar {
     display: flex; flex-wrap: nowrap; align-items: center; gap: 6px;
     padding: 4px 12px; border-bottom: 1px solid var(--card-border);
-    background: var(--header-bg); flex-shrink: 0; z-index: 5; overflow-x: auto;
+    background: var(--header-bg); flex-shrink: 0; z-index: var(--z-sticky); overflow-x: auto;
     font-size: calc(var(--font-size-base) - 2px);
     cursor: default; user-select: none;
   }
@@ -45,7 +45,7 @@
   #pf-root .pf-new-btn:hover { filter: brightness(1.15); }
   #pf-root .pf-undo-btn {
     background: transparent; color: var(--text-dim); font-weight: 500; font-size: clamp(11px, 1.6vw, 14px);
-    padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 8px); border-radius: 5px; border: none;
+    padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 8px); border-radius: var(--radius-control); border: none;
     min-width: clamp(20px, 3.5vw, 26px); min-height: clamp(20px, 3.5vw, 26px);
     display: inline-flex; align-items: center; justify-content: center; gap: 4px;
     transition: color 0.12s, background 0.12s; flex-shrink: 0; overflow: visible; line-height: 1.2;
@@ -55,7 +55,7 @@
   #pf-root .pf-undo-btn[title]:hover::after {
     content: attr(title); position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%);
     background: var(--card); color: var(--text); font-size: calc(var(--font-size-base) - 4px); font-weight: 500; padding: 3px 8px;
-    border-radius: 5px; border: 1px solid var(--card-border); white-space: nowrap; z-index: 200;
+    border-radius: var(--radius-control); border: 1px solid var(--card-border); white-space: nowrap; z-index: var(--z-toast);
     box-shadow: 0 4px 12px rgba(0,0,0,0.2); pointer-events: none;
     max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
     animation: pf-tooltip-in var(--tooltip-delay) var(--ease-out-strong) forwards; opacity: 0;
@@ -73,7 +73,7 @@
   }
   #pf-root .pf-stat .pf-swatch { width: 5px; height: 5px; border-radius: 50%; }
   #pf-root .pf-search-wrap { position: relative; display: inline-flex; align-items: center; }
-  #pf-root .pf-search-toggle { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); cursor: pointer; border: none; padding: 4px 6px; border-radius: 5px; transition: color 0.12s, background 0.12s; }
+  #pf-root .pf-search-toggle { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); cursor: pointer; border: none; padding: 4px 6px; border-radius: var(--radius-control); transition: color 0.12s, background 0.12s; }
   #pf-root .pf-search-toggle:hover { color: var(--text); background: rgba(255,255,255,0.06); }
   #pf-root .pf-search {
     font-family: var(--font-sans); font-size: calc(var(--font-size-base) - 4px); padding: 5px 22px 5px 8px; border-radius: 6px;
@@ -138,7 +138,7 @@
     #pf-root .pf-search:focus { width: 130px; }
   }
   @media (max-width: 800px) {
-    #pf-root .pf-toolbar { flex-wrap: wrap; overflow-x: visible; gap: 3px; padding: 5px 6px; }
+    #pf-root .pf-toolbar { flex-wrap: wrap; overflow-x: visible; gap: var(--space-xs); padding: 4px 6px; }
     #pf-root .pf-tb-group { padding: 1px; }
     #pf-root .pf-tb-sep { display: none; }
     #pf-root .pf-due-filter { display: none; }

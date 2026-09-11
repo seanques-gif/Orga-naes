@@ -58,7 +58,7 @@
         input.type = 'date';
         // Positioned as an overlay centered on the bar itself (its fixed
         // ancestor), rather than left to default static flow.
-        input.style.cssText = 'position:fixed;left:50%;bottom:calc(var(--selbar-bottom-offset, 78px) + env(safe-area-inset-bottom, 0px) + 48px);transform:translateX(-50%);z-index:9300;';
+        input.style.cssText = 'position:fixed;left:50%;bottom:calc(var(--selbar-bottom-offset, 78px) + env(safe-area-inset-bottom, 0px) + 48px);transform:translateX(-50%);z-index:calc(var(--z-chrome) + 1);';
         root.appendChild(input);
         input.focus();
         try { input.showPicker && input.showPicker(); } catch (err) {}

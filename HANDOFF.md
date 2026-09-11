@@ -214,7 +214,7 @@ Key findings for the verdict:
 |-------|-------|-------|
 | **3B-3 rest** | Peel remaining inline styles → classes | ~129 in template, ~134 in JS. Select-bar violation FIXED (2026-09-11, peeled into `.pf-sub-select-bar`). |
 | **3B-4** | Replace emoji-as-icons with SVG | Decision D10 still open. Default: SVG for chrome, keep emoji for user content. |
-| **3C** | Spacing/radius/z-index scales, retire resting shadows | F8/F9/F10/F12 from findings. Target: spacing 2/4/6/8/12/16/24 · radius 4/6/10/pill · z-index named ladder. |
+| **3C** | Spacing/radius/z-index scales, retire resting shadows | ✅ DONE 2026-09-11: `--space-*` + `--z-*` tokens (on `:root`, shared with body-level elements), z-ladder 0 literals, radii → 4/6/10/pill (+50% circles, 2px mark exception), F12 resting shadows retired (hover lift kept). |
 | **3F** | Polish: impeccable detector, design.json sidecar | Run impeccable audit, create sidecar. |
 | **4** | Verify & ship | Screenshots (desktop/tablet/phone × themes × reduced-motion), INP/perf, PWA offline, manual smoke test, final commit. |
 

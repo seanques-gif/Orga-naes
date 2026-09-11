@@ -1,11 +1,11 @@
   .pf-conflict-modal {
-    display: none; position: fixed; inset: 0; z-index: 10001; background: rgba(0,0,0,0.7);
+    display: none; position: fixed; inset: 0; z-index: calc(var(--z-drag) + 1); background: rgba(0,0,0,0.7);
     align-items: center; justify-content: center; padding: 16px;
   }
   .pf-conflict-modal.pf-conflict-open { display: flex; }
   .pf-conflict-title { font-size: var(--font-size-base); font-weight: 700; color: var(--text); margin-bottom: 10px; text-align: center; }
   .pf-conflict-cols { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-  .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: 12px; padding: 12px; font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); overflow: hidden; line-height: 1.5; }
+  .pf-conflict-col { background: var(--sub-bg, #161625); border-radius: var(--radius-overlay); padding: 12px; font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); overflow: hidden; line-height: 1.5; }
   .pf-conflict-col-title { font-size: calc(var(--font-size-base) - 2px); font-weight: 700; color: var(--text); margin-bottom: 6px; }
   .pf-conflict-btns { display: flex; gap: 8px; justify-content: center; }
   .pf-conflict-btns button { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: calc(var(--font-size-base) - 2px); font-weight: 600; cursor: pointer; flex: 1; }

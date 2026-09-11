@@ -57,7 +57,7 @@
           searchWrap.classList.add('pf-search-open');
           searchInput.focus();
           var searchOverlay = document.createElement('div');
-          searchOverlay.style.cssText = 'position:fixed;inset:0;z-index:9499;background:transparent;';
+          searchOverlay.style.cssText = 'position:fixed;inset:0;z-index:calc(var(--z-chrome) + 2);background:transparent;';
           searchOverlay.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); _clearSearch(); searchOverlay.remove(); });
           searchOverlay.addEventListener('touchstart', function(e) { e.stopPropagation(); e.preventDefault(); _clearSearch(); searchOverlay.remove(); });
           root.appendChild(searchOverlay);

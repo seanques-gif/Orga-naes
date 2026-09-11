@@ -51,7 +51,7 @@
 
   .pf-week-day-badge {
     position: absolute; top: 0; right: 2px; font-size: calc(var(--font-size-base) - 5px); font-weight: 700;
-    color: var(--text-dim); background: var(--card); border-radius: 8px; padding: 1px 6px;
+    color: var(--text-dim); background: var(--card); border-radius: var(--radius-container); padding: 1px 6px;
   }
   .pf-week-col-today .pf-week-day-badge { color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
   .pf-week-day-clear {
@@ -99,7 +99,7 @@
   /* Backlog — unstructured holding area for unfinished/past-due Weekly
      Planner tasks, manually arranged from here into day columns above. */
   .pf-week-backlog-list {
-    border: 1.5px dashed var(--sub-border); border-radius: 8px; padding: 8px;
+    border: 1.5px dashed var(--sub-border); border-radius: var(--radius-container); padding: 8px;
     transition: border-color 0.2s, background 0.2s;
   }
   .pf-week-backlog-list.pf-week-col-dragover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
@@ -108,7 +108,7 @@
     padding: 6px 4px;
   }
   .pf-week-backlog-chip {
-    font-size: calc(var(--font-size-base) - 2px); padding: 6px 8px; border-radius: 14px;
+    font-size: calc(var(--font-size-base) - 2px); padding: 6px 8px; border-radius: var(--radius-pill);
     background: var(--card); border: 1px solid var(--card-border);
     display: flex; align-items: center; gap: 6px; max-width: 260px;
     cursor: grab; transition: border-color 0.15s, box-shadow 0.15s;

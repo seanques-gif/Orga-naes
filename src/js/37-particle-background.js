@@ -3,7 +3,7 @@
   let _particleAnim = null;
   function startParticles() {
     let pc = document.getElementById('pf-particles');
-    if (!pc) { pc = document.createElement('canvas'); pc.id = 'pf-particles'; pc.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0.35;'; document.getElementById('pf-canvas-wrap').prepend(pc); }
+    if (!pc) { pc = document.createElement('canvas'); pc.id = 'pf-particles'; pc.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:var(--z-base);opacity:0.35;'; document.getElementById('pf-canvas-wrap').prepend(pc); }
     const ctx = pc.getContext('2d');
     const particles = Array.from({ length: 30 }, () => ({ x: Math.random() * 2200, y: Math.random() * 1600, vy: -0.2 - Math.random() * 0.3, vx: (Math.random() - 0.5) * 0.2, r: 1.5 + Math.random() * 1.5 }));
     function draw() {

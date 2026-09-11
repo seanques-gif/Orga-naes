@@ -32,10 +32,10 @@
   #pf-root.pf-device-mobile.pf-extend-open .pf-sublist-nested { overflow: visible; }
   #pf-root .pf-subrow .pf-sub-extend-meta {
     display: none; min-width: 35vw; flex-shrink: 0;
-    align-items: center; gap: 5px; padding: 0 12px 0 0; font-size: calc(var(--font-size-base) - 2px); color: var(--text-dim);
+    align-items: center; gap: var(--space-xs); padding: 0 12px 0 0; font-size: calc(var(--font-size-base) - 2px); color: var(--text-dim);
   }
-  #pf-root.pf-device-mobile.pf-extend-open .pf-subrow .pf-sub-extend-meta { display: flex; gap: 5px; }
-  #pf-root.pf-device-mobile.pf-extend-open .pf-sub-dates { gap: 5px; }
+  #pf-root.pf-device-mobile.pf-extend-open .pf-subrow .pf-sub-extend-meta { display: flex; gap: var(--space-xs); }
+  #pf-root.pf-device-mobile.pf-extend-open .pf-sub-dates { gap: var(--space-xs); }
   #pf-root.pf-device-mobile.pf-extend-open .pf-sub-extend-meta .pf-ext-comment { white-space: nowrap; text-align: left; min-width: 3em; }
   #pf-root.pf-device-mobile .pf-sub-dates > .pf-ext-due {
     transition: min-width 0.25s var(--ease-console), padding 0.25s var(--ease-console), border-color 0.25s var(--ease-console), border 0.25s var(--ease-console);
@@ -48,7 +48,7 @@
     display: inline-block !important;
   }
   #pf-root.pf-device-mobile.pf-extend-open .pf-sub-dates > .pf-ext-due {
-    border: 1px solid var(--card-border); border-radius: 100px; padding: 2px 7px; gap: 3px; justify-content: center; text-align: center; box-sizing: border-box; height: 20px; width: 6em; min-width: 6em; max-width: 6em;
+    border: 1px solid var(--card-border); border-radius: 100px; padding: 2px 6px; gap: var(--space-xs); justify-content: center; text-align: center; box-sizing: border-box; height: 20px; width: 6em; min-width: 6em; max-width: 6em;
   }
   #pf-root.pf-device-mobile.pf-extend-open .pf-sub-dates > .pf-ext-due .pf-ext-due-text {
     text-align: center; font-size: calc(var(--font-size-base) - 3.5px);

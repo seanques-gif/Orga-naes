@@ -3,7 +3,7 @@
      narrower than this and uses the ≤500px block further down instead —
      but tablets and larger phones in landscape will use this one. */
   @media (max-width: 768px) and (min-width: 501px) {
-    #pf-root .pf-toolbar { gap: 3px; padding: 5px 8px; }
+    #pf-root .pf-toolbar { gap: var(--space-xs); padding: 4px 8px; }
     #pf-root .pf-tb-sep { display: none; }
     #pf-root .pf-undo-btn { padding: 5px 8px; font-size: calc(var(--font-size-base) - 2px); }
     #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
@@ -11,7 +11,7 @@
     #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
     #pf-root .pf-node { max-width: 100%; }
     #pf-root .pf-node-title { font-size: max(14px, var(--font-size-base)); }
-    #pf-root .pf-node-header { padding: 8px; gap: 5px; flex-wrap: nowrap; }
+    #pf-root .pf-node-header { padding: 8px; gap: var(--space-xs); flex-wrap: nowrap; }
     #pf-root .pf-badge { font-size: calc(var(--font-size-base) - 4px); padding: 3px 7px; }
     #pf-root .pf-subrow { font-size: calc(var(--font-size-base) - 2px); }
     #pf-root .pf-split-detail { padding: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }

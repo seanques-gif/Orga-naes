@@ -85,12 +85,12 @@
     const rect = anchorEl.getBoundingClientRect();
     const menu = document.createElement('div');
     menu.className = 'pf-status-menu';
-    menu.style.cssText = 'position:fixed;z-index:9999;background:var(--card);border:1px solid var(--card-border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.35);padding:4px;min-width:140px;font-size: calc(var(--font-size-base) - 2px);';
+    menu.style.cssText = 'position:fixed;z-index:var(--z-menu);background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius-overlay);box-shadow:0 6px 24px rgba(0,0,0,0.35);padding:4px;min-width:140px;font-size: calc(var(--font-size-base) - 2px);';
     STATUSES.forEach(function(st) {
       const item = document.createElement('div');
       item.textContent = STATUS_LABEL[st];
       const isCurrent = st === currentStatus;
-      item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;color:var(--text);' + (isCurrent ? 'background:color-mix(in srgb, var(--accent) 18%, transparent);font-weight:700;' : '');
+      item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-container);cursor:pointer;color:var(--text);' + (isCurrent ? 'background:color-mix(in srgb, var(--accent) 18%, transparent);font-weight:700;' : '');
       const dot = document.createElement('span');
       dot.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + statusDotColor(st) + ';border:1.5px solid ' + statusDotColor(st) + ';';
       item.prepend(dot);
@@ -153,7 +153,7 @@
   }
   function confetti() {
     const canvas = document.createElement('canvas');
-    canvas.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;';
+    canvas.style.cssText = 'position:fixed;inset:0;z-index:var(--z-drag);pointer-events:none;';
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     document.body.appendChild(canvas);
     const ctx = canvas.getContext('2d');

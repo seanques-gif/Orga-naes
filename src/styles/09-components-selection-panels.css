@@ -20,8 +20,8 @@
        horizontally on narrow screens instead of wrapping into a grid. */
     display: flex; align-items: center; gap: 4px; padding: 8px 10px;
     background: color-mix(in srgb, var(--card) 97%, transparent);
-    border: 1px solid var(--accent); border-radius: 14px;
-    position: fixed; left: 50%; z-index: 9200;
+    border: 1px solid var(--accent); border-radius: var(--radius-overlay);
+    position: fixed; left: 50%; z-index: var(--z-chrome);
     bottom: calc(var(--selbar-bottom-offset, 78px) + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -37,7 +37,7 @@
   #pf-root .pf-sub-select-bar::-webkit-scrollbar { display: none; }
   #pf-root .pf-selbar-btn {
     font-family: inherit; font-size: calc(var(--font-size-base) - 2px); font-weight: 600; color: var(--text);
-    background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid transparent; border-radius: 8px;
+    background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid transparent; border-radius: var(--radius-control);
     padding: 7px 11px; white-space: nowrap; flex-shrink: 0; cursor: pointer;
     min-width: 0; min-height: 0; line-height: 1.2; transition: background 0.15s, border-color 0.15s;
   }
@@ -50,22 +50,23 @@
   }
   #pf-root .pf-node.pf-expanded { min-width: 380px; max-width: 500px; }
   @media (hover: hover) and (pointer: fine) {
+    /* Hover lift is an interaction shadow — allowed under Flat-At-Rest. */
     #pf-root .pf-node:hover { border-color: var(--hover-border); box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent); transform: translateY(-1px); }
   }
   #pf-root .pf-node.pf-node-selected { border-color: #ffffff; box-shadow: 0 0 0 2px #ffffff, 0 2px 10px rgba(0,0,0,0.25); }
   #pf-root.pf-theme-light .pf-node.pf-node-selected { border-color: #000000; box-shadow: 0 0 0 2px #000000, 0 2px 10px rgba(0,0,0,0.15); }
   #pf-root .pf-node-resize {
     position: absolute; right: 1px; bottom: 1px; width: 14px; height: 14px;
-    cursor: nwse-resize; z-index: 6; display: flex; align-items: flex-end;
+    cursor: nwse-resize; z-index: var(--z-sticky); display: flex; align-items: flex-end;
     justify-content: flex-end; padding: 2px; color: var(--text-dim); opacity: 0; transition: opacity 0.15s, color 0.15s;
   }
   #pf-root .pf-node:hover .pf-node-resize { opacity: 0.5; }
   #pf-root .pf-node-resize:hover { opacity: 1 !important; color: var(--accent); }
   #pf-root .pf-node-resize svg { display: block; }
-  #pf-root .pf-node.pf-dragging { opacity: 0.4; cursor: grabbing; box-shadow: 0 10px 28px rgba(0,0,0,0.45); z-index: 20; }
-  #pf-root .pf-node-header.pf-drop-copy-target { outline: 2px dashed var(--completed); outline-offset: -2px; border-radius: 8px 8px 0 0; background: color-mix(in srgb, var(--completed, #22a35e) 8%, transparent); }
+  #pf-root .pf-node.pf-dragging { opacity: 0.4; cursor: grabbing; box-shadow: 0 10px 28px rgba(0,0,0,0.45); z-index: calc(var(--z-sticky) + 1); }
+  #pf-root .pf-node-header.pf-drop-copy-target { outline: 2px dashed var(--completed); outline-offset: -2px; border-radius: var(--radius-container) var(--radius-container) 0 0; background: color-mix(in srgb, var(--completed, #22a35e) 8%, transparent); }
   #pf-root.pf-paste-armed .pf-node-header, #pf-root.pf-paste-armed .pf-subrow { cursor: copy; }
-  #pf-root.pf-paste-armed .pf-node-header:hover { outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: 8px 8px 0 0; }
+  #pf-root.pf-paste-armed .pf-node-header:hover { outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: var(--radius-container) var(--radius-container) 0 0; }
   #pf-root.pf-paste-armed .pf-subrow:hover { outline: 2px dashed var(--accent); outline-offset: -2px; }
   #pf-root .pf-node.pf-node-drop-before { box-shadow: -4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
   #pf-root .pf-node.pf-node-drop-after { box-shadow: 4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
@@ -86,7 +87,7 @@
   #pf-root .pf-drag-handle:active { cursor: grabbing; }
   #pf-root .pf-chevron {
     background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); font-size: calc(var(--font-size-base) - 5px);
-    width: clamp(16px, 2.5vw, 22px); height: clamp(16px, 2.5vw, 22px); border-radius: 5px; display: flex; align-items: center;
+    width: clamp(16px, 2.5vw, 22px); height: clamp(16px, 2.5vw, 22px); border-radius: var(--radius-control); display: flex; align-items: center;
     justify-content: center; flex-shrink: 0; transition: transform 0.18s, background 0.15s, color 0.15s;
   }
   #pf-root .pf-chevron:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
@@ -165,7 +166,7 @@
   #pf-root .pf-sub-comment:hover { border-color: var(--hover-border); }
   #pf-root .pf-sub-comment.pf-comment-set { opacity: 1; color: var(--depth3); border-color: color-mix(in srgb, var(--depth3) 55%, transparent); background: color-mix(in srgb, var(--depth3) 16%, transparent); font-weight: 600; }
   #pf-root .pf-sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; cursor: pointer; border: 1.5px solid var(--planned); transition: background 0.3s var(--ease-console), border-color 0.3s var(--ease-console); align-self: center; }
-  #pf-root .pf-sub-dates { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: clamp(9px, 1.3vw, 12px); margin-left: auto; height: 20px; }
+  #pf-root .pf-sub-dates { display: inline-flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; font-size: clamp(9px, 1.3vw, 12px); margin-left: auto; height: 20px; }
   #pf-root .pf-sub-dates .pf-due-chip { text-align: center; justify-content: center; }
   #pf-root .pf-subrow-title { font-size: calc(var(--font-size-base) - 1px); flex: 1; outline: none; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
   #pf-root .pf-subrow-title:focus { white-space: normal; overflow: visible; }
@@ -210,7 +211,7 @@
   }
   #pf-root .pf-color-modal {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    z-index: 60; padding: 18px;
+    z-index: var(--z-float); padding: 18px;
     display: flex; flex-direction: column; align-items: center; gap: 14px;
   }
   #pf-root .pf-color-palette { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
@@ -249,12 +250,12 @@
   #pf-root .pf-recur-chip:hover { color: var(--text); border-color: var(--hover-border); }
   #pf-root .pf-recur-chip.pf-recur-set { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
   #pf-root .pf-recur-dropdown {
-    position: absolute; z-index: 300; background: var(--card); border: 1px solid var(--card-border);
+    position: absolute; z-index: var(--z-menu); background: var(--card); border: 1px solid var(--card-border);
     border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 4px; min-width: 120px;
   }
   #pf-root .pf-recur-dropdown button {
     display: block; width: 100%; text-align: left; padding: 6px 10px; font-size: calc(var(--font-size-base) - 2px);
-    background: transparent; color: var(--text); border: none; border-radius: 5px; cursor: pointer;
+    background: transparent; color: var(--text); border: none; border-radius: var(--radius-control); cursor: pointer;
   }
   #pf-root .pf-recur-dropdown button:hover { background: rgba(255,255,255,0.06); }
   #pf-root .pf-recur-dropdown button.pf-recur-active { color: var(--accent); font-weight: 600; }
@@ -277,12 +278,12 @@
   #pf-root .pf-dep-chip.pf-dep-set { color: var(--waiting); border-color: color-mix(in srgb, var(--waiting) 65%, transparent); background: color-mix(in srgb, var(--waiting) 18%, transparent); font-weight: 700; }
   #pf-root .pf-dep-chip.pf-dep-blocked { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); }
   #pf-root .pf-dep-dropdown {
-    position: fixed; z-index: 300; background: var(--card); border: 1px solid var(--card-border);
+    position: fixed; z-index: var(--z-menu); background: var(--card); border: 1px solid var(--card-border);
     border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); padding: 8px; min-width: 180px; max-width: 90vw; max-height: 70vh; overflow-y: auto; width: clamp(220px, 50vw, 400px);
   }
   #pf-root .pf-dep-dropdown label {
     display: flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: calc(var(--font-size-base) - 2px);
-    color: var(--text); border-radius: 5px; cursor: pointer;
+    color: var(--text); border-radius: var(--radius-control); cursor: pointer;
   }
   #pf-root .pf-dep-dropdown label:hover { background: rgba(255,255,255,0.06); }
   #pf-root .pf-sub-dot.pf-blocked { border-style: dashed !important; opacity: 0.5; }

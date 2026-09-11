@@ -1,3 +1,37 @@
+:root {
+    /* Shape, spacing & layering scales — ONE definition, on :root, so both the
+       in-root UI and elements appended to document.body (drag ghosts, save
+       modal, confetti canvas) resolve them. Presets never touch these; only
+       palette/type/motion live on #pf-root below. */
+    --radius-control: 4px;
+    --radius-container: 6px;
+    --radius-overlay: 10px;
+    --radius-pill: 100px;
+    --shadow-carried: 0 20px 50px rgba(0,0,0,0.55);
+    --shadow-hover: 0 6px 18px rgba(0,0,0,0.45);
+
+    /* Spacing scale (F10): one 2px-base rhythm; off-grid 3/5/7/9px retired */
+    --space-xxs: 2px;
+    --space-xs: 4px;
+    --space-sm: 6px;
+    --space-md: 8px;
+    --space-lg: 12px;
+    --space-xl: 16px;
+    --space-xxl: 24px;
+
+    /* Z-index ladder (F9): named layers; new layers join the scale, never invent numbers.
+       Intra-band order (e.g. menu above its own backdrop) is preserved by DOM order
+       and equal token values, not by off-scale numbers. */
+    --z-base: 0;
+    --z-sticky: 10;
+    --z-float: 60;
+    --z-menu: 100;
+    --z-toast: 200;
+    --z-chrome: 9000;
+    --z-transient: 9002;
+    --z-drag: 9999;
+}
+
   #pf-root {
     --bg: #0a0d11;
     --grid-dot: transparent;
@@ -27,13 +61,8 @@
     --depth2: #3ddc97;
     --depth3: #4fd1c5;
 
-    /* Shape & elevation scale (one recipe vocabulary) */
-    --radius-control: 4px;
-    --radius-container: 6px;
-    --radius-overlay: 10px;
-    --radius-pill: 100px;
-    --shadow-carried: 0 20px 50px rgba(0,0,0,0.55);
-    --shadow-hover: 0 6px 18px rgba(0,0,0,0.45);
+    /* Shape & elevation values live on :root (see top of file) so body-level
+       elements resolve them too. #pf-root carries palette, type, motion. */
 
     /* Motion vocabulary (mechanical console): one authored curve, tight budgets */
     --ease-console: cubic-bezier(0.16, 1, 0.3, 1);

@@ -248,6 +248,8 @@ Two workhorse radii and a pill:
 
 The 5/7/8/12/14/16/20/24px drift (**F8**) is retired. Borders are 1px solid
 hairline; dashed accent outlines (2px, offset −2px) only for paste-armed/nest states.
+Accepted exceptions: circles use `50%`, and the search-highlight `<mark>` keeps its
+2px corner (an inline text marker, not a component).
 
 ## Z-Index
 
@@ -264,7 +266,11 @@ A named ladder replaces the `99999…9200` sprawl (**F9**):
 | `--z-transient` | 9002 | connection/error dots, update pill |
 | `--z-drag` | 9999 | drag ghosts (topmost, pointer-none) |
 
-New layers must join this scale, not invent a number.
+New layers must join this scale, not invent a number. The ladder (with the
+spacing/radius/shadow scales) is defined once on `:root` — not `#pf-root` — so
+elements appended to `document.body` (drag ghosts, save modal, confetti canvas)
+resolve the same values; presets never touch these scales. Near-band offsets use
+`calc()` against a token (e.g. modal backdrop `calc(--z-float - 1)`), never literals.
 
 ## Components
 

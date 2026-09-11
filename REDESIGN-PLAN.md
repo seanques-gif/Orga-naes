@@ -130,7 +130,7 @@ migration notes. (Anti-reference preserved in `DESIGN-v1-night-workshop.md`.)
 | **3B-2** | Unify Panel / Pill / Card recipes (F11/F13) | ✅ |
 | **3B-3** | Peel inline styles → classes (F7) | ⏳ partial (options panel done; 129 left in template, 109+26 in JS) |
 | **3B-4** | Replace emoji-as-icons (F/decision) | 🔀 D10 (default: SVG chrome) |
-| **3C** | Layout & scales: spacing scale, radius scale, z-index scale, retire resting shadows (F8/F9/F10/F12) | ⬜ |
+| **3C** | Layout & scales: spacing scale, radius scale, z-index scale, retire resting shadows (F8/F9/F10/F12) | ✅ tokens on `:root`, z-ladder fully named (0 literals), radii converged (mark exception), F12 shadows retired; verified live |
 | **3D** | States & a11y: reduced-motion, hover-gate, focus-visible, AA across presets (F1/F2/F3/F4) | ✅ (0 AA failures across 6 themes) |
 | **3E** | Motion: one easing curve + springs; fix `ease-in`/keyframe entrances; `review-animations` verdict (F5/F17) | ✅ verdict written — APPROVE with findings (`REDESIGN-FINDINGS.md`) |
 | **3F** | Polish: impeccable detector; refresh `.impeccable/design.json` sidecar | ⬜ |
