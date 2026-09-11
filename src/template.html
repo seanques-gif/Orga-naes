@@ -80,9 +80,9 @@ __ORGA_CSS_MAIN__</style>
     <div class="pf-title"><span class="pf-dot"></span>Orga-naes</div>
     <button class="pf-new-btn" id="pf-new-project">+</button>
     <div class="pf-tb-group" id="pf-tb-undoredo">
-      <button class="pf-undo-btn" id="pf-undo" title="Undo (Ctrl+Z)" disabled>↶</button>
-      <button class="pf-undo-btn" id="pf-redo" title="Redo (Ctrl+Y)" disabled>↷</button>
-      <button class="pf-undo-btn pf-options-desktop" id="pf-options-btn-desktop" title="Options" style="position:relative;">☰<span class="pf-error-dot" id="pf-error-dot-desktop"></span></button>
+      <button class="pf-undo-btn" id="pf-undo" title="Undo (Ctrl+Z)" disabled><span data-ic="undo"></span></button>
+      <button class="pf-undo-btn" id="pf-redo" title="Redo (Ctrl+Y)" disabled><span data-ic="redo"></span></button>
+      <button class="pf-undo-btn pf-options-desktop" id="pf-options-btn-desktop" title="Options" style="position:relative;"><span data-ic="menu"></span><span class="pf-error-dot" id="pf-error-dot-desktop"></span></button>
     </div>
     <div class="pf-tb-group" id="pf-tb-duefilter">
       <select class="pf-due-filter" id="pf-due-filter" title="Filter by due date">
@@ -95,25 +95,25 @@ __ORGA_CSS_MAIN__</style>
         <option value="month">This Month</option>
         <option value="nodue">No Due</option>
       </select>
-      <button class="pf-undo-btn" id="pf-today-btn" title="Today's Focus">⭐</button>
-      <button class="pf-undo-btn" id="pf-duelist-btn" title="Tasks by Due Date" style="position:relative;">📅<span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;background:var(--danger,#ef4444);color:#fff;font-size: max(9px, calc(var(--font-size-base) - 5px));font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;"></span></button>
-      <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View">🗓</button>
-      <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner">🗂</button>
+      <button class="pf-undo-btn" id="pf-today-btn" title="Today's Focus"><span data-ic="star"></span></button>
+      <button class="pf-undo-btn" id="pf-duelist-btn" title="Tasks by Due Date" style="position:relative;"><span data-ic="calendar"></span><span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;background:var(--danger,#ef4444);color:#fff;font-size: max(9px, calc(var(--font-size-base) - 5px));font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;"></span></button>
+      <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View"><span data-ic="calendar-week"></span></button>
+      <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner"><span data-ic="planner"></span></button>
     </div>
     <div class="pf-tb-group" id="pf-tb-viewtools">
       <span id="pf-collapse-cats" title="Toggle Focus/Card view" style="display:none;"></span>
-      <button class="pf-undo-btn pf-toggle-all-btn" id="pf-toggle-all" title="Expand/Collapse all">📖</button>
+      <button class="pf-undo-btn pf-toggle-all-btn" id="pf-toggle-all" title="Expand/Collapse all"><span data-ic="book"></span></button>
       <span id="pf-arrange" title="Auto-arrange" style="display:none;"></span>
       <span id="pf-autofit-all" title="Auto-fit all" style="display:none;"></span>
     </div>
-    <span class="pf-search-wrap" id="pf-search-wrap"><button class="pf-search-toggle" id="pf-search-toggle" title="Search">🔍</button><input type="text" class="pf-search" id="pf-search" placeholder="Search…" spellcheck="false"><button class="pf-search-clear" id="pf-search-clear" title="Clear search">×</button><button class="pf-search-close" id="pf-search-close" title="Close search">×</button></span>
+    <span class="pf-search-wrap" id="pf-search-wrap"><button class="pf-search-toggle" id="pf-search-toggle" title="Search"><span data-ic="search"></span></button><input type="text" class="pf-search" id="pf-search" placeholder="Search…" spellcheck="false"><button class="pf-search-clear" id="pf-search-clear" title="Clear search">×</button><button class="pf-search-close" id="pf-search-close" title="Close search">×</button></span>
     <button class="pf-undo-btn pf-shortcuts-hint" id="pf-shortcuts-hint" title="Keyboard Shortcuts (?)">?</button>
     <div class="pf-stats" id="pf-stats"></div>
     <div class="pf-save" id="pf-save"></div>
     <div class="pf-tb-group pf-options-mobile" style="margin-left:auto;">
-      <button class="pf-undo-btn" id="pf-options-btn" title="Options" style="position:relative;">☰<span class="pf-error-dot" id="pf-error-dot-mobile"></span></button>
+      <button class="pf-undo-btn" id="pf-options-btn" title="Options" style="position:relative;"><span data-ic="menu"></span><span class="pf-error-dot" id="pf-error-dot-mobile"></span></button>
     </div>
-    <button class="pf-undo-btn pf-back-btn" id="pf-toolbar-back" title="Back to projects" style="display:none;margin-left:auto;">←</button>
+    <button class="pf-undo-btn pf-back-btn" id="pf-toolbar-back" title="Back to projects" style="display:none;margin-left:auto;"><span data-ic="reply"></span></button>
     <span id="pf-theme-toggle" title="Toggle theme" style="display:none;"></span>
     <input type="file" id="pf-import-file" accept=".json" style="display:none">
   </div>
@@ -161,47 +161,47 @@ __ORGA_CSS_MAIN__</style>
 
     <!-- 📁 Data -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">📁 Data</div>
+      <div class="pf-opt-title" data-ic-before="folder">Data</div>
       <div class="pf-opt-grid">
-        <button class="pf-undo-btn" id="pf-export" title="Save (Ctrl+S)" style="justify-content:flex-start;"><span class="pf-opt-ico">💾</span> Save JSON</button>
-        <button class="pf-undo-btn" id="pf-import" title="Import" style="justify-content:flex-start;"><span class="pf-opt-ico">📂</span> Import</button>
+        <button class="pf-undo-btn" id="pf-export" title="Save (Ctrl+S)" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="save"></span> Save JSON</button>
+        <button class="pf-undo-btn" id="pf-import" title="Import" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="open"></span> Import</button>
       </div>
     </div>
 
     <!-- 📁 Manage -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">📁 Manage</div>
+      <div class="pf-opt-title" data-ic-before="folder">Manage</div>
       <div class="pf-opt-grid">
-        <button class="pf-undo-btn" id="pf-category-btn" title="Manage categories" style="justify-content:flex-start;"><span class="pf-opt-ico">📁</span> Categories</button>
-        <button class="pf-undo-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" style="justify-content:flex-start;"><span class="pf-opt-ico">🔔</span> Reminder</button>
-        <button class="pf-undo-btn" id="pf-activity-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">📋</span> Activity Log</button>
-        <button class="pf-undo-btn" id="pf-archive-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">📦</span> Archive</button>
-        <button class="pf-undo-btn" id="pf-trash-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">🗑</span> Trash</button>
-        <button class="pf-undo-btn" id="pf-snapshots-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">🕒</span> Version History</button>
-        <button class="pf-undo-btn" id="pf-error-btn" style="justify-content:flex-start;position:relative;"><span class="pf-opt-ico">⚠️</span> Error Log<span class="pf-error-dot" id="pf-error-dot-btn" style="top:2px;right:4px;"></span></button>
+        <button class="pf-undo-btn" id="pf-category-btn" title="Manage categories" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="folder"></span> Categories</button>
+        <button class="pf-undo-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="bell"></span> Reminder</button>
+        <button class="pf-undo-btn" id="pf-activity-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="clipboard"></span> Activity Log</button>
+        <button class="pf-undo-btn" id="pf-archive-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="archive"></span> Archive</button>
+        <button class="pf-undo-btn" id="pf-trash-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="trash"></span> Trash</button>
+        <button class="pf-undo-btn" id="pf-snapshots-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
+        <button class="pf-undo-btn" id="pf-error-btn" style="justify-content:flex-start;position:relative;"><span class="pf-opt-ico" data-ic="alert"></span> Error Log<span class="pf-error-dot" id="pf-error-dot-btn" style="top:2px;right:4px;"></span></button>
       </div>
     </div>
 
     <!-- 📤 Export -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">📤 Export</div>
+      <div class="pf-opt-title" data-ic-before="upload">Export</div>
       <div class="pf-opt-grid">
-        <button class="pf-undo-btn" id="pf-export-csv" style="justify-content:flex-start;"><span class="pf-opt-ico">📄</span> CSV</button>
-        <button class="pf-undo-btn" id="pf-export-pdf" style="justify-content:flex-start;"><span class="pf-opt-ico">📑</span> PDF</button>
+        <button class="pf-undo-btn" id="pf-export-csv" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="file"></span> CSV</button>
+        <button class="pf-undo-btn" id="pf-export-pdf" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="file-text"></span> PDF</button>
       </div>
     </div>
 
     <!-- ☁️ Cloud Sync — Firebase -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">☁️ Cloud Sync — Firebase</div>
+      <div class="pf-opt-title" data-ic-before="cloud">Cloud Sync — Firebase</div>
       <div id="pf-firebase-section" style="display:grid;grid-template-columns:1fr;gap:6px;">
         <div id="pf-firebase-status" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);">Not signed in</div>
         <div id="pf-firebase-last-sync" style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);display:none;"></div>
-        <button class="pf-undo-btn" id="pf-firebase-signin" style="justify-content:flex-start;"><span class="pf-opt-ico">🔑</span> Sign in with Google</button>
-        <button class="pf-undo-btn" id="pf-firebase-signout" style="justify-content:flex-start;display:none;"><span class="pf-opt-ico">🚪</span> Sign Out</button>
+        <button class="pf-undo-btn" id="pf-firebase-signin" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="key"></span> Sign in with Google</button>
+        <button class="pf-undo-btn" id="pf-firebase-signout" style="justify-content:flex-start;display:none;"><span class="pf-opt-ico" data-ic="exit"></span> Sign Out</button>
         <div class="pf-opt-grid">
-          <button class="pf-undo-btn" id="pf-firebase-push" style="justify-content:flex-start;" disabled><span class="pf-opt-ico">⬆</span> Push</button>
-          <button class="pf-undo-btn" id="pf-firebase-pull" style="justify-content:flex-start;" disabled><span class="pf-opt-ico">⬇</span> Pull</button>
+          <button class="pf-undo-btn" id="pf-firebase-push" style="justify-content:flex-start;" disabled><span class="pf-opt-ico" data-ic="upload"></span> Push</button>
+          <button class="pf-undo-btn" id="pf-firebase-pull" style="justify-content:flex-start;" disabled><span class="pf-opt-ico" data-ic="download"></span> Pull</button>
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size: calc(var(--font-size-base) - 2px);color:var(--text-dim);margin-top:4px;">
           <input type="checkbox" id="pf-firebase-autosync"> Auto-sync on changes
@@ -209,7 +209,7 @@ __ORGA_CSS_MAIN__</style>
         <label style="display:flex;align-items:center;gap:6px;font-size: calc(var(--font-size-base) - 2px);color:var(--text-dim);">
           <input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
         </label>
-        <button class="pf-undo-btn" id="pf-firebase-backups-btn" style="justify-content:flex-start;margin-top:4px;" disabled><span class="pf-opt-ico">🗂</span> Restore from Backup</button>
+        <button class="pf-undo-btn" id="pf-firebase-backups-btn" style="justify-content:flex-start;margin-top:4px;" disabled><span class="pf-opt-ico" data-ic="planner"></span> Restore from Backup</button>
         <div id="pf-firebase-backups-list" style="display:none;margin-top:6px;max-height:200px;overflow-y:auto;"></div>
         <p style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);margin-top:4px;">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
       </div>
@@ -217,21 +217,21 @@ __ORGA_CSS_MAIN__</style>
 
     <!-- 🔄 Auto-Backup -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">🔄 Auto-Backup</div>
+      <div class="pf-opt-title" data-ic-before="refresh">Auto-Backup</div>
       <label style="display:flex;align-items:center;gap:6px;font-size: calc(var(--font-size-base) - 1px);color:var(--text);">
-        🔄 Every
+        Every
         <input type="number" id="pf-autobackup-min" min="0" max="120" value="0" style="width:48px;padding:2px 4px;border-radius:6px;border:1px solid var(--card-border);background:var(--sub-bg);color:var(--text);font-size: calc(var(--font-size-base) - 1px);text-align:center;">
         min <span style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);">(0 = off)</span>
       </label>
       <div style="display:flex;align-items:center;gap:6px;margin-top:6px;overflow:hidden;">
-        <button class="pf-undo-btn" id="pf-autobackup-dir" style="justify-content:flex-start;flex-shrink:0;"><span class="pf-opt-ico">📁</span> Choose folder</button>
+        <button class="pf-undo-btn" id="pf-autobackup-dir" style="justify-content:flex-start;flex-shrink:0;"><span class="pf-opt-ico" data-ic="folder"></span> Choose folder</button>
         <span id="pf-autobackup-path" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
       </div>
     </div>
 
     <!-- 🎨 Appearance -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">🎨 Appearance</div>
+      <div class="pf-opt-title" data-ic-before="palette">Appearance</div>
       <label class="pf-options-label">Display Scale</label>
       <div class="pf-options-row">
         <input type="range" id="pf-display-scale" class="pf-range-input" min="60" max="140" step="5" value="100">
@@ -256,7 +256,7 @@ __ORGA_CSS_MAIN__</style>
     <!-- ⌨️ Shortcuts -->
     <div class="pf-options-section">
       <div class="pf-opt-title">⌨️ Shortcuts</div>
-      <button class="pf-undo-btn" id="pf-shortcuts-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">⌨</span> Keyboard Shortcuts</button>
+      <button class="pf-undo-btn" id="pf-shortcuts-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="keyboard"></span> Keyboard Shortcuts</button>
     </div>
 
     <!-- ℹ️ About -->
@@ -403,12 +403,12 @@ __ORGA_CSS_MAIN__</style>
   </div>
   <div class="pf-fab-overlay" id="pf-fab-overlay"></div>
   <div class="pf-fab-menu" id="pf-fab-menu">
-    <div class="pf-fab-menu-item" data-fab="add"><span class="pf-fab-icon">➕</span></div>
-    <div class="pf-fab-menu-item" data-fab="expand"><span class="pf-fab-icon">📖</span></div>
-    <div class="pf-fab-menu-item" data-fab="sort"><span class="pf-fab-icon">⇅</span></div>
-    <div class="pf-fab-menu-item" data-fab="undo"><span class="pf-fab-icon">↩</span></div>
-    <div class="pf-fab-menu-item" data-fab="redo"><span class="pf-fab-icon">↪</span></div>
-    <div class="pf-fab-menu-item" data-fab="search"><span class="pf-fab-icon">🔍</span></div>
+    <div class="pf-fab-menu-item" data-fab="add"><span class="pf-fab-icon" data-ic="plus-badge"></span></div>
+    <div class="pf-fab-menu-item" data-fab="expand"><span class="pf-fab-icon" data-ic="book"></span></div>
+    <div class="pf-fab-menu-item" data-fab="sort"><span class="pf-fab-icon" data-ic="sort"></span></div>
+    <div class="pf-fab-menu-item" data-fab="undo"><span class="pf-fab-icon" data-ic="reply"></span></div>
+    <div class="pf-fab-menu-item" data-fab="redo"><span class="pf-fab-icon" data-ic="forward"></span></div>
+    <div class="pf-fab-menu-item" data-fab="search"><span class="pf-fab-icon" data-ic="search"></span></div>
   </div>
   <button class="pf-fab" id="pf-fab" title="Actions">+</button>
 
@@ -433,11 +433,11 @@ __ORGA_CSS_MAIN__</style>
     </div>
   </div>
   <nav class="pf-bottom-nav" id="pf-bottom-nav">
-    <button class="pf-bottom-nav-btn pf-bottom-active" data-nav="projects" title="Projects">📋<span>Projects</span></button>
-    <button class="pf-bottom-nav-btn" data-nav="today" title="Today">⭐<span>Today</span></button>
-    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates" style="position:relative;">📅<span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
-    <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar">🗓<span>Calendar</span></button>
-    <button class="pf-bottom-nav-btn" data-nav="options" title="Options">☰<span>Options</span></button>
+    <button class="pf-bottom-nav-btn pf-bottom-active" data-nav="projects" title="Projects"><span data-ic="list"></span><span>Projects</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="today" title="Today"><span data-ic="star"></span><span>Today</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates" style="position:relative;"><span data-ic="calendar"></span><span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
+    <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar"><span data-ic="calendar-week"></span><span>Calendar</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="options" title="Options"><span data-ic="menu"></span><span>Options</span></button>
     <div class="pf-connection-dot pf-online" id="pf-connection-dot" title="Online"></div>
   </nav>
   <div class="pf-update-pill" id="pf-update-pill" title="A new version is ready" role="button" tabindex="0">

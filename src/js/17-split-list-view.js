@@ -4,7 +4,7 @@
     const sortBar = document.createElement('div');
     sortBar.className = 'pf-split-sort';
     sortBar.innerHTML = '<button id="pf-split-collapse-all" class="pf-split-collapse-btn" title="Collapse/Expand all categories">▾ All</button>' +
-      '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (showCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Show completed projects">' + (showCompletedProjects ? '☑' : '☐') + ' Completed</button>' +
+      '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (showCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Show completed projects">' + pfIcon(showCompletedProjects ? 'check-square' : 'square') + ' Completed</button>' +
       '<span class="pf-split-sort-label">Sort:</span><select id="pf-split-sort-sel"><option value="manual">Manual</option><option value="name">Name</option><option value="status">Status</option><option value="due-cat">Due Date</option><option value="created">Newest</option></select>';
     splitList.appendChild(sortBar);
     sortBar.querySelector('select').value = splitSortMode;
@@ -21,7 +21,7 @@
     if (splitMultiSelect.length >= 1) {
       const bar = document.createElement('div');
       bar.className = 'pf-split-delete-bar';
-      bar.innerHTML = '<span>' + splitMultiSelect.length + ' selected</span><button data-action="cycle">Set status</button><button data-action="archive">📦 Archive</button><button data-action="delete">Delete selected</button><button data-action="clear">✕ Clear</button>';
+      bar.innerHTML = '<span>' + splitMultiSelect.length + ' selected</span><button data-action="cycle">Set status</button><button data-action="archive">' + pfIcon('archive') + ' Archive</button><button data-action="delete">Delete selected</button><button data-action="clear">✕ Clear</button>';
       bar.querySelector('[data-action="cycle"]').addEventListener('click', (e) => { openStatusMenu(e.currentTarget, null, (st) => _splitCycleSelected(st)); });
       bar.querySelector('[data-action="archive"]').addEventListener('click', () => {
         snapshot();
@@ -87,7 +87,7 @@
           menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
           const emojiItem = document.createElement('div');
           emojiItem.className = 'pf-ctx-menu-item';
-          emojiItem.textContent = '😀 Set Emoji';
+          emojiItem.innerHTML = pfIcon('smiley') + ' Set Emoji';
           emojiItem.addEventListener('click', (ev) => {
             ev.stopPropagation(); _closeCtx();
             const emoji = prompt('Enter an emoji for "' + cat + '":', categoryEmojis[cat] || '');
@@ -98,7 +98,7 @@
           menu.appendChild(emojiItem);
           const renItem = document.createElement('div');
           renItem.className = 'pf-ctx-menu-item';
-          renItem.textContent = '✏️ Rename Category';
+          renItem.innerHTML = pfIcon('pencil') + ' Rename Category';
           renItem.addEventListener('click', (ev) => {
             ev.stopPropagation(); _closeCtx();
             const newName = prompt('Rename category:', cat);
@@ -116,7 +116,7 @@
           menu.appendChild(renItem);
           const delItem = document.createElement('div');
           delItem.className = 'pf-ctx-menu-item pf-ctx-danger';
-          delItem.textContent = '🗑 Delete Category';
+          delItem.innerHTML = pfIcon('trash') + ' Delete Category';
           delItem.addEventListener('click', (ev) => {
             ev.stopPropagation(); _closeCtx(); snapshot();
             if (!confirm('Delete category "' + cat + '"? Projects will become uncategorized.')) return;

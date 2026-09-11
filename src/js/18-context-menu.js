@@ -52,12 +52,12 @@
     menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
     const addItem = document.createElement('div');
     addItem.className = 'pf-ctx-menu-item';
-    addItem.textContent = '➕ Add Project';
+    addItem.innerHTML = pfIcon('plus-badge') + ' Add Project';
     addItem.addEventListener('click', (ev) => { ev.stopPropagation(); _closeCtx(); openNewProjectCategoryPicker(); });
     menu.appendChild(addItem);
     const addCatItem = document.createElement('div');
     addCatItem.className = 'pf-ctx-menu-item';
-    addCatItem.textContent = '📁 Add Category';
+    addCatItem.innerHTML = pfIcon('folder') + ' Add Category';
     addCatItem.addEventListener('click', (ev) => {
       ev.stopPropagation(); _closeCtx();
       const name = prompt('New category name:');
@@ -94,12 +94,12 @@
       const sep2 = document.createElement('div'); sep2.className = 'pf-ctx-menu-sep'; menu.appendChild(sep2);
       const archiveAll = document.createElement('div');
       archiveAll.className = 'pf-ctx-menu-item';
-      archiveAll.textContent = '📦 Archive all';
+      archiveAll.innerHTML = pfIcon('archive') + ' Archive all';
       archiveAll.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); snapshot(); splitMultiSelect.forEach(id => { const pr = projects.find(pr => pr.id === id); if (pr) archiveProject(pr); }); projects = projects.filter(pr => !splitMultiSelect.includes(pr.id)); splitMultiSelect = []; splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('📦 Archived ' + count + ' projects'); });
       menu.appendChild(archiveAll);
       const delAll = document.createElement('div');
       delAll.className = 'pf-ctx-menu-item pf-ctx-danger';
-      delAll.textContent = '🗑 Delete all';
+      delAll.innerHTML = pfIcon('trash') + ' Delete all';
       delAll.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); if (!confirm('Delete ' + count + ' projects?')) return; snapshot(); splitMultiSelect.forEach(id => { const pr = projects.find(pr => pr.id === id); if (pr) trashProject(pr); }); projects = projects.filter(pr => !splitMultiSelect.includes(pr.id)); splitMultiSelect = []; splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('🗑 Deleted ' + count + ' projects'); });
       menu.appendChild(delAll);
       root.appendChild(menu);
@@ -112,29 +112,32 @@
       // Non-clickable info line showing when this project was created.
       // Uses the existing p.createdAt field (already saved on every
       // project) and the existing formatDateTime() helper.
-      ...(p.createdAt ? [{ label: '📅 Created ' + formatDateTime(p.createdAt), info: true }, { sep: true }] : []),
-      { label: '✏️ Rename', action: () => { const item = splitList.querySelector('[data-project-id="' + p.id + '"]'); if (item) _inlineRename(item, p); } },
-      { label: '⭐ Add to Today', action: () => { addToToday(p.title, p.id, 'project'); } },
-      { label: '⏰ Set Reminder', action: () => { promptReminder(p.id, p.title, 'project'); } },
+      ...(p.createdAt ? [{ icon: 'calendar', label: 'Created ' + formatDateTime(p.createdAt), info: true }, { sep: true }] : []),
+      { icon: 'pencil', label: 'Rename', action: () => { const item = splitList.querySelector('[data-project-id="' + p.id + '"]'); if (item) _inlineRename(item, p); } },
+      { icon: 'star', label: 'Add to Today', action: () => { addToToday(p.title, p.id, 'project'); } },
+      { icon: 'bell', label: 'Set Reminder', action: () => { promptReminder(p.id, p.title, 'project'); } },
       { label: '→ ' + STATUS_LABEL[statusNext], action: () => { _lastProjectId = p.id; snapshot(); p.status = statusNext; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
-      { label: '📋 Duplicate', action: () => { snapshot(); const dup = JSON.parse(JSON.stringify(p)); dup.id = uid(); dup.title += ' (copy)'; projects.push(dup); scheduleSave(); renderSplitList(); } },
+      { icon: 'clipboard', label: 'Duplicate', action: () => { snapshot(); const dup = JSON.parse(JSON.stringify(p)); dup.id = uid(); dup.title += ' (copy)'; projects.push(dup); scheduleSave(); renderSplitList(); } },
     ];
 
     items.push({ sep: true });
-    items.push({ label: '🔁 Repeat: ' + (p.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(p.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); p.recurrence = opts[next]; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return '🔁 Repeat: ' + labels[next]; } });
-    items.push({ label: '😀 Set Emoji', action: () => { const el = root.querySelector('[data-project-id="' + p.id + '"]') || root.querySelector('.pf-split-active'); if (el) showEmojiPicker(p, el); } });
-    items.push({ label: '📦 Archive', action: () => { snapshot(); archiveProject(p); logActivity('Archived project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" archived', false, true); } });
-    items.push({ label: '🗑 Delete', danger: true, action: () => { snapshot(); trashProject(p); logActivity('Trashed project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" moved to trash', false, true); } });
+    items.push({ icon: 'refresh', label: 'Repeat: ' + (p.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(p.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); p.recurrence = opts[next]; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return 'Repeat: ' + labels[next]; } });
+    items.push({ icon: 'smiley', label: 'Set Emoji', action: () => { const el = root.querySelector('[data-project-id="' + p.id + '"]') || root.querySelector('.pf-split-active'); if (el) showEmojiPicker(p, el); } });
+    items.push({ icon: 'archive', label: 'Archive', action: () => { snapshot(); archiveProject(p); logActivity('Archived project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" archived', false, true); } });
+    items.push({ icon: 'trash', label: 'Delete', danger: true, action: () => { snapshot(); trashProject(p); logActivity('Trashed project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" moved to trash', false, true); } });
     items.forEach(it => {
       if (it.sep) { const s = document.createElement('div'); s.className = 'pf-ctx-menu-sep'; menu.appendChild(s); return; }
       const el = document.createElement('div');
       // Non-clickable info line (e.g. "Created ..."): dimmed text, no
       // hover highlight, no click action — search "it.info" to adjust.
       el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '') + (it.info ? ' pf-ctx-info' : '');
-      el.textContent = it.label;
+      // SVG ink stays markup (trusted, from pfIcon); the label is added as a
+      // text node so dynamic labels can never inject HTML.
+      el.innerHTML = pfIcon(it.icon || 'info');
+      el.appendChild(document.createTextNode(' ' + it.label));
       if (it.info) { menu.appendChild(el); return; }
       if (it.cycling) {
-        el.addEventListener('click', (e) => { e.stopPropagation(); el.textContent = it.action(); });
+        el.addEventListener('click', (e) => { e.stopPropagation(); const next = it.action(); el.innerHTML = pfIcon(it.icon || 'info'); el.appendChild(document.createTextNode(' ' + next)); });
       } else {
         el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); it.action(); });
       }
@@ -157,18 +160,18 @@
       // created. Applies to both — in this app, a top-level "task" inside
       // a project is really just a depth-0 subtask, so this one menu
       // covers both cases. Uses the existing s.createdAt field.
-      ...(s.createdAt ? [{ label: '📅 Created ' + formatDateTime(s.createdAt), info: true }, { sep: true }] : []),
-      ...(!isMobile ? [{ label: '✏️ Edit Title', action: () => { const row = root.querySelector('[data-sub-title-id="' + s.id + '"]'); if (row) { row.contentEditable = 'true'; row.focus(); const range = document.createRange(); range.selectNodeContents(row); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } } }] : []),
-      { label: '⭐ Add to Today', action: () => { addToToday(s.title, s.id, 'subtask'); } },
-      { label: '⏰ Set Reminder', action: () => { promptReminder(s.id, s.title, 'subtask'); } },
+      ...(s.createdAt ? [{ icon: 'calendar', label: 'Created ' + formatDateTime(s.createdAt), info: true }, { sep: true }] : []),
+      ...(!isMobile ? [{ icon: 'pencil', label: 'Edit Title', action: () => { const row = root.querySelector('[data-sub-title-id="' + s.id + '"]'); if (row) { row.contentEditable = 'true'; row.focus(); const range = document.createRange(); range.selectNodeContents(row); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } } }] : []),
+      { icon: 'star', label: 'Add to Today', action: () => { addToToday(s.title, s.id, 'subtask'); } },
+      { icon: 'bell', label: 'Set Reminder', action: () => { promptReminder(s.id, s.title, 'subtask'); } },
       { label: '→ ' + STATUS_LABEL[statusNext], action: () => { _lastProjectId = p.id; snapshot(); s.status = statusNext; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
-      ...(!isMobile ? [{ label: '🔗 Dependencies', action: () => { const chip = root.querySelector('[data-sub-id="' + s.id + '"] .pf-dep-chip'); if (chip) chip.click(); else { const row = root.querySelector('[data-sub-id="' + s.id + '"]'); if (row) { const tempChip = buildDependencyChip(p, s); tempChip.style.position = 'absolute'; tempChip.style.opacity = '0'; row.appendChild(tempChip); tempChip.click(); } } } }] : []),
-      ...(!isMobile ? [{ label: '⬆ Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
-      { label: '📋 Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
-      { label: '📄 Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied — click a project to paste as main task, or a task to nest under it'); } },
-      ...(!isMobile ? [{ label: '🔁 Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return '🔁 Repeat: ' + labels[next]; } }] : []),
+      ...(!isMobile ? [{ icon: 'link', label: 'Dependencies', action: () => { const chip = root.querySelector('[data-sub-id="' + s.id + '"] .pf-dep-chip'); if (chip) chip.click(); else { const row = root.querySelector('[data-sub-id="' + s.id + '"]'); if (row) { const tempChip = buildDependencyChip(p, s); tempChip.style.position = 'absolute'; tempChip.style.opacity = '0'; row.appendChild(tempChip); tempChip.click(); } } } }] : []),
+      ...(!isMobile ? [{ icon: 'arrow-up', label: 'Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
+      { icon: 'clipboard', label: 'Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
+      { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied — click a project to paste as main task, or a task to nest under it'); } },
+      ...(!isMobile ? [{ icon: 'refresh', label: 'Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return 'Repeat: ' + labels[next]; } }] : []),
       { sep: true },
-      { label: '🗑 Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },
+      { icon: 'trash', label: 'Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },
     ];
     items.forEach(it => {
       if (it.sep) { const sep = document.createElement('div'); sep.className = 'pf-ctx-menu-sep'; menu.appendChild(sep); return; }
@@ -176,10 +179,13 @@
       // Non-clickable info line (e.g. "Created ..."): dimmed text, no
       // hover highlight, no click action — search "it.info" to adjust.
       el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '') + (it.info ? ' pf-ctx-info' : '');
-      el.textContent = it.label;
+      // SVG ink stays markup (trusted, from pfIcon); the label is added as a
+      // text node so dynamic labels can never inject HTML.
+      el.innerHTML = pfIcon(it.icon || 'info');
+      el.appendChild(document.createTextNode(' ' + it.label));
       if (it.info) { menu.appendChild(el); return; }
       if (it.cycling) {
-        el.addEventListener('click', (e) => { e.stopPropagation(); el.textContent = it.action(); });
+        el.addEventListener('click', (e) => { e.stopPropagation(); const next = it.action(); el.innerHTML = pfIcon(it.icon || 'info'); el.appendChild(document.createTextNode(' ' + next)); });
       } else {
         el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); it.action(); });
       }

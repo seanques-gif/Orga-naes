@@ -20,6 +20,7 @@
     "src/styles/90-print.css"
   ],
   "script": [
+    "src/js/00-svg-icons.js",
     "src/js/01-core-state-local-persistence.js",
     "src/js/02-global-keyboard-shortcuts.js",
     "src/js/03-escape-dismissable-stack.js",

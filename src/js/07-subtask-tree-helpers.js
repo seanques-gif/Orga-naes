@@ -107,7 +107,8 @@
     btn.type = 'button';
     function refresh() {
       const cur = RECUR_OPTIONS.find(o => o.value === node.recurrence);
-      btn.textContent = cur && cur.value ? cur.label : '🔁';
+      const icon = pfIcon('refresh', 'pf-recur-ic');
+      btn.innerHTML = cur && cur.value ? icon + cur.label.replace('🔁 ', '') : icon;
       btn.className = 'pf-recur-chip' + (node.recurrence ? ' pf-recur-set' : '');
       btn.title = node.recurrence ? ('Repeats: ' + (cur ? cur.label.replace('🔁 ', '') : node.recurrence)) : 'Set repeat';
     }

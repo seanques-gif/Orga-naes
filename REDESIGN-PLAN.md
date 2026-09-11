@@ -61,7 +61,7 @@ From `PRODUCT.md` (hard constraints):
 | D7 | Theme presets | **5** (Midnight Cyan, Amber CRT, Phosphor Green, Monochrome, Daylight) | Coherent with new world; halves color surface |
 | D8 | Fonts | **IBM Plex Sans + IBM Plex Mono** via Google Fonts `<link>` | Identity + single-file/no-build; system fallbacks |
 | D9 | Accent | **Cyan `#2fd4ff`**, ink `#04141b` | Single saturated signal; AA-correct |
-| D10 | Icon language | **🔀 still open** (see §7) | Emoji-as-icons conflicts with craft floor |
+| D10 | Icon language | ✅ **SVG chrome, emoji for user content** (see §7) | Resolved in 3B-4 |
 
 ---
 
@@ -129,7 +129,7 @@ migration notes. (Anti-reference preserved in `DESIGN-v1-night-workshop.md`.)
 | **3B-1** | Measurement Rule: Plex Mono + `tabular-nums` on all numeric readouts | ✅ |
 | **3B-2** | Unify Panel / Pill / Card recipes (F11/F13) | ✅ |
 | **3B-3** | Peel inline styles → classes (F7) | ⏳ partial (options panel done; 129 left in template, 109+26 in JS) |
-| **3B-4** | Replace emoji-as-icons (F/decision) | 🔀 D10 (default: SVG chrome) |
+| **3B-4** | Replace emoji-as-icons (F/decision) | ✅ D10 resolved: SVG chrome, emoji stays user-content |
 | **3C** | Layout & scales: spacing scale, radius scale, z-index scale, retire resting shadows (F8/F9/F10/F12) | ✅ tokens on `:root`, z-ladder fully named (0 literals), radii converged (mark exception), F12 shadows retired; verified live |
 | **3D** | States & a11y: reduced-motion, hover-gate, focus-visible, AA across presets (F1/F2/F3/F4) | ✅ (0 AA failures across 6 themes) |
 | **3E** | Motion: one easing curve + springs; fix `ease-in`/keyframe entrances; `review-animations` verdict (F5/F17) | ✅ verdict written — APPROVE with findings (`REDESIGN-FINDINGS.md`) |
@@ -170,7 +170,7 @@ completed `#3ddc97` / waiting `#b39dff` / danger `#ff5c5c`.
 
 ## 7. Open decisions & next actions
 
-1. 🔀 **Icons (D10):** replace emoji-as-chrome with inline SVG, keep emoji as user
+1. ✅ **Icons (D10) — DONE in 3B-4:** SVG chrome via `src/js/00-svg-icons.js` sprite + `pfIcon()` helper (`data-ic` / `data-ic-before` hydration for static markup), emoji kept as user content (task titles, categories, picker, toast prefixes). Chrome emoji eliminated: toolbar, options panel, FAB menu, bottom nav, both context menus, sort bar, recur chip, dependency + comment chips.
    content (recommended) / replace all / defer.
 2. 🔀 **Commit checkpoint:** Phase 2.5 + 3A + 3B-1 are green and uncommitted. A
    commit is the recommended safety net before 3B-2/3.

@@ -83,8 +83,9 @@
     if (exportBtn) exportBtn.addEventListener('click', function() { localStorage.setItem(LAST_EXPORT_KEY, Date.now().toString()); });
   })();
 
-  // Expose for Firebase sync
-  window._pf = {
+  // Expose for Firebase sync (Object.assign preserves keys published by
+  // earlier fragments, e.g. pfIcon from 00-svg-icons.js)
+  window._pf = Object.assign(window._pf || {}, {
     getProjects: () => projects,
     setProjects: (p) => { projects = p; },
     getCategories: () => categories,
@@ -146,7 +147,7 @@
     // produced "closeAllModals is not defined" on push/pull.
     closeAllModals: () => closeAllModals(),
     errorLogAsText: () => errorLogAsText()
-  };
+  });
 
   // Pull-to-refresh (disabled)
 

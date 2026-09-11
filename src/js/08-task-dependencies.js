@@ -15,7 +15,7 @@
     function refresh() {
       const count = subtask.blockedBy ? subtask.blockedBy.length : 0;
       const unresolved = getUnresolvedBlockers(project, subtask);
-      btn.textContent = '🔗';
+      btn.innerHTML = pfIcon('link');
       btn.className = 'pf-dep-chip' + (unresolved.length ? ' pf-dep-blocked' : (count ? ' pf-dep-set' : ''));
       btn.title = unresolved.length ? ('Blocked by ' + unresolved.length + ' task(s)') : (count ? (count + ' dependency/ies') : 'Add dependency');
     }

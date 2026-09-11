@@ -1696,6 +1696,13 @@
      Only theme-independent, non-dynamic styling belongs here. Anything the JS
      sets per-render (positions, computed colors) stays inline by necessity. */
   #pf-root .pf-opt-ico { display: inline-block; width: 20px; text-align: center; }
+  /* Inline SVG chrome icons (D10): size follows the button font, ink follows text color. */
+  #pf-root .pf-ic { width: 1em; height: 1em; display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
+  #pf-root .pf-opt-ico .pf-ic,
+  #pf-root .pf-fab-icon .pf-ic,
+  #pf-root .pf-bottom-nav-btn .pf-ic { width: calc(var(--font-size-base) + 2px); height: calc(var(--font-size-base) + 2px); vertical-align: middle; }
+  #pf-root .pf-ic-title { width: calc(var(--font-size-base) - 1px); height: calc(var(--font-size-base) - 1px); vertical-align: -0.15em; margin-right: 4px; opacity: 0.85; }
+  #pf-root .pf-recur-ic { margin-right: 3px; opacity: 0.9; }
   #pf-root .pf-opt-title {
     font-size: calc(var(--font-size-base) - 3px);
     font-weight: 700;
@@ -1745,9 +1752,9 @@
     <div class="pf-title"><span class="pf-dot"></span>Orga-naes</div>
     <button class="pf-new-btn" id="pf-new-project">+</button>
     <div class="pf-tb-group" id="pf-tb-undoredo">
-      <button class="pf-undo-btn" id="pf-undo" title="Undo (Ctrl+Z)" disabled>↶</button>
-      <button class="pf-undo-btn" id="pf-redo" title="Redo (Ctrl+Y)" disabled>↷</button>
-      <button class="pf-undo-btn pf-options-desktop" id="pf-options-btn-desktop" title="Options" style="position:relative;">☰<span class="pf-error-dot" id="pf-error-dot-desktop"></span></button>
+      <button class="pf-undo-btn" id="pf-undo" title="Undo (Ctrl+Z)" disabled><span data-ic="undo"></span></button>
+      <button class="pf-undo-btn" id="pf-redo" title="Redo (Ctrl+Y)" disabled><span data-ic="redo"></span></button>
+      <button class="pf-undo-btn pf-options-desktop" id="pf-options-btn-desktop" title="Options" style="position:relative;"><span data-ic="menu"></span><span class="pf-error-dot" id="pf-error-dot-desktop"></span></button>
     </div>
     <div class="pf-tb-group" id="pf-tb-duefilter">
       <select class="pf-due-filter" id="pf-due-filter" title="Filter by due date">
@@ -1760,25 +1767,25 @@
         <option value="month">This Month</option>
         <option value="nodue">No Due</option>
       </select>
-      <button class="pf-undo-btn" id="pf-today-btn" title="Today's Focus">⭐</button>
-      <button class="pf-undo-btn" id="pf-duelist-btn" title="Tasks by Due Date" style="position:relative;">📅<span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;background:var(--danger,#ef4444);color:#fff;font-size: max(9px, calc(var(--font-size-base) - 5px));font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;"></span></button>
-      <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View">🗓</button>
-      <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner">🗂</button>
+      <button class="pf-undo-btn" id="pf-today-btn" title="Today's Focus"><span data-ic="star"></span></button>
+      <button class="pf-undo-btn" id="pf-duelist-btn" title="Tasks by Due Date" style="position:relative;"><span data-ic="calendar"></span><span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;background:var(--danger,#ef4444);color:#fff;font-size: max(9px, calc(var(--font-size-base) - 5px));font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;"></span></button>
+      <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View"><span data-ic="calendar-week"></span></button>
+      <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner"><span data-ic="planner"></span></button>
     </div>
     <div class="pf-tb-group" id="pf-tb-viewtools">
       <span id="pf-collapse-cats" title="Toggle Focus/Card view" style="display:none;"></span>
-      <button class="pf-undo-btn pf-toggle-all-btn" id="pf-toggle-all" title="Expand/Collapse all">📖</button>
+      <button class="pf-undo-btn pf-toggle-all-btn" id="pf-toggle-all" title="Expand/Collapse all"><span data-ic="book"></span></button>
       <span id="pf-arrange" title="Auto-arrange" style="display:none;"></span>
       <span id="pf-autofit-all" title="Auto-fit all" style="display:none;"></span>
     </div>
-    <span class="pf-search-wrap" id="pf-search-wrap"><button class="pf-search-toggle" id="pf-search-toggle" title="Search">🔍</button><input type="text" class="pf-search" id="pf-search" placeholder="Search…" spellcheck="false"><button class="pf-search-clear" id="pf-search-clear" title="Clear search">×</button><button class="pf-search-close" id="pf-search-close" title="Close search">×</button></span>
+    <span class="pf-search-wrap" id="pf-search-wrap"><button class="pf-search-toggle" id="pf-search-toggle" title="Search"><span data-ic="search"></span></button><input type="text" class="pf-search" id="pf-search" placeholder="Search…" spellcheck="false"><button class="pf-search-clear" id="pf-search-clear" title="Clear search">×</button><button class="pf-search-close" id="pf-search-close" title="Close search">×</button></span>
     <button class="pf-undo-btn pf-shortcuts-hint" id="pf-shortcuts-hint" title="Keyboard Shortcuts (?)">?</button>
     <div class="pf-stats" id="pf-stats"></div>
     <div class="pf-save" id="pf-save"></div>
     <div class="pf-tb-group pf-options-mobile" style="margin-left:auto;">
-      <button class="pf-undo-btn" id="pf-options-btn" title="Options" style="position:relative;">☰<span class="pf-error-dot" id="pf-error-dot-mobile"></span></button>
+      <button class="pf-undo-btn" id="pf-options-btn" title="Options" style="position:relative;"><span data-ic="menu"></span><span class="pf-error-dot" id="pf-error-dot-mobile"></span></button>
     </div>
-    <button class="pf-undo-btn pf-back-btn" id="pf-toolbar-back" title="Back to projects" style="display:none;margin-left:auto;">←</button>
+    <button class="pf-undo-btn pf-back-btn" id="pf-toolbar-back" title="Back to projects" style="display:none;margin-left:auto;"><span data-ic="reply"></span></button>
     <span id="pf-theme-toggle" title="Toggle theme" style="display:none;"></span>
     <input type="file" id="pf-import-file" accept=".json" style="display:none">
   </div>
@@ -1826,47 +1833,47 @@
 
     <!-- 📁 Data -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">📁 Data</div>
+      <div class="pf-opt-title" data-ic-before="folder">Data</div>
       <div class="pf-opt-grid">
-        <button class="pf-undo-btn" id="pf-export" title="Save (Ctrl+S)" style="justify-content:flex-start;"><span class="pf-opt-ico">💾</span> Save JSON</button>
-        <button class="pf-undo-btn" id="pf-import" title="Import" style="justify-content:flex-start;"><span class="pf-opt-ico">📂</span> Import</button>
+        <button class="pf-undo-btn" id="pf-export" title="Save (Ctrl+S)" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="save"></span> Save JSON</button>
+        <button class="pf-undo-btn" id="pf-import" title="Import" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="open"></span> Import</button>
       </div>
     </div>
 
     <!-- 📁 Manage -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">📁 Manage</div>
+      <div class="pf-opt-title" data-ic-before="folder">Manage</div>
       <div class="pf-opt-grid">
-        <button class="pf-undo-btn" id="pf-category-btn" title="Manage categories" style="justify-content:flex-start;"><span class="pf-opt-ico">📁</span> Categories</button>
-        <button class="pf-undo-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" style="justify-content:flex-start;"><span class="pf-opt-ico">🔔</span> Reminder</button>
-        <button class="pf-undo-btn" id="pf-activity-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">📋</span> Activity Log</button>
-        <button class="pf-undo-btn" id="pf-archive-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">📦</span> Archive</button>
-        <button class="pf-undo-btn" id="pf-trash-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">🗑</span> Trash</button>
-        <button class="pf-undo-btn" id="pf-snapshots-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">🕒</span> Version History</button>
-        <button class="pf-undo-btn" id="pf-error-btn" style="justify-content:flex-start;position:relative;"><span class="pf-opt-ico">⚠️</span> Error Log<span class="pf-error-dot" id="pf-error-dot-btn" style="top:2px;right:4px;"></span></button>
+        <button class="pf-undo-btn" id="pf-category-btn" title="Manage categories" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="folder"></span> Categories</button>
+        <button class="pf-undo-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="bell"></span> Reminder</button>
+        <button class="pf-undo-btn" id="pf-activity-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="clipboard"></span> Activity Log</button>
+        <button class="pf-undo-btn" id="pf-archive-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="archive"></span> Archive</button>
+        <button class="pf-undo-btn" id="pf-trash-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="trash"></span> Trash</button>
+        <button class="pf-undo-btn" id="pf-snapshots-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
+        <button class="pf-undo-btn" id="pf-error-btn" style="justify-content:flex-start;position:relative;"><span class="pf-opt-ico" data-ic="alert"></span> Error Log<span class="pf-error-dot" id="pf-error-dot-btn" style="top:2px;right:4px;"></span></button>
       </div>
     </div>
 
     <!-- 📤 Export -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">📤 Export</div>
+      <div class="pf-opt-title" data-ic-before="upload">Export</div>
       <div class="pf-opt-grid">
-        <button class="pf-undo-btn" id="pf-export-csv" style="justify-content:flex-start;"><span class="pf-opt-ico">📄</span> CSV</button>
-        <button class="pf-undo-btn" id="pf-export-pdf" style="justify-content:flex-start;"><span class="pf-opt-ico">📑</span> PDF</button>
+        <button class="pf-undo-btn" id="pf-export-csv" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="file"></span> CSV</button>
+        <button class="pf-undo-btn" id="pf-export-pdf" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="file-text"></span> PDF</button>
       </div>
     </div>
 
     <!-- ☁️ Cloud Sync — Firebase -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">☁️ Cloud Sync — Firebase</div>
+      <div class="pf-opt-title" data-ic-before="cloud">Cloud Sync — Firebase</div>
       <div id="pf-firebase-section" style="display:grid;grid-template-columns:1fr;gap:6px;">
         <div id="pf-firebase-status" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);">Not signed in</div>
         <div id="pf-firebase-last-sync" style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);display:none;"></div>
-        <button class="pf-undo-btn" id="pf-firebase-signin" style="justify-content:flex-start;"><span class="pf-opt-ico">🔑</span> Sign in with Google</button>
-        <button class="pf-undo-btn" id="pf-firebase-signout" style="justify-content:flex-start;display:none;"><span class="pf-opt-ico">🚪</span> Sign Out</button>
+        <button class="pf-undo-btn" id="pf-firebase-signin" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="key"></span> Sign in with Google</button>
+        <button class="pf-undo-btn" id="pf-firebase-signout" style="justify-content:flex-start;display:none;"><span class="pf-opt-ico" data-ic="exit"></span> Sign Out</button>
         <div class="pf-opt-grid">
-          <button class="pf-undo-btn" id="pf-firebase-push" style="justify-content:flex-start;" disabled><span class="pf-opt-ico">⬆</span> Push</button>
-          <button class="pf-undo-btn" id="pf-firebase-pull" style="justify-content:flex-start;" disabled><span class="pf-opt-ico">⬇</span> Pull</button>
+          <button class="pf-undo-btn" id="pf-firebase-push" style="justify-content:flex-start;" disabled><span class="pf-opt-ico" data-ic="upload"></span> Push</button>
+          <button class="pf-undo-btn" id="pf-firebase-pull" style="justify-content:flex-start;" disabled><span class="pf-opt-ico" data-ic="download"></span> Pull</button>
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size: calc(var(--font-size-base) - 2px);color:var(--text-dim);margin-top:4px;">
           <input type="checkbox" id="pf-firebase-autosync"> Auto-sync on changes
@@ -1874,7 +1881,7 @@
         <label style="display:flex;align-items:center;gap:6px;font-size: calc(var(--font-size-base) - 2px);color:var(--text-dim);">
           <input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
         </label>
-        <button class="pf-undo-btn" id="pf-firebase-backups-btn" style="justify-content:flex-start;margin-top:4px;" disabled><span class="pf-opt-ico">🗂</span> Restore from Backup</button>
+        <button class="pf-undo-btn" id="pf-firebase-backups-btn" style="justify-content:flex-start;margin-top:4px;" disabled><span class="pf-opt-ico" data-ic="planner"></span> Restore from Backup</button>
         <div id="pf-firebase-backups-list" style="display:none;margin-top:6px;max-height:200px;overflow-y:auto;"></div>
         <p style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);margin-top:4px;">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
       </div>
@@ -1882,21 +1889,21 @@
 
     <!-- 🔄 Auto-Backup -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">🔄 Auto-Backup</div>
+      <div class="pf-opt-title" data-ic-before="refresh">Auto-Backup</div>
       <label style="display:flex;align-items:center;gap:6px;font-size: calc(var(--font-size-base) - 1px);color:var(--text);">
-        🔄 Every
+        Every
         <input type="number" id="pf-autobackup-min" min="0" max="120" value="0" style="width:48px;padding:2px 4px;border-radius:6px;border:1px solid var(--card-border);background:var(--sub-bg);color:var(--text);font-size: calc(var(--font-size-base) - 1px);text-align:center;">
         min <span style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);">(0 = off)</span>
       </label>
       <div style="display:flex;align-items:center;gap:6px;margin-top:6px;overflow:hidden;">
-        <button class="pf-undo-btn" id="pf-autobackup-dir" style="justify-content:flex-start;flex-shrink:0;"><span class="pf-opt-ico">📁</span> Choose folder</button>
+        <button class="pf-undo-btn" id="pf-autobackup-dir" style="justify-content:flex-start;flex-shrink:0;"><span class="pf-opt-ico" data-ic="folder"></span> Choose folder</button>
         <span id="pf-autobackup-path" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
       </div>
     </div>
 
     <!-- 🎨 Appearance -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">🎨 Appearance</div>
+      <div class="pf-opt-title" data-ic-before="palette">Appearance</div>
       <label class="pf-options-label">Display Scale</label>
       <div class="pf-options-row">
         <input type="range" id="pf-display-scale" class="pf-range-input" min="60" max="140" step="5" value="100">
@@ -1921,7 +1928,7 @@
     <!-- ⌨️ Shortcuts -->
     <div class="pf-options-section">
       <div class="pf-opt-title">⌨️ Shortcuts</div>
-      <button class="pf-undo-btn" id="pf-shortcuts-btn" style="justify-content:flex-start;"><span class="pf-opt-ico">⌨</span> Keyboard Shortcuts</button>
+      <button class="pf-undo-btn" id="pf-shortcuts-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="keyboard"></span> Keyboard Shortcuts</button>
     </div>
 
     <!-- ℹ️ About -->
@@ -2068,12 +2075,12 @@
   </div>
   <div class="pf-fab-overlay" id="pf-fab-overlay"></div>
   <div class="pf-fab-menu" id="pf-fab-menu">
-    <div class="pf-fab-menu-item" data-fab="add"><span class="pf-fab-icon">➕</span></div>
-    <div class="pf-fab-menu-item" data-fab="expand"><span class="pf-fab-icon">📖</span></div>
-    <div class="pf-fab-menu-item" data-fab="sort"><span class="pf-fab-icon">⇅</span></div>
-    <div class="pf-fab-menu-item" data-fab="undo"><span class="pf-fab-icon">↩</span></div>
-    <div class="pf-fab-menu-item" data-fab="redo"><span class="pf-fab-icon">↪</span></div>
-    <div class="pf-fab-menu-item" data-fab="search"><span class="pf-fab-icon">🔍</span></div>
+    <div class="pf-fab-menu-item" data-fab="add"><span class="pf-fab-icon" data-ic="plus-badge"></span></div>
+    <div class="pf-fab-menu-item" data-fab="expand"><span class="pf-fab-icon" data-ic="book"></span></div>
+    <div class="pf-fab-menu-item" data-fab="sort"><span class="pf-fab-icon" data-ic="sort"></span></div>
+    <div class="pf-fab-menu-item" data-fab="undo"><span class="pf-fab-icon" data-ic="reply"></span></div>
+    <div class="pf-fab-menu-item" data-fab="redo"><span class="pf-fab-icon" data-ic="forward"></span></div>
+    <div class="pf-fab-menu-item" data-fab="search"><span class="pf-fab-icon" data-ic="search"></span></div>
   </div>
   <button class="pf-fab" id="pf-fab" title="Actions">+</button>
 
@@ -2098,11 +2105,11 @@
     </div>
   </div>
   <nav class="pf-bottom-nav" id="pf-bottom-nav">
-    <button class="pf-bottom-nav-btn pf-bottom-active" data-nav="projects" title="Projects">📋<span>Projects</span></button>
-    <button class="pf-bottom-nav-btn" data-nav="today" title="Today">⭐<span>Today</span></button>
-    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates" style="position:relative;">📅<span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
-    <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar">🗓<span>Calendar</span></button>
-    <button class="pf-bottom-nav-btn" data-nav="options" title="Options">☰<span>Options</span></button>
+    <button class="pf-bottom-nav-btn pf-bottom-active" data-nav="projects" title="Projects"><span data-ic="list"></span><span>Projects</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="today" title="Today"><span data-ic="star"></span><span>Today</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates" style="position:relative;"><span data-ic="calendar"></span><span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
+    <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar"><span data-ic="calendar-week"></span><span>Calendar</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="options" title="Options"><span data-ic="menu"></span><span>Options</span></button>
     <div class="pf-connection-dot pf-online" id="pf-connection-dot" title="Online"></div>
   </nav>
   <div class="pf-update-pill" id="pf-update-pill" title="A new version is ready" role="button" tabindex="0">
@@ -2170,6 +2177,81 @@
 </style>
 
 <script>
+  // SUBSECTION: SVG Icon System (D10 — SVG chrome, emoji stays for user content)
+  // Chrome icons are inline SVG (crisp at any scale, recolor via currentColor).
+  // Emoji is kept wherever the USER author content: task titles, categories,
+  // comments, the emoji picker, and transient toast prefixes.
+  const PF_ICONS = {
+    'plus': '<path d="M12 5v14M5 12h14"/>',
+    'undo': '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+    'redo': '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+    'menu': '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    'star': '<path d="m12 3 2.7 5.9 6.3.7-4.7 4.3 1.3 6.1L12 17l-5.6 3 1.3-6.1L3 9.6l6.3-.7z"/>',
+    'calendar': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>',
+    'calendar-week': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h3M8 18h3M14 15h3"/>',
+    'planner': '<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M9 2v4M15 2v4M4 9h16M8 13h8M8 17h5"/>',
+    'book': '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-4.5"/>',
+    'search': '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+    'list': '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+    'check-square': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m8 12 3 3 6-6"/>',
+    'square': '<rect x="3" y="3" width="18" height="18" rx="2"/>',
+    'link': '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+    'sort': '<path d="M11 5h10M11 9h7M11 14h10M11 18h7M4 7l2-2 2 2M6 5v12M4 19l2 2 2-2"/>',
+    'reply': '<path d="M9 10 4 15l5 5"/><path d="M4 15h10a6 6 0 0 0 6-6V7"/>',
+    'forward': '<path d="m15 10 5 5-5 5"/><path d="M20 15H10a6 6 0 0 1-6-6V7"/>',
+    'folder': '<path d="M3 7V5a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    'save': '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
+    'open': '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+    'bell': '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    'clipboard': '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+    'archive': '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/>',
+    'trash': '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/>',
+    'clock': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+    'alert': '<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17.5h.01"/>',
+    'file': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+    'file-text': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
+    'cloud': '<path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 2A4 4 0 0 0 6 19z"/>',
+    'key': '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m11 12 9-9M17 7l3 3M14 10l2 2"/>',
+    'exit': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+    'upload': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/>',
+    'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/>',
+    'palette': '<circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10.5" r="1"/><circle cx="15.5" cy="10.5" r="1"/><circle cx="12" cy="15.5" r="1"/>',
+    'refresh': '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>',
+    'smiley': '<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+    'message': '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    'info': '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
+    'keyboard': '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/>',
+    'plus-badge': '<path d="M12 5v14M5 12h14"/>',
+    'pencil': '<path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+    'arrow-right': '<path d="M5 12h14m-6-6 6 6-6 6"/>',
+    'arrow-up': '<path d="M12 19V5m-6 6 6-6 6 6"/>',
+    'arrow-down': '<path d="M12 5v14m-6-6 6-6 6 6"/>'
+  };
+  function pfIcon(name, cls) {
+    const body = PF_ICONS[name] || PF_ICONS['info'];
+    return '<svg class="pf-ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" aria-hidden="true"' +
+      (name === 'star' ? ' stroke-linejoin="round"' : '') +
+      ' stroke="currentColor" stroke-width="2" stroke-linecap="round">' + body + '</svg>';
+  }
+  window._pf = window._pf || {};
+  window._pf.pfIcon = pfIcon;
+
+  // Hydrate static chrome: any [data-ic] span gets its SVG; [data-ic-before]
+  // section titles get the icon prepended. Runs immediately (this fragment is
+  // the first in the IIFE, before any render) and is re-run safe.
+  function hydrateIcons(scope) {
+    scope.querySelectorAll('[data-ic]').forEach(el => { el.innerHTML = pfIcon(el.dataset.ic); });
+    scope.querySelectorAll('[data-ic-before]').forEach(el => {
+      el.insertAdjacentHTML('afterbegin', pfIcon(el.dataset.icBefore, 'pf-ic-title'));
+    });
+  }
+  hydrateIcons(document);
+
+  // Re-hydrate after DOMContentLoaded in case the script runs before the shell
+  // is fully parsed (belt-and-suspenders; fragments execute after the markup).
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { hydrateIcons(document); });
+  }
   // ============================================================
   // SECTION: CORE STATE & LOCAL PERSISTENCE
   // ============================================================
@@ -3394,7 +3476,8 @@
     btn.type = 'button';
     function refresh() {
       const cur = RECUR_OPTIONS.find(o => o.value === node.recurrence);
-      btn.textContent = cur && cur.value ? cur.label : '🔁';
+      const icon = pfIcon('refresh', 'pf-recur-ic');
+      btn.innerHTML = cur && cur.value ? icon + cur.label.replace('🔁 ', '') : icon;
       btn.className = 'pf-recur-chip' + (node.recurrence ? ' pf-recur-set' : '');
       btn.title = node.recurrence ? ('Repeats: ' + (cur ? cur.label.replace('🔁 ', '') : node.recurrence)) : 'Set repeat';
     }
@@ -3474,7 +3557,7 @@
     function refresh() {
       const count = subtask.blockedBy ? subtask.blockedBy.length : 0;
       const unresolved = getUnresolvedBlockers(project, subtask);
-      btn.textContent = '🔗';
+      btn.innerHTML = pfIcon('link');
       btn.className = 'pf-dep-chip' + (unresolved.length ? ' pf-dep-blocked' : (count ? ' pf-dep-set' : ''));
       btn.title = unresolved.length ? ('Blocked by ' + unresolved.length + ' task(s)') : (count ? (count + ' dependency/ies') : 'Add dependency');
     }
@@ -3706,7 +3789,7 @@
     const dotEl = document.createElement('span'); dotEl.className = 'pf-sub-dot' + (_hasBlockers ? ' pf-blocked' : ''); dotEl.title = _hasBlockers ? 'Blocked' : 'Set status'; dotEl.style.background = s.status === 'planned' ? 'transparent' : statusDotColor(s.status); dotEl.style.borderColor = statusDotColor(s.status); subDatesEl.appendChild(dotEl);
     if (s.status === 'completed' && s.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(s.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); s.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); subDatesEl.appendChild(doneLabel); } else { subDatesEl.appendChild(buildDueChip(s, (val) => { snapshot(); s.dueAt = val; scheduleSave(); render(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }, false)); }
     subDatesEl.appendChild(buildDependencyChip(p, s));
-    const commentBtn = document.createElement('button'); commentBtn.className = 'pf-sub-comment' + (s.comments && s.comments.length ? ' pf-comment-set' : ''); commentBtn.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; commentBtn.textContent = '💬'; commentBtn.style.whiteSpace = 'nowrap'; commentBtn.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(commentBtn);
+    const commentBtn = document.createElement('button'); commentBtn.className = 'pf-sub-comment' + (s.comments && s.comments.length ? ' pf-comment-set' : ''); commentBtn.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; commentBtn.innerHTML = pfIcon('message'); commentBtn.style.whiteSpace = 'nowrap'; commentBtn.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(commentBtn);
     const promoteBtn = document.createElement('button'); promoteBtn.className = 'pf-sub-promote'; promoteBtn.title = 'Promote to Project'; promoteBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'; promoteBtn.addEventListener('click', (e) => { e.stopPropagation(); promoteSubToProject(p, s); }); subDatesEl.appendChild(promoteBtn);
 
     row.dataset.subId = s.id;
@@ -3734,7 +3817,7 @@
       })();
       dueIcon.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.dueAt || ''; input.style.position = 'absolute'; input.style.opacity = '0'; input.style.pointerEvents = 'none'; dueIcon.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch(err){} input.addEventListener('change', () => { snapshot(); s.dueAt = input.value || null; scheduleSave(); render(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }); input.addEventListener('blur', () => { input.remove(); }); });
       subDatesEl.appendChild(dueIcon);
-      const cm = document.createElement('span'); cm.textContent = '💬'; cm.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:var(--font-size-base);'; cm.classList.add('pf-ext-comment'); if (s.comments && s.comments.length) cm.classList.add('pf-comment-set'); cm.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; cm.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(cm);
+      const cm = document.createElement('span'); cm.innerHTML = pfIcon('message'); cm.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:var(--font-size-base);'; cm.classList.add('pf-ext-comment'); if (s.comments && s.comments.length) cm.classList.add('pf-comment-set'); cm.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; cm.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(cm);
       // Extend-meta with dependency only (revealed on swipe)
       const extMeta = document.createElement('span');
       extMeta.className = 'pf-sub-extend-meta';
@@ -4242,7 +4325,7 @@
     const sortBar = document.createElement('div');
     sortBar.className = 'pf-split-sort';
     sortBar.innerHTML = '<button id="pf-split-collapse-all" class="pf-split-collapse-btn" title="Collapse/Expand all categories">▾ All</button>' +
-      '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (showCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Show completed projects">' + (showCompletedProjects ? '☑' : '☐') + ' Completed</button>' +
+      '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (showCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Show completed projects">' + pfIcon(showCompletedProjects ? 'check-square' : 'square') + ' Completed</button>' +
       '<span class="pf-split-sort-label">Sort:</span><select id="pf-split-sort-sel"><option value="manual">Manual</option><option value="name">Name</option><option value="status">Status</option><option value="due-cat">Due Date</option><option value="created">Newest</option></select>';
     splitList.appendChild(sortBar);
     sortBar.querySelector('select').value = splitSortMode;
@@ -4259,7 +4342,7 @@
     if (splitMultiSelect.length >= 1) {
       const bar = document.createElement('div');
       bar.className = 'pf-split-delete-bar';
-      bar.innerHTML = '<span>' + splitMultiSelect.length + ' selected</span><button data-action="cycle">Set status</button><button data-action="archive">📦 Archive</button><button data-action="delete">Delete selected</button><button data-action="clear">✕ Clear</button>';
+      bar.innerHTML = '<span>' + splitMultiSelect.length + ' selected</span><button data-action="cycle">Set status</button><button data-action="archive">' + pfIcon('archive') + ' Archive</button><button data-action="delete">Delete selected</button><button data-action="clear">✕ Clear</button>';
       bar.querySelector('[data-action="cycle"]').addEventListener('click', (e) => { openStatusMenu(e.currentTarget, null, (st) => _splitCycleSelected(st)); });
       bar.querySelector('[data-action="archive"]').addEventListener('click', () => {
         snapshot();
@@ -4325,7 +4408,7 @@
           menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
           const emojiItem = document.createElement('div');
           emojiItem.className = 'pf-ctx-menu-item';
-          emojiItem.textContent = '😀 Set Emoji';
+          emojiItem.innerHTML = pfIcon('smiley') + ' Set Emoji';
           emojiItem.addEventListener('click', (ev) => {
             ev.stopPropagation(); _closeCtx();
             const emoji = prompt('Enter an emoji for "' + cat + '":', categoryEmojis[cat] || '');
@@ -4336,7 +4419,7 @@
           menu.appendChild(emojiItem);
           const renItem = document.createElement('div');
           renItem.className = 'pf-ctx-menu-item';
-          renItem.textContent = '✏️ Rename Category';
+          renItem.innerHTML = pfIcon('pencil') + ' Rename Category';
           renItem.addEventListener('click', (ev) => {
             ev.stopPropagation(); _closeCtx();
             const newName = prompt('Rename category:', cat);
@@ -4354,7 +4437,7 @@
           menu.appendChild(renItem);
           const delItem = document.createElement('div');
           delItem.className = 'pf-ctx-menu-item pf-ctx-danger';
-          delItem.textContent = '🗑 Delete Category';
+          delItem.innerHTML = pfIcon('trash') + ' Delete Category';
           delItem.addEventListener('click', (ev) => {
             ev.stopPropagation(); _closeCtx(); snapshot();
             if (!confirm('Delete category "' + cat + '"? Projects will become uncategorized.')) return;
@@ -4598,12 +4681,12 @@
     menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
     const addItem = document.createElement('div');
     addItem.className = 'pf-ctx-menu-item';
-    addItem.textContent = '➕ Add Project';
+    addItem.innerHTML = pfIcon('plus-badge') + ' Add Project';
     addItem.addEventListener('click', (ev) => { ev.stopPropagation(); _closeCtx(); openNewProjectCategoryPicker(); });
     menu.appendChild(addItem);
     const addCatItem = document.createElement('div');
     addCatItem.className = 'pf-ctx-menu-item';
-    addCatItem.textContent = '📁 Add Category';
+    addCatItem.innerHTML = pfIcon('folder') + ' Add Category';
     addCatItem.addEventListener('click', (ev) => {
       ev.stopPropagation(); _closeCtx();
       const name = prompt('New category name:');
@@ -4640,12 +4723,12 @@
       const sep2 = document.createElement('div'); sep2.className = 'pf-ctx-menu-sep'; menu.appendChild(sep2);
       const archiveAll = document.createElement('div');
       archiveAll.className = 'pf-ctx-menu-item';
-      archiveAll.textContent = '📦 Archive all';
+      archiveAll.innerHTML = pfIcon('archive') + ' Archive all';
       archiveAll.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); snapshot(); splitMultiSelect.forEach(id => { const pr = projects.find(pr => pr.id === id); if (pr) archiveProject(pr); }); projects = projects.filter(pr => !splitMultiSelect.includes(pr.id)); splitMultiSelect = []; splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('📦 Archived ' + count + ' projects'); });
       menu.appendChild(archiveAll);
       const delAll = document.createElement('div');
       delAll.className = 'pf-ctx-menu-item pf-ctx-danger';
-      delAll.textContent = '🗑 Delete all';
+      delAll.innerHTML = pfIcon('trash') + ' Delete all';
       delAll.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); if (!confirm('Delete ' + count + ' projects?')) return; snapshot(); splitMultiSelect.forEach(id => { const pr = projects.find(pr => pr.id === id); if (pr) trashProject(pr); }); projects = projects.filter(pr => !splitMultiSelect.includes(pr.id)); splitMultiSelect = []; splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('🗑 Deleted ' + count + ' projects'); });
       menu.appendChild(delAll);
       root.appendChild(menu);
@@ -4658,29 +4741,32 @@
       // Non-clickable info line showing when this project was created.
       // Uses the existing p.createdAt field (already saved on every
       // project) and the existing formatDateTime() helper.
-      ...(p.createdAt ? [{ label: '📅 Created ' + formatDateTime(p.createdAt), info: true }, { sep: true }] : []),
-      { label: '✏️ Rename', action: () => { const item = splitList.querySelector('[data-project-id="' + p.id + '"]'); if (item) _inlineRename(item, p); } },
-      { label: '⭐ Add to Today', action: () => { addToToday(p.title, p.id, 'project'); } },
-      { label: '⏰ Set Reminder', action: () => { promptReminder(p.id, p.title, 'project'); } },
+      ...(p.createdAt ? [{ icon: 'calendar', label: 'Created ' + formatDateTime(p.createdAt), info: true }, { sep: true }] : []),
+      { icon: 'pencil', label: 'Rename', action: () => { const item = splitList.querySelector('[data-project-id="' + p.id + '"]'); if (item) _inlineRename(item, p); } },
+      { icon: 'star', label: 'Add to Today', action: () => { addToToday(p.title, p.id, 'project'); } },
+      { icon: 'bell', label: 'Set Reminder', action: () => { promptReminder(p.id, p.title, 'project'); } },
       { label: '→ ' + STATUS_LABEL[statusNext], action: () => { _lastProjectId = p.id; snapshot(); p.status = statusNext; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
-      { label: '📋 Duplicate', action: () => { snapshot(); const dup = JSON.parse(JSON.stringify(p)); dup.id = uid(); dup.title += ' (copy)'; projects.push(dup); scheduleSave(); renderSplitList(); } },
+      { icon: 'clipboard', label: 'Duplicate', action: () => { snapshot(); const dup = JSON.parse(JSON.stringify(p)); dup.id = uid(); dup.title += ' (copy)'; projects.push(dup); scheduleSave(); renderSplitList(); } },
     ];
 
     items.push({ sep: true });
-    items.push({ label: '🔁 Repeat: ' + (p.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(p.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); p.recurrence = opts[next]; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return '🔁 Repeat: ' + labels[next]; } });
-    items.push({ label: '😀 Set Emoji', action: () => { const el = root.querySelector('[data-project-id="' + p.id + '"]') || root.querySelector('.pf-split-active'); if (el) showEmojiPicker(p, el); } });
-    items.push({ label: '📦 Archive', action: () => { snapshot(); archiveProject(p); logActivity('Archived project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" archived', false, true); } });
-    items.push({ label: '🗑 Delete', danger: true, action: () => { snapshot(); trashProject(p); logActivity('Trashed project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" moved to trash', false, true); } });
+    items.push({ icon: 'refresh', label: 'Repeat: ' + (p.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(p.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); p.recurrence = opts[next]; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return 'Repeat: ' + labels[next]; } });
+    items.push({ icon: 'smiley', label: 'Set Emoji', action: () => { const el = root.querySelector('[data-project-id="' + p.id + '"]') || root.querySelector('.pf-split-active'); if (el) showEmojiPicker(p, el); } });
+    items.push({ icon: 'archive', label: 'Archive', action: () => { snapshot(); archiveProject(p); logActivity('Archived project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" archived', false, true); } });
+    items.push({ icon: 'trash', label: 'Delete', danger: true, action: () => { snapshot(); trashProject(p); logActivity('Trashed project "' + p.title + '"'); projects = projects.filter(pr => pr.id !== p.id); if (splitSelectedId === p.id) splitSelectedId = null; scheduleSave(); renderSplitList(); renderSplitDetail(); showToast('"' + p.title + '" moved to trash', false, true); } });
     items.forEach(it => {
       if (it.sep) { const s = document.createElement('div'); s.className = 'pf-ctx-menu-sep'; menu.appendChild(s); return; }
       const el = document.createElement('div');
       // Non-clickable info line (e.g. "Created ..."): dimmed text, no
       // hover highlight, no click action — search "it.info" to adjust.
       el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '') + (it.info ? ' pf-ctx-info' : '');
-      el.textContent = it.label;
+      // SVG ink stays markup (trusted, from pfIcon); the label is added as a
+      // text node so dynamic labels can never inject HTML.
+      el.innerHTML = pfIcon(it.icon || 'info');
+      el.appendChild(document.createTextNode(' ' + it.label));
       if (it.info) { menu.appendChild(el); return; }
       if (it.cycling) {
-        el.addEventListener('click', (e) => { e.stopPropagation(); el.textContent = it.action(); });
+        el.addEventListener('click', (e) => { e.stopPropagation(); const next = it.action(); el.innerHTML = pfIcon(it.icon || 'info'); el.appendChild(document.createTextNode(' ' + next)); });
       } else {
         el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); it.action(); });
       }
@@ -4703,18 +4789,18 @@
       // created. Applies to both — in this app, a top-level "task" inside
       // a project is really just a depth-0 subtask, so this one menu
       // covers both cases. Uses the existing s.createdAt field.
-      ...(s.createdAt ? [{ label: '📅 Created ' + formatDateTime(s.createdAt), info: true }, { sep: true }] : []),
-      ...(!isMobile ? [{ label: '✏️ Edit Title', action: () => { const row = root.querySelector('[data-sub-title-id="' + s.id + '"]'); if (row) { row.contentEditable = 'true'; row.focus(); const range = document.createRange(); range.selectNodeContents(row); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } } }] : []),
-      { label: '⭐ Add to Today', action: () => { addToToday(s.title, s.id, 'subtask'); } },
-      { label: '⏰ Set Reminder', action: () => { promptReminder(s.id, s.title, 'subtask'); } },
+      ...(s.createdAt ? [{ icon: 'calendar', label: 'Created ' + formatDateTime(s.createdAt), info: true }, { sep: true }] : []),
+      ...(!isMobile ? [{ icon: 'pencil', label: 'Edit Title', action: () => { const row = root.querySelector('[data-sub-title-id="' + s.id + '"]'); if (row) { row.contentEditable = 'true'; row.focus(); const range = document.createRange(); range.selectNodeContents(row); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } } }] : []),
+      { icon: 'star', label: 'Add to Today', action: () => { addToToday(s.title, s.id, 'subtask'); } },
+      { icon: 'bell', label: 'Set Reminder', action: () => { promptReminder(s.id, s.title, 'subtask'); } },
       { label: '→ ' + STATUS_LABEL[statusNext], action: () => { _lastProjectId = p.id; snapshot(); s.status = statusNext; s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
-      ...(!isMobile ? [{ label: '🔗 Dependencies', action: () => { const chip = root.querySelector('[data-sub-id="' + s.id + '"] .pf-dep-chip'); if (chip) chip.click(); else { const row = root.querySelector('[data-sub-id="' + s.id + '"]'); if (row) { const tempChip = buildDependencyChip(p, s); tempChip.style.position = 'absolute'; tempChip.style.opacity = '0'; row.appendChild(tempChip); tempChip.click(); } } } }] : []),
-      ...(!isMobile ? [{ label: '⬆ Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
-      { label: '📋 Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
-      { label: '📄 Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied — click a project to paste as main task, or a task to nest under it'); } },
-      ...(!isMobile ? [{ label: '🔁 Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return '🔁 Repeat: ' + labels[next]; } }] : []),
+      ...(!isMobile ? [{ icon: 'link', label: 'Dependencies', action: () => { const chip = root.querySelector('[data-sub-id="' + s.id + '"] .pf-dep-chip'); if (chip) chip.click(); else { const row = root.querySelector('[data-sub-id="' + s.id + '"]'); if (row) { const tempChip = buildDependencyChip(p, s); tempChip.style.position = 'absolute'; tempChip.style.opacity = '0'; row.appendChild(tempChip); tempChip.click(); } } } }] : []),
+      ...(!isMobile ? [{ icon: 'arrow-up', label: 'Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
+      { icon: 'clipboard', label: 'Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
+      { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied — click a project to paste as main task, or a task to nest under it'); } },
+      ...(!isMobile ? [{ icon: 'refresh', label: 'Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return 'Repeat: ' + labels[next]; } }] : []),
       { sep: true },
-      { label: '🗑 Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },
+      { icon: 'trash', label: 'Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },
     ];
     items.forEach(it => {
       if (it.sep) { const sep = document.createElement('div'); sep.className = 'pf-ctx-menu-sep'; menu.appendChild(sep); return; }
@@ -4722,10 +4808,13 @@
       // Non-clickable info line (e.g. "Created ..."): dimmed text, no
       // hover highlight, no click action — search "it.info" to adjust.
       el.className = 'pf-ctx-menu-item' + (it.danger ? ' pf-ctx-danger' : '') + (it.info ? ' pf-ctx-info' : '');
-      el.textContent = it.label;
+      // SVG ink stays markup (trusted, from pfIcon); the label is added as a
+      // text node so dynamic labels can never inject HTML.
+      el.innerHTML = pfIcon(it.icon || 'info');
+      el.appendChild(document.createTextNode(' ' + it.label));
       if (it.info) { menu.appendChild(el); return; }
       if (it.cycling) {
-        el.addEventListener('click', (e) => { e.stopPropagation(); el.textContent = it.action(); });
+        el.addEventListener('click', (e) => { e.stopPropagation(); const next = it.action(); el.innerHTML = pfIcon(it.icon || 'info'); el.appendChild(document.createTextNode(' ' + next)); });
       } else {
         el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); it.action(); });
       }
@@ -7523,8 +7612,9 @@
     if (exportBtn) exportBtn.addEventListener('click', function() { localStorage.setItem(LAST_EXPORT_KEY, Date.now().toString()); });
   })();
 
-  // Expose for Firebase sync
-  window._pf = {
+  // Expose for Firebase sync (Object.assign preserves keys published by
+  // earlier fragments, e.g. pfIcon from 00-svg-icons.js)
+  window._pf = Object.assign(window._pf || {}, {
     getProjects: () => projects,
     setProjects: (p) => { projects = p; },
     getCategories: () => categories,
@@ -7586,7 +7676,7 @@
     // produced "closeAllModals is not defined" on push/pull.
     closeAllModals: () => closeAllModals(),
     errorLogAsText: () => errorLogAsText()
-  };
+  });
 
   // Pull-to-refresh (disabled)
 

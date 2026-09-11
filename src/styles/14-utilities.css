@@ -2,6 +2,13 @@
      Only theme-independent, non-dynamic styling belongs here. Anything the JS
      sets per-render (positions, computed colors) stays inline by necessity. */
   #pf-root .pf-opt-ico { display: inline-block; width: 20px; text-align: center; }
+  /* Inline SVG chrome icons (D10): size follows the button font, ink follows text color. */
+  #pf-root .pf-ic { width: 1em; height: 1em; display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
+  #pf-root .pf-opt-ico .pf-ic,
+  #pf-root .pf-fab-icon .pf-ic,
+  #pf-root .pf-bottom-nav-btn .pf-ic { width: calc(var(--font-size-base) + 2px); height: calc(var(--font-size-base) + 2px); vertical-align: middle; }
+  #pf-root .pf-ic-title { width: calc(var(--font-size-base) - 1px); height: calc(var(--font-size-base) - 1px); vertical-align: -0.15em; margin-right: 4px; opacity: 0.85; }
+  #pf-root .pf-recur-ic { margin-right: 3px; opacity: 0.9; }
   #pf-root .pf-opt-title {
     font-size: calc(var(--font-size-base) - 3px);
     font-weight: 700;
