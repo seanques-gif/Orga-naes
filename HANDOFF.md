@@ -58,11 +58,11 @@ tests/
 
 ---
 
-## Token scope rule (CRITICAL)
+## Token scope rule (UPDATED 2026-09-11)
 
-Motion tokens (`--ease-console`, `--ease-out-strong`, `--dur-*`) are defined on `#pf-root` only (in `src/styles/02-tokens.css`).
+Motion tokens (`--ease-console`, `--ease-out-strong`, `--dur-*`) now live on `:root` alongside the shape/spacing/z scales (in `src/styles/02-tokens.css`). They are theme-independent — presets never override them — so they resolve EVERYWHERE, including fixed chrome outside `#pf-root` (`.pf-bottom-nav`, `.pf-fab`, `.pf-fab-menu-item`, `.pf-update-pill`, `.pf-connection-dot`, `.pf-error-dot`, `.pf-fab-overlay`) and body-appended elements (drag ghosts, save modal, confetti canvas).
 
-**Rule:** Only use `var(--ease-*)` / `var(--dur-*)` on selectors that include `#pf-root` as an ancestor. Elements OUTSIDE `#pf-root` (`.pf-bottom-nav`, `.pf-fab`, `.pf-update-pill`, `.pf-connection-dot`, `.pf-error-dot`, `.pf-fab-menu-item`, `.pf-fab-overlay`) must NOT use these tokens — they would fail silently (no fallback = no transition).
+**Rule:** `var(--ease-*)` / `var(--dur-*)` are safe on any selector. The remaining `#pf-root`-scoped layers are palette and type: presets retheme by overriding tokens on `#pf-root`, so those must not be read from `:root`. The old warning ("out-of-root elements must stay literal") is retired — the FAB family was the last consumer and is now tokenized (`01-chrome.css`, zero cubic-bezier literals outside the two token definitions).
 
 ---
 
@@ -136,7 +136,7 @@ All 9 from the list below were tokenized, plus 4 stragglers found by final sweep
 (ease→out-strong). Post-sweep state: the only `cubic-bezier` literals left in `src/`
 are the two token definitions (`02-tokens.css:39-40`) and 4 rules on the FAB family
 (`01-chrome.css:21,76,94,97` — `.pf-fab`, `.pf-bottom-nav`, `.pf-update-pill`,
-all OUTSIDE `#pf-root`, so they must stay literal per the token scope rule).
+all OUTSIDE `#pf-root` — RESOLVED 2026-09-11: motion tokens moved to `:root` (theme-independent), the 4 rules now use `var(--ease-console)`, and zero cubic-bezier literals remain outside the token definitions).
 Zero bare `ease`/`ease-in` remain in `src/`.
 
 <details><summary>Original swap list (all applied)</summary>

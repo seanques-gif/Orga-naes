@@ -221,10 +221,15 @@ with correct origins; select-bar uses `pf-selbar-in 0.16s var(--ease-out-strong)
 - `pf-save-shake` 0.4s — rare error feedback, now on `var(--ease-out-strong)`.
 - `pf-drop-indicator-pulse` infinite during drag — transient, drag-scoped, justified.
 
-**Verdict: APPROVE** (with findings). Phase 3E motion is complete; the two carry-over
-items (FAB-family literals, select-bar rgba) are 3B-3 work, not motion regressions.
+**Verdict: APPROVE** (with findings). Phase 3E motion is complete; both carry-over
+items are now CLOSED: select-bar rgba fixed (2026-09-11, peeled into
+`.pf-sub-select-bar`) and FAB-family literals tokenized (2026-09-11, motion tokens
+moved to `:root` — they are theme-independent, so out-of-root chrome resolves them;
+zero cubic-bezier literals remain outside the two token definitions).
 
 **Verification at verdict time:** `npm run build` + `npm test` green; `cubic-bezier`
-search over `src/` returns only the two token definitions plus the 4 out-of-root FAB
-family literals; zero bare `ease`/`ease-in` in `src/`; no `var(--ease-*)`/`var(--dur-*)`
-usage on selectors outside `#pf-root` (token scope rule holds).
+search over `src/` returns only the two token definitions; zero bare `ease`/`ease-in`
+in `src/`; live preview confirms `.pf-fab`/`.pf-bottom-nav` compute the token curve.
+(Verdict-time note: the original audit required out-of-root selectors to stay literal
+per the then-#pf-root-only token scope; the `:root` move supersedes that rule —
+see HANDOFF.md "Token scope rule (UPDATED)".)

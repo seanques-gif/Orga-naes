@@ -19,6 +19,16 @@
     --space-xl: 16px;
     --space-xxl: 24px;
 
+    /* Motion vocabulary (mechanical console): one authored curve, tight budgets.
+       Lives on :root like the scales — it is theme-independent (presets never
+       touch it) and must also resolve for fixed chrome OUTSIDE #pf-root
+       (bottom nav, FAB family, update pill). */
+    --ease-console: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+    --dur-press: 100ms;
+    --dur-state: 150ms;
+    --dur-surface: 200ms;
+
     /* Z-index ladder (F9): named layers; new layers join the scale, never invent numbers.
        Intra-band order (e.g. menu above its own backdrop) is preserved by DOM order
        and equal token values, not by off-scale numbers. */
@@ -61,15 +71,9 @@
     --depth2: #3ddc97;
     --depth3: #4fd1c5;
 
-    /* Shape & elevation values live on :root (see top of file) so body-level
-       elements resolve them too. #pf-root carries palette, type, motion. */
-
-    /* Motion vocabulary (mechanical console): one authored curve, tight budgets */
-    --ease-console: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
-    --dur-press: 100ms;
-    --dur-state: 150ms;
-    --dur-surface: 200ms;
+    /* Shape, spacing, layering AND motion values live on :root (see top of
+       file) so body-level elements resolve them too. #pf-root carries the
+       theme-dependent layers: palette and type. */
 
     /* Typography (Mission Control): sans for meaning, mono for measurement. */
     --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
