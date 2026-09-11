@@ -317,3 +317,44 @@ Plus: online connection dot hardcoded #4ade80 → `var(--completed, #4ade80)`
 No impeccable fix-commands warranted — no open P0/P1/P2. Proceed to **Phase 4
 (verify & ship)**: screenshot matrix, reduced-motion pass, PWA offline check,
 manual smoke test. Re-run this audit only if Phase 4 turns up visual regressions.
+
+---
+
+## Phase 4 — screenshot matrix + reduced-motion (2026-09-11)
+
+### Matrix results
+
+| Surface | Midnight Cyan | Amber CRT | Phosphor Green | Monochrome | Daylight |
+|---------|--------------|-----------|----------------|------------|----------|
+| Desktop/tablet band (906×888), seeded data, list view | ✅ captured | ✅ | ✅ | ✅ | ✅ |
+| Project detail (badges, due chips, icon chips, progress ring) | ✅ | via panel shot | — | — | — |
+| Options panel (SVG icons, section headers) | — | ✅ captured | — | — | — |
+
+- All five presets fully re-ink: toolbar, sort bar, category groups, progress
+  ring, badges, chips. Zero legacy (Night-Workshop/purple) artifacts in any capture.
+- Phone shell (≤640px) verified **structurally** (class-forced probe): bottom
+  nav `flex`, FAB `flex`, toolbar `none`, update pill docked bottom, no horizontal
+  overflow. Not visually captured — the preview window is fixed-width and iframe
+  boots jam the preview bridge.
+- >1400px full-desktop band verified by source (media query is max-width-gated;
+  above it the split view + toolbar layout is the default, which is what the
+  captures show at 906px desktop class).
+
+### Reduced-motion
+
+- CSS `prefers-reduced-motion` block verified live in the built file (all
+  animations/transitions collapse to 0.01ms, iteration 1).
+- **Two real gaps found & fixed:** the particle background and the confetti
+  celebration are rAF canvas loops — invisible to the CSS media query and
+  previously ran regardless. Both now early-return when
+  `(prefers-reduced-motion: reduce)` matches. Also fixed a stale comment
+  (particle accent fallback claimed white; corrected to Midnight Cyan).
+
+### Honest gaps (need a real browser, listed for the local-run checklist)
+
+1. Visual captures at true >1400px and phone widths (resize a real window;
+   the class-forced probe covers layout, not pixel detail).
+2. `prefers-reduced-motion: reduce` enabled in DevTools rendering panel, then
+   click-through: confirm zero motion AND zero particles/confetti.
+3. Touch interaction pass on a real device (the preview has no touch: device
+   class detection is touch-gated by design).

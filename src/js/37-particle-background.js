@@ -1,7 +1,10 @@
   // SUBSECTION: Particle Background
-  const ACCENT_FALLBACK = '#ffffff'; // matches new white --accent
+  const ACCENT_FALLBACK = '#2fd4ff'; // Midnight Cyan --accent
   let _particleAnim = null;
   function startParticles() {
+    // Reduced motion: the ambient drift is pure decoration — skip it entirely.
+    // (rAF animation is invisible to the CSS prefers-reduced-motion rule.)
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     let pc = document.getElementById('pf-particles');
     if (!pc) { pc = document.createElement('canvas'); pc.id = 'pf-particles'; pc.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:var(--z-base);opacity:0.35;'; document.getElementById('pf-canvas-wrap').prepend(pc); }
     const ctx = pc.getContext('2d');

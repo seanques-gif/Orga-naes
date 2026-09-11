@@ -152,6 +152,8 @@
     }
   }
   function confetti() {
+    // Reduced motion: celebration particles are decoration — skip entirely.
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'position:fixed;inset:0;z-index:var(--z-drag);pointer-events:none;';
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
