@@ -350,6 +350,17 @@ manual smoke test. Re-run this audit only if Phase 4 turns up visual regressions
   `(prefers-reduced-motion: reduce)` matches. Also fixed a stale comment
   (particle accent fallback claimed white; corrected to Midnight Cyan).
 
+### Performance (INP / render at scale)
+
+- Dataset: 3 categories × 14 projects = **42 projects, 79 subtasks (4 levels deep), 12 dependency chains, 56 comments** — seeded programmatically via the app's own state API, persisted, rendered.
+- Full split-list re-render (42 rows): **12.7ms cold / 8ms warm** (≤1 frame). Search filter: 3.3ms/keystroke. Collapse-all: 12ms. Context menu open: 32ms (2 frames).
+- **Finding 1 (documented, accepted this phase):** the deepest sync path — full-app `render()` → list + detail + category zones — runs as a **~55ms long task** at this scale (Chrome long-task threshold is 50ms). It fires on every status toggle and expand in the detail view. Perceived latency stays well inside the 100ms INP guideline (toggle → paint measured 60–90ms including double-rAF wait) because the interaction click itself does nothing synchronous — but at ~3× this dataset the task would cross 100ms+ on mid-range mobile hardware. Candidate future improvement: chunk or virtualize the list render; no change made this phase.
+- **Observation 2 (UX timing, not a perf defect):** single-click row selection is deferred by a deliberate `setTimeout(…, 200)` disambiguation timer (shipped with the redesign, `21802be`) so double-click/long-press affordances don't fight selection. Click-to-detail end-to-end ≈ 200ms + ~9ms render + paint. Noted for any future perceived-latency tuning.
+- **Idle frame health: locked 60fps** — 60-frame sample: avg 16.4ms, p95 16.8ms, max 16.8ms, zero dropped frames (ambient particle canvas included).
+- Memory/DOM: **5.0MB JS heap** under full activity; ~1,200 DOM nodes; 116 SVGs (42 list rows + detail chrome) — SVG chrome is free at scale (~26 nodes/row, identical structure to the emoji era), zero empty paths.
+- Selection accent edge (3px accent border + 8% accent background on `.pf-split-active`) is a one-time paint on selection — long-task observer shows no per-frame ring work.
+- Synthetic 20-event search burst: 28.6ms total (~1.4ms/event); no human-speed typing creates long tasks.
+
 ### Honest gaps (need a real browser, listed for the local-run checklist)
 
 1. Visual captures at true >1400px and phone widths (resize a real window;

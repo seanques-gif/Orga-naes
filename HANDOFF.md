@@ -1,7 +1,7 @@
 # Orga-naes — AI Handoff Document
 
 **Project:** Orga-naes — single-file vanilla JS personal project manager PWA
-**Phase:** 3F (impeccable audit + sidecar) — **COMPLETE** 2026-09-11. All design phases (3A–3F) done; verdict APPROVE with zero open findings. Next up: Phase 4 (verify & ship): screenshot matrix (desktop/tablet/phone × 5 presets × reduced-motion), INP/perf, PWA offline, manual smoke test, final commit.
+**Phase:** 3F (impeccable audit + sidecar) — **COMPLETE** 2026-09-11. All design phases (3A–3F) done; verdict APPROVE with zero open findings. **Phase 4 (verify & ship) in progress:** screenshot matrix + reduced-motion done (`2ed562f`), INP/perf done (42-project stress: idle locked 60fps, list render 12.7ms; one accepted ~55ms long task on the full-app render path, documented in findings). Remaining: PWA offline, manual smoke test, final commit.
 **Last updated:** 2026-09-11 (3E finished + verdict APPROVE; select-bar Daylight bug fixed & live-verified; motion smoke-tested in preview, console clean)
 
 ---
