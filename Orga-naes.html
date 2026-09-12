@@ -1709,137 +1709,104 @@
     max-height: 80vh;
     overflow-y: auto;
   }
-  /* SUBSECTION: Utilities — static patterns lifted out of inline styles.
-     Only theme-independent, non-dynamic styling belongs here. Anything the JS
-     sets per-render (positions, computed colors) stays inline by necessity. */
-  #pf-root .pf-opt-ico { display: inline-block; width: 20px; text-align: center; }
-  /* Inline SVG chrome icons (D10): size follows the button font, ink follows text color.
-     12px floor: 1em inherits subtractive calcs that compound with the display-scale
-     slider (60% × (base − 5px) ≈ 4px) — icons carry meaning and must stay legible. */
-  #pf-root .pf-ic { width: max(12px, 1em); height: max(12px, 1em); display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
-  #pf-root .pf-opt-ico .pf-ic,
-  #pf-root .pf-fab-icon .pf-ic,
-  #pf-root .pf-bottom-nav-btn .pf-ic { width: calc(var(--font-size-base) + 2px); height: calc(var(--font-size-base) + 2px); vertical-align: middle; }
-  #pf-root .pf-ic-title { width: max(12px, calc(var(--font-size-base) - 1px)); height: max(12px, calc(var(--font-size-base) - 1px)); vertical-align: -0.15em; margin-right: 4px; opacity: 0.85; }
-  #pf-root .pf-recur-ic { margin-right: 3px; opacity: 0.9; }
-  #pf-root .pf-opt-title {
-    font-size: calc(var(--font-size-base) - 3px);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--text-dim);
-    margin-bottom: 8px;
+  /* ===== NOTES — standalone note-taking (top-bar Notes view) =====
+     Token-driven per DESIGN.md: One-Root type scale, Tint-Through-Token
+     washes, card/sub surfaces only. Workspace is wider than a standard
+     panel because it holds two columns (list + editor). */
+
+  #pf-root .pf-notes-panel {
+    width: min(860px, 92vw);
+    height: min(620px, 84vh);
   }
-  #pf-root .pf-theme-btn { padding: 5px 12px; font-size: calc(var(--font-size-base) - 3px); }
-  #pf-root .pf-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-
-  /* SUBSECTION: 3B-3 slice 1 — semantic classes peeled from template inline styles.
-     Values are copied verbatim from the removed style="" attributes. display:none
-     boot-hiding intentionally stays inline wherever JS reveals via style.display=''. */
-  /* generic utilities */
-  #pf-root .pf-opt-btn { justify-content: flex-start; }
-  #pf-root .pf-btn-rel { position: relative; }
-  #pf-root .pf-tb-right { margin-left: auto; }
-  #pf-root .pf-mt-4 { margin-top: 4px; }
-  #pf-root .pf-mt-6 { margin-top: 6px; }
-  #pf-root .pf-shrink-0 { flex-shrink: 0; }
-  #pf-root .pf-overflow-hidden { overflow: hidden; }
-  #pf-root .pf-scroll-x { overflow-x: hidden; }
-  #pf-root .pf-min-h-0 { min-height: 0; }
-  #pf-root .pf-pad-4 { padding: 4px; }
-  #pf-root .pf-flex-1 { flex: 1; }
-  #pf-root .pf-wrap { flex-wrap: wrap; }
-  #pf-root .pf-dim { color: var(--text-dim); font-weight: 400; }
-  #pf-root .pf-hint { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
-  /* toolbar badges */
-  #pf-root .pf-desktop-badge { position: absolute; top: -4px; right: -4px; min-width: 14px; height: 14px; background: var(--danger); color: #fff; font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0 3px; line-height: 1; }
-  #pf-root .pf-error-dot-pos { top: 2px; right: 4px; }
-  /* firebase options section */
-  #pf-root .pf-firebase-section { display: grid; grid-template-columns: 1fr; gap: 6px; }
-  #pf-root .pf-firebase-status { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
-  #pf-root .pf-firebase-last-sync { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); }
-  #pf-root .pf-firebase-backups-list { margin-top: 6px; max-height: 200px; overflow-y: auto; }
-  #pf-root .pf-firebase-note { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); margin-top: 4px; }
-  #pf-root .pf-firebase-about { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); line-height: 1.6; }
-  #pf-root .pf-check-row { display: flex; align-items: center; gap: 6px; font-size: calc(var(--font-size-base) - 2px); color: var(--text-dim); }
-  #pf-root .pf-check-row-lg { font-size: calc(var(--font-size-base) - 1px); color: var(--text); }
-  #pf-root .pf-input-num { width: 48px; padding: 2px 4px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: calc(var(--font-size-base) - 1px); text-align: center; }
-  #pf-root .pf-autobackup-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* options panel: theme section + footer */
-  #pf-root .pf-theme-divider { margin-top: 10px; margin-bottom: 8px; }
-  #pf-root .pf-theme-sec-label { font-size: calc(var(--font-size-base) - 4px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 6px; margin-top: 12px; }
-  #pf-root .pf-theme-btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
-  #pf-root .pf-section-divider { border-top: 1px solid var(--card-border); padding-top: 12px; margin-top: 8px; }
-  /* shared panel chrome (geometry lives on the id rules below) */
-  #pf-root .pf-panel-head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); flex-shrink: 0; }
-  #pf-root .pf-panel-head-icon { font-size: calc(var(--font-size-base) + 8px); }
-  #pf-root .pf-panel-title-lg { font-family: var(--font-sans); font-weight: 700; font-size: calc(var(--font-size-base) + 2px); letter-spacing: -0.3px; }
-  #pf-root .pf-panel-count { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); font-weight: 400; }
-  #pf-root .pf-footer-actions { padding-top: 8px; border-top: 1px solid var(--card-border); margin-top: 8px; display: flex; gap: 6px; }
-  #pf-root .pf-panel-note { flex: 1; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); align-self: center; text-align: right; }
-  /* button variants */
-  #pf-root .pf-btn-accent { padding: 4px 12px; font-size: calc(var(--font-size-base) - 3px); font-weight: 600; background: var(--accent); color: var(--accent-contrast); border-radius: 6px; }
-  #pf-root .pf-btn-small { padding: 4px 8px; font-size: calc(var(--font-size-base) - 4px); border-radius: 6px; }
-  #pf-root #pf-today-clear-btn { border: 1px solid var(--card-border); }
-  #pf-root .pf-btn-chip { padding: 4px 8px; font-size: calc(var(--font-size-base) - 4px); border-radius: 6px; font-weight: 600; }
-  #pf-root .pf-chip-accent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
-  #pf-root .pf-chip-danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
-  #pf-root .pf-btn-danger-text { color: var(--danger); }
-  #pf-root .pf-btn-autoarrange { padding: 3px 10px; font-size: calc(var(--font-size-base) - 4px); font-weight: 600; }
-  #pf-root .pf-zoom-btn-sm { font-size: max(11px, calc(var(--font-size-base) - 3px)); }
-  /* calendar panel internals */
-  #pf-root .pf-cal-layout { display: flex; flex: 1; overflow: hidden; gap: 0; min-height: 0; }
-  #pf-root .pf-cal-left { flex: 0 0 40%; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--card-border); padding-right: 8px; }
-  #pf-root .pf-cal-head { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 12px 8px; margin-bottom: 6px; background: var(--header-bg); border-radius: 6px; }
-  #pf-root .pf-cal-nav { padding: 4px 10px; font-size: var(--font-size-base); }
-  #pf-root .pf-cal-month { flex: 1; text-align: center; font-size: calc(var(--font-size-base) + 2px); font-weight: 700; font-family: var(--font-sans); letter-spacing: -0.3px; }
-  #pf-root .pf-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; overflow-y: auto; flex: 1; font-size: calc(var(--font-size-base) - 3px); }
-  #pf-root .pf-cal-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; overflow-x: hidden; padding-left: 14px; }
-  #pf-root .pf-cal-detail-title { flex-shrink: 0; font-size: var(--font-size-base); font-weight: 700; font-family: var(--font-sans); padding: 12px 8px; margin-bottom: 6px; background: var(--header-bg); border-radius: 6px; text-align: center; }
-  /* today panel internals */
-  #pf-root .pf-today-actions { padding-top: 10px; border-top: 1px solid var(--card-border); margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
-  /* weekly planner internals */
-  #pf-root .pf-week-head { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 12px 16px; background: var(--header-bg); border-radius: 6px 10px 0 0; border-bottom: 1px solid var(--card-border); }
-  #pf-root .pf-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; gap: 10px; flex: 1; overflow-y: auto; min-height: 0; padding: 14px 12px; }
-  #pf-root .pf-week-backlog { border-top: 1px solid var(--card-border); padding: 10px 16px; flex-shrink: 0; max-height: 190px; display: flex; flex-direction: column; gap: 6px; }
-  #pf-root .pf-week-backlog-head { display: flex; align-items: center; gap: 8px; }
-  #pf-root .pf-week-backlog-label { font-size: calc(var(--font-size-base) - 2px); font-weight: 700; flex: 1; }
-  #pf-root .pf-week-backlog-flow { display: flex; flex-wrap: wrap; gap: 6px; overflow-y: auto; min-height: 38px; }
-  #pf-root .pf-week-foot { padding: 10px 16px; border-top: 1px solid var(--card-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; background: var(--header-bg); border-radius: 0 0 10px 10px; }
-  #pf-root .pf-week-foot-hint { flex: 1; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); text-align: right; font-style: italic; }
-  /* panel geometry (id-scoped: one instance each; display:none stays inline for JS toggling) */
-  #pf-root #pf-calendar-panel { width: min(95vw, 1100px); max-height: min(90vh, 750px); height: 85vh; }
-  #pf-root #pf-today-panel { width: min(420px, 90vw); }
-  #pf-root #pf-duelist-panel { width: min(700px, 90vw); max-height: min(85vh, 700px); height: 75vh; flex-direction: column; }
-  #pf-root #pf-weekly-panel { width: min(98vw, 1600px); max-height: min(95vh, 1000px); height: 92vh; }
-  #pf-root #pf-archive-panel { width: min(500px, 90vw); max-height: min(80vh, 700px); }
-  #pf-root #pf-snapshots-panel { width: min(500px, 90vw); max-height: min(80vh, 700px); }
-  #pf-root #pf-error-panel { width: min(560px, 90vw); max-height: min(80vh, 700px); }
-  #pf-root #pf-copy-modal { width: min(500px, 90vw); max-height: min(80vh, 600px); height: 60vh; flex-direction: column; }
-
-  /* SUBSECTION: 3B-3 slice 2 — recipes extracted from JS-generated markup.
-     Replaces duplicated cssText/inline-prop writes; dynamic parts (status
-     colors, drag geometry) remain inline by necessity. */
-  /* row recipe shared by due-list, copy-to-project modal, weekly drag rows */
-  #pf-root .pf-due-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 4px; background: var(--card); cursor: pointer; transition: border-color 0.15s, transform 0.1s; }
-  /* status dots: size/shape in class, color (user-picked or status token) stays inline */
-  #pf-root .pf-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  #pf-root .pf-status-dot-sm { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  /* text truncation */
-  #pf-root .pf-ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #pf-root .pf-ellip-flex { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* swipe-extend meta chips (edit / promote) — color: var(--text) so inline
-     SVGs drawn with stroke=currentColor stay visible in every preset (Daylight fix) */
-  #pf-root .pf-ext-chip { background: transparent; border: 1px solid var(--card-border); border-radius: 100px; padding: 2px 7px; cursor: pointer; font-size: calc(var(--font-size-base) - 4.5px); display: inline-flex; align-items: center; justify-content: center; color: var(--text); }
-  /* canvas status menu (06-project-crud-archive-trash) */
-  #pf-root .pf-status-menu { position: fixed; z-index: var(--z-menu); background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius-overlay); box-shadow: 0 6px 24px rgba(0,0,0,0.35); padding: 4px; min-width: 140px; font-size: calc(var(--font-size-base) - 2px); }
-  #pf-root .pf-status-menu-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius-container); cursor: pointer; color: var(--text); }
-  #pf-root .pf-status-menu-item.pf-current { background: color-mix(in srgb, var(--accent) 18%, transparent); font-weight: 700; }
-  #pf-root .pf-status-menu-item:not(.pf-current):hover { background: var(--card-hover); }
-  /* split-list category label controls */
-  #pf-root .pf-cat-add { background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) + 2px); font-weight: 700; cursor: pointer; margin-right: 4px; padding: 0 2px; border-radius: 6px; line-height: 1; }
-  #pf-root .pf-empty-hint { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); padding: 8px 16px; font-style: italic; opacity: 0.7; }
-  #pf-root .pf-ext-inline { cursor: pointer; display: inline-flex; align-items: center; }
+  #pf-root .pf-notes-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-shrink: 0;
+  }
+  #pf-root .pf-notes-title {
+    font-weight: 700; font-size: calc(var(--font-size-base) + 2px); color: var(--text);
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  #pf-root .pf-notes-title::before { width: 14px; height: 14px; }
+  #pf-root .pf-notes-search {
+    flex: 1; min-width: 0; background: var(--sub-bg); border: 1px solid var(--sub-border);
+    color: var(--text); border-radius: var(--radius-control); padding: 5px 10px;
+    font-size: max(11px, calc(var(--font-size-base) - 1px)); outline: none; transition: border-color 0.15s;
+  }
+  #pf-root .pf-notes-search:focus { border-color: var(--accent); }
+  #pf-root .pf-notes-body {
+    display: flex; gap: 12px; flex: 1; min-height: 0;
+  }
+  #pf-root .pf-notes-list {
+    width: 240px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+    padding-right: 2px;
+  }
+  #pf-root .pf-notes-item {
+    background: var(--sub-bg); border: 1px solid var(--sub-border); border-radius: 6px;
+    padding: 8px 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  }
+  #pf-root .pf-notes-item:hover { border-color: var(--hover-border); }
+  #pf-root .pf-notes-item-active {
+    border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--sub-bg));
+  }
+  #pf-root .pf-notes-item-title {
+    font-weight: 600; font-size: max(11px, calc(var(--font-size-base) - 1px)); color: var(--text);
+    display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #pf-root .pf-notes-pin { width: 11px; height: 11px; color: var(--ongoing); flex-shrink: 0; }
+  #pf-root .pf-notes-item-preview {
+    font-size: max(10px, calc(var(--font-size-base) - 2px)); color: var(--text-dim);
+    margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #pf-root .pf-notes-item-date {
+    font-family: var(--font-mono); font-size: max(9px, calc(var(--font-size-base) - 4px));
+    color: var(--text-dim); margin-top: 3px;
+  }
+  #pf-root .pf-notes-list-empty {
+    color: var(--text-dim); font-size: max(11px, calc(var(--font-size-base) - 2px));
+    text-align: center; padding: 24px 8px;
+  }
+  #pf-root .pf-notes-editor {
+    flex: 1; min-width: 0; display: flex; flex-direction: column;
+    background: var(--sub-bg); border: 1px solid var(--sub-border); border-radius: 6px;
+  }
+  #pf-root .pf-notes-editor-empty {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; color: var(--text-dim); font-size: max(11px, calc(var(--font-size-base) - 1px));
+  }
+  #pf-root .pf-notes-editor-empty .pf-ic-empty { width: 40px; height: 40px; color: color-mix(in srgb, var(--text-dim) 55%, transparent); }
+  #pf-root .pf-notes-editor-empty .pf-ic-empty svg { width: 100%; height: 100%; }
+  #pf-root .pf-notes-editor-main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px; }
+  #pf-root .pf-notes-note-title {
+    background: transparent; border: none; outline: none; color: var(--text);
+    font-family: var(--font-sans); font-weight: 700; font-size: max(14px, calc(var(--font-size-base) + 2px));
+    padding: 2px 4px 8px; border-bottom: 1px solid var(--sub-border); width: 100%;
+  }
+  #pf-root .pf-notes-note-title::placeholder { color: var(--text-dim); opacity: 0.6; }
+  #pf-root .pf-notes-note-body {
+    flex: 1; min-height: 0; resize: none; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: var(--font-sans); font-size: max(12px, var(--font-size-base));
+    line-height: 1.6; padding: 10px 4px; width: 100%;
+  }
+  #pf-root .pf-notes-note-body::placeholder { color: var(--text-dim); opacity: 0.6; }
+  #pf-root .pf-notes-editor-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    border-top: 1px solid var(--sub-border); padding-top: 8px; flex-shrink: 0;
+  }
+  #pf-root .pf-notes-count {
+    font-family: var(--font-mono); font-size: max(9px, calc(var(--font-size-base) - 4px));
+    color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #pf-root .pf-notes-foot-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  /* Phone: stack the columns; selecting a note slides to the editor. */
+  @media (max-width: 700px) {
+    #pf-root .pf-notes-panel { width: 94vw; height: min(640px, 88vh); }
+    #pf-root .pf-notes-body { position: relative; }
+    #pf-root .pf-notes-list { width: 100%; }
+    #pf-root .pf-notes-editor { display: none; }
+    #pf-root .pf-notes-editor-main { display: none !important; }
+    #pf-root .pf-notes-mobile-edit .pf-notes-list { display: none; }
+    #pf-root .pf-notes-mobile-edit .pf-notes-editor { display: flex; }
+    #pf-root .pf-notes-mobile-edit .pf-notes-editor-main { display: flex !important; }
+  }
   /* SUBSECTION: Accessibility & Motion Preferences (F1/F2)
      Reduced motion keeps opacity/color but removes movement: durations collapse
      to ~0 (not `none`, so `animationend` listeners still fire). Hover motion is
@@ -1909,6 +1876,7 @@
       <button class="pf-undo-btn pf-btn-rel" id="pf-duelist-btn" title="Tasks by Due Date" ><span data-ic="calendar"></span><span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;"></span></button>
       <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View"><span data-ic="calendar-week"></span></button>
       <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner"><span data-ic="planner"></span></button>
+      <button class="pf-undo-btn" id="pf-notes-btn" title="Notes"><span data-ic="file-text"></span></button>
     </div>
     <div class="pf-tb-group" id="pf-tb-viewtools">
       <span id="pf-collapse-cats" title="Toggle Focus/Card view" style="display:none;"></span>
@@ -2148,6 +2116,34 @@
     </div>
     <div class="pf-week-foot">
       <span class="pf-week-foot-hint">Drag tasks between days or into Backlog · Click + to add manually</span>
+    </div>
+  </div>
+  <div class="pf-activity-panel pf-notes-panel" id="pf-notes-panel" style="display:none;">
+    <div class="pf-notes-head">
+      <span class="pf-notes-title" data-ic-before="file-text">Notes</span>
+      <input type="text" class="pf-search pf-notes-search" id="pf-notes-search" placeholder="Search notes…" spellcheck="false">
+      <button class="pf-undo-btn pf-btn-accent" id="pf-note-new" title="New note"><span data-ic="plus"></span> New</button>
+    </div>
+    <div class="pf-notes-body">
+      <div class="pf-notes-list" id="pf-notes-list"></div>
+      <div class="pf-notes-editor" id="pf-notes-editor">
+        <div class="pf-notes-editor-empty" id="pf-notes-editor-empty">
+          <span class="pf-ic-empty" data-ic="file-text" aria-hidden="true"></span>
+          <div>Select a note, or create one.</div>
+        </div>
+        <div class="pf-notes-editor-main" id="pf-notes-editor-main" style="display:none;">
+          <input type="text" class="pf-notes-note-title" id="pf-note-title" placeholder="Title" spellcheck="false">
+          <textarea class="pf-notes-note-body" id="pf-note-body" placeholder="Write your note…" spellcheck="false"></textarea>
+          <div class="pf-notes-editor-foot">
+            <span class="pf-notes-count" id="pf-note-count"></span>
+            <span class="pf-notes-foot-actions">
+              <button class="pf-undo-btn" id="pf-note-copy" title="Copy note text"><span data-ic="file"></span> Copy</button>
+              <button class="pf-undo-btn" id="pf-note-pin" title="Pin to top"><span data-ic="star"></span> <span id="pf-note-pin-label">Pin</span></button>
+              <button class="pf-undo-btn" id="pf-note-del" title="Delete note"><span data-ic="trash"></span></button>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="pf-activity-panel" id="pf-archive-panel" style="display:none;">
@@ -3023,6 +3019,7 @@
   const todayPanel = document.getElementById('pf-today-panel');
   const calendarPanel = document.getElementById('pf-calendar-panel');
   const weeklyPanel = document.getElementById('pf-weekly-panel');
+  const notesPanel = document.getElementById('pf-notes-panel');
   const archivePanel = document.getElementById('pf-archive-panel');
   const trashPanel = document.getElementById('pf-trash-panel');
   const commentPanel = document.getElementById('pf-comment-panel');
@@ -3031,7 +3028,7 @@
   const snapshotsPanel = document.getElementById('pf-snapshots-panel');
   const copyModal = document.getElementById('pf-copy-modal');
   const errorPanel = document.getElementById('pf-error-panel');
-  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal, errorPanel];
+  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, notesPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal, errorPanel];
   function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
   function openModal(el, displayValue) { closeAllModals(); el.style.display = displayValue; modalBackdrop.style.display = 'block'; _markOverlayOpen('modals'); }
   modalBackdrop.addEventListener('click', closeAllModals);
@@ -7865,6 +7862,182 @@
     });
     let _scrollRaf = null;
     let _scrollTopTimer = null;
+    // SUBSECTION: Notes — standalone note-taking (top-bar Notes view)
+  // Notes are intentionally NOT part of the projects graph: they persist
+  // under their own storage key, so export/import of projects is unaffected.
+  // Autosave follows the scheduleSave debounce idiom (350ms trailing edge).
+  const NOTES_KEY = 'project-flow-notes';
+  let notes = [];
+  let notesLoaded = false;
+  let activeNoteId = null;
+  let notesSearch = '';
+  let notesSaveTimer = null;
+
+  const notesPanelEl = document.getElementById('pf-notes-panel');
+  const notesListEl = document.getElementById('pf-notes-list');
+  const notesEditorEmptyEl = document.getElementById('pf-notes-editor-empty');
+  const notesEditorMainEl = document.getElementById('pf-notes-editor-main');
+  const noteTitleEl = document.getElementById('pf-note-title');
+  const noteBodyEl = document.getElementById('pf-note-body');
+  const noteCountEl = document.getElementById('pf-note-count');
+  const notePinLabelEl = document.getElementById('pf-note-pin-label');
+
+  function noteById(id) { return notes.find(n => n.id === id); }
+
+  async function loadNotes() {
+    if (notesLoaded) return;
+    try { const res = await safeGet(NOTES_KEY, false); if (res && res.value) notes = JSON.parse(res.value); } catch (e) { notes = []; logError('Load notes', e); }
+    notesLoaded = true;
+  }
+  function saveNotes() {
+    clearTimeout(notesSaveTimer);
+    notesSaveTimer = setTimeout(async () => {
+      const res = await safeSet(NOTES_KEY, JSON.stringify(notes), false);
+      if (!res) { showToast('⚠ Note save failed', true); logError('Save notes', new Error('safeSet failed')); }
+    }, 350);
+  }
+
+  function fmtNoteDate(iso) {
+    try { const d = new Date(iso); return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
+  }
+
+  function noteMatches(n) {
+    if (!notesSearch) return true;
+    const t = notesSearch.toLowerCase();
+    return (n.title || '').toLowerCase().includes(t) || (n.body || '').toLowerCase().includes(t);
+  }
+
+  function renderNotesList() {
+    const visible = notes.filter(noteMatches).sort((a, b) => (b.pinned - a.pinned) || (b.updatedAt || 0) - (a.updatedAt || 0));
+    if (!visible.length) {
+      notesListEl.innerHTML = '<div class="pf-notes-list-empty">' + (notes.length ? 'No notes match.' : 'No notes yet.') + '</div>';
+      return;
+    }
+    notesListEl.innerHTML = visible.map(n => {
+      const sel = n.id === activeNoteId ? ' pf-notes-item-active' : '';
+      const pin = n.pinned ? ' <svg class="pf-ic pf-notes-pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 3 2.7 5.9 6.3.7-4.7 4.3 1.3 6.1L12 17l-5.6 3 1.3-6.1L3 9.6l6.3-.7z"/></svg>' : '';
+      const preview = (n.body || '').replace(/\s+/g, ' ').trim().slice(0, 60) || 'Empty note';
+      return '<div class="pf-notes-item' + sel + '" data-note-id="' + n.id + '">' +
+        '<div class="pf-notes-item-title">' + escapeHtml(n.title || 'Untitled') + pin + '</div>' +
+        '<div class="pf-notes-item-preview">' + escapeHtml(preview) + '</div>' +
+        '<div class="pf-notes-item-date">' + fmtNoteDate(n.updatedAt) + '</div>' +
+        '</div>';
+    }).join('');
+    notesListEl.querySelectorAll('[data-note-id]').forEach(el => {
+      el.addEventListener('click', () => { selectNote(el.getAttribute('data-note-id')); });
+    });
+  }
+
+  function renderNotesEditor() {
+    const n = noteById(activeNoteId);
+    if (!n) {
+      notesEditorEmptyEl.style.display = 'flex';
+      notesEditorMainEl.style.display = 'none';
+      return;
+    }
+    notesEditorEmptyEl.style.display = 'none';
+    notesEditorMainEl.style.display = 'flex';
+    if (noteTitleEl.value !== (n.title || '')) noteTitleEl.value = n.title || '';
+    if (noteBodyEl.value !== (n.body || '')) noteBodyEl.value = n.body || '';
+    notePinLabelEl.textContent = n.pinned ? 'Unpin' : 'Pin';
+    document.getElementById('pf-note-pin').title = n.pinned ? 'Unpin from top' : 'Pin to top';
+    updateNoteCount();
+  }
+
+  function updateNoteCount() {
+    const body = noteBodyEl.value;
+    const words = body.trim() ? body.trim().split(/\s+/).length : 0;
+    noteCountEl.textContent = words + (words === 1 ? ' word · ' : ' words · ') + body.length + ' chars';
+  }
+
+  function selectNote(id) {
+    activeNoteId = id;
+    renderNotesList();
+    renderNotesEditor();
+    if (window.matchMedia && window.matchMedia('(max-width: 700px)').matches) notesPanelEl.classList.add('pf-notes-mobile-edit');
+  }
+
+  function newNote() {
+    const n = { id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: '', body: '', pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    notes.unshift(n);
+    saveNotes();
+    activeNoteId = n.id;
+    renderNotesList();
+    renderNotesEditor();
+    noteTitleEl.focus();
+  }
+
+  function deleteActiveNote() {
+    const n = noteById(activeNoteId);
+    if (!n) return;
+    if (!confirm('Delete this note? This cannot be undone.')) return;
+    notes = notes.filter(x => x.id !== activeNoteId);
+    activeNoteId = null;
+    saveNotes();
+    renderNotesList();
+    renderNotesEditor();
+    showToast('Note deleted');
+  }
+
+  function togglePin() {
+    const n = noteById(activeNoteId);
+    if (!n) return;
+    n.pinned = !n.pinned;
+    n.updatedAt = new Date().toISOString();
+    saveNotes();
+    renderNotesList();
+    renderNotesEditor();
+  }
+
+  async function copyActiveNote() {
+    const n = noteById(activeNoteId);
+    if (!n) return;
+    const text = ((n.title ? n.title + '\n\n' : '') + (n.body || '')).trim();
+    if (!text) { showToast('Nothing to copy', true); return; }
+    try {
+      let copied = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try { await navigator.clipboard.writeText(text); copied = true; } catch (clipErr) { /* permission/context rejection: fall through to execCommand */ }
+      }
+      if (!copied) {
+        const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      showToast('✓ Note copied');
+    } catch (e) { showToast('⚠ Copy failed', true); logError('Copy note', e); }
+  }
+
+  function commitNoteField() {
+    const n = noteById(activeNoteId);
+    if (!n) return;
+    const title = noteTitleEl.value.replace(/\s+/g, ' ').trim().slice(0, 120);
+    const body = noteBodyEl.value.slice(0, 100000);
+    if (title !== (n.title || '') || body !== (n.body || '')) {
+      n.title = title; n.body = body; n.updatedAt = new Date().toISOString();
+      saveNotes();
+      renderNotesList();
+    }
+  }
+
+  function openNotesPanel() {
+    loadNotes().then(() => {
+      if (!notes.length && !activeNoteId) { /* keep empty state until user creates */ }
+      renderNotesList();
+      renderNotesEditor();
+      openModal(notesPanelEl, 'flex');
+    });
+  }
+
+  document.getElementById('pf-notes-btn').addEventListener('click', openNotesPanel);
+  document.getElementById('pf-note-new').addEventListener('click', newNote);
+  document.getElementById('pf-note-del').addEventListener('click', deleteActiveNote);
+  document.getElementById('pf-note-pin').addEventListener('click', togglePin);
+  document.getElementById('pf-note-copy').addEventListener('click', copyActiveNote);
+  document.getElementById('pf-notes-search').addEventListener('input', (e) => { notesSearch = e.target.value.trim(); renderNotesList(); });
+  noteTitleEl.addEventListener('input', () => { clearTimeout(notesSaveTimer); notesSaveTimer = setTimeout(commitNoteField, 350); });
+  noteTitleEl.addEventListener('blur', commitNoteField);
+  noteBodyEl.addEventListener('input', () => { updateNoteCount(); clearTimeout(notesSaveTimer); notesSaveTimer = setTimeout(commitNoteField, 350); });
+  noteBodyEl.addEventListener('blur', commitNoteField);
     // SUBSECTION: Scroll Shadows
     function checkScroll() {
       const list = root.querySelector('.pf-split-list');
