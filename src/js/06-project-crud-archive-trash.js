@@ -100,6 +100,9 @@
       showToast('✓ Trash restored');
     }, 'Undo');
   }
+  // Test/automation seam: the fake DOM can't click bin rows, so restore is
+  // driven through the same function the Restore button calls.
+  window._pf.restoreFromTrash = restoreFromTrash;
   function renderTrashList() {
     const list = document.getElementById('pf-trash-list');
     document.getElementById('pf-trash-count').textContent = trash.length ? '(' + trash.length + ')' : '';

@@ -781,6 +781,91 @@ async function testNotesTombstoneLifecycle() {
 }
 
 // ===========================================================================
+// TEST 12 — Recycle-bin lifecycle (delete → bin → restore → 30-day purge)
+// ===========================================================================
+// Covers the three bin contracts on the real artifact:
+//   1. Subtask delete routes through the bin with its position recorded, and
+//      restore reattaches it at that spot inside its project.
+//   2. Note delete lands in the bin AND keeps its tombstone (disaster
+//      recovery must not resurrect a binned note); restoring from the bin
+//      CLEARS the tombstone so recovery won't re-delete what the user
+//      brought back.
+//   3. Boot purge: entries older than 30 days are removed on load (and the
+//      purge is persisted), fresh entries survive.
+// Drives the same functions the UI calls: _pf.deleteSubtask (subtask × and
+// bulk bar), _pf.deleteNoteById (row ×, footer, bulk bar), and
+// _pf.restoreFromTrash (bin Restore button — the fake DOM can't click rows).
+async function testRecycleBinLifecycle() {
+  const ls = makeLocalStorage();
+  const sharedDbs = new Map();
+
+  // ---- Boot 1: seed a project + subtask + note
+  let h = await freshBoot({ localStorage: ls, idbDbs: sharedDbs });
+  let pf = h.ctx.window._pf;
+  check('bin: seams exposed', !!(pf.deleteSubtask && pf.deleteNoteById && pf.restoreFromTrash && pf.getTrash && pf.setTrash));
+  setProjects(h, [mkProject('rb-p1', 'Bin Project', 'planned', [Object.assign(mkSub('rb-s1', 'Bin Subtask', 'planned'), { createdAt: new Date().toISOString(), dueAt: null, completedAt: null })])]);
+  pf.replaceNotes([{ id: 'rb-n1', title: 'Bin Note', body: 'restore me', pinned: false }]);
+  check('bin: seeded project+sub+note', projects(h).length === 1 && pf.getNotesSnapshot().notes.length === 1);
+  check('bin: starts empty', pf.getTrash().length === 0);
+
+  // ---- Delete subtask through the app's chokepoint (skipConfirm: the
+  // harness confirm() returns false and the bulk bar owns its own confirm)
+  pf.deleteSubtask('rb-p1', 'rb-s1', true);
+  const subEntry = pf.getTrash().find(t => t.kind === 'subtask');
+  check('bin: deleteSubtask binned exactly one entry', pf.getTrash().length === 1 && !!subEntry);
+  check('bin: subtask landed in bin with position', !!subEntry && subEntry.id === 'rb-s1' && subEntry.projectId === 'rb-p1' && Array.isArray(subEntry.parentPath) && subEntry.index === 0, JSON.stringify(subEntry || {}));
+  check('bin: subtask gone from live project', (projects(h)[0].subtasks || []).length === 0);
+
+  // ---- Delete note through the app's chokepoint
+  check('bin: note deleted via chokepoint', pf.deleteNoteById('rb-n1') === true);
+  const noteEntry = pf.getTrash().find(t => t.kind === 'note');
+  check('bin: note landed in bin', !!noteEntry && noteEntry.id === 'rb-n1' && !!noteEntry.node);
+  // The durability contract: binned note keeps its tombstone — snapshot
+  // recovery must never resurrect a note the user deliberately binned.
+  check('bin: binned note still tombstoned', !!pf.getNotesTombstones()['rb-n1']);
+
+  // ---- Restore both through the bin's real restore function
+  pf.restoreFromTrash('rb-s1');
+  const projAfter = projects(h).find(p => p.id === 'rb-p1');
+  check('bin: subtask restored into its project', !!projAfter && (projAfter.subtasks || []).length === 1 && projAfter.subtasks[0].id === 'rb-s1' && projAfter.subtasks[0].title === 'Bin Subtask');
+  check('bin: subtask left the bin', !pf.getTrash().some(t => t.id === 'rb-s1'));
+
+  pf.restoreFromTrash('rb-n1');
+  check('bin: note restored into live set', pf.getNotesSnapshot().notes.some(n => n.id === 'rb-n1' && n.body === 'restore me'));
+  check('bin: restore cleared the note tombstone', !pf.getNotesTombstones()['rb-n1']);
+  check('bin: bin empty after both restores', pf.getTrash().length === 0, 'n=' + pf.getTrash().length);
+
+  // ---- 30-day purge on boot: old entries die, fresh ones stay.
+  // localStorage is the bin's primary store (the bin has no disaster-recovery
+  // path by design), so boot 2 seeds it directly — exactly what a real
+  // reload of the same browser profile would read. Its project list stays
+  // empty so the project-gone restore refusal is also exercised.
+  const now = Date.now();
+  const ls2 = makeLocalStorage();
+  ls2._map.set('project-flow-trash', JSON.stringify([
+    { kind: 'note', id: 'rb-old', title: 'Ancient', node: { id: 'rb-old', title: 'Ancient', body: '' }, deletedAt: new Date(now - 31 * 24 * 3600 * 1000).toISOString() },
+    { kind: 'project', id: 'rb-edge', title: 'Edge', subtasks: [], deletedAt: new Date(now - 29 * 24 * 3600 * 1000).toISOString() },
+    { kind: 'subtask', id: 'rb-fresh', title: 'Fresh', node: { id: 'rb-fresh', title: 'Fresh', status: 'planned', subtasks: [] }, projectId: 'rb-p1', projectTitle: 'Bin Project', parentPath: [], index: 0, deletedAt: new Date(now - 3600 * 1000).toISOString() },
+  ]));
+  h = await freshBoot({ localStorage: ls2, idbDbs: sharedDbs });
+  await sleep(60); h.flushRAF(); // loadTrash is async
+  pf = h.ctx.window._pf;
+  const afterPurge = pf.getTrash();
+  check('bin: 31-day-old entry purged on boot', !afterPurge.some(t => t.id === 'rb-old'));
+  check('bin: 29-day-old entry kept (under TTL)', afterPurge.some(t => t.id === 'rb-edge'));
+  check('bin: fresh entry kept', afterPurge.some(t => t.id === 'rb-fresh'));
+  check('bin: purge persisted (reloads stay purged)', (() => { try { return JSON.parse(h.localStorage.getItem('project-flow-trash')).every(t => t.id !== 'rb-old'); } catch { return false; } })());
+
+  // ---- Restore edge cases: unknown id is a safe no-op; project-gone
+  // subtask stays in the bin with a warning rather than vanishing
+  const beforeNoop = pf.getTrash().length;
+  pf.restoreFromTrash('rb-ghost');
+  check('bin: restoring unknown id is a no-op', pf.getTrash().length === beforeNoop);
+  pf.restoreFromTrash('rb-fresh');
+  check('bin: subtask whose project is gone stays binned', pf.getTrash().some(t => t.id === 'rb-fresh'), 'fresh boot has no rb-p1 — restore must refuse');
+}
+
+// ===========================================================================
 // Run all
 // ===========================================================================
 const tests = [
@@ -792,6 +877,7 @@ const tests = [
   ['Firebase push/pull', testFirebaseRoundTrip],
   ['Icon hydration', testIconHydration],
   ['Notes tombstones', testNotesTombstoneLifecycle],
+  ['Recycle bin lifecycle', testRecycleBinLifecycle],
 ];
 for (const [name, fn] of tests) {
   try { await fn(); }
