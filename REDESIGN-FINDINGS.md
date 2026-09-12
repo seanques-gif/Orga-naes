@@ -527,3 +527,23 @@ promote-icon bugs):
 Verification: build byte-consistent, all suites green, live preview shows icons
 rendering at 44px with flex centering and the hover tint resolving through the
 token on both Midnight and Daylight.
+
+3. **F-UI-3 (light-theme sweep, owner-requested, same session): 6-preset battery + cleanup.**
+   - **Contrast battery (live, all 5 presets × 8 token pairs): PASS everywhere.**
+     Lowest ratio on any preset is Daylight ink-on-accent at 4.63:1 (AA); all
+     others 5.3–16.6:1. The 3D "0 AA failures" guarantee re-verified after all
+     recent changes.
+   - **Black-alpha audit:** ~40 `rgba(0,0,0,…)` hits classified. Scrims and
+     elevation shadows are correct on light themes by convention (sanctioned
+     pattern); the one at-rest surface fill (`pf-split-sort`) *darkens* on
+     Daylight, which is intended recess behavior. No fixes needed — documented
+     to close the question.
+   - **Fixed: `color-scheme: dark` on `.pf-due-input`** forced a dark native
+     date-picker popup on Daylight; added `#pf-root.pf-theme-light .pf-due-input
+     { color-scheme: light; }`.
+   - **Fixed: 36 stale `var()` hex fallbacks purged** from in-root rules,
+     including Night-Workshop-era zombies (`#2a2a3e`, `#3a3a5e`, `#7b68ee`) on
+     chrome elements that were re-parented into `#pf-root` in 3F — dead code
+     that could never render, purged after live proof that computed values are
+     byte-identical without them. The two legitimate out-of-root fallbacks
+     (`.pf-conflict-box`, `90-print.css` token-free sheet) keep theirs by design.

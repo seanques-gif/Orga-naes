@@ -22,7 +22,7 @@
 
   #pf-root .pf-toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(12px); background: var(--toast-bg); color: #fff; border: 1px solid var(--card-border); padding: 10px 16px; border-radius: var(--radius-overlay); font-size: calc(var(--font-size-base) - 1.5px); font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: var(--z-toast); opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 12px; }
   #pf-root .pf-toast.pf-toast-show { pointer-events: auto; }
-  #pf-root .pf-toast-undo { background: var(--accent); color: var(--accent-contrast, #fff); border: none; border-radius: var(--radius-container); padding: 4px 10px; font-size: calc(var(--font-size-base) - 3px); font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  #pf-root .pf-toast-undo { background: var(--accent); color: var(--accent-contrast); border: none; border-radius: var(--radius-container); padding: 4px 10px; font-size: calc(var(--font-size-base) - 3px); font-weight: 600; cursor: pointer; transition: background 0.15s; }
   #pf-root .pf-toast-undo:hover { background: color-mix(in srgb, var(--accent) 85%, #000); }
   #pf-root .pf-toast.pf-toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #pf-root .pf-toast.pf-toast-error { border-color: color-mix(in srgb, var(--danger) 50%, transparent); color: var(--danger); }

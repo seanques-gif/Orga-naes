@@ -37,7 +37,7 @@
     box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 15%, transparent);
   }
   .pf-week-col-dragover { border-color: var(--accent) !important; }
-  .pf-week-col-dragover-blocked { border-color: var(--danger, #ef4444) !important; cursor: not-allowed; }
+  .pf-week-col-dragover-blocked { border-color: var(--danger) !important; cursor: not-allowed; }
 
   .pf-week-col-header {
     font-size: calc(var(--font-size-base) - 4px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;

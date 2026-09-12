@@ -21,12 +21,12 @@
   /* One visible focus ring for every interactive element. Specific components
      may still override; this closes the coverage gaps. */
   :focus-visible {
-    outline: 2px solid var(--accent, #2fd4ff);
+    outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
   #pf-root .pf-node-title:focus-visible,
   #pf-root .pf-subrow-title:focus-visible {
-    outline: 2px solid var(--accent, #2fd4ff);
+    outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
 
