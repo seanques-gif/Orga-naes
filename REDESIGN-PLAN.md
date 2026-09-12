@@ -71,8 +71,9 @@ From `PRODUCT.md` (hard constraints):
 src/
   template.html     shell with 3 injection tokens (__ORGA_CSS_MAIN__ / __ORGA_CSS_PRINT__ / __ORGA_SCRIPT__)
   order.json        exact concatenation order for css + js fragments
-  styles/           12 CSS modules (01-chrome … 11-calendar-weekly, 12-metrics, 90-print)
-  js/               45 JS modules (01-core-state … 45-firebase-cloud-sync)
+  styles/           16 CSS modules (01-chrome … 15-a11y, 90-print; 13-overlays,
+                    14-utilities and 15-a11y were added by 3B-2/3B-3/3D)
+  js/               46 JS modules (00-svg-icons … 45-firebase-cloud-sync)
 build.mjs           zero-dep Node build → Orga-naes.html
 package.json        npm run build | test | verify
 AGENTS.md           source-of-truth + build rules (agents read this automatically)
@@ -80,6 +81,8 @@ Orga-naes.html      generated, committed build output (never hand-edited)
 tests/
   design-tokens.test.mjs   design-rule guard (reads the built file)
   date-utils.test.mjs      date logic
+  functional.test.mjs      43-assertion functional gate (post-plan, FN-01):
+                           vm harness boots the real built artifact
 ```
 
 **How the build works:** `build.mjs` concatenates the CSS/JS fragments in
@@ -158,7 +161,7 @@ completed `#3ddc97` / waiting `#b39dff` / danger `#ff5c5c`.
 **Type:** `--font-sans` IBM Plex Sans (meaning) · `--font-mono` IBM Plex Mono
 (measurement). Root `--font-size-base: clamp(11px,1.8vw,14px)`.
 
-**Target scales (to apply in 3C):** spacing 2/4/6/8/12/16/24 · radius
+**Scales (applied in 3C):** spacing 2/4/6/8/12/16/24 · radius
 4/6/10/pill · z-index named ladder (sticky 10 → drag 9999).
 
 ---
