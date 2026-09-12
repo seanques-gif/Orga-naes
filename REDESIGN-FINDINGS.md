@@ -628,3 +628,23 @@ token on both Midnight and Daylight.
    hand-edit/src-drift/missing-pin), clean-clone reproducibility re-proven
    byte-for-byte through the new gate, chained change loop documented in
    AGENTS.md + `.claude/skills/change-loop` (`c901c83`).
+
+   **F-UI-5h — user-eye polish pass (real-input verification).** Walked the app
+   as a user with genuine clicks/typing (no synthetic-event shortcuts): project
+   creation via category picker, subtask add (auto-enters edit mode via
+   `focusEl` — good UX, no bug), status-dot menu → Completed (strikethrough,
+   green dot, n/m counters, progress ring all correct), undo, due-date chip
+   (amber due-soon tint legible on Daylight), Today's Focus modal, hover
+   states, theme-picker highlight holding. One defect: at the 220px list-pane
+   floor the sort bar squeezed the Completed toggle into wrapping 2 lines
+   inside its fixed-height pill (icon floated ~10px above clipped text) —
+   form controls lose `min-width:auto` under flex shrink. Fix: `white-space:
+   nowrap; flex-shrink: 0` on `.pf-split-collapse-btn`; pane clips its 1px
+   border round-off with `overflow-x: hidden`. Verified: single line, icon
+   aligned within 0.8px, no overflow at minimum width. (`0498b24`)
+   False alarms closed with evidence: (1) "subtask rename silently reverts" —
+   synthetic events never produce a real `blur`, the commit trigger; retested
+   with real clicks, commits correctly. (2) phantom bottom strip in preview
+   screenshots — chased through scrollbars/pseudo-elements/shadow rules/
+   particle layer, then disproven by loading a bare directory listing (zero
+   app code, identical strip): preview host chrome, absent in real browsers.
