@@ -2,9 +2,9 @@
 
 Status legend: ✅ done · ⏳ in progress · ⬜ pending · 🔀 decision needed
 
-Last updated: 2026-09-12 — **PLAN COMPLETE.** All phases (0→4) shipped, verified, and committed locally (59 commits ahead of origin; push parked pending owner authorization). Post-plan additions: pre-release audit closed GO (`AUDIT-CANONICAL.md`), FN-01 functional test gate built and wired into `npm test`, REDO-01 crash fix, UX-01/UX-03 fixes, clean-clone reproducibility proven.
+Last updated: 2026-09-13 — **PLAN COMPLETE AND RELEASED.** All phases (0→4) shipped, verified, and pushed to `origin/main` (`9ae3446`, 60 commits over baseline `a3dff27`). Post-plan additions: pre-release audit closed GO (`AUDIT-CANONICAL.md`), FN-01 functional test gate built and wired into `npm test`, REDO-01 crash fix, UX-01/UX-03 fixes, clean-clone reproducibility proven post-push.
 Baseline (released): commit `a3dff27` (`origin/main`), tag `released-baseline-2026-09-10`
-Working state: committed on local `main`; clean tree; nothing pushed.
+Working state: `main` pushed to origin (`9ae3446`); clean tree; fresh-clone verify byte-identical.
 
 ---
 
