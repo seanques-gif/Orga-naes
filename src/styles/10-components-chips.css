@@ -26,7 +26,9 @@
   #pf-root .pf-toast-undo:hover { background: color-mix(in srgb, var(--accent) 85%, #000); }
   #pf-root .pf-toast.pf-toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #pf-root .pf-toast.pf-toast-error { border-color: color-mix(in srgb, var(--danger) 50%, transparent); color: var(--danger); }
-  #pf-root .pf-empty { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--text-dim); font-size: calc(var(--font-size-base) - 1px); width: 260px; z-index: calc(var(--z-base) + 1); pointer-events: none; }
+  #pf-root .pf-empty { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--text-dim); font-size: calc(var(--font-size-base) - 1px); width: 260px; z-index: calc(var(--z-base) + 1); pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  #pf-root .pf-empty .pf-ic-empty { width: 44px; height: 44px; color: color-mix(in srgb, var(--text-dim) 55%, transparent); }
+  #pf-root .pf-empty .pf-ic-empty svg { width: 100%; height: 100%; }
   #pf-root .pf-empty b { color: var(--text); }
   #pf-root .pf-modal-layer {
     position: fixed;
@@ -68,7 +70,7 @@
   #pf-root .pf-due-table td { padding: 7px 12px; border-bottom: 1px solid var(--card-border); color: var(--text); vertical-align: middle; }
   #pf-root .pf-due-table tr:hover td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
   #pf-root .pf-due-table .pf-due-row-clickable { cursor: pointer; }
-  #pf-root .pf-due-table .pf-due-row-clickable:hover td { background: rgba(255,255,255,0.05); }
+  #pf-root .pf-due-table .pf-due-row-clickable:hover td { background: color-mix(in srgb, var(--text) 5%, transparent); }
   #pf-root .pf-due-table .pf-due-row-overdue td:last-child { color: var(--danger); font-weight: 600; }
   #pf-root .pf-due-table .pf-due-row-soon td:last-child { color: var(--ongoing); font-weight: 600; }
   #pf-root .pf-due-empty { padding: 24px 12px; text-align: center; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); }
@@ -183,7 +185,7 @@
   #pf-root .pf-category-empty { color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); padding: 8px 4px; }
 
   #pf-root .pf-cat-chip {
-    background: rgba(255,255,255,0.04);
+    background: color-mix(in srgb, var(--text) 4%, transparent);
     color: var(--text-dim);
     font-size: calc(var(--font-size-base) - 3px);
     font-weight: 500;

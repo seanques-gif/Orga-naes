@@ -44,7 +44,7 @@
   #pf-root .pf-selbar-btn:hover, #pf-root .pf-selbar-btn:focus-visible { background: color-mix(in srgb, var(--accent) 26%, transparent); border-color: var(--accent); }
   #pf-root .pf-selbar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   #pf-root .pf-selbar-btn.pf-selbar-close { background: transparent; color: var(--text-dim); padding: 7px 8px; font-size: calc(var(--font-size-base) - 1px); }
-  #pf-root .pf-selbar-btn.pf-selbar-close:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+  #pf-root .pf-selbar-btn.pf-selbar-close:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
   @media (max-width: 900px) {
     #pf-root .pf-selbar-btn { font-size: calc(var(--font-size-base) - 1.5px); padding: 8px 10px; }
   }
@@ -229,7 +229,7 @@
   #pf-root .pf-due-wrap { display: inline-flex; align-items: center; flex-shrink: 0; }
 
   #pf-root .pf-due-chip {
-    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
+    background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
     padding: 4px 9px; border-radius: 100px; border: 1px solid var(--card-border); cursor: pointer;
     white-space: nowrap; width: auto; box-sizing: border-box; text-align: center;
     justify-content: center; line-height: 1.2;
@@ -242,7 +242,7 @@
   #pf-root .pf-due-chip.pf-due-overdue { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
   #pf-root .pf-due-input { font-size: calc(var(--font-size-base) - 2.5px); background: var(--card); color: var(--text); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 4px; color-scheme: dark; font-family: var(--font-sans); }
   #pf-root .pf-recur-chip {
-    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
+    background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
     padding: 4px 9px; border-radius: 100px; border: 1px solid var(--card-border); cursor: pointer;
     white-space: nowrap; text-align: center; line-height: 1.2;
     transition: color 0.15s, border-color 0.15s, background 0.15s;
@@ -257,7 +257,7 @@
     display: block; width: 100%; text-align: left; padding: 6px 10px; font-size: calc(var(--font-size-base) - 2px);
     background: transparent; color: var(--text); border: none; border-radius: var(--radius-control); cursor: pointer;
   }
-  #pf-root .pf-recur-dropdown button:hover { background: rgba(255,255,255,0.06); }
+  #pf-root .pf-recur-dropdown button:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
   #pf-root .pf-recur-dropdown button.pf-recur-active { color: var(--accent); font-weight: 600; }
   #pf-root .pf-split-list-item.pf-dragging { opacity: 0.4; }
   #pf-root .pf-split-drop-indicator {
@@ -269,7 +269,7 @@
     #pf-root .pf-split-list-item.pf-drop-settling { animation: pf-drop-settle var(--dur-surface) var(--ease-console); }
   @keyframes pf-drop-settle { from { opacity: 0; transform: translateY(-8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
   #pf-root .pf-dep-chip {
-    background: rgba(255,255,255,0.04); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
+    background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
     padding: 4px 9px; border-radius: 100px; border: 1px solid var(--card-border); cursor: pointer;
     white-space: nowrap; text-align: center; line-height: 1.2;
     transition: color 0.15s, border-color 0.15s, background 0.15s;
@@ -285,5 +285,5 @@
     display: flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: calc(var(--font-size-base) - 2px);
     color: var(--text); border-radius: var(--radius-control); cursor: pointer;
   }
-  #pf-root .pf-dep-dropdown label:hover { background: rgba(255,255,255,0.06); }
+  #pf-root .pf-dep-dropdown label:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
   #pf-root .pf-sub-dot.pf-blocked { border-style: dashed !important; opacity: 0.5; }

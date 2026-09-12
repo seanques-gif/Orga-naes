@@ -1,10 +1,10 @@
     // SUBSECTION: Task Detail View (Split Detail)
   function renderSplitDetail() {
     splitDetail.innerHTML = '';
-    if (!splitSelectedId) { splitDetail.innerHTML += '<div class="pf-empty" style="display:block;">Select a project from the list to view details.</div>'; _completedCollapseId = null; return; }
+    if (!splitSelectedId) { splitDetail.innerHTML += '<div class="pf-empty"><span class="pf-ic-empty" aria-hidden="true">' + pfIcon('list') + '</span><div>Select a project from the list to view details.</div></div>'; _completedCollapseId = null; return; }
     const p = projects.find(pr => pr.id === splitSelectedId);
-    if (!p) { splitDetail.innerHTML = '<div class="pf-empty" style="display:block;">Project not found.</div>'; return; }
-    if (searchTerm && !matchesSearch(p)) { splitDetail.innerHTML = '<div class="pf-empty" style="display:block;">No matching results.</div>'; return; }
+    if (!p) { splitDetail.innerHTML = '<div class="pf-empty"><span class="pf-ic-empty" aria-hidden="true">' + pfIcon('search') + '</span><div>Project not found.</div></div>'; return; }
+    if (searchTerm && !matchesSearch(p)) { splitDetail.innerHTML = '<div class="pf-empty"><span class="pf-ic-empty" aria-hidden="true">' + pfIcon('search') + '</span><div>No matching results.</div></div>'; return; }
     p.expanded = true;
     if (_completedCollapseId !== splitSelectedId) { _completedCollapseId = splitSelectedId; (function collapseCompleted(list) { list.forEach(s => { if (s.status === 'completed') { s.expanded = false; } if (s.subtasks && s.subtasks.length) collapseCompleted(s.subtasks); }); })(p.subtasks || []); }
     if (searchTerm && _searchAutoCollapseId !== splitSelectedId) { _searchAutoCollapseId = splitSelectedId; const q = searchTerm.toLowerCase(); (function collapseAndExpand(list) { let anyMatch = false; list.forEach(s => { const childMatch = s.subtasks && s.subtasks.length && collapseAndExpand(s.subtasks); const selfMatch = s.title.toLowerCase().includes(q); if (selfMatch || childMatch) { s.expanded = true; anyMatch = true; } else { s.expanded = false; } }); return anyMatch; })(p.subtasks || []); }

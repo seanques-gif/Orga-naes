@@ -45,7 +45,7 @@
       const dueIcon = document.createElement('span');
       dueIcon.classList.add('pf-ext-due', 'pf-ext-inline'); // 3B-3: recipe in 14-utilities.css
       (function refreshDueIcon() {
-        let color = 'rgba(255,255,255,0.3)'; let title = 'No due date';
+        let color = 'var(--text-dim, #8b95a3)'; let title = 'No due date';
         if (s.status === 'completed') { color = 'var(--completed)'; title = s.dueAt ? 'Completed, was due: ' + formatDateShort(s.dueAt) : 'Completed'; }
         else if (s.dueAt && s.status !== 'completed') {
           const today = new Date(); today.setHours(0,0,0,0);

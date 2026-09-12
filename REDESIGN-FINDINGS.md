@@ -497,3 +497,33 @@ taste-skill (APPROVE, all findings closed, 2026-09-12).
 the table above re-run fresh against `src/` this pass (em-dash grep, filler-verb
 grep, pure-hex audit with context, `:active` enumeration, accent-shadow scan,
 middle-dot strip count: 0).
+
+---
+
+## Post-ship UI improvements (owner-requested UI review, 2026-09-12)
+
+Two defects/polish items found by live-preview interrogation of the shipped UI
+(both in the same Daylight-invisible family as the earlier select-bar and
+promote-icon bugs):
+
+1. **F-UI-1 (bug, fixed): white-alpha hover/selection tints invisible on Daylight.**
+   19 rules used raw `rgba(255,255,255,0.04–0.15)` overlays — 13 hover/selected
+   states (list rows, category headers, kebab, search toggle, undo button,
+   recur/dep dropdowns, due-table rows, selection bar close) plus 4 at-rest chips
+   and the 3-rule scrollbar family. Measured on the real Daylight surface
+   `rgb(238,241,245)`, the row hover yielded a delta of **1/255 (invisible)**.
+   All 19 converted to `color-mix(in srgb, var(--text) N%, transparent)` — the
+   Tint-Through-Token pattern already used in 72 places. Verified per theme via
+   computed values: Midnight hover delta ≈ +13/channel, Daylight ≈ −13/channel.
+   One JS straggler (`12-drag-drop.js:48` no-due-date icon at 30% white) →
+   `var(--text-dim)`, matching the function's other 7 token branches.
+2. **F-UI-2 (polish, fixed): dead detail pane.** The 585×843 empty right pane
+   carried one 13px dim sentence. All 5 empty states (2 static template + 3
+   JS-rendered in `renderSplitDetail`) upgraded to a 44px ghost icon (`pfIcon()`
+   sprite, `list`/`search` per context) + flex-centered text; new `.pf-ic-empty`
+   recipe in `10-components-chips.css`; legacy inline `display:block` remnants
+   removed.
+
+Verification: build byte-consistent, all suites green, live preview shows icons
+rendering at 44px with flex centering and the hover tint resolving through the
+token on both Midnight and Daylight.

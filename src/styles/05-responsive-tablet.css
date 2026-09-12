@@ -35,7 +35,7 @@
     #pf-root.pf-device-tablet.pf-detail-open .pf-mobile-back { display: inline-flex !important; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: calc(var(--font-size-base) - 2px); padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
   }
 
-  #pf-root.pf-device-desktop .pf-split-list-item:hover { background: rgba(255,255,255,0.06); }
+  #pf-root.pf-device-desktop .pf-split-list-item:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
   #pf-root.pf-device-desktop .pf-subrow:hover { border-color: var(--hover-border); }
   #pf-root.pf-device-desktop .pf-split-list-item { transition: background 0.12s; }
   /* min-width floor: at narrow desktop-class windows (≤768px) the 25% width
