@@ -5,6 +5,7 @@ Status legend: ✅ done · ⏳ in progress · ⬜ pending · 🔀 decision neede
 Last updated: 2026-09-13 — **PLAN COMPLETE AND RELEASED.** All phases (0→4) shipped, verified, and pushed to `origin/main` (`9ae3446`, 60 commits over baseline `a3dff27`). Post-plan additions: pre-release audit closed GO (`AUDIT-CANONICAL.md`), FN-01 functional test gate built and wired into `npm test`, REDO-01 crash fix, UX-01/UX-03 fixes, clean-clone reproducibility proven post-push.
 Baseline (released): commit `a3dff27` (`origin/main`), tag `released-baseline-2026-09-10`
 Working state: `main` pushed to origin (`9ae3446`); clean tree; fresh-clone verify byte-identical.
+Successor: **`NEXT-PLAN.md`** — post-release workstreams (notes↔project linking, list-render chunking, security backlog: CSP / SRI / RTDB `.validate`) are planned there. This document stays closed as the redesign record.
 
 ---
 
@@ -171,7 +172,7 @@ completed `#3ddc97` / waiting `#b39dff` / danger `#ff5c5c`.
 1. ✅ **Icons (D10) — DONE in 3B-4:** SVG chrome via `src/js/00-svg-icons.js` sprite + `pfIcon()` helper (`data-ic` / `data-ic-before` hydration for static markup), emoji kept as user content (task titles, categories, picker, toast prefixes). Chrome emoji eliminated: toolbar, options panel, FAB menu, bottom nav, both context menus, sort bar, recur chip, dependency + comment chips.
    content (recommended) / replace all / defer.
 2. ✅ **Commit checkpoints** — long since done; as of 2026-09-12 the full redesign + post-plan close-out (audit, test gate, fixes) is committed on local `main`.
-3. ⏭ **Remaining (none of it plan work):** owner push + GitHub settings; optional backlog (CSP, SRI/self-host, `.validate` rules).
+3. ⏭ **Remaining (none of it plan work):** owner push + GitHub settings; optional backlog (CSP, SRI/self-host, `.validate` rules) — **now planned in `NEXT-PLAN.md` Phase C**.
 
 ---
 
