@@ -694,3 +694,64 @@ token on both Midnight and Daylight.
    9px/4px (mono/600 + `max(12px, …)` / `max(10px, …)`). Bonus find: the
    zoom-reset button carried a duplicate `class` attribute, so browsers
    silently dropped `pf-zoom-btn-sm` entirely — deduplicated. (`d5abf14`)
+
+## F-UI-6 — Notes feature + durability + recycle bin (owner-requested, 2026-09-12)
+
+Five owner requests built and hardened across one session, each through the
+chained loop (change → build → test → live-verify → commit). Suite grew
+58 → 99 assertions.
+
+### Notes view (feature)
+Standalone top-bar Notes workspace (`6c14509`): list + autosave editor
+(350ms), search across titles and bodies, pin, copy, word count; plain-text
+storage in its own key so project export/sync are untouched. Per-row delete
++ multi-select (checkbox, Ctrl-click, Shift-range) with a bulk bar — smart
+Pin/Unpin, joined Copy, confirmed Delete (`48fd42e`). Editing depth: Tab /
+Shift+Tab multi-line indent, Ctrl+L smart checkbox toggle, Ctrl+Enter
+done-toggle, and a **View mode** rendering interactive checklists with
+indentation + strikethrough (`aadc0ea`, `9c08b27`); shortcuts listed in the
+"?" panel.
+
+**Cascade bug caught by the loop:** the Notes commit had silently wiped 131
+lines of `14-utilities.css` (the base `.pf-ic` icon sizing among them), so
+SVGs rendered at intrinsic size — a 53×53 checkbox in a 20px button. Owner's
+screenshot exposed it; restored the utilities with Notes styles appended,
+swept every visible icon back to 12–13px (`60e0492`). Also hardened: clipboard
+`writeText` rejection now falls back to `execCommand` (previously only the
+*absent* API did).
+
+### Notes durability (gap-closing, pre-recycle-bin)
+Notes lived in a single key while projects had three protection layers.
+- Snapshots embed notes + tombstones; taken within seconds of any note edit
+  (`bea67ca`). Boot recovery walks newest→oldest for the first copy with
+  notes — live-proven by wiping both stores and watching 9 notes resurrect.
+- Deletion tombstones (`44d8ba9`) keep deliberately deleted notes dead across
+  recovery; live test caught the union-skips-empty-snapshots bug (all-deleted
+  case resurrected) before ship.
+- Regression test 11 boots the artifact across shared-IDB reboots and
+  replays the disaster; tamper-proven (`0218a44`). Forced good structure:
+  single `deleteNoteById` chokepoint + public `snapshotNow()` seam + honest
+  iterating IDB stub (the old single-shot cursor couldn't exercise the walk).
+
+### Recycle bin (unified, 30-day TTL)
+The project-only Trash became a kind-tagged recycle bin — projects, subtasks
+(previously hard-deleted!), and notes all land with restore + permanent
+delete + empty (`f31d73f`). Subtask entries record parent path + index so
+restore reattaches in place (project-gone refusal stays binned with a
+warning). Notes bin **and** keep tombstones; bin restore clears the
+tombstone so recovery won't re-delete a brought-back note. Confirm dialogs
+updated to "Move to the Recycle Bin?" (the old "cannot be undone" became
+untrue). Kind chips token-driven — caught pre-ship that the first chip CSS
+used two token names this app doesn't define (`--surface-sub`/`--border`
+vs the real `--sub-bg`/`--sub-border`). Also fixed live: doubled "Untitled"
+label for blank-titled notes in the bin list.
+
+### Recycle-bin regression gate
+Test 12 (`3257da1`) drives the real bin functions across shared-IDB reboots:
+subtask round-trip with position, note round-trip with the
+tombstone-while-binned / cleared-on-restore contract, boot purge (31-day-old
+purged + persisted; 29-day kept — boundary proof), unknown-id no-op, and the
+project-gone refusal. Tamper-proven surgically: disabling the purge cutoff
+turns exactly the 2 purge assertions red; removing the restore tombstone-clear
+turns exactly the tombstone assertion red. Needed seams: `restoreFromTrash`
++ `deleteSubtask` now exposed on `window._pf` beside `deleteNoteById`.
