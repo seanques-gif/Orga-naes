@@ -16,6 +16,8 @@
 //   8.  Firebase push/pull round-trip against a fake RTDB (per-user isolation path)
 //   9.  Service worker precache integrity (static: versioned cache, 4 assets, fetch handler)
 //   10. Icon hydration idempotency (double-run DOMContentLoaded → exactly 1 svg/title)
+//   11. Notes tombstone lifecycle (delete -> snapshot -> wipe stores -> recover ->
+//       deleted stays deleted; and the all-notes-deleted union case)
 //
 // Run: node tests/functional.test.mjs
 
@@ -185,11 +187,22 @@ function makeIDB() {
     count() { const r = new Req(); fire(r, this._m.size); return r; }
     getAllKeys() { const r = new Req(); fire(r, Array.from(this._m.keys())); return r; }
     openCursor(_range, dir) {
-      // 'prev' = highest key (IDB sorts keys); app uses it to fetch latest snapshot
+      // Full iteration: 'prev' walks highest→lowest key, default lowest→highest.
+      // The notes-recovery code walks snapshots via cursor.continue() and unions
+      // tombstones across every record, so the stub must actually iterate.
       const keys = Array.from(this._m.keys()).sort();
-      const k = dir === 'prev' ? keys[keys.length - 1] : keys[0];
+      const seq = dir === 'prev' ? keys.slice().reverse() : keys;
+      let i = 0;
       const r = new Req();
-      fire(r, k === undefined ? null : { key: k, value: this._m.get(k), continue() {}, update() { return new Req(); }, delete() { return new Req(); } });
+      const self = this;
+      const step = () => {
+        if (i >= seq.length) { r.result = null; r.readyState = 'done'; if (r.onsuccess) r.onsuccess({ target: r }); return; }
+        const k = seq[i++];
+        r.result = { key: k, value: self._m.get(k), continue() { queueMicrotask(step); }, update() { return new Req(); }, delete() { self._m.delete(k); return new Req(); } };
+        r.readyState = 'done';
+        if (r.onsuccess) r.onsuccess({ target: r });
+      };
+      queueMicrotask(step);
       return r;
     }
   }
@@ -683,6 +696,91 @@ async function testIconHydration() {
 }
 
 // ===========================================================================
+// TEST 11 — Notes tombstone lifecycle (F-durability regression gate)
+// ===========================================================================
+// Reproduces the exact disaster scenario on the real artifact:
+//   seed 2 notes -> snapshot captures them -> delete one through the app's
+//   single deletion chokepoint (tombstone recorded) -> snapshot again ->
+//   wipe BOTH primary notes stores -> reboot -> recovery must restore only
+//   the surviving note, the deleted one must stay dead, and the tombstone
+//   must persist. Then the all-deleted variant: delete the rest, snapshot,
+//   wipe, recover -> nothing resurrects.
+// Deletes go through window._pf.deleteNoteById — the SAME function the row
+// ×, footer button, and bulk-bar Delete all call (verified by grep, and by
+// this test exercising it directly). Snapshots go through _pf.snapshotNow,
+// the same _maybeSaveSnapshot the 5-minute tick runs.
+async function testNotesTombstoneLifecycle() {
+  const ls = makeLocalStorage();
+  const sharedDbs = new Map();
+
+  // ---- Boot 1: seed two notes, snapshot the intact state
+  let h = await freshBoot({ localStorage: ls, idbDbs: sharedDbs });
+  let pf = h.ctx.window._pf;
+  check('tomb: notes API exposed', !!(pf.getNotesSnapshot && pf.replaceNotes && pf.getNotesTombstones && pf.deleteNoteById && pf.snapshotNow));
+  pf.replaceNotes([
+    { id: 'nt-keeper', title: 'Keeper', body: 'stays', pinned: false },
+    { id: 'nt-doomed', title: 'Doomed', body: 'dies', pinned: false },
+  ]);
+  check('tomb: two notes live', pf.getNotesSnapshot().notes.length === 2);
+  check('tomb: no tombstones yet', Object.keys(pf.getNotesTombstones()).length === 0);
+
+  pf.snapshotNow();
+  await sleep(120);
+
+  // ---- Delete the doomed note through the app's deletion chokepoint
+  check('tomb: delete returns true for existing id', pf.deleteNoteById('nt-doomed') === true);
+  check('tomb: delete returns false for unknown id', pf.deleteNoteById('nt-ghost') === false);
+  check('tomb: doomed gone from live notes', pf.getNotesSnapshot().notes.length === 1 && pf.getNotesSnapshot().notes[0].id === 'nt-keeper');
+  check('tomb: tombstone recorded for doomed', !!pf.getNotesTombstones()['nt-doomed']);
+
+  pf.snapshotNow(); // post-deletion state + tombstone rides along
+  await sleep(120);
+
+  // ---- Inspect the snapshot store directly: both copies must exist
+  const snapStore = sharedDbs.get('orga-naes-backup').get('snapshots');
+  const snaps = Array.from(snapStore.values());
+  const preSnap = snaps.find(s => s.notes && s.notes.length === 2);
+  const postSnap = snaps.find(s => s.notes && s.notes.length === 1 && s.noteTombstones && s.noteTombstones['nt-doomed']);
+  check('tomb: pre-deletion snapshot holds 2 notes', !!preSnap);
+  check('tomb: post-deletion snapshot holds tombstone', !!postSnap);
+
+  // ---- Boot 2: wipe BOTH primary stores, keep the snapshot IDB universe
+  const wipedLS = makeLocalStorage();
+  h = await freshBoot({ localStorage: wipedLS, idbDbs: sharedDbs });
+  // boot recovery is async AND its persist is debounced (saveNotes 350ms):
+  await sleep(700); h.flushRAF();
+  pf = h.ctx.window._pf;
+  const rec = pf.getNotesSnapshot().notes;
+  check('tomb: recovery restored only the keeper', rec.length === 1 && rec[0].id === 'nt-keeper', 'n=' + rec.length + ' ids=' + rec.map(n => n.id).join(','));
+  check('tomb: deleted note stayed deleted', !rec.some(n => n.id === 'nt-doomed'));
+  check('tomb: tombstone survived recovery', !!pf.getNotesTombstones()['nt-doomed']);
+  check('tomb: keeper content intact', rec[0] && rec[0].body === 'stays');
+  // recovery must have persisted its work (a third wipe would still recover)
+  check('tomb: recovery persisted to primary store', typeof wipedLS._map.get('project-flow-notes') === 'string');
+
+  // ---- All-deleted variant: delete the keeper too, snapshot, wipe, recover
+  pf.replaceNotes([]); // guarded no-op by design (import surface can never wipe)
+  check('tomb: empty replaceNotes is refused', pf.getNotesSnapshot().notes.length === 1);
+  check('tomb: delete last note through chokepoint', pf.deleteNoteById('nt-keeper') === true);
+  check('tomb: all notes deleted', pf.getNotesSnapshot().notes.length === 0);
+  check('tomb: keeper tombstoned too', !!pf.getNotesTombstones()['nt-keeper']);
+  pf.snapshotNow();
+  await sleep(120);
+
+  const wipedLS2 = makeLocalStorage();
+  h = await freshBoot({ localStorage: wipedLS2, idbDbs: sharedDbs });
+  await sleep(700); h.flushRAF(); // same debounce wait for the recovery persist
+  pf = h.ctx.window._pf;
+  const rec2 = pf.getNotesSnapshot().notes;
+  check('tomb: all-deleted case recovers nothing', rec2.length === 0, 'n=' + rec2.length);
+  check('tomb: both tombstones survive the all-deleted recovery', !!pf.getNotesTombstones()['nt-doomed'] && !!pf.getNotesTombstones()['nt-keeper']);
+
+  // ---- Bonus: malformed-import guard still holds after all this
+  pf.replaceNotes([{ nope: true }]);
+  check('tomb: malformed import still refused', pf.getNotesSnapshot().notes.length === 0);
+}
+
+// ===========================================================================
 // Run all
 // ===========================================================================
 const tests = [
@@ -693,6 +791,7 @@ const tests = [
   ['Persistence lifecycle', testPersistenceLifecycle],
   ['Firebase push/pull', testFirebaseRoundTrip],
   ['Icon hydration', testIconHydration],
+  ['Notes tombstones', testNotesTombstoneLifecycle],
 ];
 for (const [name, fn] of tests) {
   try { await fn(); }

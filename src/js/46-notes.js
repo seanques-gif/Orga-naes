@@ -132,15 +132,7 @@
         const n = noteById(id);
         if (!n) return;
         if (!confirm('Delete note "' + (n.title || 'Untitled') + '"? This cannot be undone.')) return;
-        notes = notes.filter(x => x.id !== id);
-        if (activeNoteId === id) activeNoteId = null;
-        notesSelection = notesSelection.filter(x => x !== id);
-        recordNoteTombstone(id);
-        saveNotes();
-        renderNotesList();
-        renderNotesEditor();
-        renderNotesSelBar();
-        showToast('Note deleted');
+        if (deleteNoteById(id)) showToast('Note deleted');
       });
     });
     renderNotesSelBar();
@@ -171,11 +163,9 @@
         } else if (action === 'delete') {
           if (!confirm('Delete ' + notesSelection.length + ' note' + (notesSelection.length === 1 ? '' : 's') + '? This cannot be undone.')) return;
           const ids = notesSelection.slice();
-          notes = notes.filter(x => ids.indexOf(x.id) === -1);
-          if (ids.indexOf(activeNoteId) !== -1) activeNoteId = null;
+          ids.forEach(deleteNoteById);
           notesSelection = [];
-          ids.forEach(recordNoteTombstone);
-          saveNotes(); renderNotesList(); renderNotesEditor();
+          renderNotesList(); renderNotesEditor();
           showToast('Deleted ' + ids.length + ' note' + (ids.length === 1 ? '' : 's'));
         } else if (action === 'clear') {
           notesSelection = []; renderNotesList();
@@ -266,18 +256,29 @@
     noteTitleEl.focus();
   }
 
-  function deleteActiveNote() {
-    const n = noteById(activeNoteId);
-    if (!n) return;
-    if (!confirm('Delete this note? This cannot be undone.')) return;
-    notes = notes.filter(x => x.id !== activeNoteId);
-    notesSelection = notesSelection.filter(x => x !== activeNoteId);
-    recordNoteTombstone(activeNoteId);
-    activeNoteId = null;
+  // Single deletion chokepoint: tombstone + remove + persist + re-render.
+  // Every delete path (row ×, footer button, bulk bar) funnels through here,
+  // as do automated tests — one code path means one place for the durability
+  // contract to live.
+  function deleteNoteById(id) {
+    const n = noteById(id);
+    if (!n) return false;
+    notes = notes.filter(x => x.id !== id);
+    notesSelection = notesSelection.filter(x => x !== id);
+    if (activeNoteId === id) activeNoteId = null;
+    recordNoteTombstone(id);
     saveNotes();
     renderNotesList();
     renderNotesEditor();
-    showToast('Note deleted');
+    renderNotesSelBar();
+    return true;
+  }
+  window._pf.deleteNoteById = deleteNoteById;
+
+  function deleteActiveNote() {
+    if (!noteById(activeNoteId)) return;
+    if (!confirm('Delete this note? This cannot be undone.')) return;
+    if (deleteNoteById(activeNoteId)) showToast('Note deleted');
   }
 
   function togglePin() {

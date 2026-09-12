@@ -107,6 +107,10 @@
     _maybeSaveSnapshot();
   }
 
+  // Public seam for tests (and future callers): take a snapshot now if the
+  // content hash differs. Closure-private otherwise.
+  window._pf.snapshotNow = function() { _maybeSaveSnapshot(); };
+
   async function recoverFromIDB() {
     const snap = await idbGetLatest();
     if (snap && snap.projects && snap.projects.length) {
