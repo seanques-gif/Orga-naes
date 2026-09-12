@@ -1,0 +1,12 @@
+# Line-ending policy: LF in the repo AND in the working tree, on every platform.
+#
+# Why: the shipped artifact (Orga-naes.html) is built by concatenating src/
+# fragments byte-for-byte. With core.autocrlf=true (the Windows default), git
+# checked sources out as CRLF, the build embedded those CRLFs, and the artifact's
+# bytes depended on checkout state — breaking byte-determinism and clean-clone
+# verification. text=auto lets git skip genuinely binary files by content;
+# eol=lf forces LF checkout even where autocrlf would write CRLF.
+* text=auto eol=lf
+
+# Binary assets — never normalized.
+*.png binary
