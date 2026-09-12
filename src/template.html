@@ -255,13 +255,13 @@ __ORGA_CSS_MAIN__</style>
 
     <!-- ⌨️ Shortcuts -->
     <div class="pf-options-section">
-      <div class="pf-opt-title">⌨️ Shortcuts</div>
+      <div class="pf-opt-title" data-ic-before="keyboard">Shortcuts</div>
       <button class="pf-undo-btn pf-opt-btn" id="pf-shortcuts-btn" ><span class="pf-opt-ico" data-ic="keyboard"></span> Keyboard Shortcuts</button>
     </div>
 
     <!-- ℹ️ About -->
     <div class="pf-options-section pf-section-divider">
-      <div class="pf-opt-title">ℹ️ About</div>
+      <div class="pf-opt-title" data-ic-before="info">About</div>
       <div class="pf-firebase-about">
         <strong>Orga-naes</strong> v1.0.0<br>
         A lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views, all stored locally in your browser.<br><br>
@@ -300,7 +300,7 @@ __ORGA_CSS_MAIN__</style>
   </div>
   <div class="pf-activity-panel" id="pf-today-panel" style="display:none;">
     <div class="pf-panel-head">
-      <span class="pf-panel-head-icon">⭐</span>
+      <span class="pf-panel-head-icon" data-ic="star"></span>
       <div class="pf-flex-1">
         <div class="pf-panel-title-lg">Today's Focus</div>
         <span class="pf-hint" id="pf-today-date"></span>
@@ -316,7 +316,7 @@ __ORGA_CSS_MAIN__</style>
   </div>
   <div class="pf-activity-panel" id="pf-duelist-panel" style="display:none;">
     <div class="pf-panel-head">
-      <span class="pf-panel-head-icon">📋</span>
+      <span class="pf-panel-head-icon" data-ic="file-text"></span>
       <div class="pf-panel-title-lg">Tasks by Due Date</div>
     </div>
     <div class="pf-activity-list pf-scroll-x pf-min-h-0 pf-pad-4" id="pf-duelist-list"></div>
@@ -331,7 +331,7 @@ __ORGA_CSS_MAIN__</style>
     <div class="pf-week-grid" id="pf-week-grid"></div>
     <div class="pf-week-backlog" id="pf-week-backlog">
       <div class="pf-week-backlog-head">
-        <span class="pf-week-backlog-label">📥 Backlog <span id="pf-week-backlog-count" class="pf-dim"></span></span>
+        <span class="pf-week-backlog-label" data-ic-before="download">Backlog <span id="pf-week-backlog-count" class="pf-dim"></span></span>
         <button class="pf-undo-btn" class="pf-undo-btn pf-btn-autoarrange" id="pf-backlog-arrange-btn" title="Spread backlog tasks across the rest of this week, starting today">↻ Auto-arrange</button>
       </div>
       <div id="pf-week-backlog-list" class="pf-week-backlog-list pf-week-backlog-flow"></div>
@@ -414,7 +414,7 @@ __ORGA_CSS_MAIN__</style>
 
   <div class="pf-activity-panel" id="pf-copy-modal" style="display:none;">
     <div class="pf-panel-head">
-      <span class="pf-panel-head-icon">📋</span>
+      <span class="pf-panel-head-icon" data-ic="clipboard"></span>
       <div class="pf-panel-title-lg" id="pf-copy-modal-title">Copy to Project</div>
     </div>
     <div class="pf-activity-list pf-scroll-x pf-min-h-0 pf-pad-4" id="pf-copy-modal-list"></div>
@@ -423,8 +423,8 @@ __ORGA_CSS_MAIN__</style>
     <div class="pf-conflict-box">
       <div class="pf-conflict-title" data-ic-before="alert">Sync Conflict Detected</div>
       <div class="pf-conflict-cols">
-        <div class="pf-conflict-col"><div class="pf-conflict-col-title">📱 Local</div><div id="pf-conflict-local"></div></div>
-        <div class="pf-conflict-col"><div class="pf-conflict-col-title">☁️ Cloud</div><div id="pf-conflict-remote"></div></div>
+        <div class="pf-conflict-col"><div class="pf-conflict-col-title" data-ic-before="save">Local</div><div id="pf-conflict-local"></div></div>
+        <div class="pf-conflict-col"><div class="pf-conflict-col-title" data-ic-before="cloud">Cloud</div><div id="pf-conflict-remote"></div></div>
       </div>
       <div class="pf-conflict-btns">
         <button id="pf-conflict-keep-local">Keep Local &amp; Push</button>
