@@ -261,7 +261,7 @@
         item.innerHTML = (emojiIcon ? '<span class="pf-emoji-btn" style="font-size: calc(var(--font-size-base) - 1px);">' + emojiIcon + '</span>' : '') +
           '<span class="pf-split-list-title" title="' + escapeHtml(p.title) + '">' + (searchTerm ? highlightMatch(escapeHtml(p.title), searchTerm) : escapeHtml(p.title)) + '</span>' +
           progressHtml +
-          '<button class="pf-split-list-edit" title="Rename">✏️</button>' +
+          '<button class="pf-split-list-edit" title="Rename">' + pfIcon('pencil') + '</button>' +
           '<button class="pf-split-list-move pf-move-up" title="Move up">▲</button>' +
           '<button class="pf-split-list-move pf-move-down" title="Move down">▼</button>' +
           '<button class="pf-split-list-ctx" title="More actions">⋮</button>';

@@ -73,7 +73,7 @@
       const recurChip = buildRecurChip(s, (val) => { snapshot(); s.recurrence = val || null; scheduleSave(); render(); });
       recurChip.classList.add('pf-ext-recur'); recurChip.style.display = 'inline-flex';
       extMeta.appendChild(recurChip);
-      const extEditBtn = document.createElement('button'); extEditBtn.className = 'pf-ext-edit pf-ext-chip'; extEditBtn.textContent = '✏️'; extEditBtn.title = 'Edit title'; // chip recipe in 14-utilities.css
+      const extEditBtn = document.createElement('button'); extEditBtn.className = 'pf-ext-edit pf-ext-chip'; extEditBtn.innerHTML = pfIcon('pencil'); extEditBtn.title = 'Edit title'; // chip recipe in 14-utilities.css
       extEditBtn.addEventListener('click', (e) => { e.stopPropagation(); const t = row.querySelector('.pf-subrow-title'); t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); });
       extMeta.appendChild(extEditBtn);
       // stroke=currentColor + .pf-ext-chip color:var(--text) — was #ffffff, invisible in Daylight

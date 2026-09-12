@@ -10,7 +10,7 @@
   function renderComments() {
     const listEl = document.getElementById('pf-comment-list');
     if (!commentTarget || !commentTarget.sub.comments.length) { listEl.innerHTML = '<div class="pf-comment-empty">No comments yet.</div>'; return; }
-    listEl.innerHTML = commentTarget.sub.comments.map((c, i) => '<div class="pf-comment-item">' + escapeHtml(c.text) + '<span class="pf-comment-time">' + formatDateTime(c.time) + '</span><span class="pf-comment-actions"><button class="pf-comment-edit" data-idx="' + i + '">✏️</button><button class="pf-comment-del" data-idx="' + i + '">🗑️</button></span></div>').join('');
+    listEl.innerHTML = commentTarget.sub.comments.map((c, i) => '<div class="pf-comment-item">' + escapeHtml(c.text) + '<span class="pf-comment-time">' + formatDateTime(c.time) + '</span><span class="pf-comment-actions"><button class="pf-comment-edit" data-idx="' + i + '">' + pfIcon('pencil') + '</button><button class="pf-comment-del" data-idx="' + i + '">' + pfIcon('trash') + '</button></span></div>').join('');
     listEl.querySelectorAll('.pf-comment-edit').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx);

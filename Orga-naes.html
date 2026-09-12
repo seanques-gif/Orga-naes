@@ -3967,7 +3967,7 @@
       const recurChip = buildRecurChip(s, (val) => { snapshot(); s.recurrence = val || null; scheduleSave(); render(); });
       recurChip.classList.add('pf-ext-recur'); recurChip.style.display = 'inline-flex';
       extMeta.appendChild(recurChip);
-      const extEditBtn = document.createElement('button'); extEditBtn.className = 'pf-ext-edit pf-ext-chip'; extEditBtn.textContent = '✏️'; extEditBtn.title = 'Edit title'; // chip recipe in 14-utilities.css
+      const extEditBtn = document.createElement('button'); extEditBtn.className = 'pf-ext-edit pf-ext-chip'; extEditBtn.innerHTML = pfIcon('pencil'); extEditBtn.title = 'Edit title'; // chip recipe in 14-utilities.css
       extEditBtn.addEventListener('click', (e) => { e.stopPropagation(); const t = row.querySelector('.pf-subrow-title'); t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); });
       extMeta.appendChild(extEditBtn);
       // stroke=currentColor + .pf-ext-chip color:var(--text) — was #ffffff, invisible in Daylight
@@ -4723,7 +4723,7 @@
         item.innerHTML = (emojiIcon ? '<span class="pf-emoji-btn" style="font-size: calc(var(--font-size-base) - 1px);">' + emojiIcon + '</span>' : '') +
           '<span class="pf-split-list-title" title="' + escapeHtml(p.title) + '">' + (searchTerm ? highlightMatch(escapeHtml(p.title), searchTerm) : escapeHtml(p.title)) + '</span>' +
           progressHtml +
-          '<button class="pf-split-list-edit" title="Rename">✏️</button>' +
+          '<button class="pf-split-list-edit" title="Rename">' + pfIcon('pencil') + '</button>' +
           '<button class="pf-split-list-move pf-move-up" title="Move up">▲</button>' +
           '<button class="pf-split-list-move pf-move-down" title="Move down">▼</button>' +
           '<button class="pf-split-list-ctx" title="More actions">⋮</button>';
@@ -6561,7 +6561,7 @@
   function renderComments() {
     const listEl = document.getElementById('pf-comment-list');
     if (!commentTarget || !commentTarget.sub.comments.length) { listEl.innerHTML = '<div class="pf-comment-empty">No comments yet.</div>'; return; }
-    listEl.innerHTML = commentTarget.sub.comments.map((c, i) => '<div class="pf-comment-item">' + escapeHtml(c.text) + '<span class="pf-comment-time">' + formatDateTime(c.time) + '</span><span class="pf-comment-actions"><button class="pf-comment-edit" data-idx="' + i + '">✏️</button><button class="pf-comment-del" data-idx="' + i + '">🗑️</button></span></div>').join('');
+    listEl.innerHTML = commentTarget.sub.comments.map((c, i) => '<div class="pf-comment-item">' + escapeHtml(c.text) + '<span class="pf-comment-time">' + formatDateTime(c.time) + '</span><span class="pf-comment-actions"><button class="pf-comment-edit" data-idx="' + i + '">' + pfIcon('pencil') + '</button><button class="pf-comment-del" data-idx="' + i + '">' + pfIcon('trash') + '</button></span></div>').join('');
     listEl.querySelectorAll('.pf-comment-edit').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx);
