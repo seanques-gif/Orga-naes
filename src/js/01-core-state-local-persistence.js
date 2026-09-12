@@ -70,7 +70,7 @@
   }
   function undo() {
     if (!undoStack.length) return;
-    redoStack.push(cloneProjects(projects)); // always store full for redo safety
+    redoStack.push({ _pp: false, data: cloneProjects(projects) }); // full-array entry — redo() pops this shape
     if (redoStack.length > UNDO_STACK_MAX) redoStack.shift();
     const entry = undoStack.pop();
     if (entry._pp) {
@@ -88,7 +88,7 @@
   }
   function redo() {
     if (!redoStack.length) return;
-    undoStack.push(cloneProjects(projects));
+    undoStack.push({ _pp: false, data: cloneProjects(projects) }); // full-array entry — undo() pops this shape
     if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
     const entry = redoStack.pop();
     if (entry._pp) {

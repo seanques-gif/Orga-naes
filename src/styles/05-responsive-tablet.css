@@ -38,7 +38,15 @@
   #pf-root.pf-device-desktop .pf-split-list-item:hover { background: rgba(255,255,255,0.06); }
   #pf-root.pf-device-desktop .pf-subrow:hover { border-color: var(--hover-border); }
   #pf-root.pf-device-desktop .pf-split-list-item { transition: background 0.12s; }
-  #pf-root.pf-device-desktop .pf-split-list { width: 25%; min-width: 15%; max-width: 30%; flex: none; border-right: 1px solid var(--card-border); }
+  /* min-width floor: at narrow desktop-class windows (≤768px) the 25% width
+     squeezed the list to ~130px, truncating titles to one or two characters
+     (the touch-gated drill-down never applies to no-touch devices, so both
+     panes always share the width). The floor keeps the list readable while
+     shrinking gracefully on very small windows (45vw keeps the detail pane
+     at ≥55%). At normal desktop widths 25% always exceeds the floor, so this
+     never kicks in there; min-width also legally beats max-width in CSS, so
+     the floor wins over the 30% cap at narrow sizes. */
+  #pf-root.pf-device-desktop .pf-split-list { width: 25%; min-width: min(220px, 45vw); max-width: 30%; flex: none; border-right: 1px solid var(--card-border); }
   #pf-root.pf-device-desktop .pf-split-detail { display: flex; padding: 16px 24px; overflow-y: auto; min-height: 0; }
   #pf-root.pf-device-desktop .pf-split-detail .pf-node .pf-sublist { overscroll-behavior-y: auto; }
   #pf-root.pf-device-desktop .pf-split-divider { display: block; }
