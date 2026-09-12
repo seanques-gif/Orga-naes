@@ -343,9 +343,9 @@
     --waiting: #6a4fd0;
     --waiting-bg: color-mix(in srgb, var(--waiting) 12%, transparent);
     --danger: #c0392b;
-    --accent: #0a7ea4;
+    --accent: #0a7499; /* 4.67:1 vs bg / 5.29:1 on cards — accent is used as 12px text in list titles */
     --accent-contrast: #ffffff;
-    --depth0: #0a7ea4;
+    --depth0: #0a7499;
     --depth1: #b06a00;
     --depth2: #0f7a4a;
     --depth3: #1f7f92;
@@ -7021,7 +7021,7 @@
     'amber-crt': { '--bg':'#0c0a06','--card':'#171208','--card-hover':'#1f180c','--card-border':'#3a2e14','--sub-bg':'#120e08','--sub-border':'#3a2e14','--accent':'#ffb454','--accent-contrast':'#1a1206','--text':'#f6e7cf','--text-dim':'#b89b6e','--header-bg':'#0f0c07','--toast-bg':'#1f180c','--hover-border':'#4a3a1c' },
     'phosphor-green': { '--bg':'#04100a','--card':'#08180f','--card-hover':'#0b2116','--card-border':'#163a24','--sub-bg':'#06120c','--sub-border':'#163a24','--accent':'#3ddc97','--accent-contrast':'#04160d','--text':'#d6f5e4','--text-dim':'#6fa98c','--header-bg':'#061410','--toast-bg':'#0b2116','--hover-border':'#1f4a30' },
     monochrome: { '--bg':'#0b0b0c','--card':'#141416','--card-hover':'#1b1b1e','--card-border':'#2c2c30','--sub-bg':'#101012','--sub-border':'#2c2c30','--accent':'#d7dde5','--accent-contrast':'#101012','--text':'#e6e8ea','--text-dim':'#8f9296','--header-bg':'#0e0e10','--toast-bg':'#1b1b1e','--hover-border':'#3a3a3e' },
-    daylight: { '--bg':'#eef1f5','--card':'#ffffff','--card-hover':'#f3f6f9','--card-border':'#d3dbe4','--sub-bg':'#f6f8fa','--sub-border':'#dfe6ee','--accent':'#0a7ea4','--accent-contrast':'#ffffff','--text':'#12202c','--text-dim':'#5a6b7b','--header-bg':'#ffffff','--toast-bg':'#12202c','--hover-border':'#a9b8c7','--planned':'#4a5d8a','--ongoing':'#9a5d00','--completed':'#0f7a4a','--waiting':'#6a4fd0','--danger':'#c0392b' }
+    daylight: { '--bg':'#eef1f5','--card':'#ffffff','--card-hover':'#f3f6f9','--card-border':'#d3dbe4','--sub-bg':'#f6f8fa','--sub-border':'#dfe6ee','--accent':'#0a7499','--accent-contrast':'#ffffff','--text':'#12202c','--text-dim':'#5a6b7b','--header-bg':'#ffffff','--toast-bg':'#12202c','--hover-border':'#a9b8c7','--planned':'#4a5d8a','--ongoing':'#9a5d00','--completed':'#0f7a4a','--waiting':'#6a4fd0','--danger':'#c0392b' }
   };
   const THEME_BTN_IDS = ['pf-theme-auto','pf-theme-midnight-cyan','pf-theme-amber-crt','pf-theme-phosphor-green','pf-theme-monochrome','pf-theme-daylight'];
   const CONSOLE_INK = '#04141b'; // the dark ink the White-Pair runtime falls back to
