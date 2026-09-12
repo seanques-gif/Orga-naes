@@ -1756,6 +1756,17 @@
     outline: 2px solid var(--accent, #2fd4ff);
     outline-offset: 1px;
   }
+
+  /* UX-03: visually-hidden live-region announcer — exposed to assistive tech
+     (screen readers announce changes) while taking no layout space. Used by
+     #pf-sr-announcer (role=alert) for newly logged errors; toasts announce
+     via aria-live=polite directly on #pf-toast. */
+  .pf-sr-only {
+    position: absolute; width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip: rect(0 0 0 0); clip-path: inset(50%);
+    overflow: hidden; white-space: nowrap;
+  }
 </style>
 
 <!-- SECTION: HTML SHELL — application root, toolbar, panels, and modals -->
@@ -2144,7 +2155,8 @@
       <button class="pf-zoom-btn" id="pf-zoom-reset" title="Reset zoom" style="font-size: calc(var(--font-size-base) - 3px);">⟲</button>
     </div>
   </div>
-  <div class="pf-toast" id="pf-toast"></div>
+  <div class="pf-toast" id="pf-toast" aria-live="polite"></div>
+  <div id="pf-sr-announcer" class="pf-sr-only" role="alert" aria-live="assertive"></div>
   <div class="pf-resize-handle" id="pf-resize-handle" title="Drag to resize">
     <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
       <path d="M9.5 1.5L1.5 9.5M9.5 5.5L5.5 9.5M9.5 9.5L9.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -5128,6 +5140,20 @@
   const ERROR_LOG_MAX = 200;
   let errorLog = [];
   let unreadErrorCount = 0;
+  // UX-03: screen-reader announcer for newly logged errors (role="alert"
+  // in the template). Throttled so a burst or crash-loop can't flood
+  // assistive tech; the error log itself remains the complete record.
+  const _srAnnouncer = document.getElementById('pf-sr-announcer');
+  let _lastSrAnnounce = 0;
+  function announceError(context) {
+    try {
+      if (!_srAnnouncer) return;
+      const now = Date.now();
+      if (now - _lastSrAnnounce < 2000) return;
+      _lastSrAnnounce = now;
+      _srAnnouncer.textContent = 'Error logged: ' + context;
+    } catch (_) { /* announcer must never break error logging */ }
+  }
   function logError(context, err) {
     try {
       const message = err && err.message ? err.message : String(err == null ? 'Unknown error' : err);
@@ -5137,6 +5163,7 @@
       if (errorLog.length > ERROR_LOG_MAX) errorLog.length = ERROR_LOG_MAX;
       unreadErrorCount++;
       updateErrorBadge();
+      announceError(entry.context);
       safeSet(ERROR_KEY, JSON.stringify(errorLog), false);
       console.error('[Orga-naes] ' + context + ':', err);
     } catch (loggingFailure) {
