@@ -272,3 +272,26 @@
     #pf-root .pf-notes-sel-hint { display: none; }
     #pf-root .pf-notes-panel { position: relative; }
   }
+
+  /* Notes editor enrichment: preview (checklist view), checkbox lines, indent.
+     Stored format stays plain text: "[ ] "/"[x] " prefixes + 2-space indents. */
+  #pf-root .pf-notes-preview {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 10px 4px;
+    font-family: var(--font-sans); font-size: max(12px, var(--font-size-base));
+    line-height: 1.7; color: var(--text);
+  }
+  #pf-root .pf-note-line { min-height: 1.7em; word-break: break-word; }
+  #pf-root .pf-note-checkline { display: flex; align-items: baseline; gap: 8px; }
+  #pf-root .pf-note-cbox {
+    flex-shrink: 0; width: 13px; height: 13px; border-radius: 3px; align-self: center;
+    border: 1.5px solid var(--text-dim); cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s;
+  }
+  #pf-root .pf-note-cbox:hover, #pf-root .pf-note-cbox:focus-visible { border-color: var(--accent); outline: none; }
+  #pf-root .pf-note-done .pf-note-cbox { background: var(--accent); border-color: var(--accent); }
+  #pf-root .pf-note-done .pf-note-cbox::after {
+    content: ''; width: 7px; height: 4px; border-left: 2px solid var(--accent-contrast);
+    border-bottom: 2px solid var(--accent-contrast); transform: rotate(-45deg) translate(0, -1px);
+  }
+  #pf-root .pf-note-done .pf-note-line-text { text-decoration: line-through; color: var(--text-dim); }
+  #pf-root .pf-note-blank { height: 0.9em; }

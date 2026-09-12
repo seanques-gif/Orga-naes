@@ -356,12 +356,15 @@ __ORGA_CSS_MAIN__</style>
         </div>
         <div class="pf-notes-editor-main" id="pf-notes-editor-main" style="display:none;">
           <input type="text" class="pf-notes-note-title" id="pf-note-title" placeholder="Title" spellcheck="false">
-          <textarea class="pf-notes-note-body" id="pf-note-body" placeholder="Write your note…" spellcheck="false"></textarea>
+          <textarea class="pf-notes-note-body" id="pf-note-body" placeholder="Write your note… (Tab indents, Ctrl+L makes checkboxes)" spellcheck="false"></textarea>
+          <div class="pf-notes-preview" id="pf-note-preview" style="display:none"></div>
           <div class="pf-notes-editor-foot">
             <span class="pf-notes-count" id="pf-note-count"></span>
             <span class="pf-notes-foot-actions">
               <button class="pf-undo-btn" id="pf-note-copy" title="Copy note text"><span data-ic="file"></span> Copy</button>
               <button class="pf-undo-btn" id="pf-note-pin" title="Pin to top"><span data-ic="star"></span> <span id="pf-note-pin-label">Pin</span></button>
+              <button class="pf-undo-btn" id="pf-note-list" title="Toggle checkbox on line (Ctrl+L)"><span data-ic="check-square"></span> List</button>
+              <button class="pf-undo-btn" id="pf-note-view" title="Toggle between edit and checklist view"><span data-ic="list"></span> <span id="pf-note-view-label">View</span></button>
               <button class="pf-undo-btn" id="pf-note-del" title="Delete note"><span data-ic="trash"></span></button>
             </span>
           </div>

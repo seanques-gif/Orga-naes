@@ -184,11 +184,29 @@
     } else doFallback();
   }
 
+  noteBodyEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      indentSelection(e.shiftKey);
+    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) {
+      e.preventDefault();
+      toggleCheckboxLines();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      toggleCheckedLines();
+    }
+  });
+
+  // live-refresh the view when switching modes after edits
+  noteBodyEl.addEventListener('input', renderNoteView);
+
   function renderNotesEditor() {
     const n = noteById(activeNoteId);
     if (!n) {
       notesEditorEmptyEl.style.display = 'flex';
       notesEditorMainEl.style.display = 'none';
+      noteViewMode = 'edit';
+      renderNoteView();
       return;
     }
     notesEditorEmptyEl.style.display = 'none';
@@ -198,6 +216,7 @@
     notePinLabelEl.textContent = n.pinned ? 'Unpin' : 'Pin';
     document.getElementById('pf-note-pin').title = n.pinned ? 'Unpin from top' : 'Pin to top';
     updateNoteCount();
+    renderNoteView();
   }
 
   function updateNoteCount() {
@@ -216,6 +235,7 @@
   function newNote() {
     const n = { id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: '', body: '', pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     notes.unshift(n);
+    noteViewMode = 'edit';
     saveNotes();
     activeNoteId = n.id;
     renderNotesList();
@@ -291,8 +311,126 @@
   document.getElementById('pf-note-del').addEventListener('click', deleteActiveNote);
   document.getElementById('pf-note-pin').addEventListener('click', togglePin);
   document.getElementById('pf-note-copy').addEventListener('click', copyActiveNote);
+  document.getElementById('pf-note-list').addEventListener('click', () => toggleCheckboxLines());
+  document.getElementById('pf-note-view').addEventListener('click', toggleNoteView);
   document.getElementById('pf-notes-search').addEventListener('input', (e) => { notesSearch = e.target.value.trim(); renderNotesList(); });
   noteTitleEl.addEventListener('input', () => { clearTimeout(notesSaveTimer); notesSaveTimer = setTimeout(commitNoteField, 350); });
   noteTitleEl.addEventListener('blur', commitNoteField);
   noteBodyEl.addEventListener('input', () => { updateNoteCount(); clearTimeout(notesSaveTimer); notesSaveTimer = setTimeout(commitNoteField, 350); });
   noteBodyEl.addEventListener('blur', commitNoteField);
+
+  // ===== Editor enrichment: indent, checkboxes, checklist view =====
+  const INDENT = '  '; // two spaces per level
+  const CHECK_RE = /^(\s*)(\[ \]|\[x\])\s+/i;
+  let noteViewMode = 'edit';
+
+  function getSelectionLines(ta) {
+    const v = ta.value;
+    const start = v.lastIndexOf('\n', ta.selectionStart - 1) + 1;
+    let end = v.indexOf('\n', ta.selectionEnd);
+    if (end === -1) end = v.length;
+    return { start, end };
+  }
+
+  function applyToSelectionLines(fn) {
+    const { start, end } = getSelectionLines(noteBodyEl);
+    const v = noteBodyEl.value;
+    const lines = v.slice(start, end).split('\n').map(fn);
+    const next = v.slice(0, start) + lines.join('\n') + v.slice(end);
+    noteBodyEl.value = next;
+    // restore selection spanning the same lines
+    noteBodyEl.selectionStart = start;
+    noteBodyEl.selectionEnd = start + lines.join('\n').length;
+    noteBodyEl.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function indentSelection(outdent) {
+    applyToSelectionLines((line) => {
+      if (outdent) return line.replace(/^ {1,2}|^\t/, '');
+      return line ? INDENT + line : line;
+    });
+  }
+
+  function toggleCheckboxLines() {
+    const { start, end } = getSelectionLines(noteBodyEl);
+    const lines = noteBodyEl.value.slice(start, end).split('\n');
+    const hasBox = (l) => /^\s*(\[ \]|\[x\])\s/i.test(l);
+    // if any selected line lacks a checkbox, add to all that lack one; else remove all
+    const anyMissing = lines.some(l => !hasBox(l));
+    applyToSelectionLines((line) => {
+      if (anyMissing) {
+        if (hasBox(line) || !line.trim()) return line;
+        const indent = line.match(/^\s*/)[0];
+        return indent + '[ ] ' + line.slice(indent.length);
+      }
+      return line.replace(CHECK_RE, '$1');
+    });
+    noteBodyEl.focus();
+  }
+
+  function toggleCheckedLines() {
+    applyToSelectionLines((line) => {
+      if (/^\s*\[ \]/.test(line)) return line.replace('[ ]', '[x]');
+      if (/^\s*\[x\]/i.test(line)) return line.replace(/\[x\]/i, '[ ]');
+      return line;
+    });
+  }
+
+  function toggleNoteView() {
+    commitNoteField();
+    noteViewMode = noteViewMode === 'edit' ? 'view' : 'edit';
+    renderNoteView();
+  }
+
+  function renderNoteView() {
+    const n = noteById(activeNoteId);
+    const isView = noteViewMode === 'view' && n;
+    document.getElementById('pf-note-view-label').textContent = isView ? 'Edit' : 'View';
+    noteBodyEl.style.display = isView ? 'none' : '';
+    const pv = document.getElementById('pf-note-preview');
+    pv.style.display = isView ? '' : 'none';
+    if (!isView) return;
+    // render lines: checkbox -> interactive; indentation -> padding; everything escaped
+    const lines = (n.body || '').split('\n');
+    pv.innerHTML = lines.map((line, idx) => {
+      const esc = escapeHtml(line);
+      const indent = line.match(/^\s*/)[0].length;
+      const m = line.match(/^\s*\[( |x)\]\s+(.*)$/i);
+      if (m) {
+        return '<div class="pf-note-line pf-note-checkline' + (m[1].toLowerCase() === 'x' ? ' pf-note-done' : '') + '" style="padding-left:' + (indent * 9) + 'px">' +
+          '<span class="pf-note-cbox" role="checkbox" aria-checked="' + (m[1].toLowerCase() === 'x') + '" tabindex="0" data-line="' + idx + '" aria-label="' + escapeHtml(m[2] || 'item') + '"></span>' +
+          '<span class="pf-note-line-text">' + escapeHtml(m[2] || '') + '</span></div>';
+      }
+      if (!line.trim()) return '<div class="pf-note-line pf-note-blank">&nbsp;</div>';
+      return '<div class="pf-note-line" style="padding-left:' + (indent * 9) + 'px">' + esc + '</div>';
+    }).join('');
+  }
+
+  // preview checkbox flips the source line and re-renders
+  document.getElementById('pf-note-preview').addEventListener('click', (e) => {
+    const box = e.target.closest('[data-line]');
+    if (!box) return;
+    flipLineCheckbox(Number(box.getAttribute('data-line')));
+  });
+  document.getElementById('pf-note-preview').addEventListener('keydown', (e) => {
+    const box = e.target.closest('[data-line]');
+    if (!box) return;
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipLineCheckbox(Number(box.getAttribute('data-line'))); }
+  });
+
+  function flipLineCheckbox(idx) {
+    const n = noteById(activeNoteId);
+    if (!n) return;
+    const lines = (n.body || '').split('\n');
+    if (idx < 0 || idx >= lines.length) return;
+    const line = lines[idx];
+    if (/^\s*\[ \]/.test(line)) lines[idx] = line.replace('[ ]', '[x]');
+    else if (/^\s*\[x\]/i.test(line)) lines[idx] = line.replace(/\[x\]/i, '[ ]');
+    else return;
+    n.body = lines.join('\n');
+    n.updatedAt = new Date().toISOString();
+    noteBodyEl.value = n.body; // keep the (hidden) textarea in sync so a later blur-commit can't clobber the flip
+    saveNotes();
+    renderNoteView();
+    renderNotesList(); // preview text in list may change
+  }
