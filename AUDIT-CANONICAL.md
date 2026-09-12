@@ -125,6 +125,8 @@ Recommended commit message: *"FN-01 gate: add functional test suite (43 assertio
 
 ## 6. VERIFICATION COMMANDS
 
+**Clean-clone verification: PASS (2026-09-12, HEAD `e3391d6`).** Fresh clone of the repo to a scratch dir (git-local clone, nothing pushed): contains exactly the publish set (gitignored local files absent), `npm run build` succeeds, `npm test` all green (43 functional + tokens + dates) with zero installs (no deps), and the in-clone rebuild is byte-identical (592,960 bytes) to the committed artifact. Index EOLs uniform LF (`git ls-files --eol`). A stranger can reproduce the artifact from the public content alone.
+
 ```bash
 npm test                                   # all three suites, expect green
 node tests/functional.test.mjs             # the gate suite alone
