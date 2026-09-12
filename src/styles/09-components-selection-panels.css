@@ -163,6 +163,7 @@
   }
   #pf-root .pf-subrow.pf-sub-has-children { cursor: pointer; }
   #pf-root .pf-sub-comment { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 4.5px); cursor: pointer; opacity: 1; transition: opacity 0.15s, background 0.3s var(--ease-console), border-color 0.3s var(--ease-console), color 0.3s var(--ease-console); flex-shrink: 0; padding: 2px 7px; text-align: center; min-width: 18px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--card-border); border-radius: 100px; }
+  #pf-root .pf-sub-comment .pf-ic, #pf-root .pf-dep-chip .pf-ic { width: max(12px, 1em); height: max(12px, 1em); } /* icon legibility floor: 1em shrinks to ~9.5px on small subtask text */
   #pf-root .pf-sub-comment:hover { border-color: var(--hover-border); }
   #pf-root .pf-sub-comment.pf-comment-set { opacity: 1; color: var(--depth3); border-color: color-mix(in srgb, var(--depth3) 55%, transparent); background: color-mix(in srgb, var(--depth3) 16%, transparent); font-weight: 600; }
   #pf-root .pf-sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; cursor: pointer; border: 1.5px solid var(--planned); transition: background 0.3s var(--ease-console), border-color 0.3s var(--ease-console); align-self: center; }
