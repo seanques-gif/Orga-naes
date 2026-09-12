@@ -96,3 +96,47 @@
     #pf-root .pf-notes-mobile-edit .pf-notes-editor { display: flex; }
     #pf-root .pf-notes-mobile-edit .pf-notes-editor-main { display: flex !important; }
   }
+
+  /* Notes multi-select: checkbox, row-checked state, per-row delete, selection bar. */
+  #pf-root .pf-notes-item { display: flex; align-items: flex-start; gap: 8px; }
+  #pf-root .pf-notes-item-main { flex: 1; min-width: 0; }
+  #pf-root .pf-notes-check {
+    width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; border-radius: 3px;
+    border: 1.5px solid var(--text-dim); cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s;
+  }
+  #pf-root .pf-notes-check:hover, #pf-root .pf-notes-check:focus-visible { border-color: var(--accent); outline: none; }
+  #pf-root .pf-notes-item-checked { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--sub-bg)); }
+  #pf-root .pf-notes-item-checked .pf-notes-check { background: var(--accent); border-color: var(--accent); }
+  #pf-root .pf-notes-item-checked .pf-notes-check::after {
+    content: ''; width: 8px; height: 5px; border-left: 2px solid var(--accent-contrast);
+    border-bottom: 2px solid var(--accent-contrast); transform: rotate(-45deg) translate(0, -1px);
+  }
+  #pf-root .pf-notes-item-del {
+    margin-left: auto; flex-shrink: 0; width: 18px; height: 18px; padding: 0; border: none; background: transparent;
+    color: var(--text-dim); cursor: pointer; border-radius: 3px; display: inline-flex;
+    align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s, color 0.15s, background 0.15s;
+  }
+  #pf-root .pf-notes-item:hover .pf-notes-item-del, #pf-root .pf-notes-item-del:focus-visible { opacity: 1; }
+  #pf-root .pf-notes-item-del:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+  #pf-root .pf-notes-del-ic { width: 11px; height: 11px; }
+  #pf-root .pf-notes-selbar {
+    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 6px; padding: 8px 12px; z-index: 5;
+    background: color-mix(in srgb, var(--card-bg) 92%, transparent); backdrop-filter: blur(8px);
+    border: 1px solid var(--card-border); border-radius: var(--radius-overlay);
+    box-shadow: var(--shadow-hover); max-width: calc(100% - 28px);
+  }
+  #pf-root .pf-notes-sel-count {
+    font-size: max(10px, calc(var(--font-size-base) - 2px)); font-weight: 600; color: var(--text);
+    white-space: nowrap; padding: 0 2px;
+  }
+  #pf-root .pf-notes-sel-sep { width: 1px; align-self: stretch; background: var(--card-border); flex-shrink: 0; }
+  #pf-root .pf-notes-sel-hint {
+    font-size: max(9px, calc(var(--font-size-base) - 4px)); color: var(--text-dim); white-space: nowrap;
+    margin-left: 4px;
+  }
+  @media (max-width: 700px) {
+    #pf-root .pf-notes-sel-hint { display: none; }
+    #pf-root .pf-notes-panel { position: relative; }
+  }

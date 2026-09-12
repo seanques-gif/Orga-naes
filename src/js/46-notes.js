@@ -8,6 +8,8 @@
   let activeNoteId = null;
   let notesSearch = '';
   let notesSaveTimer = null;
+  let notesSelection = [];   // multi-select ids, in click order
+  let lastClickedNoteId = null; // shift-range anchor
 
   const notesPanelEl = document.getElementById('pf-notes-panel');
   const notesListEl = document.getElementById('pf-notes-list');
@@ -51,17 +53,135 @@
     }
     notesListEl.innerHTML = visible.map(n => {
       const sel = n.id === activeNoteId ? ' pf-notes-item-active' : '';
+      const checked = notesSelection.indexOf(n.id) !== -1;
       const pin = n.pinned ? ' <svg class="pf-ic pf-notes-pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 3 2.7 5.9 6.3.7-4.7 4.3 1.3 6.1L12 17l-5.6 3 1.3-6.1L3 9.6l6.3-.7z"/></svg>' : '';
       const preview = (n.body || '').replace(/\s+/g, ' ').trim().slice(0, 60) || 'Empty note';
-      return '<div class="pf-notes-item' + sel + '" data-note-id="' + n.id + '">' +
-        '<div class="pf-notes-item-title">' + escapeHtml(n.title || 'Untitled') + pin + '</div>' +
+      return '<div class="pf-notes-item' + sel + (checked ? ' pf-notes-item-checked' : '') + '" data-note-id="' + n.id + '">' +
+        '<span class="pf-notes-check" data-note-check="' + n.id + '" role="checkbox" aria-checked="' + checked + '" tabindex="0" title="Select" aria-label="Select note: ' + escapeHtml(n.title || 'Untitled') + '"></span>' +
+        '<div class="pf-notes-item-main">' +
+        '<div class="pf-notes-item-title">' + escapeHtml(n.title || 'Untitled') + pin +
+          '<button class="pf-notes-item-del" data-note-del="' + n.id + '" title="Delete note" aria-label="Delete note: ' + escapeHtml(n.title || 'Untitled') + '">' + pfIcon('trash', 'pf-notes-del-ic') + '</button>' +
+        '</div>' +
         '<div class="pf-notes-item-preview">' + escapeHtml(preview) + '</div>' +
         '<div class="pf-notes-item-date">' + fmtNoteDate(n.updatedAt) + '</div>' +
+        '</div>' +
         '</div>';
     }).join('');
     notesListEl.querySelectorAll('[data-note-id]').forEach(el => {
-      el.addEventListener('click', () => { selectNote(el.getAttribute('data-note-id')); });
+      el.addEventListener('click', (e) => {
+        const id = el.getAttribute('data-note-id');
+        if (e.target.closest('[data-note-del]')) return; // delete button handles itself
+        if (e.target.closest('[data-note-check]')) return; // checkbox handles itself
+        if (e.ctrlKey || e.metaKey) { // ctrl/cmd-click on the row toggles selection too
+          const idx = notesSelection.indexOf(id);
+          if (idx === -1) notesSelection.push(id); else notesSelection.splice(idx, 1);
+          lastClickedNoteId = id;
+          renderNotesList();
+          return;
+        }
+        selectNote(id);
+      });
     });
+    notesListEl.querySelectorAll('[data-note-check]').forEach(el => {
+      const toggle = (e) => {
+        e.stopPropagation();
+        const id = el.getAttribute('data-note-check');
+        const idx = notesSelection.indexOf(id);
+        if (e.shiftKey && notesSelection.length && lastClickedNoteId) {
+          // shift-click: range select over the *visible* order
+          const ids = [...notesListEl.querySelectorAll('[data-note-check]')].map(x => x.getAttribute('data-note-check'));
+          const a = ids.indexOf(lastClickedNoteId), b = ids.indexOf(id);
+          if (a !== -1 && b !== -1) {
+            const [lo, hi] = a < b ? [a, b] : [b, a];
+            for (let i = lo; i <= hi; i++) if (notesSelection.indexOf(ids[i]) === -1) notesSelection.push(ids[i]);
+          }
+        } else if (idx === -1) { notesSelection.push(id); }
+        else { notesSelection.splice(idx, 1); }
+        lastClickedNoteId = id;
+        renderNotesList();
+        renderNotesSelBar();
+      };
+      el.addEventListener('click', toggle);
+      el.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(e); } });
+    });
+    notesListEl.querySelectorAll('[data-note-del]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.getAttribute('data-note-del');
+        const n = noteById(id);
+        if (!n) return;
+        if (!confirm('Delete note "' + (n.title || 'Untitled') + '"? This cannot be undone.')) return;
+        notes = notes.filter(x => x.id !== id);
+        if (activeNoteId === id) activeNoteId = null;
+        notesSelection = notesSelection.filter(x => x !== id);
+        saveNotes();
+        renderNotesList();
+        renderNotesEditor();
+        renderNotesSelBar();
+        showToast('Note deleted');
+      });
+    });
+    renderNotesSelBar();
+  }
+
+  function renderNotesSelBar() {
+    let bar = document.getElementById('pf-notes-selbar');
+    if (!notesSelection.length) { if (bar) bar.remove(); return; }
+    const pins = notesSelection.filter(id => { const n = noteById(id); return n && n.pinned; }).length;
+    const bodies = notesSelection.map(id => { const n = noteById(id); return n ? ((n.title ? n.title + '\n\n' : '') + (n.body || '')).trim() : ''; }).filter(Boolean);
+    const allText = bodies.join('\n\n---\n\n');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'pf-notes-selbar';
+      bar.id = 'pf-notes-selbar';
+      bar.setAttribute('role', 'toolbar');
+      bar.setAttribute('aria-label', 'Selected notes actions');
+      bar.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-note-action]');
+        if (!btn) return;
+        const action = btn.dataset.noteAction;
+        if (action === 'pin') {
+          const anyUnpinned = notesSelection.some(id => { const n = noteById(id); return n && !n.pinned; });
+          notesSelection.forEach(id => { const n = noteById(id); if (n) n.pinned = anyUnpinned; });
+          saveNotes(); renderNotesList(); showToast(anyUnpinned ? '✓ Pinned ' + notesSelection.length : '✓ Unpinned ' + notesSelection.length);
+        } else if (action === 'copy') {
+          copyTextToClipboard(allText, notesSelection.length + (notesSelection.length === 1 ? ' note' : ' notes') + ' copied');
+        } else if (action === 'delete') {
+          if (!confirm('Delete ' + notesSelection.length + ' note' + (notesSelection.length === 1 ? '' : 's') + '? This cannot be undone.')) return;
+          const ids = notesSelection.slice();
+          notes = notes.filter(x => ids.indexOf(x.id) === -1);
+          if (ids.indexOf(activeNoteId) !== -1) activeNoteId = null;
+          notesSelection = [];
+          saveNotes(); renderNotesList(); renderNotesEditor();
+          showToast('Deleted ' + ids.length + ' note' + (ids.length === 1 ? '' : 's'));
+        } else if (action === 'clear') {
+          notesSelection = []; renderNotesList();
+        }
+      });
+      notesPanelEl.appendChild(bar);
+    }
+    bar.innerHTML = '<span class="pf-notes-sel-count">' + notesSelection.length + ' selected</span>' +
+      '<span class="pf-notes-sel-sep"></span>' +
+      '<button class="pf-selbar-btn" data-note-action="pin">' + (pins < notesSelection.length ? 'Pin' : 'Unpin') + '</button>' +
+      '<button class="pf-selbar-btn" data-note-action="copy">Copy</button>' +
+      '<button class="pf-selbar-btn" data-note-action="delete" style="color:var(--danger);">Delete</button>' +
+      '<button class="pf-selbar-btn pf-selbar-close" data-note-action="clear" title="Clear selection">✕</button>' +
+      '<span class="pf-notes-sel-hint">Ctrl-click for one-by-one · Shift-click for a range</span>';
+    bar.setAttribute('aria-label', notesSelection.length + ' notes selected');
+  }
+
+  function copyTextToClipboard(text, msg) {
+    if (!text) { showToast('Nothing to copy', true); return; }
+    const doFallback = () => {
+      try {
+        const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+        showToast('✓ ' + msg);
+      } catch (e) { showToast('⚠ Copy failed', true); logError('Copy notes', e); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => showToast('✓ ' + msg), doFallback);
+    } else doFallback();
   }
 
   function renderNotesEditor() {
@@ -108,6 +228,7 @@
     if (!n) return;
     if (!confirm('Delete this note? This cannot be undone.')) return;
     notes = notes.filter(x => x.id !== activeNoteId);
+    notesSelection = notesSelection.filter(x => x !== activeNoteId);
     activeNoteId = null;
     saveNotes();
     renderNotesList();
@@ -157,7 +278,8 @@
 
   function openNotesPanel() {
     loadNotes().then(() => {
-      if (!notes.length && !activeNoteId) { /* keep empty state until user creates */ }
+      notesSelection = [];
+      lastClickedNoteId = null;
       renderNotesList();
       renderNotesEditor();
       openModal(notesPanelEl, 'flex');
