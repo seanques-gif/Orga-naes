@@ -50,6 +50,25 @@ reproduce `Orga-naes.html` exactly — `Orga-naes.html.sha256` pins the bytes an
 - The standalone PDF export (`src/js/` reports module) intentionally uses literal px
   and non-token colors — it is a separate document with no `#pf-root`.
 
+## The change loop (how every edit happens)
+
+Work in **chained mode**: one change, one verify, one commit. Small blast radius,
+failures self-identify, rollback is always one commit away.
+
+1. **Change ONE thing** in `src/` (one bug fix, one feature, one refactor —
+   related CSS tweaks may batch, but logic/data/persistence changes never batch).
+2. **`npm run build`** — regenerates the artifact + refreshes the pin.
+3. **`npm test`** — all suites green, or fix before moving on.
+4. **Prove it where users live** for anything visual/interactive: open the
+   artifact (preview or `file://`), exercise the change on light + dark presets.
+5. **Commit** the change (source + rebuilt artifact + pin, together).
+6. Only then start the next change. Never pile an unverified edit onto a
+   dirty tree.
+
+When a fix exposes a broken safety net (a test that can't see the bug class,
+a non-reproducible build, a stale pin), **mend the net immediately** — that
+is part of the same loop, not a separate task.
+
 ## Do NOT
 
 - Run any old one-time extraction tooling against `Orga-naes.html` (it would clobber `src/`).
