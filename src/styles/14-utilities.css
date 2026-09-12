@@ -254,7 +254,7 @@
   #pf-root .pf-notes-del-ic { width: 11px; height: 11px; }
   #pf-root .pf-notes-selbar {
     position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
-    display: flex; align-items: center; gap: 6px; padding: 8px 12px; z-index: 5;
+    display: flex; align-items: center; gap: 6px; padding: 8px 12px; z-index: var(--z-float);
     background: color-mix(in srgb, var(--card-bg) 92%, transparent); backdrop-filter: blur(8px);
     border: 1px solid var(--card-border); border-radius: var(--radius-overlay);
     box-shadow: var(--shadow-hover); max-width: calc(100% - 28px);

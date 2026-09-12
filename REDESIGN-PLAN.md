@@ -2,7 +2,7 @@
 
 Status legend: ✅ done · ⏳ in progress · ⬜ pending · 🔀 decision needed
 
-Last updated: 2026-09-12 — **PLAN COMPLETE.** All phases (0→4) shipped, verified, and committed locally (17 commits ahead of origin; push parked pending owner authorization). Post-plan additions: pre-release audit closed GO (`AUDIT-CANONICAL.md`), FN-01 functional test gate built and wired into `npm test`, REDO-01 crash fix, UX-01/UX-03 fixes, clean-clone reproducibility proven.
+Last updated: 2026-09-12 — **PLAN COMPLETE.** All phases (0→4) shipped, verified, and committed locally (59 commits ahead of origin; push parked pending owner authorization). Post-plan additions: pre-release audit closed GO (`AUDIT-CANONICAL.md`), FN-01 functional test gate built and wired into `npm test`, REDO-01 crash fix, UX-01/UX-03 fixes, clean-clone reproducibility proven.
 Baseline (released): commit `a3dff27` (`origin/main`), tag `released-baseline-2026-09-10`
 Working state: committed on local `main`; clean tree; nothing pushed.
 
@@ -73,7 +73,7 @@ src/
   order.json        exact concatenation order for css + js fragments
   styles/           16 CSS modules (01-chrome … 15-a11y, 90-print; 13-overlays,
                     14-utilities and 15-a11y were added by 3B-2/3B-3/3D)
-  js/               46 JS modules (00-svg-icons … 45-firebase-cloud-sync)
+  js/               47 JS modules (00-svg-icons … 45-firebase-cloud-sync, 46-notes)
 build.mjs           zero-dep Node build → Orga-naes.html
 package.json        npm run build | test | verify
 AGENTS.md           source-of-truth + build rules (agents read this automatically)
@@ -81,7 +81,7 @@ Orga-naes.html      generated, committed build output (never hand-edited)
 tests/
   design-tokens.test.mjs   design-rule guard (reads the built file)
   date-utils.test.mjs      date logic
-  functional.test.mjs      43-assertion functional gate (post-plan, FN-01):
+  functional.test.mjs      99-assertion functional gate, 12 tests (post-plan, FN-01):
                            vm harness boots the real built artifact
 ```
 
