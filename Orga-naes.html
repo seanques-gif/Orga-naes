@@ -941,7 +941,7 @@
   #pf-root .pf-split-sort select:hover { border-color: var(--accent); }
   #pf-root .pf-split-collapse-btn {
     background: transparent; border: 1px solid var(--card-border); color: var(--text-dim);
-    font-size: calc(var(--font-size-base) - 5px); padding: 0 8px; border-radius: var(--radius-control); cursor: pointer; font-weight: 600;
+    font-size: max(10px, calc(var(--font-size-base) - 5px)); padding: 0 8px; border-radius: var(--radius-control); cursor: pointer; font-weight: 600;
     transition: color var(--dur-state) var(--ease-console), border-color var(--dur-state) var(--ease-console), background var(--dur-state) var(--ease-console);
     height: 20px; box-sizing: border-box; line-height: 1;
   }
@@ -1711,12 +1711,14 @@
      Only theme-independent, non-dynamic styling belongs here. Anything the JS
      sets per-render (positions, computed colors) stays inline by necessity. */
   #pf-root .pf-opt-ico { display: inline-block; width: 20px; text-align: center; }
-  /* Inline SVG chrome icons (D10): size follows the button font, ink follows text color. */
-  #pf-root .pf-ic { width: 1em; height: 1em; display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
+  /* Inline SVG chrome icons (D10): size follows the button font, ink follows text color.
+     12px floor: 1em inherits subtractive calcs that compound with the display-scale
+     slider (60% × (base − 5px) ≈ 4px) — icons carry meaning and must stay legible. */
+  #pf-root .pf-ic { width: max(12px, 1em); height: max(12px, 1em); display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
   #pf-root .pf-opt-ico .pf-ic,
   #pf-root .pf-fab-icon .pf-ic,
   #pf-root .pf-bottom-nav-btn .pf-ic { width: calc(var(--font-size-base) + 2px); height: calc(var(--font-size-base) + 2px); vertical-align: middle; }
-  #pf-root .pf-ic-title { width: calc(var(--font-size-base) - 1px); height: calc(var(--font-size-base) - 1px); vertical-align: -0.15em; margin-right: 4px; opacity: 0.85; }
+  #pf-root .pf-ic-title { width: max(12px, calc(var(--font-size-base) - 1px)); height: max(12px, calc(var(--font-size-base) - 1px)); vertical-align: -0.15em; margin-right: 4px; opacity: 0.85; }
   #pf-root .pf-recur-ic { margin-right: 3px; opacity: 0.9; }
   #pf-root .pf-opt-title {
     font-size: calc(var(--font-size-base) - 3px);
