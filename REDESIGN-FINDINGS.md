@@ -648,3 +648,33 @@ token on both Midnight and Daylight.
    screenshots — chased through scrollbars/pseudo-elements/shadow rules/
    particle layer, then disproven by loading a bare directory listing (zero
    app code, identical strip): preview host chrome, absent in real browsers.
+
+   **F-UI-5i — contrast-audit session (measured, then gated).** User report:
+   "colors in light mode are hard to distinguish." Two real defects found by
+   measurement, plus a permanent gate so the bug classes cannot return:
+   - **Planned-status color indistinguishable (ΔE 1.8).** `--planned` was a
+     gray statistically identical to `--text-dim` on Daylight (ΔE 1.8; <10
+     reads as the same color) and near-identical on dark presets (ΔE 5.5) —
+     planned dots/chips melted into chrome. Measured candidate search against
+     every neighbor: Daylight → `#4a5d8a` blue-slate (worst pair 18.7), dark
+     shared `:root` → `#5878a8` steel-slate (worst 23.7–37.5 per preset).
+     Both synced definitions updated in lockstep. (`7e896c2`)
+   - **Daylight accent failed WCAG as text (4.09:1).** Accent doubles as 12px
+     list-title text; live scanner (91 text + 72 icon/dot elements, effective
+     contrast with alpha composited against real painted bg) found 4.09:1 vs
+     the 4.5 floor — the only failure. Darkened `#0a7ea4` → `#0a7499` (same
+     hue family): 4.67:1 vs bg, 5.29:1 on cards, white-on-accent buttons
+     4.63 → 5.29 (White-Pair rule still passes). Re-scan: zero failures.
+     (`fd636f2`)
+   - **Dark presets audited clean.** Same scanner × 4 presets × 2 states
+     (default; detail + status menu open), 96 elements each: zero failures.
+   - **Permanent gate: `tests/contrast.test.mjs` (33f8478).** 34 checks × 5
+     presets parsed from the built artifact: text 4.5:1, UI/dots 3.0:1,
+     White-Pair, status ΔE ≥ 12 (kills the planned-gray class), and CSS↔JS
+     preset sync (kills two-definitions drift). Proven both directions: clean
+     passes; replaying both shipped bugs and a hand-made desync each fail
+     with exact diagnostics. Honest note: the sync check's first version was
+     vacuously green — its parser silently matched zero JS tokens (quoted-key
+     format); the tamper proofs exposed it and it now genuinely parses both
+     formats. Full contrast contract: every text ≥4.5:1, every icon/dot
+     ≥3:1, every status distinguishable (ΔE ≥18.7), across all 5 presets.
