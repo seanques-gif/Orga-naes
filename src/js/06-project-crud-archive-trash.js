@@ -84,19 +84,19 @@
     const myToken = ++_statusMenuToken;
     const rect = anchorEl.getBoundingClientRect();
     const menu = document.createElement('div');
-    menu.className = 'pf-status-menu';
-    menu.style.cssText = 'position:fixed;z-index:var(--z-menu);background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius-overlay);box-shadow:0 6px 24px rgba(0,0,0,0.35);padding:4px;min-width:140px;font-size: calc(var(--font-size-base) - 2px);';
+    menu.className = 'pf-status-menu'; // 3B-3: recipe lives in 14-utilities.css
     STATUSES.forEach(function(st) {
       const item = document.createElement('div');
       item.textContent = STATUS_LABEL[st];
       const isCurrent = st === currentStatus;
-      item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-container);cursor:pointer;color:var(--text);' + (isCurrent ? 'background:color-mix(in srgb, var(--accent) 18%, transparent);font-weight:700;' : '');
+      item.className = 'pf-status-menu-item' + (isCurrent ? ' pf-current' : '');
       const dot = document.createElement('span');
-      dot.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + statusDotColor(st) + ';border:1.5px solid ' + statusDotColor(st) + ';';
+      dot.className = 'pf-status-dot'; // shape in CSS; color is dynamic
+      dot.style.background = statusDotColor(st);
+      dot.style.border = '1.5px solid ' + statusDotColor(st);
       item.prepend(dot);
       item.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); const stillCurrent = myToken === _statusMenuToken; closeStatusMenu(); if (!isCurrent && stillCurrent) onPick(st); });
-      item.addEventListener('mouseenter', function() { if (!isCurrent) item.style.background = 'var(--card-hover)'; });
-      item.addEventListener('mouseleave', function() { if (!isCurrent) item.style.background = ''; });
+      // hover styling now handled by .pf-status-menu-item:hover in CSS (3B-3)
       menu.appendChild(item);
     });
     document.getElementById('pf-root').appendChild(menu);

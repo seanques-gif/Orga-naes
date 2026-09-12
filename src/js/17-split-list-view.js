@@ -133,7 +133,7 @@
       const catAddBtn = document.createElement('button');
       catAddBtn.textContent = '+';
       catAddBtn.title = 'New project in ' + (cat === '__uncategorized__' ? 'Uncategorized' : cat);
-      catAddBtn.style.cssText = 'background:transparent;border:none;color:var(--text-dim);font-size: calc(var(--font-size-base) + 2px);font-weight:700;cursor:pointer;margin-right:4px;padding:0 2px;border-radius:6px;line-height:1;';
+      catAddBtn.className = 'pf-cat-add'; // 3B-3: recipe in 14-utilities.css
       catAddBtn.addEventListener('mouseenter', () => { catAddBtn.style.color = 'var(--accent)'; });
       catAddBtn.addEventListener('mouseleave', () => { catAddBtn.style.color = 'var(--text-dim)'; });
       catAddBtn.addEventListener('click', (e) => { e.stopPropagation(); addProject(cat === '__uncategorized__' ? null : cat); });
@@ -176,7 +176,7 @@
       const txt = catLabel.textContent + (_isCollapsed ? ' ▸' : ' ▾'); catLabel.textContent = '';
       const catLabelText = document.createElement('span');
       catLabelText.textContent = txt;
-      catLabelText.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      catLabelText.className = 'pf-ellip-flex'; // 3B-3
       catAddBtn.style.marginRight = '0';
       catAddBtn.style.marginLeft = '4px';
       catLabel.appendChild(catLabelText);
@@ -186,7 +186,7 @@
       catItemsWrap.className = 'pf-cat-items-wrap' + (_isCollapsed ? ' pf-collapsed' : '');
       if (!group.length && !_isCollapsed) {
         const hint = document.createElement('div');
-        hint.style.cssText = 'font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);padding:8px 16px;font-style:italic;opacity:0.7;';
+        hint.className = 'pf-empty-hint'; // 3B-3
         hint.textContent = 'No projects in this category';
         catItemsWrap.appendChild(hint);
       }

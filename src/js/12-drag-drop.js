@@ -43,8 +43,7 @@
     if (root.classList.contains('pf-device-mobile')) {
       // Calendar and comment icons in main row (visible without swiping)
       const dueIcon = document.createElement('span');
-      dueIcon.classList.add('pf-ext-due');
-      dueIcon.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;';
+      dueIcon.classList.add('pf-ext-due', 'pf-ext-inline'); // 3B-3: recipe in 14-utilities.css
       (function refreshDueIcon() {
         let color = 'rgba(255,255,255,0.3)'; let title = 'No due date';
         if (s.status === 'completed') { color = 'var(--completed)'; title = s.dueAt ? 'Completed, was due: ' + formatDateShort(s.dueAt) : 'Completed'; }
@@ -64,7 +63,7 @@
       })();
       dueIcon.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.dueAt || ''; input.style.position = 'absolute'; input.style.opacity = '0'; input.style.pointerEvents = 'none'; dueIcon.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch(err){} input.addEventListener('change', () => { snapshot(); s.dueAt = input.value || null; scheduleSave(); render(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }); input.addEventListener('blur', () => { input.remove(); }); });
       subDatesEl.appendChild(dueIcon);
-      const cm = document.createElement('span'); cm.innerHTML = pfIcon('message'); cm.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:var(--font-size-base);'; cm.classList.add('pf-ext-comment'); if (s.comments && s.comments.length) cm.classList.add('pf-comment-set'); cm.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; cm.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(cm);
+      const cm = document.createElement('span'); cm.innerHTML = pfIcon('message'); cm.className = 'pf-ext-inline pf-ext-comment'; cm.style.fontSize = 'var(--font-size-base)'; cm.style.justifyContent = 'center'; if (s.comments && s.comments.length) cm.classList.add('pf-comment-set'); cm.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; cm.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(cm);
       // Extend-meta with dependency only (revealed on swipe)
       const extMeta = document.createElement('span');
       extMeta.className = 'pf-sub-extend-meta';
@@ -74,10 +73,11 @@
       const recurChip = buildRecurChip(s, (val) => { snapshot(); s.recurrence = val || null; scheduleSave(); render(); });
       recurChip.classList.add('pf-ext-recur'); recurChip.style.display = 'inline-flex';
       extMeta.appendChild(recurChip);
-      const extEditBtn = document.createElement('button'); extEditBtn.className = 'pf-ext-edit'; extEditBtn.textContent = '✏️'; extEditBtn.title = 'Edit title'; extEditBtn.style.cssText = 'background:transparent;border:1px solid var(--card-border);border-radius:100px;padding:2px 7px;cursor:pointer;font-size: calc(var(--font-size-base) - 4.5px);display:inline-flex;align-items:center;justify-content:center;';
+      const extEditBtn = document.createElement('button'); extEditBtn.className = 'pf-ext-edit pf-ext-chip'; extEditBtn.textContent = '✏️'; extEditBtn.title = 'Edit title'; // chip recipe in 14-utilities.css
       extEditBtn.addEventListener('click', (e) => { e.stopPropagation(); const t = row.querySelector('.pf-subrow-title'); t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); });
       extMeta.appendChild(extEditBtn);
-      const extPromoteBtn = document.createElement('button'); extPromoteBtn.className = 'pf-ext-promote'; extPromoteBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'; extPromoteBtn.title = 'Promote to Project'; extPromoteBtn.style.cssText = 'background:transparent;border:1px solid var(--card-border);border-radius:100px;padding:2px 7px;cursor:pointer;font-size: calc(var(--font-size-base) - 4.5px);display:inline-flex;align-items:center;justify-content:center;';
+      // stroke=currentColor + .pf-ext-chip color:var(--text) — was #ffffff, invisible in Daylight
+      const extPromoteBtn = document.createElement('button'); extPromoteBtn.className = 'pf-ext-promote pf-ext-chip'; extPromoteBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'; extPromoteBtn.title = 'Promote to Project';
       extPromoteBtn.addEventListener('click', (e) => { e.stopPropagation(); promoteSubToProject(p, s); });
       extMeta.appendChild(extPromoteBtn);
       row.appendChild(extMeta);

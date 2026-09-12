@@ -103,3 +103,27 @@
   #pf-root #pf-snapshots-panel { width: min(500px, 90vw); max-height: min(80vh, 700px); }
   #pf-root #pf-error-panel { width: min(560px, 90vw); max-height: min(80vh, 700px); }
   #pf-root #pf-copy-modal { width: min(500px, 90vw); max-height: min(80vh, 600px); height: 60vh; flex-direction: column; }
+
+  /* SUBSECTION: 3B-3 slice 2 — recipes extracted from JS-generated markup.
+     Replaces duplicated cssText/inline-prop writes; dynamic parts (status
+     colors, drag geometry) remain inline by necessity. */
+  /* row recipe shared by due-list, copy-to-project modal, weekly drag rows */
+  #pf-root .pf-due-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 4px; background: var(--card); cursor: pointer; transition: border-color 0.15s, transform 0.1s; }
+  /* status dots: size/shape in class, color (user-picked or status token) stays inline */
+  #pf-root .pf-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  #pf-root .pf-status-dot-sm { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  /* text truncation */
+  #pf-root .pf-ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pf-root .pf-ellip-flex { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* swipe-extend meta chips (edit / promote) — color: var(--text) so inline
+     SVGs drawn with stroke=currentColor stay visible in every preset (Daylight fix) */
+  #pf-root .pf-ext-chip { background: transparent; border: 1px solid var(--card-border); border-radius: 100px; padding: 2px 7px; cursor: pointer; font-size: calc(var(--font-size-base) - 4.5px); display: inline-flex; align-items: center; justify-content: center; color: var(--text); }
+  /* canvas status menu (06-project-crud-archive-trash) */
+  #pf-root .pf-status-menu { position: fixed; z-index: var(--z-menu); background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius-overlay); box-shadow: 0 6px 24px rgba(0,0,0,0.35); padding: 4px; min-width: 140px; font-size: calc(var(--font-size-base) - 2px); }
+  #pf-root .pf-status-menu-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius-container); cursor: pointer; color: var(--text); }
+  #pf-root .pf-status-menu-item.pf-current { background: color-mix(in srgb, var(--accent) 18%, transparent); font-weight: 700; }
+  #pf-root .pf-status-menu-item:not(.pf-current):hover { background: var(--card-hover); }
+  /* split-list category label controls */
+  #pf-root .pf-cat-add { background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) + 2px); font-weight: 700; cursor: pointer; margin-right: 4px; padding: 0 2px; border-radius: 6px; line-height: 1; }
+  #pf-root .pf-empty-hint { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); padding: 8px 16px; font-style: italic; opacity: 0.7; }
+  #pf-root .pf-ext-inline { cursor: pointer; display: inline-flex; align-items: center; }

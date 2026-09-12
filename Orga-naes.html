@@ -1809,6 +1809,30 @@
   #pf-root #pf-snapshots-panel { width: min(500px, 90vw); max-height: min(80vh, 700px); }
   #pf-root #pf-error-panel { width: min(560px, 90vw); max-height: min(80vh, 700px); }
   #pf-root #pf-copy-modal { width: min(500px, 90vw); max-height: min(80vh, 600px); height: 60vh; flex-direction: column; }
+
+  /* SUBSECTION: 3B-3 slice 2 — recipes extracted from JS-generated markup.
+     Replaces duplicated cssText/inline-prop writes; dynamic parts (status
+     colors, drag geometry) remain inline by necessity. */
+  /* row recipe shared by due-list, copy-to-project modal, weekly drag rows */
+  #pf-root .pf-due-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 4px; background: var(--card); cursor: pointer; transition: border-color 0.15s, transform 0.1s; }
+  /* status dots: size/shape in class, color (user-picked or status token) stays inline */
+  #pf-root .pf-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  #pf-root .pf-status-dot-sm { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  /* text truncation */
+  #pf-root .pf-ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pf-root .pf-ellip-flex { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* swipe-extend meta chips (edit / promote) — color: var(--text) so inline
+     SVGs drawn with stroke=currentColor stay visible in every preset (Daylight fix) */
+  #pf-root .pf-ext-chip { background: transparent; border: 1px solid var(--card-border); border-radius: 100px; padding: 2px 7px; cursor: pointer; font-size: calc(var(--font-size-base) - 4.5px); display: inline-flex; align-items: center; justify-content: center; color: var(--text); }
+  /* canvas status menu (06-project-crud-archive-trash) */
+  #pf-root .pf-status-menu { position: fixed; z-index: var(--z-menu); background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius-overlay); box-shadow: 0 6px 24px rgba(0,0,0,0.35); padding: 4px; min-width: 140px; font-size: calc(var(--font-size-base) - 2px); }
+  #pf-root .pf-status-menu-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius-container); cursor: pointer; color: var(--text); }
+  #pf-root .pf-status-menu-item.pf-current { background: color-mix(in srgb, var(--accent) 18%, transparent); font-weight: 700; }
+  #pf-root .pf-status-menu-item:not(.pf-current):hover { background: var(--card-hover); }
+  /* split-list category label controls */
+  #pf-root .pf-cat-add { background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) + 2px); font-weight: 700; cursor: pointer; margin-right: 4px; padding: 0 2px; border-radius: 6px; line-height: 1; }
+  #pf-root .pf-empty-hint { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); padding: 8px 16px; font-style: italic; opacity: 0.7; }
+  #pf-root .pf-ext-inline { cursor: pointer; display: inline-flex; align-items: center; }
   /* SUBSECTION: Accessibility & Motion Preferences (F1/F2)
      Reduced motion keeps opacity/color but removes movement: durations collapse
      to ~0 (not `none`, so `animationend` listeners still fire). Hover motion is
@@ -3377,19 +3401,19 @@
     const myToken = ++_statusMenuToken;
     const rect = anchorEl.getBoundingClientRect();
     const menu = document.createElement('div');
-    menu.className = 'pf-status-menu';
-    menu.style.cssText = 'position:fixed;z-index:var(--z-menu);background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius-overlay);box-shadow:0 6px 24px rgba(0,0,0,0.35);padding:4px;min-width:140px;font-size: calc(var(--font-size-base) - 2px);';
+    menu.className = 'pf-status-menu'; // 3B-3: recipe lives in 14-utilities.css
     STATUSES.forEach(function(st) {
       const item = document.createElement('div');
       item.textContent = STATUS_LABEL[st];
       const isCurrent = st === currentStatus;
-      item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-container);cursor:pointer;color:var(--text);' + (isCurrent ? 'background:color-mix(in srgb, var(--accent) 18%, transparent);font-weight:700;' : '');
+      item.className = 'pf-status-menu-item' + (isCurrent ? ' pf-current' : '');
       const dot = document.createElement('span');
-      dot.style.cssText = 'width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + statusDotColor(st) + ';border:1.5px solid ' + statusDotColor(st) + ';';
+      dot.className = 'pf-status-dot'; // shape in CSS; color is dynamic
+      dot.style.background = statusDotColor(st);
+      dot.style.border = '1.5px solid ' + statusDotColor(st);
       item.prepend(dot);
       item.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); const stillCurrent = myToken === _statusMenuToken; closeStatusMenu(); if (!isCurrent && stillCurrent) onPick(st); });
-      item.addEventListener('mouseenter', function() { if (!isCurrent) item.style.background = 'var(--card-hover)'; });
-      item.addEventListener('mouseleave', function() { if (!isCurrent) item.style.background = ''; });
+      // hover styling now handled by .pf-status-menu-item:hover in CSS (3B-3)
       menu.appendChild(item);
     });
     document.getElementById('pf-root').appendChild(menu);
@@ -3534,10 +3558,10 @@
         const treeCount = countTree(pr.subtasks || []);
         const countLabel = treeCount.total ? (treeCount.done + '/' + treeCount.total + ' done') : 'No subtasks yet';
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--card-border);margin-bottom:4px;background:var(--card);cursor:pointer;transition:border-color 0.15s,transform 0.1s;';
-        row.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--' + pr.status + ');flex-shrink:0;"></span>' +
-          '<span style="flex:1;font-size: calc(var(--font-size-base) - 2px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(pr.title) + '</span>' +
-          '<span class="pf-metric" style="color:var(--text-dim);font-size: calc(var(--font-size-base) - 4px);flex-shrink:0;">' + countLabel + '</span>';
+        row.className = 'pf-due-row'; // 3B-3: recipe in 14-utilities.css (was cssText)
+        row.innerHTML = '<span class="pf-status-dot" style="background:var(--' + pr.status + ')"></span>' +
+          '<span class="pf-ellip-flex" style="font-size: calc(var(--font-size-base) - 2px);">' + escapeHtml(pr.title) + '</span>' +
+          '<span class="pf-metric pf-hint pf-shrink-0">' + countLabel + '</span>';
         row.addEventListener('mouseenter', () => { row.style.borderColor = 'var(--hover-border)'; });
         row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; });
         row.addEventListener('click', () => { closeAllModals(); copySubtasksToProject(sourceProject, subtaskIds, pr.id); clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); });
@@ -3693,9 +3717,10 @@
           cb.checked = (subtask.blockedBy || []).includes(s.id);
           const txt = document.createElement('span');
           txt.textContent = s.title;
-          txt.style.overflow = 'hidden'; txt.style.textOverflow = 'ellipsis'; txt.style.whiteSpace = 'nowrap';
+          txt.className = 'pf-ellip'; // 3B-3: was 3 inline props
           const dot = document.createElement('span');
-          dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:var(--' + s.status + ');flex-shrink:0;';
+          dot.className = 'pf-status-dot-sm'; // shape in CSS; color is dynamic
+          dot.style.background = 'var(--' + s.status + ')';
           lbl.appendChild(cb); lbl.appendChild(dot); lbl.appendChild(txt);
           cb.addEventListener('change', () => {
             snapshot();
@@ -3907,8 +3932,7 @@
     if (root.classList.contains('pf-device-mobile')) {
       // Calendar and comment icons in main row (visible without swiping)
       const dueIcon = document.createElement('span');
-      dueIcon.classList.add('pf-ext-due');
-      dueIcon.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;';
+      dueIcon.classList.add('pf-ext-due', 'pf-ext-inline'); // 3B-3: recipe in 14-utilities.css
       (function refreshDueIcon() {
         let color = 'rgba(255,255,255,0.3)'; let title = 'No due date';
         if (s.status === 'completed') { color = 'var(--completed)'; title = s.dueAt ? 'Completed, was due: ' + formatDateShort(s.dueAt) : 'Completed'; }
@@ -3928,7 +3952,7 @@
       })();
       dueIcon.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = s.dueAt || ''; input.style.position = 'absolute'; input.style.opacity = '0'; input.style.pointerEvents = 'none'; dueIcon.appendChild(input); input.focus(); try { input.showPicker && input.showPicker(); } catch(err){} input.addEventListener('change', () => { snapshot(); s.dueAt = input.value || null; scheduleSave(); render(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }); input.addEventListener('blur', () => { input.remove(); }); });
       subDatesEl.appendChild(dueIcon);
-      const cm = document.createElement('span'); cm.innerHTML = pfIcon('message'); cm.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:var(--font-size-base);'; cm.classList.add('pf-ext-comment'); if (s.comments && s.comments.length) cm.classList.add('pf-comment-set'); cm.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; cm.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(cm);
+      const cm = document.createElement('span'); cm.innerHTML = pfIcon('message'); cm.className = 'pf-ext-inline pf-ext-comment'; cm.style.fontSize = 'var(--font-size-base)'; cm.style.justifyContent = 'center'; if (s.comments && s.comments.length) cm.classList.add('pf-comment-set'); cm.title = s.comments && s.comments.length ? s.comments.length + ' comment(s)' : 'Add comment'; cm.addEventListener('click', (e) => { e.stopPropagation(); openCommentPanel(p, s); }); subDatesEl.appendChild(cm);
       // Extend-meta with dependency only (revealed on swipe)
       const extMeta = document.createElement('span');
       extMeta.className = 'pf-sub-extend-meta';
@@ -3938,10 +3962,11 @@
       const recurChip = buildRecurChip(s, (val) => { snapshot(); s.recurrence = val || null; scheduleSave(); render(); });
       recurChip.classList.add('pf-ext-recur'); recurChip.style.display = 'inline-flex';
       extMeta.appendChild(recurChip);
-      const extEditBtn = document.createElement('button'); extEditBtn.className = 'pf-ext-edit'; extEditBtn.textContent = '✏️'; extEditBtn.title = 'Edit title'; extEditBtn.style.cssText = 'background:transparent;border:1px solid var(--card-border);border-radius:100px;padding:2px 7px;cursor:pointer;font-size: calc(var(--font-size-base) - 4.5px);display:inline-flex;align-items:center;justify-content:center;';
+      const extEditBtn = document.createElement('button'); extEditBtn.className = 'pf-ext-edit pf-ext-chip'; extEditBtn.textContent = '✏️'; extEditBtn.title = 'Edit title'; // chip recipe in 14-utilities.css
       extEditBtn.addEventListener('click', (e) => { e.stopPropagation(); const t = row.querySelector('.pf-subrow-title'); t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); });
       extMeta.appendChild(extEditBtn);
-      const extPromoteBtn = document.createElement('button'); extPromoteBtn.className = 'pf-ext-promote'; extPromoteBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'; extPromoteBtn.title = 'Promote to Project'; extPromoteBtn.style.cssText = 'background:transparent;border:1px solid var(--card-border);border-radius:100px;padding:2px 7px;cursor:pointer;font-size: calc(var(--font-size-base) - 4.5px);display:inline-flex;align-items:center;justify-content:center;';
+      // stroke=currentColor + .pf-ext-chip color:var(--text) — was #ffffff, invisible in Daylight
+      const extPromoteBtn = document.createElement('button'); extPromoteBtn.className = 'pf-ext-promote pf-ext-chip'; extPromoteBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'; extPromoteBtn.title = 'Promote to Project';
       extPromoteBtn.addEventListener('click', (e) => { e.stopPropagation(); promoteSubToProject(p, s); });
       extMeta.appendChild(extPromoteBtn);
       row.appendChild(extMeta);
@@ -4565,7 +4590,7 @@
       const catAddBtn = document.createElement('button');
       catAddBtn.textContent = '+';
       catAddBtn.title = 'New project in ' + (cat === '__uncategorized__' ? 'Uncategorized' : cat);
-      catAddBtn.style.cssText = 'background:transparent;border:none;color:var(--text-dim);font-size: calc(var(--font-size-base) + 2px);font-weight:700;cursor:pointer;margin-right:4px;padding:0 2px;border-radius:6px;line-height:1;';
+      catAddBtn.className = 'pf-cat-add'; // 3B-3: recipe in 14-utilities.css
       catAddBtn.addEventListener('mouseenter', () => { catAddBtn.style.color = 'var(--accent)'; });
       catAddBtn.addEventListener('mouseleave', () => { catAddBtn.style.color = 'var(--text-dim)'; });
       catAddBtn.addEventListener('click', (e) => { e.stopPropagation(); addProject(cat === '__uncategorized__' ? null : cat); });
@@ -4608,7 +4633,7 @@
       const txt = catLabel.textContent + (_isCollapsed ? ' ▸' : ' ▾'); catLabel.textContent = '';
       const catLabelText = document.createElement('span');
       catLabelText.textContent = txt;
-      catLabelText.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      catLabelText.className = 'pf-ellip-flex'; // 3B-3
       catAddBtn.style.marginRight = '0';
       catAddBtn.style.marginLeft = '4px';
       catLabel.appendChild(catLabelText);
@@ -4618,7 +4643,7 @@
       catItemsWrap.className = 'pf-cat-items-wrap' + (_isCollapsed ? ' pf-collapsed' : '');
       if (!group.length && !_isCollapsed) {
         const hint = document.createElement('div');
-        hint.style.cssText = 'font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);padding:8px 16px;font-style:italic;opacity:0.7;';
+        hint.className = 'pf-empty-hint'; // 3B-3
         hint.textContent = 'No projects in this category';
         catItemsWrap.appendChild(hint);
       }
@@ -5451,10 +5476,10 @@
       const cls = isOverdue ? 'color:var(--danger);font-weight:600;' : isToday ? 'color:var(--accent);font-weight:600;' : '';
       const path = it.project ? ' <span style="color:var(--text-dim);font-size: calc(var(--font-size-base) - 4px);">— ' + escapeHtml(it.project) + '</span>' : '';
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--card-border);margin-bottom:4px;background:var(--card);cursor:pointer;transition:border-color 0.15s,transform 0.1s;';
-      row.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--' + it.status + ');flex-shrink:0;"></span>' +
-        '<span style="flex:1;font-size: calc(var(--font-size-base) - 2px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(it.title) + path + '</span>' +
-        '<span style="font-size: calc(var(--font-size-base) - 3px);flex-shrink:0;' + cls + '">' + it.dueAt + '</span>';
+      row.className = 'pf-due-row'; // 3B-3: recipe in 14-utilities.css (was cssText)
+      row.innerHTML = '<span class="pf-status-dot" style="background:var(--' + it.status + ')"></span>' +
+        '<span class="pf-ellip-flex" style="font-size: calc(var(--font-size-base) - 2px);">' + escapeHtml(it.title) + path + '</span>' +
+        '<span class="pf-shrink-0" style="font-size: calc(var(--font-size-base) - 3px);' + cls + '">' + it.dueAt + '</span>';
       row.addEventListener('mouseenter', () => { row.style.borderColor = 'var(--accent)'; row.style.transform = 'translateX(2px)'; });
       row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; row.style.transform = ''; });
       row.addEventListener('click', () => {

@@ -22,10 +22,10 @@
       const cls = isOverdue ? 'color:var(--danger);font-weight:600;' : isToday ? 'color:var(--accent);font-weight:600;' : '';
       const path = it.project ? ' <span style="color:var(--text-dim);font-size: calc(var(--font-size-base) - 4px);">— ' + escapeHtml(it.project) + '</span>' : '';
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--card-border);margin-bottom:4px;background:var(--card);cursor:pointer;transition:border-color 0.15s,transform 0.1s;';
-      row.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--' + it.status + ');flex-shrink:0;"></span>' +
-        '<span style="flex:1;font-size: calc(var(--font-size-base) - 2px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(it.title) + path + '</span>' +
-        '<span style="font-size: calc(var(--font-size-base) - 3px);flex-shrink:0;' + cls + '">' + it.dueAt + '</span>';
+      row.className = 'pf-due-row'; // 3B-3: recipe in 14-utilities.css (was cssText)
+      row.innerHTML = '<span class="pf-status-dot" style="background:var(--' + it.status + ')"></span>' +
+        '<span class="pf-ellip-flex" style="font-size: calc(var(--font-size-base) - 2px);">' + escapeHtml(it.title) + path + '</span>' +
+        '<span class="pf-shrink-0" style="font-size: calc(var(--font-size-base) - 3px);' + cls + '">' + it.dueAt + '</span>';
       row.addEventListener('mouseenter', () => { row.style.borderColor = 'var(--accent)'; row.style.transform = 'translateX(2px)'; });
       row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; row.style.transform = ''; });
       row.addEventListener('click', () => {

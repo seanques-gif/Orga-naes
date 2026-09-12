@@ -54,10 +54,10 @@
         const treeCount = countTree(pr.subtasks || []);
         const countLabel = treeCount.total ? (treeCount.done + '/' + treeCount.total + ' done') : 'No subtasks yet';
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--card-border);margin-bottom:4px;background:var(--card);cursor:pointer;transition:border-color 0.15s,transform 0.1s;';
-        row.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--' + pr.status + ');flex-shrink:0;"></span>' +
-          '<span style="flex:1;font-size: calc(var(--font-size-base) - 2px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(pr.title) + '</span>' +
-          '<span class="pf-metric" style="color:var(--text-dim);font-size: calc(var(--font-size-base) - 4px);flex-shrink:0;">' + countLabel + '</span>';
+        row.className = 'pf-due-row'; // 3B-3: recipe in 14-utilities.css (was cssText)
+        row.innerHTML = '<span class="pf-status-dot" style="background:var(--' + pr.status + ')"></span>' +
+          '<span class="pf-ellip-flex" style="font-size: calc(var(--font-size-base) - 2px);">' + escapeHtml(pr.title) + '</span>' +
+          '<span class="pf-metric pf-hint pf-shrink-0">' + countLabel + '</span>';
         row.addEventListener('mouseenter', () => { row.style.borderColor = 'var(--hover-border)'; });
         row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; });
         row.addEventListener('click', () => { closeAllModals(); copySubtasksToProject(sourceProject, subtaskIds, pr.id); clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); });

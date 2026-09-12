@@ -40,9 +40,10 @@
           cb.checked = (subtask.blockedBy || []).includes(s.id);
           const txt = document.createElement('span');
           txt.textContent = s.title;
-          txt.style.overflow = 'hidden'; txt.style.textOverflow = 'ellipsis'; txt.style.whiteSpace = 'nowrap';
+          txt.className = 'pf-ellip'; // 3B-3: was 3 inline props
           const dot = document.createElement('span');
-          dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:var(--' + s.status + ');flex-shrink:0;';
+          dot.className = 'pf-status-dot-sm'; // shape in CSS; color is dynamic
+          dot.style.background = 'var(--' + s.status + ')';
           lbl.appendChild(cb); lbl.appendChild(dot); lbl.appendChild(txt);
           cb.addEventListener('change', () => {
             snapshot();
