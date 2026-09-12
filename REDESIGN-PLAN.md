@@ -2,9 +2,9 @@
 
 Status legend: ✅ done · ⏳ in progress · ⬜ pending · 🔀 decision needed
 
-Last updated: 2026-09-10
+Last updated: 2026-09-12 — **PLAN COMPLETE.** All phases (0→4) shipped, verified, and committed locally (17 commits ahead of origin; push parked pending owner authorization). Post-plan additions: pre-release audit closed GO (`AUDIT-CANONICAL.md`), FN-01 functional test gate built and wired into `npm test`, REDO-01 crash fix, UX-01/UX-03 fixes, clean-clone reproducibility proven.
 Baseline (released): commit `a3dff27` (`origin/main`), tag `released-baseline-2026-09-10`
-Working state: uncommitted (src/, build tooling, docs, 3A + 3B-1/2/3 + 3D)
+Working state: committed on local `main`; clean tree; nothing pushed.
 
 ---
 
@@ -141,15 +141,10 @@ migration notes. (Anti-reference preserved in `DESIGN-v1-night-workshop.md`.)
 - INP/perf check ✅ (42-project stress: idle 60fps locked, list render 12.7ms, one documented ~55ms long task on full-app render); PWA offline check ✅ (runtime-verified on real localhost server: install, offline boot from cache, update flow + cache purge); manual smoke of every inventory surface ✅ (all flows on real UI paths, 2 themes; +1 a11y fix).
 - Update `DESIGN.md` if drift; final commit ✅ this commit.
 
-### Formal skill passes (pending, slot around 3B/3E) 🔀
-Loaded so far: `impeccable` SKILL + `context` + `operate.md` + `craft-floor.md`,
-`review-animations` SKILL + `STANDARDS.md`, `apple-design`, `redesign-skill`, partial `taste`.
-Still to run properly:
-- impeccable `critique` + `audit` (real workflow) and `document` (sidecar).
-- `review-animations` **Block/Approve verdict** on the animation set.
-  → Done 2026-09-11: **APPROVE with findings** (Tier 1 empty; FAB-family literals +
-  select-bar rgba deferred to 3B-3). Verdict table lives at the bottom of `REDESIGN-FINDINGS.md`.
-- Full read of `taste-skill` (88 KB, was truncated) + apply Operate-relevant rules.
+### Formal skill passes — 2 of 3 done
+- ✅ **impeccable `audit` + `document`** — done 2026-09-11 in 3F (56 detector findings → 3 real fixes; `.impeccable/design.json` sidecar regenerated for Mission Control).
+- ✅ **`review-animations` Block/Approve verdict** — done 2026-09-11: **APPROVE with findings** (Tier 1 empty; FAB literals + select-bar rgba both since resolved). Verdict at the bottom of `REDESIGN-FINDINGS.md`.
+- ⬜ **`taste-skill` full read** — the one remaining formal pass (88 KB, previously truncated). Optional, non-gating; apply Operate-relevant rules or explicitly retire.
 
 ---
 
@@ -172,9 +167,8 @@ completed `#3ddc97` / waiting `#b39dff` / danger `#ff5c5c`.
 
 1. ✅ **Icons (D10) — DONE in 3B-4:** SVG chrome via `src/js/00-svg-icons.js` sprite + `pfIcon()` helper (`data-ic` / `data-ic-before` hydration for static markup), emoji kept as user content (task titles, categories, picker, toast prefixes). Chrome emoji eliminated: toolbar, options panel, FAB menu, bottom nav, both context menus, sort bar, recur chip, dependency + comment chips.
    content (recommended) / replace all / defer.
-2. 🔀 **Commit checkpoint:** Phase 2.5 + 3A + 3B-1 are green and uncommitted. A
-   commit is the recommended safety net before 3B-2/3.
-3. ⏭ **Next work:** 3B-2 (unify panel/pill/card recipes), then 3B-3 (inline styles).
+2. ✅ **Commit checkpoints** — long since done; as of 2026-09-12 the full redesign + post-plan close-out (audit, test gate, fixes) is committed on local `main`.
+3. ⏭ **Remaining (none of it plan work):** owner push + GitHub settings; optional backlog (taste-skill read, CSP, SRI/self-host, `.validate` rules).
 
 ---
 
