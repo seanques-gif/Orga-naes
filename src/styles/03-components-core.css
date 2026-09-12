@@ -39,8 +39,10 @@
   }
   #pf-root button { font-family: var(--font-sans); cursor: pointer; border: none; outline: none; }
   #pf-root .pf-new-btn {
-    background: var(--accent); color: var(--accent-contrast); font-weight: 600;
-    font-size: calc(var(--font-size-base) - 4px); padding: 6px 10px; border-radius: 6px; transition: filter 0.15s; flex-shrink: 0;
+    background: var(--accent); color: var(--accent-contrast); font-weight: 700;
+    font-family: var(--font-mono); font-size: max(14px, calc(var(--font-size-base) - 1px)); line-height: 1;
+    min-width: 28px; min-height: 26px; padding: 6px 10px; border-radius: 6px; transition: filter 0.15s; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
   }
   #pf-root .pf-new-btn:hover { filter: brightness(1.15); }
   #pf-root .pf-undo-btn {
