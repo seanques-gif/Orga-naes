@@ -558,3 +558,73 @@ token on both Midnight and Daylight.
      genuinely re-run safe; marker visible in DOM as evidence.
    - **Verified live:** all 6 headers `svg.pf-ic-title` count = 1 (was 2);
      all `[data-ic]` spans exactly 1 svg; suite green (43 assertions).
+
+5. **F-UI-5 (post-ship UI sweep, owner-triggered 2026-09-12): panels, icons, legibility matrix.**
+   Owner asked "is there something we can improve?" and then requested full
+   sweeps. All findings verified live in the preview; every fix went through
+   the chained loop (fix → build → test → preview → commit).
+
+   **F-UI-5a — Daylight-invisible white-alpha hover family.** 19 rules used raw
+   `rgba(255,255,255,0.04–0.15)` overlays (list rows, category headers, kebabs,
+   undo, dropdown options, due rows, scrollbar thumb, chips). Measured on the
+   real Daylight surface the primary row hover shifted **+1/255 — invisible**.
+   All 19 now tint through `color-mix(in srgb, var(--text) N%, transparent)`;
+   live A/B: Midnight +13/ch, Daylight −13/ch. Plus one JS white-alpha straggler
+   (no-due-date icon → `var(--text-dim)`). (`132d703`)
+
+   **F-UI-5b — dead detail pane.** The 585×843 empty right pane carried one
+   dim sentence; also JS render paths re-injected bare empty divs. All 5 empty
+   states (static + JS-rendered) now render a 44px ghost icon + centered text.
+   (`132d703`)
+
+   **F-UI-5c — sort-bar overflow.** At the narrow desktop band the bar needed
+   224px in 207px, clipping the select arrow; the "Sort:" label rendered 8px.
+   Label removed (select is self-explanatory; `aria-label` keeps it accessible),
+   spacing tightened, 10px select floor. (`e66e4eb`)
+
+   **F-UI-5d — light-theme sweep (owner-requested).** 6-preset contrast battery
+   (8 token pairs): PASS everywhere, tightest 4.63:1. Black-alpha census (~40):
+   scrims/shadows sanctioned, no fixes. Fixed `color-scheme: dark` native date
+   picker on Daylight; purged 36 stale hex fallbacks incl. Night-Workshop
+   zombies (dead code, byte-identical computed values proven before purge).
+   (`d0c817a`)
+
+   **F-UI-5e — double icons (owner-reported screenshot).** `hydrateIcons`
+   ran twice; `[data-ic-before]` prepend was not re-run safe → 2 icons per
+   Options section header. Fixed with `data-ic-hydrated` marker (`5b2d6df`)
+   + regression test TEST 10 boots the artifact at readyState 'loading',
+   re-fires DOMContentLoaded, asserts exactly 1 svg/title (proven to catch
+   the bug: guard removed → n=2 on all six). Suite 43→58 assertions. (`c1e2195`)
+
+   **F-UI-5f — panel sweep (chained loop).** Every Options sub-screen + all
+   top-bar views walked live on dark + Daylight:
+   - Theme picker had no active indication (fresh boot showed nothing; Auto
+     highlighted the resolved preset). Now: accent outline + `aria-pressed`
+     on boot, per-click, and Auto marks Auto. (`9262352`)
+   - Emoji chrome missed by 3B-4, found by census: Archive/Version/Error +
+     conflict titles (`56985c1`); Shortcuts/About titles, panel head icons,
+     Backlog label, conflict columns, save-modal buttons (`ef8e395`); subtask
+     edit pencil, collapsed edit chip, Rename, comment edit/delete (`434ba80`,
+     `89262f2`). Chrome is now emoji-free; toasts/🎉/recurrence stay by design.
+   - Subtask action icons invisible: chip SVGs at 1em ≈ 9.5px + promote arrow
+     `stroke="#ffffff"` (last white-stroke site). 12px chip floor + currentColor.
+     (`4d1172f`)
+   - Investigated, false alarms (documented to close them): calendar dot
+     apparent on wrong day (probe misread; dots match data exactly); red error
+     badge + page "freeze" (badge correctly logged probe errors; freeze was the
+     native confirm() dialog blocking automation — correct app behavior).
+
+   **F-UI-5g — icon legibility matrix.** Automated in-preview scanner: every
+   sprite SVG's computed size + effective contrast across 5 themes × 3 zooms
+   (60/100/130) + tablet/mobile classes + 60% stress. Found: sort-bar collapse
+   icons 10px at DEFAULT zoom, 4px at 60% (subtractive calcs compound with the
+   scale slider). Fix: global `max(12px, 1em)` icon floor, 12px title icons,
+   10px collapse-btn font floor. Re-run: 15/15 combos + device classes clean.
+   Structural — future `1em` icons inherit the floor. (`0ad901a`)
+
+   Tooling hardened in the same window: `.gitattributes` LF policy (artifact
+   bytes no longer depend on checkout state, `8dd4648`), sha256 artifact pin +
+   zero-write `npm run verify` determinism gate (`95bcfc1`, proven against
+   hand-edit/src-drift/missing-pin), clean-clone reproducibility re-proven
+   byte-for-byte through the new gate, chained change loop documented in
+   AGENTS.md + `.claude/skills/change-loop` (`c901c83`).
