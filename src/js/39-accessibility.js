@@ -24,7 +24,7 @@
     let mode = 'focus';
     setViewMode('focus');
     // Restore theme preset
-    try { const tp = localStorage.getItem('project-flow-theme-preset'); if (tp === 'auto') applyAutoTheme(); else if (tp && THEME_PRESETS[tp]) applyThemePreset(tp); } catch(e) {}
+    try { const tp = localStorage.getItem('project-flow-theme-preset'); if (tp === 'auto') applyAutoTheme(); else if (tp && THEME_PRESETS[tp]) applyThemePreset(tp); else highlightActiveThemeBtn('midnight-cyan'); } catch(e) {}
     // Motivational quote in empty state
     const emptyEl = document.getElementById('pf-empty');
     if (emptyEl && !projects.length) { emptyEl.innerHTML = '<b>' + QUOTES[Math.floor(Math.random() * QUOTES.length)] + '</b><br><br>Click <b>+ New project</b> to get started.'; }

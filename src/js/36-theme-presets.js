@@ -8,12 +8,16 @@
     monochrome: { '--bg':'#0b0b0c','--card':'#141416','--card-hover':'#1b1b1e','--card-border':'#2c2c30','--sub-bg':'#101012','--sub-border':'#2c2c30','--accent':'#d7dde5','--accent-contrast':'#101012','--text':'#e6e8ea','--text-dim':'#8f9296','--header-bg':'#0e0e10','--toast-bg':'#1b1b1e','--hover-border':'#3a3a3e' },
     daylight: { '--bg':'#eef1f5','--card':'#ffffff','--card-hover':'#f3f6f9','--card-border':'#d3dbe4','--sub-bg':'#f6f8fa','--sub-border':'#dfe6ee','--accent':'#0a7ea4','--accent-contrast':'#ffffff','--text':'#12202c','--text-dim':'#5a6b7b','--header-bg':'#ffffff','--toast-bg':'#12202c','--hover-border':'#a9b8c7','--planned':'#5f6d7b','--ongoing':'#9a5d00','--completed':'#0f7a4a','--waiting':'#6a4fd0','--danger':'#c0392b' }
   };
-  const THEME_BTN_IDS = ['pf-theme-midnight-cyan','pf-theme-amber-crt','pf-theme-phosphor-green','pf-theme-monochrome','pf-theme-daylight'];
+  const THEME_BTN_IDS = ['pf-theme-auto','pf-theme-midnight-cyan','pf-theme-amber-crt','pf-theme-phosphor-green','pf-theme-monochrome','pf-theme-daylight'];
   const CONSOLE_INK = '#04141b'; // the dark ink the White-Pair runtime falls back to
   function highlightActiveThemeBtn(name) {
     THEME_BTN_IDS.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.style.outline = (id === 'pf-theme-' + name) ? '2px solid var(--accent)' : '';
+      if (el) {
+        const active = (id === 'pf-theme-' + name);
+        el.style.outline = active ? '2px solid var(--accent)' : '';
+        el.setAttribute('aria-pressed', active ? 'true' : 'false');
+      }
     });
   }
   function applyThemePreset(name) {

@@ -159,6 +159,7 @@
     const isLight = window.matchMedia('(prefers-color-scheme: light)').matches;
     applyThemePreset(isLight ? 'daylight' : 'midnight-cyan');
     localStorage.setItem('project-flow-theme-preset', 'auto'); // re-stamp after safeSet
+    highlightActiveThemeBtn('auto'); // Auto mode highlights Auto, not the resolved preset
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
     if (localStorage.getItem('project-flow-theme-preset') === 'auto') applyAutoTheme();
