@@ -98,7 +98,7 @@
 
   function extractImportData(parsed) {
     let data = null, importedCategories = [], importedCollapsed = {};
-    let importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null;
+    let importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null, importedNoteTombstones = null;
     if (Array.isArray(parsed)) {
       data = parsed;
     } else if (typeof parsed === 'object' && parsed !== null) {
@@ -113,8 +113,9 @@
       if (Array.isArray(parsed.reminders)) importedReminders = parsed.reminders;
       if (parsed.categoryEmojis && typeof parsed.categoryEmojis === 'object') importedEmojis = parsed.categoryEmojis;
       if (Array.isArray(parsed.notes)) importedNotes = parsed.notes;
+      if (parsed.noteTombstones && typeof parsed.noteTombstones === 'object') importedNoteTombstones = parsed.noteTombstones;
     }
-    return { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes };
+    return { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones };
   }
 
   // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
@@ -138,7 +139,7 @@
     return (Array.isArray(data) ? data : []).filter(p => p != null).map(p => sanitizeImportedNode(p, seenIds));
   }
 
-  function applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes) {
+  function applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones) {
     snapshot();
     projects = sanitizeImportedProjects(data);
     projects.forEach(p => { p.expanded = false; });
@@ -155,11 +156,12 @@
     if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); restoredExtras++; }
     if (importedNotes) {
       // Merge by id (imported wins on conflict), preserving any local notes.
+      const localNotes = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
       const byId = {};
-      (window._pf && Array.isArray(window._pf.getNotesSnapshot) ? window._pf.getNotesSnapshot() || [] : []).forEach(n => { byId[n.id] = n; });
+      (localNotes ? localNotes.notes : []).forEach(n => { byId[n.id] = n; });
       importedNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string').forEach(n => { byId[n.id] = n; });
       const merged = Object.values(byId);
-      if (window._pf && typeof window._pf.replaceNotes === 'function') { window._pf.replaceNotes(merged); restoredExtras++; }
+      if (window._pf && typeof window._pf.replaceNotes === 'function') { window._pf.replaceNotes(merged, importedNoteTombstones); restoredExtras++; }
     }
     showToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders/notes from backup)' : ''));
   }
@@ -173,7 +175,7 @@
       if (error) { showToast(error, true); importInput.value = ''; return; }
       try {
         const { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis } = extractImportData(parsed);
-        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes); }
+        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
     };

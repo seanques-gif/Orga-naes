@@ -3,7 +3,12 @@
   // under their own storage key, so export/import of projects is unaffected.
   // Autosave follows the scheduleSave debounce idiom (350ms trailing edge).
   const NOTES_KEY = 'project-flow-notes';
+  const NOTES_TOMB_KEY = 'project-flow-notes-tombstones';
   let notes = [];
+  // Deletion tombstones: { id, at }. Deliberately deleted notes must stay
+  // deleted when snapshot recovery resurrects an older copy that still
+  // contains them. Pruned to the most recent 200.
+  let noteTombstones = {};
   let notesLoaded = false;
   let activeNoteId = null;
   let notesSearch = '';
@@ -25,8 +30,21 @@
   async function loadNotes() {
     if (notesLoaded) return;
     try { const res = await safeGet(NOTES_KEY, false); if (res && res.value) notes = JSON.parse(res.value); } catch (e) { notes = []; logError('Load notes', e); }
+    try { const res2 = await safeGet(NOTES_TOMB_KEY, false); if (res2 && res2.value) noteTombstones = JSON.parse(res2.value) || {}; } catch (e) { noteTombstones = {}; }
     notesLoaded = true;
   }
+  function saveTombstones() { safeSet(NOTES_TOMB_KEY, JSON.stringify(noteTombstones), false); }
+  function recordNoteTombstone(id) {
+    if (!id) return;
+    noteTombstones[id] = new Date().toISOString();
+    const ids = Object.keys(noteTombstones);
+    if (ids.length > 200) {
+      ids.sort((a, b) => noteTombstones[a].localeCompare(noteTombstones[b]));
+      ids.slice(0, ids.length - 200).forEach(k => delete noteTombstones[k]);
+    }
+    saveTombstones();
+  }
+  function isTombstoned(id) { return Object.prototype.hasOwnProperty.call(noteTombstones, id); }
   function saveNotes() {
     clearTimeout(notesSaveTimer);
     notesSaveTimer = setTimeout(async () => {
@@ -117,6 +135,7 @@
         notes = notes.filter(x => x.id !== id);
         if (activeNoteId === id) activeNoteId = null;
         notesSelection = notesSelection.filter(x => x !== id);
+        recordNoteTombstone(id);
         saveNotes();
         renderNotesList();
         renderNotesEditor();
@@ -155,6 +174,7 @@
           notes = notes.filter(x => ids.indexOf(x.id) === -1);
           if (ids.indexOf(activeNoteId) !== -1) activeNoteId = null;
           notesSelection = [];
+          ids.forEach(recordNoteTombstone);
           saveNotes(); renderNotesList(); renderNotesEditor();
           showToast('Deleted ' + ids.length + ' note' + (ids.length === 1 ? '' : 's'));
         } else if (action === 'clear') {
@@ -252,6 +272,7 @@
     if (!confirm('Delete this note? This cannot be undone.')) return;
     notes = notes.filter(x => x.id !== activeNoteId);
     notesSelection = notesSelection.filter(x => x !== activeNoteId);
+    recordNoteTombstone(activeNoteId);
     activeNoteId = null;
     saveNotes();
     renderNotesList();
@@ -447,12 +468,19 @@
 
   window._pf.getNotesSnapshot = function() {
     if (!notesLoaded) return null;
-    return notes.slice();
+    return { notes: notes.slice(), tombstones: Object.assign({}, noteTombstones) };
   };
-  window._pf.restoreNotesSnapshot = function(snapNotes) {
+  window._pf.restoreNotesSnapshot = function(snapNotes, snapTombstones) {
     if (!Array.isArray(snapNotes)) return;
+    // Union tombstones: a deletion recorded in ANY copy (live or snapshot)
+    // must win, or recovery would resurrect notes the user deleted after
+    // that snapshot was taken.
+    if (snapTombstones && typeof snapTombstones === 'object') {
+      Object.keys(snapTombstones).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (snapTombstones[k] || '')) noteTombstones[k] = snapTombstones[k]; });
+      saveTombstones();
+    }
     if (notesLoaded && notes.length) return; // live data exists; recovery is only for loss
-    notes = snapNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string')
+    notes = snapNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string' && !isTombstoned(n.id))
       .map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
     notesLoaded = true;
     notesLoadedEmpty = false;
@@ -462,6 +490,8 @@
     notes = []; notesLoaded = true; notesLoadedEmpty = false; activeNoteId = null; notesSelection = [];
     renderNotesList(); renderNotesEditor();
   };
+
+  window._pf.getNotesTombstones = function() { return Object.assign({}, noteTombstones); };
 
   // Eager load at boot: guarantees the 5-minute snapshot tick and manual
   // exports see real notes data instead of the pre-load null/[].
@@ -480,13 +510,25 @@
 
   // Import bridge: replace the in-memory set (merge already done by caller),
   // persist, and refresh any open UI.
-  window._pf.replaceNotes = function(nextNotes) {
+  window._pf.replaceNotes = function(nextNotes, incomingTombstones) {
     if (!Array.isArray(nextNotes)) return;
     const clean = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string');
     if (!clean.length) return; // never let a malformed import wipe real notes
-    notes = clean;
+    // Union incoming tombstones (newest wins), then drop imported notes that
+    // are tombstoned — a deletion recorded anywhere must win everywhere.
+    if (incomingTombstones && typeof incomingTombstones === 'object') {
+      Object.keys(incomingTombstones).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (incomingTombstones[k] || '')) noteTombstones[k] = incomingTombstones[k]; });
+    }
+    const visible = clean.filter(n => !isTombstoned(n.id));
+    if (!visible.length && clean.length) { saveTombstones(); return; }
+    // An import that omits a locally-present note means the user deleted it
+    // in the other copy — tombstone the difference so the deletion survives.
+    const importedIds = new Set(visible.map(n => n.id));
+    notes.filter(n => !importedIds.has(n.id)).forEach(n => recordNoteTombstone(n.id));
+    notes = visible;
     notesLoaded = true;
     if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
+    saveTombstones();
     saveNotes();
     renderNotesList();
     renderNotesEditor();

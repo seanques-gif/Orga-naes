@@ -58,7 +58,7 @@
     // Notes are part of a full backup. getNotesSnapshot returns null before
     // the notes module loads (boot race) — omit rather than write [].
     const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
-    if (notesSnap) payload.notes = notesSnap;
+    if (notesSnap) { payload.notes = notesSnap.notes; payload.noteTombstones = notesSnap.tombstones; }
     return payload;
   }
 
