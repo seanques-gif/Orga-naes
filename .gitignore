@@ -25,3 +25,10 @@ DESIGN-v1-night-workshop.md
 REDESIGN-PLAN.md
 REDESIGN-FINDINGS.md
 AUDIT-CANONICAL.md
+
+# AI skills doc (previously only in local .git/info/exclude, which doesn't travel)
+.github/skills/
+
+# OS/editor noise
+Thumbs.db
+desktop.ini
