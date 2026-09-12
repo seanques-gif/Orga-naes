@@ -252,4 +252,7 @@ Key findings for the verdict:
 - Released baseline: `git checkout released-baseline-2026-09-10 -- .`
 - Released snapshot: `Orga-naes-backup-2026-09-10_195638`
 - WIP snapshot: `Orga-naes-wip-backup-2026-09-10_195822.zip`
-- Byte-parity check: `npm run verify`
+- Byte-parity check: `npm run verify` (now enforces it — `Orga-naes.html.sha256` pins
+  the artifact; verify fails on any drift between pin, committed artifact, and src/).
+  Recovery if verify fails on a legit change: `npm run build` (refreshes the pin), commit both.
+  Recovery if verify fails and you trust only the committed state: `git checkout -- .`

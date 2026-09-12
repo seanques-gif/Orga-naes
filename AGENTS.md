@@ -15,9 +15,9 @@ Read this first. It keeps every agent session on the rails.
 
 ## Commands
 
-- `npm run build` — regenerate `Orga-naes.html` from `src/`
+- `npm run build` — regenerate `Orga-naes.html` from `src/` (+ refresh `Orga-naes.html.sha256`)
 - `npm test` — design-token guard + date utils (must be green before commit)
-- `npm run verify` — build then test
+- `npm run verify` — determinism gate (zero-write check: pin = artifact = rebuild from src/) then test
 
 ## Layout
 
@@ -38,7 +38,8 @@ tests/*.test.mjs    guards (read the built Orga-naes.html)
 `src/order.json`, injects them into `src/template.html`, and writes `Orga-naes.html`.
 The JS fragments are all inside a single `(function(){ ... })()` IIFE, so they share
 one scope and MUST stay in order. Builds are byte-deterministic: a no-op change must
-reproduce `Orga-naes.html` exactly.
+reproduce `Orga-naes.html` exactly — `Orga-naes.html.sha256` pins the bytes and
+`npm run verify` fails if the committed artifact or src/ drifts from the pin.
 
 ## Editing conventions
 
