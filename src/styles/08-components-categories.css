@@ -137,7 +137,7 @@
   #pf-root .pf-split-sort select:hover { border-color: var(--accent); }
   #pf-root .pf-split-collapse-btn {
     background: transparent; border: 1px solid var(--card-border); color: var(--text-dim);
-    font-size: max(10px, calc(var(--font-size-base) - 5px)); padding: 0 8px; border-radius: var(--radius-control); cursor: pointer; font-weight: 600;
+    font-size: max(10px, calc(var(--font-size-base) - 5px)); padding: 0 8px; border-radius: var(--radius-control); cursor: pointer; font-weight: 600; white-space: nowrap; flex-shrink: 0;
     transition: color var(--dur-state) var(--ease-console), border-color var(--dur-state) var(--ease-console), background var(--dur-state) var(--ease-console);
     height: 20px; box-sizing: border-box; line-height: 1;
   }

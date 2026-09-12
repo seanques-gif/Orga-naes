@@ -686,7 +686,7 @@
      at ≥55%). At normal desktop widths 25% always exceeds the floor, so this
      never kicks in there; min-width also legally beats max-width in CSS, so
      the floor wins over the 30% cap at narrow sizes. */
-  #pf-root.pf-device-desktop .pf-split-list { width: 25%; min-width: min(220px, 45vw); max-width: 30%; flex: none; border-right: 1px solid var(--card-border); }
+  #pf-root.pf-device-desktop .pf-split-list { width: 25%; min-width: min(220px, 45vw); max-width: 30%; flex: none; border-right: 1px solid var(--card-border); overflow-x: hidden; }
   #pf-root.pf-device-desktop .pf-split-detail { display: flex; padding: 16px 24px; overflow-y: auto; min-height: 0; }
   #pf-root.pf-device-desktop .pf-split-detail .pf-node .pf-sublist { overscroll-behavior-y: auto; }
   #pf-root.pf-device-desktop .pf-split-divider { display: block; }
@@ -941,7 +941,7 @@
   #pf-root .pf-split-sort select:hover { border-color: var(--accent); }
   #pf-root .pf-split-collapse-btn {
     background: transparent; border: 1px solid var(--card-border); color: var(--text-dim);
-    font-size: max(10px, calc(var(--font-size-base) - 5px)); padding: 0 8px; border-radius: var(--radius-control); cursor: pointer; font-weight: 600;
+    font-size: max(10px, calc(var(--font-size-base) - 5px)); padding: 0 8px; border-radius: var(--radius-control); cursor: pointer; font-weight: 600; white-space: nowrap; flex-shrink: 0;
     transition: color var(--dur-state) var(--ease-console), border-color var(--dur-state) var(--ease-console), background var(--dur-state) var(--ease-console);
     height: 20px; box-sizing: border-box; line-height: 1;
   }

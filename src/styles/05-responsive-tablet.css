@@ -46,7 +46,7 @@
      at ≥55%). At normal desktop widths 25% always exceeds the floor, so this
      never kicks in there; min-width also legally beats max-width in CSS, so
      the floor wins over the 30% cap at narrow sizes. */
-  #pf-root.pf-device-desktop .pf-split-list { width: 25%; min-width: min(220px, 45vw); max-width: 30%; flex: none; border-right: 1px solid var(--card-border); }
+  #pf-root.pf-device-desktop .pf-split-list { width: 25%; min-width: min(220px, 45vw); max-width: 30%; flex: none; border-right: 1px solid var(--card-border); overflow-x: hidden; }
   #pf-root.pf-device-desktop .pf-split-detail { display: flex; padding: 16px 24px; overflow-y: auto; min-height: 0; }
   #pf-root.pf-device-desktop .pf-split-detail .pf-node .pf-sublist { overscroll-behavior-y: auto; }
   #pf-root.pf-device-desktop .pf-split-divider { display: block; }
