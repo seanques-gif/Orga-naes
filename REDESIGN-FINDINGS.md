@@ -678,3 +678,19 @@ token on both Midnight and Daylight.
      format); the tamper proofs exposed it and it now genuinely parses both
      formats. Full contrast contract: every text ≥4.5:1, every icon/dot
      ≥3:1, every status distinguishable (ΔE ≥18.7), across all 5 presets.
+
+   **F-UI-5j — glyph legibility: the "−" that was a "+", and the full sweep.**
+   User report: "fix the x button." Systematic first: all 20+ × close buttons
+   functionally sweep-tested (every panel/modal/search/row) — all work, all
+   legible. The real defect was the New Project toolbar "+": DOM glyph was
+   always correct (charCode 2b, confirmed by 6× live zoom) but rendered as
+   a 10px weight-600 sans glyph in a 26×25px button — the vertical bar
+   dissolved into antialiasing and the eye read "−". Fix: IBM Plex Mono
+   weight 700, 14px floor, centered flex, min 28×26 hit area. (`8d1ef05`)
+   Follow-up sweep of every text-glyph control, measured at 100% + 60%
+   display scale: toolbar SVGs, panel ×s, ▾ All/Completed toggles, scroll-top,
+   FAB all pass; two more failures fixed with the floor recipe — shortcuts
+   "?" rendered 6px at 60% (`max(11px, …)`), zoom +/− and level readout
+   9px/4px (mono/600 + `max(12px, …)` / `max(10px, …)`). Bonus find: the
+   zoom-reset button carried a duplicate `class` attribute, so browsers
+   silently dropped `pf-zoom-btn-sm` entirely — deduplicated. (`d5abf14`)
