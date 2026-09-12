@@ -167,6 +167,7 @@
   const todayPanel = document.getElementById('pf-today-panel');
   const calendarPanel = document.getElementById('pf-calendar-panel');
   const weeklyPanel = document.getElementById('pf-weekly-panel');
+  const notesPanel = document.getElementById('pf-notes-panel');
   const archivePanel = document.getElementById('pf-archive-panel');
   const trashPanel = document.getElementById('pf-trash-panel');
   const commentPanel = document.getElementById('pf-comment-panel');
@@ -175,7 +176,7 @@
   const snapshotsPanel = document.getElementById('pf-snapshots-panel');
   const copyModal = document.getElementById('pf-copy-modal');
   const errorPanel = document.getElementById('pf-error-panel');
-  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal, errorPanel];
+  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, notesPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal, errorPanel];
   function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
   function openModal(el, displayValue) { closeAllModals(); el.style.display = displayValue; modalBackdrop.style.display = 'block'; _markOverlayOpen('modals'); }
   modalBackdrop.addEventListener('click', closeAllModals);

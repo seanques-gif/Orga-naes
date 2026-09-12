@@ -63,6 +63,7 @@
     "src/js/40-overdue-badge-notifications.js",
     "src/js/41-mobile-fab-bottom-nav.js",
     "src/js/42-modal-helpers-focus-visibility.js",
+    "src/js/46-notes.js",
     "src/js/43-scroll-shadows.js",
     "src/js/44-pwa-registration.js",
     "src/js/45-firebase-cloud-sync.js"

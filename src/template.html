@@ -99,6 +99,7 @@ __ORGA_CSS_MAIN__</style>
       <button class="pf-undo-btn pf-btn-rel" id="pf-duelist-btn" title="Tasks by Due Date" ><span data-ic="calendar"></span><span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;"></span></button>
       <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View"><span data-ic="calendar-week"></span></button>
       <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner"><span data-ic="planner"></span></button>
+      <button class="pf-undo-btn" id="pf-notes-btn" title="Notes"><span data-ic="file-text"></span></button>
     </div>
     <div class="pf-tb-group" id="pf-tb-viewtools">
       <span id="pf-collapse-cats" title="Toggle Focus/Card view" style="display:none;"></span>
@@ -338,6 +339,34 @@ __ORGA_CSS_MAIN__</style>
     </div>
     <div class="pf-week-foot">
       <span class="pf-week-foot-hint">Drag tasks between days or into Backlog · Click + to add manually</span>
+    </div>
+  </div>
+  <div class="pf-activity-panel pf-notes-panel" id="pf-notes-panel" style="display:none;">
+    <div class="pf-notes-head">
+      <span class="pf-notes-title" data-ic-before="file-text">Notes</span>
+      <input type="text" class="pf-search pf-notes-search" id="pf-notes-search" placeholder="Search notes…" spellcheck="false">
+      <button class="pf-undo-btn pf-btn-accent" id="pf-note-new" title="New note"><span data-ic="plus"></span> New</button>
+    </div>
+    <div class="pf-notes-body">
+      <div class="pf-notes-list" id="pf-notes-list"></div>
+      <div class="pf-notes-editor" id="pf-notes-editor">
+        <div class="pf-notes-editor-empty" id="pf-notes-editor-empty">
+          <span class="pf-ic-empty" data-ic="file-text" aria-hidden="true"></span>
+          <div>Select a note, or create one.</div>
+        </div>
+        <div class="pf-notes-editor-main" id="pf-notes-editor-main" style="display:none;">
+          <input type="text" class="pf-notes-note-title" id="pf-note-title" placeholder="Title" spellcheck="false">
+          <textarea class="pf-notes-note-body" id="pf-note-body" placeholder="Write your note…" spellcheck="false"></textarea>
+          <div class="pf-notes-editor-foot">
+            <span class="pf-notes-count" id="pf-note-count"></span>
+            <span class="pf-notes-foot-actions">
+              <button class="pf-undo-btn" id="pf-note-copy" title="Copy note text"><span data-ic="file"></span> Copy</button>
+              <button class="pf-undo-btn" id="pf-note-pin" title="Pin to top"><span data-ic="star"></span> <span id="pf-note-pin-label">Pin</span></button>
+              <button class="pf-undo-btn" id="pf-note-del" title="Delete note"><span data-ic="trash"></span></button>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="pf-activity-panel" id="pf-archive-panel" style="display:none;">
