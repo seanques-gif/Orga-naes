@@ -123,12 +123,11 @@
   #pf-ctx-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: var(--z-menu); backdrop-filter: blur(2px); }
   /* overscroll indicators disabled to prevent scroll shake */
   #pf-root .pf-split-sort {
-    display: flex; align-items: center; gap: 8px; padding: 0 8px; margin: 0 6px; border-radius: 6px; background: rgba(0,0,0,0.08); min-height: 0; height: 28px;
+    display: flex; align-items: center; gap: 4px; padding: 0 4px; margin: 0 4px; border-radius: 6px; background: rgba(0,0,0,0.08); min-height: 0; height: 28px;
     cursor: default; user-select: none;
   }
-  #pf-root .pf-split-sort-label { font-size: calc(var(--font-size-base) - 6px); color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
   #pf-root .pf-split-sort select {
-    font-size: calc(var(--font-size-base) - 5px); background: var(--card); color: var(--text);
+    font-size: max(10px, calc(var(--font-size-base) - 5px)); background: var(--card); color: var(--text);
     border: 1px solid var(--card-border); border-radius: var(--radius-control); padding: 0 6px; outline: none; cursor: pointer; transition: border-color 0.15s;
     height: 20px; line-height: 1; box-sizing: border-box;
   }

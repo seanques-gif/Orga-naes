@@ -5,7 +5,7 @@
     sortBar.className = 'pf-split-sort';
     sortBar.innerHTML = '<button id="pf-split-collapse-all" class="pf-split-collapse-btn" title="Collapse/Expand all categories">▾ All</button>' +
       '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (showCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Show completed projects">' + pfIcon(showCompletedProjects ? 'check-square' : 'square') + ' Completed</button>' +
-      '<span class="pf-split-sort-label">Sort:</span><select id="pf-split-sort-sel"><option value="manual">Manual</option><option value="name">Name</option><option value="status">Status</option><option value="due-cat">Due Date</option><option value="created">Newest</option></select>';
+      '<select id="pf-split-sort-sel" aria-label="Sort projects"><option value="manual">Manual</option><option value="name">Name</option><option value="status">Status</option><option value="due-cat">Due Date</option><option value="created">Newest</option></select>';
     splitList.appendChild(sortBar);
     sortBar.querySelector('select').value = splitSortMode;
     sortBar.querySelector('select').addEventListener('change', (e) => { splitSortMode = e.target.value; safeSet('project-flow-sort-mode', splitSortMode, false); renderSplitList(); });
