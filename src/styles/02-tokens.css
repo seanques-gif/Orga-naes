@@ -55,7 +55,7 @@
     --header-bg: #0d1116;
     --toast-bg: #141a22;
     --hover-border: #2f3a47;
-    --planned: #7c8794;
+    --planned: #5878a8; /* steel-slate: ΔE 24 from --text-dim (was 5.5 — near-identical gray) */
     --planned-bg: color-mix(in srgb, var(--planned) 10%, transparent);
     --ongoing: #ffb454;
     --ongoing-bg: color-mix(in srgb, var(--ongoing) 12%, transparent);
@@ -111,7 +111,7 @@
     --header-bg: #ffffff;
     --toast-bg: #12202c;
     --hover-border: #a9b8c7;
-    --planned: #5f6d7b;
+    --planned: #4a5d8a; /* blue-slate: ΔE 18.7 from --text-dim (was 1.8 — indistinguishable) */
     --planned-bg: color-mix(in srgb, var(--planned) 12%, transparent);
     --ongoing: #9a5d00;
     --ongoing-bg: color-mix(in srgb, var(--ongoing) 13%, transparent);
