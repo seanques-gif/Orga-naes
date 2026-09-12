@@ -6,7 +6,7 @@
   "description": "Orga-naes - Personal Project Manager. Source in src/, built to the single-file Orga-naes.html.",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node tests/design-tokens.test.mjs && node tests/date-utils.test.mjs && node tests/functional.test.mjs",
+    "test": "node tests/design-tokens.test.mjs && node tests/contrast.test.mjs && node tests/date-utils.test.mjs && node tests/functional.test.mjs",
     "verify": "node build.mjs --check && npm test"
   }
 }
