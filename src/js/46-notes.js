@@ -131,8 +131,8 @@
         const id = el.getAttribute('data-note-del');
         const n = noteById(id);
         if (!n) return;
-        if (!confirm('Delete note "' + (n.title || 'Untitled') + '"? This cannot be undone.')) return;
-        if (deleteNoteById(id)) showToast('Note deleted');
+        if (!confirm('Move note "' + (n.title || 'Untitled') + '" to the Recycle Bin?')) return;
+        if (deleteNoteById(id)) showToast('Moved to Recycle Bin');
       });
     });
     renderNotesSelBar();
@@ -161,12 +161,12 @@
         } else if (action === 'copy') {
           copyTextToClipboard(allText, notesSelection.length + (notesSelection.length === 1 ? ' note' : ' notes') + ' copied');
         } else if (action === 'delete') {
-          if (!confirm('Delete ' + notesSelection.length + ' note' + (notesSelection.length === 1 ? '' : 's') + '? This cannot be undone.')) return;
+          if (!confirm('Move ' + notesSelection.length + ' note' + (notesSelection.length === 1 ? '' : 's') + ' to the Recycle Bin?')) return;
           const ids = notesSelection.slice();
           ids.forEach(deleteNoteById);
           notesSelection = [];
           renderNotesList(); renderNotesEditor();
-          showToast('Deleted ' + ids.length + ' note' + (ids.length === 1 ? '' : 's'));
+          showToast('Moved ' + ids.length + ' note' + (ids.length === 1 ? '' : 's') + ' to Recycle Bin');
         } else if (action === 'clear') {
           notesSelection = []; renderNotesList();
         }
@@ -256,16 +256,19 @@
     noteTitleEl.focus();
   }
 
-  // Single deletion chokepoint: tombstone + remove + persist + re-render.
+  // Single deletion chokepoint: bin + tombstone + remove + persist + re-render.
   // Every delete path (row ×, footer button, bulk bar) funnels through here,
   // as do automated tests — one code path means one place for the durability
-  // contract to live.
+  // contract to live. Notes land in the recycle bin (30-day TTL); the
+  // tombstone still records the deletion so snapshot recovery can't
+  // resurrect a note the user deliberately binned.
   function deleteNoteById(id) {
     const n = noteById(id);
     if (!n) return false;
     notes = notes.filter(x => x.id !== id);
     notesSelection = notesSelection.filter(x => x !== id);
     if (activeNoteId === id) activeNoteId = null;
+    if (typeof trashNote === 'function') trashNote(n); // recycle bin (06)
     recordNoteTombstone(id);
     saveNotes();
     renderNotesList();
@@ -277,8 +280,8 @@
 
   function deleteActiveNote() {
     if (!noteById(activeNoteId)) return;
-    if (!confirm('Delete this note? This cannot be undone.')) return;
-    if (deleteNoteById(activeNoteId)) showToast('Note deleted');
+    if (!confirm('Move this note to the Recycle Bin?')) return;
+    if (deleteNoteById(activeNoteId)) showToast('Moved to Recycle Bin');
   }
 
   function togglePin() {
@@ -493,6 +496,21 @@
   };
 
   window._pf.getNotesTombstones = function() { return Object.assign({}, noteTombstones); };
+
+  // Recycle-bin bridge (06): a binned note re-enters the live set. Clearing
+  // the tombstone matters — otherwise boot recovery would immediately
+  // re-delete what the user just restored.
+  window._pf.adoptRestoredNote = function(note) {
+    if (!note || typeof note.id !== 'string') return;
+    delete noteTombstones[note.id];
+    saveTombstones();
+    if (!noteById(note.id)) {
+      notes.push(note);
+      saveNotes();
+    }
+    notesLoaded = true;
+    renderNotesList();
+  };
 
   // Eager load at boot: guarantees the 5-minute snapshot tick and manual
   // exports see real notes data instead of the pre-load null/[].

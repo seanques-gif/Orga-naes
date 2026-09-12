@@ -2006,6 +2006,22 @@
   }
   #pf-root .pf-note-done .pf-note-line-text { text-decoration: line-through; color: var(--text-dim); }
   #pf-root .pf-note-blank { height: 0.9em; }
+
+  /* ===== RECYCLE BIN — kind chips (Project / Task / Note) in the bin list ===== */
+  #pf-root .pf-bin-kind {
+    flex-shrink: 0;
+    font-size: calc(var(--font-size-base) - 5px);
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--sub-border);
+    background: var(--sub-bg);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  #pf-root .pf-bin-kind[data-bin-kind="project"] { color: var(--accent); border-color: var(--accent); }
+  #pf-root .pf-bin-kind[data-bin-kind="note"] { color: var(--text); opacity: 0.85; }
   /* SUBSECTION: Accessibility & Motion Preferences (F1/F2)
      Reduced motion keeps opacity/color but removes movement: durations collapse
      to ~0 (not `none`, so `animationend` listeners still fire). Hover motion is
@@ -2153,7 +2169,7 @@
         <button class="pf-undo-btn pf-opt-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" ><span class="pf-opt-ico" data-ic="bell"></span> Reminder</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-activity-btn" ><span class="pf-opt-ico" data-ic="clipboard"></span> Activity Log</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-archive-btn" ><span class="pf-opt-ico" data-ic="archive"></span> Archive</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-trash-btn" ><span class="pf-opt-ico" data-ic="trash"></span> Trash</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-trash-btn" ><span class="pf-opt-ico" data-ic="trash"></span> Recycle Bin</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-snapshots-btn" ><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
         <button class="pf-undo-btn pf-opt-btn pf-btn-rel" id="pf-error-btn" ><span class="pf-opt-ico" data-ic="alert"></span> Error Log<span class="pf-error-dot pf-error-dot-pos" id="pf-error-dot-btn"></span></button>
       </div>
@@ -2353,11 +2369,11 @@
     <div class="pf-activity-list pf-scroll-x" id="pf-archive-list"><div class="pf-activity-empty">Archive is empty.</div></div>
   </div>
   <div class="pf-activity-panel" id="pf-trash-panel" style="display:none">
-    <div class="pf-options-title">Trash <span id="pf-trash-count" class="pf-panel-count"></span></div>
-    <div class="pf-activity-list" id="pf-trash-list"><div class="pf-activity-empty">Trash is empty.</div></div>
+    <div class="pf-options-title">Recycle Bin <span id="pf-trash-count" class="pf-panel-count"></span></div>
+    <div class="pf-activity-list" id="pf-trash-list"><div class="pf-activity-empty">Recycle bin is empty.</div></div>
     <div class="pf-footer-actions">
-      <button class="pf-undo-btn" class="pf-undo-btn pf-btn-danger-text" id="pf-trash-empty-btn">Empty Trash</button>
-      <span class="pf-panel-note">Auto-deletes after 30 days</span>
+      <button class="pf-undo-btn pf-btn-danger-text" id="pf-trash-empty-btn">Empty Recycle Bin</button>
+      <span class="pf-panel-note">Projects, tasks &amp; notes · auto-delete after 30 days</span>
     </div>
   </div>
   <div class="pf-activity-panel" id="pf-snapshots-panel" style="display:none;">
@@ -3615,8 +3631,64 @@
   async function loadTrash() { try { const res = await safeGet(TRASH_KEY, false); if (res && res.value) trash = JSON.parse(res.value); } catch (e) { trash = []; logError('Load trash', e); } purgeOldTrash(); }
   function saveTrash() { safeSet(TRASH_KEY, JSON.stringify(trash), false); }
   function purgeOldTrash() { const cutoff = Date.now() - TRASH_TTL_MS; const before = trash.length; trash = trash.filter(t => new Date(t.deletedAt).getTime() > cutoff); const purged = before - trash.length; if (purged > 0) { saveTrash(); showToast('🗑 ' + purged + ' item' + (purged > 1 ? 's' : '') + ' auto-removed from trash (older than 30 days)'); } }
-  function trashProject(p) { trash.push({ ...JSON.parse(JSON.stringify(p)), deletedAt: new Date().toISOString() }); saveTrash(); }
-  function restoreFromTrash(id) { const idx = trash.findIndex(t => t.id === id); if (idx < 0) return; const item = trash.splice(idx, 1)[0]; delete item.deletedAt; projects.push(item); saveTrash(); scheduleSave(); render(); renderTrashList(); showToast('"' + item.title + '" restored'); }
+  function trashProject(p) { trash.push({ ...JSON.parse(JSON.stringify(p)), kind: 'project', deletedAt: new Date().toISOString() }); saveTrash(); }
+  // Unified recycle bin: projects, subtasks, and notes all land here with a
+  // kind tag. Legacy entries (pre-bin projects) have no kind — treat as 'project'.
+  function trashSubtask(project, node, parentArray, index, parentPath) {
+    if (!project || !node) return;
+    trash.push({ kind: 'subtask', id: node.id, title: node.title, node: JSON.parse(JSON.stringify(node)), projectId: project.id, projectTitle: project.title, parentPath: (parentPath || []).slice(), index: index, deletedAt: new Date().toISOString() });
+    saveTrash();
+  }
+  function trashNote(note) {
+    if (!note) return;
+    trash.push({ kind: 'note', id: note.id, title: note.title, node: JSON.parse(JSON.stringify(note)), deletedAt: new Date().toISOString() });
+    saveTrash();
+  }
+  function restoreFromTrash(id) {
+    const idx = trash.findIndex(t => t.id === id);
+    if (idx < 0) return;
+    const item = trash.splice(idx, 1)[0];
+    const kind = item.kind || 'project';
+    if (kind === 'note') {
+      // Notes restore through the notes module (it owns tombstone clearing + rendering).
+      const note = item.node || { id: item.id, title: item.title, body: '', pinned: false };
+      if (window._pf && typeof window._pf.adoptRestoredNote === 'function') {
+        window._pf.adoptRestoredNote(note);
+        showToast('"' + (note.title || 'Untitled') + '" restored');
+      } else { trash.push(item); saveTrash(); showToast('⚠ Notes not ready — try again', true); return; }
+    } else if (kind === 'subtask') {
+      const restored = restoreSubtaskFromBin(item);
+      if (!restored) { trash.push(item); saveTrash(); showToast('⚠ Its project no longer exists — restore the project first', true); return; }
+      showToast('"' + (item.title || 'Subtask') + '" restored');
+    } else {
+      delete item.deletedAt; delete item.kind;
+      projects.push(item);
+      scheduleSave(); render();
+      showToast('"' + item.title + '" restored');
+    }
+    saveTrash();
+    renderTrashList();
+  }
+  // Re-attach a binned subtask: walk the stored parent path inside its project;
+  // if the parent chain is gone, fall back to the project's root level.
+  function restoreSubtaskFromBin(item) {
+    const p = projects.find(x => x.id === item.projectId);
+    if (!p) return false;
+    if (!Array.isArray(p.subtasks)) p.subtasks = [];
+    const node = item.node || { id: item.id, title: item.title, status: 'planned', subtasks: [] };
+    let arr = p.subtasks;
+    let valid = true;
+    (item.parentPath || []).forEach(pid => {
+      if (!valid) return;
+      const parent = arr.find(s => s && s.id === pid);
+      if (parent) { if (!Array.isArray(parent.subtasks)) parent.subtasks = []; arr = parent.subtasks; }
+      else valid = false;
+    });
+    const at = Math.max(0, Math.min(item.index || 0, arr.length));
+    arr.splice(at, 0, node);
+    scheduleSave(); render();
+    return true;
+  }
   function permanentDeleteFromTrash(id) { trash = trash.filter(t => t.id !== id); saveTrash(); renderTrashList(); }
   let _trashedItems = null; let _trashUndoTimer = null;
   function emptyTrash() {
@@ -3634,12 +3706,18 @@
   function renderTrashList() {
     const list = document.getElementById('pf-trash-list');
     document.getElementById('pf-trash-count').textContent = trash.length ? '(' + trash.length + ')' : '';
-    if (!trash.length) { list.innerHTML = '<div class="pf-activity-empty">Trash is empty.</div>'; return; }
+    if (!trash.length) { list.innerHTML = '<div class="pf-activity-empty">Recycle bin is empty.</div>'; return; }
+    const KIND_LABEL = { project: 'Project', subtask: 'Task', note: 'Note' };
     list.innerHTML = trash.map(t => {
       const days = Math.floor((Date.now() - new Date(t.deletedAt).getTime()) / (24*60*60*1000));
       const remaining = 30 - days;
+      const kind = KIND_LABEL[t.kind || 'project'] || 'Project';
+      const blankNote = t.kind === 'note' && !(t.title || '').trim();
+      const displayTitle = blankNote ? 'Untitled' : escapeHtml(t.title || 'Untitled');
+      const subtitle = t.kind === 'subtask' && t.projectTitle ? ' in ' + escapeHtml(t.projectTitle) : '';
       return '<div class="pf-activity-item" style="display:flex;align-items:center;gap:8px;">' +
-        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(t.title) + '</span>' +
+        '<span class="pf-bin-kind" data-bin-kind="' + (t.kind || 'project') + '">' + kind + '</span>' +
+        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + displayTitle + subtitle + '</span>' +
         '<span style="font-size: calc(var(--font-size-base) - 5px);color:var(--text-dim);flex-shrink:0;">' + remaining + 'd left</span>' +
         '<button class="pf-undo-btn" style="font-size: calc(var(--font-size-base) - 4px);padding:2px 6px;" data-trash-restore="' + t.id + '">Restore</button>' +
         '<button class="pf-undo-btn" style="font-size: calc(var(--font-size-base) - 4px);padding:2px 6px;color:var(--danger);" data-trash-del="' + t.id + '">×</button>' +
@@ -3800,7 +3878,22 @@
   function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
   function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked: complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }
-  function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); render(); }
+  function deleteSubtask(projectId, subId, skipConfirm) {
+    const p = projects.find(p => p.id === projectId);
+    const s = findSubNode(p.subtasks, subId);
+    if (!skipConfirm && !confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return;
+    snapshot();
+    const arr = findSubParentArray(p.subtasks, subId);
+    // Recycle bin: record where it lived so restore can put it back.
+    const indexPath = (function trace(list, path) { for (let i = 0; i < list.length; i++) { const item = list[i]; if (item.id === subId) return { path: path, index: i }; if (item.subtasks && item.subtasks.length) { const hit = trace(item.subtasks, path.concat(item.id)); if (hit) return hit; } } return null; })(p.subtasks, []);
+    const parentIds = indexPath ? indexPath.path : [];
+    if (typeof trashSubtask === 'function' && s) trashSubtask(p, s, arr, indexPath ? indexPath.index : 0, parentIds);
+    if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); }
+    (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks);
+    if (p._manualStatus) { delete p._manualStatus; }
+    checkAllCompleted(p); scheduleSave(); render();
+    if (!skipConfirm) showToast('Moved to recycle bin');
+  }
   function promoteSubToProject(parentProject, sub) {
     snapshot();
     const newProj = { id: uid(), title: sub.title, status: sub.status || 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: sub.dueAt || null, completedAt: sub.completedAt || null, category: parentProject.category || null, subtasks: sub.subtasks ? JSON.parse(JSON.stringify(sub.subtasks)) : [] };
@@ -4135,9 +4228,9 @@
         input.addEventListener('change', commit);
         input.addEventListener('blur', () => { input.remove(); });
       } else if (action === 'delete') {
-        if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return;
+        if (!confirm('Move ' + subMultiSelect.length + ' task(s) to the Recycle Bin?')) return;
         snapshot();
-        subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const arr = findSubParentArray(owner.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } });
+        subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; deleteSubtask(owner.id, id, true); });
         clearSubSelect(); scheduleSave(); render();
       } else if (action === 'clear') {
         clearSubSelect();
@@ -8275,8 +8368,8 @@
         const id = el.getAttribute('data-note-del');
         const n = noteById(id);
         if (!n) return;
-        if (!confirm('Delete note "' + (n.title || 'Untitled') + '"? This cannot be undone.')) return;
-        if (deleteNoteById(id)) showToast('Note deleted');
+        if (!confirm('Move note "' + (n.title || 'Untitled') + '" to the Recycle Bin?')) return;
+        if (deleteNoteById(id)) showToast('Moved to Recycle Bin');
       });
     });
     renderNotesSelBar();
@@ -8305,12 +8398,12 @@
         } else if (action === 'copy') {
           copyTextToClipboard(allText, notesSelection.length + (notesSelection.length === 1 ? ' note' : ' notes') + ' copied');
         } else if (action === 'delete') {
-          if (!confirm('Delete ' + notesSelection.length + ' note' + (notesSelection.length === 1 ? '' : 's') + '? This cannot be undone.')) return;
+          if (!confirm('Move ' + notesSelection.length + ' note' + (notesSelection.length === 1 ? '' : 's') + ' to the Recycle Bin?')) return;
           const ids = notesSelection.slice();
           ids.forEach(deleteNoteById);
           notesSelection = [];
           renderNotesList(); renderNotesEditor();
-          showToast('Deleted ' + ids.length + ' note' + (ids.length === 1 ? '' : 's'));
+          showToast('Moved ' + ids.length + ' note' + (ids.length === 1 ? '' : 's') + ' to Recycle Bin');
         } else if (action === 'clear') {
           notesSelection = []; renderNotesList();
         }
@@ -8400,16 +8493,19 @@
     noteTitleEl.focus();
   }
 
-  // Single deletion chokepoint: tombstone + remove + persist + re-render.
+  // Single deletion chokepoint: bin + tombstone + remove + persist + re-render.
   // Every delete path (row ×, footer button, bulk bar) funnels through here,
   // as do automated tests — one code path means one place for the durability
-  // contract to live.
+  // contract to live. Notes land in the recycle bin (30-day TTL); the
+  // tombstone still records the deletion so snapshot recovery can't
+  // resurrect a note the user deliberately binned.
   function deleteNoteById(id) {
     const n = noteById(id);
     if (!n) return false;
     notes = notes.filter(x => x.id !== id);
     notesSelection = notesSelection.filter(x => x !== id);
     if (activeNoteId === id) activeNoteId = null;
+    if (typeof trashNote === 'function') trashNote(n); // recycle bin (06)
     recordNoteTombstone(id);
     saveNotes();
     renderNotesList();
@@ -8421,8 +8517,8 @@
 
   function deleteActiveNote() {
     if (!noteById(activeNoteId)) return;
-    if (!confirm('Delete this note? This cannot be undone.')) return;
-    if (deleteNoteById(activeNoteId)) showToast('Note deleted');
+    if (!confirm('Move this note to the Recycle Bin?')) return;
+    if (deleteNoteById(activeNoteId)) showToast('Moved to Recycle Bin');
   }
 
   function togglePin() {
@@ -8637,6 +8733,21 @@
   };
 
   window._pf.getNotesTombstones = function() { return Object.assign({}, noteTombstones); };
+
+  // Recycle-bin bridge (06): a binned note re-enters the live set. Clearing
+  // the tombstone matters — otherwise boot recovery would immediately
+  // re-delete what the user just restored.
+  window._pf.adoptRestoredNote = function(note) {
+    if (!note || typeof note.id !== 'string') return;
+    delete noteTombstones[note.id];
+    saveTombstones();
+    if (!noteById(note.id)) {
+      notes.push(note);
+      saveNotes();
+    }
+    notesLoaded = true;
+    renderNotesList();
+  };
 
   // Eager load at boot: guarantees the 5-minute snapshot tick and manual
   // exports see real notes data instead of the pre-load null/[].

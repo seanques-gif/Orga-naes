@@ -26,7 +26,22 @@
   function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
   function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked: complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }
-  function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); render(); }
+  function deleteSubtask(projectId, subId, skipConfirm) {
+    const p = projects.find(p => p.id === projectId);
+    const s = findSubNode(p.subtasks, subId);
+    if (!skipConfirm && !confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return;
+    snapshot();
+    const arr = findSubParentArray(p.subtasks, subId);
+    // Recycle bin: record where it lived so restore can put it back.
+    const indexPath = (function trace(list, path) { for (let i = 0; i < list.length; i++) { const item = list[i]; if (item.id === subId) return { path: path, index: i }; if (item.subtasks && item.subtasks.length) { const hit = trace(item.subtasks, path.concat(item.id)); if (hit) return hit; } } return null; })(p.subtasks, []);
+    const parentIds = indexPath ? indexPath.path : [];
+    if (typeof trashSubtask === 'function' && s) trashSubtask(p, s, arr, indexPath ? indexPath.index : 0, parentIds);
+    if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); }
+    (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks);
+    if (p._manualStatus) { delete p._manualStatus; }
+    checkAllCompleted(p); scheduleSave(); render();
+    if (!skipConfirm) showToast('Moved to recycle bin');
+  }
   function promoteSubToProject(parentProject, sub) {
     snapshot();
     const newProj = { id: uid(), title: sub.title, status: sub.status || 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: sub.dueAt || null, completedAt: sub.completedAt || null, category: parentProject.category || null, subtasks: sub.subtasks ? JSON.parse(JSON.stringify(sub.subtasks)) : [] };

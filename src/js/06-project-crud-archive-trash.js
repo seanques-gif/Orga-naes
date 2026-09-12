@@ -28,8 +28,64 @@
   async function loadTrash() { try { const res = await safeGet(TRASH_KEY, false); if (res && res.value) trash = JSON.parse(res.value); } catch (e) { trash = []; logError('Load trash', e); } purgeOldTrash(); }
   function saveTrash() { safeSet(TRASH_KEY, JSON.stringify(trash), false); }
   function purgeOldTrash() { const cutoff = Date.now() - TRASH_TTL_MS; const before = trash.length; trash = trash.filter(t => new Date(t.deletedAt).getTime() > cutoff); const purged = before - trash.length; if (purged > 0) { saveTrash(); showToast('🗑 ' + purged + ' item' + (purged > 1 ? 's' : '') + ' auto-removed from trash (older than 30 days)'); } }
-  function trashProject(p) { trash.push({ ...JSON.parse(JSON.stringify(p)), deletedAt: new Date().toISOString() }); saveTrash(); }
-  function restoreFromTrash(id) { const idx = trash.findIndex(t => t.id === id); if (idx < 0) return; const item = trash.splice(idx, 1)[0]; delete item.deletedAt; projects.push(item); saveTrash(); scheduleSave(); render(); renderTrashList(); showToast('"' + item.title + '" restored'); }
+  function trashProject(p) { trash.push({ ...JSON.parse(JSON.stringify(p)), kind: 'project', deletedAt: new Date().toISOString() }); saveTrash(); }
+  // Unified recycle bin: projects, subtasks, and notes all land here with a
+  // kind tag. Legacy entries (pre-bin projects) have no kind — treat as 'project'.
+  function trashSubtask(project, node, parentArray, index, parentPath) {
+    if (!project || !node) return;
+    trash.push({ kind: 'subtask', id: node.id, title: node.title, node: JSON.parse(JSON.stringify(node)), projectId: project.id, projectTitle: project.title, parentPath: (parentPath || []).slice(), index: index, deletedAt: new Date().toISOString() });
+    saveTrash();
+  }
+  function trashNote(note) {
+    if (!note) return;
+    trash.push({ kind: 'note', id: note.id, title: note.title, node: JSON.parse(JSON.stringify(note)), deletedAt: new Date().toISOString() });
+    saveTrash();
+  }
+  function restoreFromTrash(id) {
+    const idx = trash.findIndex(t => t.id === id);
+    if (idx < 0) return;
+    const item = trash.splice(idx, 1)[0];
+    const kind = item.kind || 'project';
+    if (kind === 'note') {
+      // Notes restore through the notes module (it owns tombstone clearing + rendering).
+      const note = item.node || { id: item.id, title: item.title, body: '', pinned: false };
+      if (window._pf && typeof window._pf.adoptRestoredNote === 'function') {
+        window._pf.adoptRestoredNote(note);
+        showToast('"' + (note.title || 'Untitled') + '" restored');
+      } else { trash.push(item); saveTrash(); showToast('⚠ Notes not ready — try again', true); return; }
+    } else if (kind === 'subtask') {
+      const restored = restoreSubtaskFromBin(item);
+      if (!restored) { trash.push(item); saveTrash(); showToast('⚠ Its project no longer exists — restore the project first', true); return; }
+      showToast('"' + (item.title || 'Subtask') + '" restored');
+    } else {
+      delete item.deletedAt; delete item.kind;
+      projects.push(item);
+      scheduleSave(); render();
+      showToast('"' + item.title + '" restored');
+    }
+    saveTrash();
+    renderTrashList();
+  }
+  // Re-attach a binned subtask: walk the stored parent path inside its project;
+  // if the parent chain is gone, fall back to the project's root level.
+  function restoreSubtaskFromBin(item) {
+    const p = projects.find(x => x.id === item.projectId);
+    if (!p) return false;
+    if (!Array.isArray(p.subtasks)) p.subtasks = [];
+    const node = item.node || { id: item.id, title: item.title, status: 'planned', subtasks: [] };
+    let arr = p.subtasks;
+    let valid = true;
+    (item.parentPath || []).forEach(pid => {
+      if (!valid) return;
+      const parent = arr.find(s => s && s.id === pid);
+      if (parent) { if (!Array.isArray(parent.subtasks)) parent.subtasks = []; arr = parent.subtasks; }
+      else valid = false;
+    });
+    const at = Math.max(0, Math.min(item.index || 0, arr.length));
+    arr.splice(at, 0, node);
+    scheduleSave(); render();
+    return true;
+  }
   function permanentDeleteFromTrash(id) { trash = trash.filter(t => t.id !== id); saveTrash(); renderTrashList(); }
   let _trashedItems = null; let _trashUndoTimer = null;
   function emptyTrash() {
@@ -47,12 +103,18 @@
   function renderTrashList() {
     const list = document.getElementById('pf-trash-list');
     document.getElementById('pf-trash-count').textContent = trash.length ? '(' + trash.length + ')' : '';
-    if (!trash.length) { list.innerHTML = '<div class="pf-activity-empty">Trash is empty.</div>'; return; }
+    if (!trash.length) { list.innerHTML = '<div class="pf-activity-empty">Recycle bin is empty.</div>'; return; }
+    const KIND_LABEL = { project: 'Project', subtask: 'Task', note: 'Note' };
     list.innerHTML = trash.map(t => {
       const days = Math.floor((Date.now() - new Date(t.deletedAt).getTime()) / (24*60*60*1000));
       const remaining = 30 - days;
+      const kind = KIND_LABEL[t.kind || 'project'] || 'Project';
+      const blankNote = t.kind === 'note' && !(t.title || '').trim();
+      const displayTitle = blankNote ? 'Untitled' : escapeHtml(t.title || 'Untitled');
+      const subtitle = t.kind === 'subtask' && t.projectTitle ? ' in ' + escapeHtml(t.projectTitle) : '';
       return '<div class="pf-activity-item" style="display:flex;align-items:center;gap:8px;">' +
-        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(t.title) + '</span>' +
+        '<span class="pf-bin-kind" data-bin-kind="' + (t.kind || 'project') + '">' + kind + '</span>' +
+        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + displayTitle + subtitle + '</span>' +
         '<span style="font-size: calc(var(--font-size-base) - 5px);color:var(--text-dim);flex-shrink:0;">' + remaining + 'd left</span>' +
         '<button class="pf-undo-btn" style="font-size: calc(var(--font-size-base) - 4px);padding:2px 6px;" data-trash-restore="' + t.id + '">Restore</button>' +
         '<button class="pf-undo-btn" style="font-size: calc(var(--font-size-base) - 4px);padding:2px 6px;color:var(--danger);" data-trash-del="' + t.id + '">×</button>' +

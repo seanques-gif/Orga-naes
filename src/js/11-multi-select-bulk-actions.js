@@ -73,9 +73,9 @@
         input.addEventListener('change', commit);
         input.addEventListener('blur', () => { input.remove(); });
       } else if (action === 'delete') {
-        if (!confirm('Delete ' + subMultiSelect.length + ' subtask(s)?')) return;
+        if (!confirm('Move ' + subMultiSelect.length + ' task(s) to the Recycle Bin?')) return;
         snapshot();
-        subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const arr = findSubParentArray(owner.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } });
+        subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; deleteSubtask(owner.id, id, true); });
         clearSubSelect(); scheduleSave(); render();
       } else if (action === 'clear') {
         clearSubSelect();

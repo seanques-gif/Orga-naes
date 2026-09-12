@@ -295,3 +295,19 @@
   }
   #pf-root .pf-note-done .pf-note-line-text { text-decoration: line-through; color: var(--text-dim); }
   #pf-root .pf-note-blank { height: 0.9em; }
+
+  /* ===== RECYCLE BIN — kind chips (Project / Task / Note) in the bin list ===== */
+  #pf-root .pf-bin-kind {
+    flex-shrink: 0;
+    font-size: calc(var(--font-size-base) - 5px);
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--sub-border);
+    background: var(--sub-bg);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  #pf-root .pf-bin-kind[data-bin-kind="project"] { color: var(--accent); border-color: var(--accent); }
+  #pf-root .pf-bin-kind[data-bin-kind="note"] { color: var(--text); opacity: 0.85; }
