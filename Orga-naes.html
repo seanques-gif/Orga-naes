@@ -1725,6 +1725,90 @@
   }
   #pf-root .pf-theme-btn { padding: 5px 12px; font-size: calc(var(--font-size-base) - 3px); }
   #pf-root .pf-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  /* SUBSECTION: 3B-3 slice 1 — semantic classes peeled from template inline styles.
+     Values are copied verbatim from the removed style="" attributes. display:none
+     boot-hiding intentionally stays inline wherever JS reveals via style.display=''. */
+  /* generic utilities */
+  #pf-root .pf-opt-btn { justify-content: flex-start; }
+  #pf-root .pf-btn-rel { position: relative; }
+  #pf-root .pf-tb-right { margin-left: auto; }
+  #pf-root .pf-mt-4 { margin-top: 4px; }
+  #pf-root .pf-mt-6 { margin-top: 6px; }
+  #pf-root .pf-shrink-0 { flex-shrink: 0; }
+  #pf-root .pf-overflow-hidden { overflow: hidden; }
+  #pf-root .pf-scroll-x { overflow-x: hidden; }
+  #pf-root .pf-min-h-0 { min-height: 0; }
+  #pf-root .pf-pad-4 { padding: 4px; }
+  #pf-root .pf-flex-1 { flex: 1; }
+  #pf-root .pf-wrap { flex-wrap: wrap; }
+  #pf-root .pf-dim { color: var(--text-dim); font-weight: 400; }
+  #pf-root .pf-hint { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
+  /* toolbar badges */
+  #pf-root .pf-desktop-badge { position: absolute; top: -4px; right: -4px; min-width: 14px; height: 14px; background: var(--danger, #ef4444); color: #fff; font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0 3px; line-height: 1; }
+  #pf-root .pf-error-dot-pos { top: 2px; right: 4px; }
+  /* firebase options section */
+  #pf-root .pf-firebase-section { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  #pf-root .pf-firebase-status { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
+  #pf-root .pf-firebase-last-sync { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); }
+  #pf-root .pf-firebase-backups-list { margin-top: 6px; max-height: 200px; overflow-y: auto; }
+  #pf-root .pf-firebase-note { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); margin-top: 4px; }
+  #pf-root .pf-firebase-about { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); line-height: 1.6; }
+  #pf-root .pf-check-row { display: flex; align-items: center; gap: 6px; font-size: calc(var(--font-size-base) - 2px); color: var(--text-dim); }
+  #pf-root .pf-check-row-lg { font-size: calc(var(--font-size-base) - 1px); color: var(--text); }
+  #pf-root .pf-input-num { width: 48px; padding: 2px 4px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: calc(var(--font-size-base) - 1px); text-align: center; }
+  #pf-root .pf-autobackup-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* options panel: theme section + footer */
+  #pf-root .pf-theme-divider { margin-top: 10px; margin-bottom: 8px; }
+  #pf-root .pf-theme-sec-label { font-size: calc(var(--font-size-base) - 4px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 6px; margin-top: 12px; }
+  #pf-root .pf-theme-btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  #pf-root .pf-section-divider { border-top: 1px solid var(--card-border); padding-top: 12px; margin-top: 8px; }
+  /* shared panel chrome (geometry lives on the id rules below) */
+  #pf-root .pf-panel-head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); flex-shrink: 0; }
+  #pf-root .pf-panel-head-icon { font-size: calc(var(--font-size-base) + 8px); }
+  #pf-root .pf-panel-title-lg { font-family: var(--font-sans); font-weight: 700; font-size: calc(var(--font-size-base) + 2px); letter-spacing: -0.3px; }
+  #pf-root .pf-panel-count { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); font-weight: 400; }
+  #pf-root .pf-footer-actions { padding-top: 8px; border-top: 1px solid var(--card-border); margin-top: 8px; display: flex; gap: 6px; }
+  #pf-root .pf-panel-note { flex: 1; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); align-self: center; text-align: right; }
+  /* button variants */
+  #pf-root .pf-btn-accent { padding: 4px 12px; font-size: calc(var(--font-size-base) - 3px); font-weight: 600; background: var(--accent); color: var(--accent-contrast); border-radius: 6px; }
+  #pf-root .pf-btn-small { padding: 4px 8px; font-size: calc(var(--font-size-base) - 4px); border-radius: 6px; }
+  #pf-root #pf-today-clear-btn { border: 1px solid var(--card-border); }
+  #pf-root .pf-btn-chip { padding: 4px 8px; font-size: calc(var(--font-size-base) - 4px); border-radius: 6px; font-weight: 600; }
+  #pf-root .pf-chip-accent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+  #pf-root .pf-chip-danger { background: color-mix(in srgb, var(--danger, #ef4444) 12%, transparent); color: var(--danger, #ef4444); }
+  #pf-root .pf-btn-danger-text { color: var(--danger); }
+  #pf-root .pf-btn-autoarrange { padding: 3px 10px; font-size: calc(var(--font-size-base) - 4px); font-weight: 600; }
+  #pf-root .pf-zoom-btn-sm { font-size: calc(var(--font-size-base) - 3px); }
+  /* calendar panel internals */
+  #pf-root .pf-cal-layout { display: flex; flex: 1; overflow: hidden; gap: 0; min-height: 0; }
+  #pf-root .pf-cal-left { flex: 0 0 40%; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--card-border); padding-right: 8px; }
+  #pf-root .pf-cal-head { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 12px 8px; margin-bottom: 6px; background: var(--header-bg); border-radius: 6px; }
+  #pf-root .pf-cal-nav { padding: 4px 10px; font-size: var(--font-size-base); }
+  #pf-root .pf-cal-month { flex: 1; text-align: center; font-size: calc(var(--font-size-base) + 2px); font-weight: 700; font-family: var(--font-sans); letter-spacing: -0.3px; }
+  #pf-root .pf-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; overflow-y: auto; flex: 1; font-size: calc(var(--font-size-base) - 3px); }
+  #pf-root .pf-cal-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; overflow-x: hidden; padding-left: 14px; }
+  #pf-root .pf-cal-detail-title { flex-shrink: 0; font-size: var(--font-size-base); font-weight: 700; font-family: var(--font-sans); padding: 12px 8px; margin-bottom: 6px; background: var(--header-bg); border-radius: 6px; text-align: center; }
+  /* today panel internals */
+  #pf-root .pf-today-actions { padding-top: 10px; border-top: 1px solid var(--card-border); margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  /* weekly planner internals */
+  #pf-root .pf-week-head { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 12px 16px; background: var(--header-bg); border-radius: 6px 10px 0 0; border-bottom: 1px solid var(--card-border); }
+  #pf-root .pf-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; gap: 10px; flex: 1; overflow-y: auto; min-height: 0; padding: 14px 12px; }
+  #pf-root .pf-week-backlog { border-top: 1px solid var(--card-border); padding: 10px 16px; flex-shrink: 0; max-height: 190px; display: flex; flex-direction: column; gap: 6px; }
+  #pf-root .pf-week-backlog-head { display: flex; align-items: center; gap: 8px; }
+  #pf-root .pf-week-backlog-label { font-size: calc(var(--font-size-base) - 2px); font-weight: 700; flex: 1; }
+  #pf-root .pf-week-backlog-flow { display: flex; flex-wrap: wrap; gap: 6px; overflow-y: auto; min-height: 38px; }
+  #pf-root .pf-week-foot { padding: 10px 16px; border-top: 1px solid var(--card-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; background: var(--header-bg); border-radius: 0 0 10px 10px; }
+  #pf-root .pf-week-foot-hint { flex: 1; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); text-align: right; font-style: italic; }
+  /* panel geometry (id-scoped: one instance each; display:none stays inline for JS toggling) */
+  #pf-root #pf-calendar-panel { width: min(95vw, 1100px); max-height: min(90vh, 750px); height: 85vh; }
+  #pf-root #pf-today-panel { width: min(420px, 90vw); }
+  #pf-root #pf-duelist-panel { width: min(700px, 90vw); max-height: min(85vh, 700px); height: 75vh; flex-direction: column; }
+  #pf-root #pf-weekly-panel { width: min(98vw, 1600px); max-height: min(95vh, 1000px); height: 92vh; }
+  #pf-root #pf-archive-panel { width: min(500px, 90vw); max-height: min(80vh, 700px); }
+  #pf-root #pf-snapshots-panel { width: min(500px, 90vw); max-height: min(80vh, 700px); }
+  #pf-root #pf-error-panel { width: min(560px, 90vw); max-height: min(80vh, 700px); }
+  #pf-root #pf-copy-modal { width: min(500px, 90vw); max-height: min(80vh, 600px); height: 60vh; flex-direction: column; }
   /* SUBSECTION: Accessibility & Motion Preferences (F1/F2)
      Reduced motion keeps opacity/color but removes movement: durations collapse
      to ~0 (not `none`, so `animationend` listeners still fire). Hover motion is
@@ -1777,7 +1861,7 @@
     <div class="pf-tb-group" id="pf-tb-undoredo">
       <button class="pf-undo-btn" id="pf-undo" title="Undo (Ctrl+Z)" disabled><span data-ic="undo"></span></button>
       <button class="pf-undo-btn" id="pf-redo" title="Redo (Ctrl+Y)" disabled><span data-ic="redo"></span></button>
-      <button class="pf-undo-btn pf-options-desktop" id="pf-options-btn-desktop" title="Options" style="position:relative;"><span data-ic="menu"></span><span class="pf-error-dot" id="pf-error-dot-desktop"></span></button>
+      <button class="pf-undo-btn pf-options-desktop pf-btn-rel" id="pf-options-btn-desktop" title="Options" ><span data-ic="menu"></span><span class="pf-error-dot" id="pf-error-dot-desktop"></span></button>
     </div>
     <div class="pf-tb-group" id="pf-tb-duefilter">
       <select class="pf-due-filter" id="pf-due-filter" title="Filter by due date">
@@ -1791,7 +1875,7 @@
         <option value="nodue">No Due</option>
       </select>
       <button class="pf-undo-btn" id="pf-today-btn" title="Today's Focus"><span data-ic="star"></span></button>
-      <button class="pf-undo-btn" id="pf-duelist-btn" title="Tasks by Due Date" style="position:relative;"><span data-ic="calendar"></span><span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;background:var(--danger,#ef4444);color:#fff;font-size: max(9px, calc(var(--font-size-base) - 5px));font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;"></span></button>
+      <button class="pf-undo-btn pf-btn-rel" id="pf-duelist-btn" title="Tasks by Due Date" ><span data-ic="calendar"></span><span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;"></span></button>
       <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View"><span data-ic="calendar-week"></span></button>
       <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner"><span data-ic="planner"></span></button>
     </div>
@@ -1805,10 +1889,10 @@
     <button class="pf-undo-btn pf-shortcuts-hint" id="pf-shortcuts-hint" title="Keyboard Shortcuts (?)">?</button>
     <div class="pf-stats" id="pf-stats"></div>
     <div class="pf-save" id="pf-save"></div>
-    <div class="pf-tb-group pf-options-mobile" style="margin-left:auto;">
-      <button class="pf-undo-btn" id="pf-options-btn" title="Options" style="position:relative;"><span data-ic="menu"></span><span class="pf-error-dot" id="pf-error-dot-mobile"></span></button>
+    <div class="pf-tb-group pf-options-mobile pf-tb-right" >
+      <button class="pf-undo-btn pf-btn-rel" id="pf-options-btn" title="Options" ><span data-ic="menu"></span><span class="pf-error-dot" id="pf-error-dot-mobile"></span></button>
     </div>
-    <button class="pf-undo-btn pf-back-btn" id="pf-toolbar-back" title="Back to projects" style="display:none;margin-left:auto;"><span data-ic="reply"></span></button>
+    <button class="pf-undo-btn pf-back-btn pf-tb-right" id="pf-toolbar-back" title="Back to projects"  style="display:none"><span data-ic="reply"></span></button>
     <span id="pf-theme-toggle" title="Toggle theme" style="display:none;"></span>
     <input type="file" id="pf-import-file" accept=".json" style="display:none">
   </div>
@@ -1858,8 +1942,8 @@
     <div class="pf-options-section">
       <div class="pf-opt-title" data-ic-before="folder">Data</div>
       <div class="pf-opt-grid">
-        <button class="pf-undo-btn" id="pf-export" title="Save (Ctrl+S)" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="save"></span> Save JSON</button>
-        <button class="pf-undo-btn" id="pf-import" title="Import" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="open"></span> Import</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-export" title="Save (Ctrl+S)" ><span class="pf-opt-ico" data-ic="save"></span> Save JSON</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-import" title="Import" ><span class="pf-opt-ico" data-ic="open"></span> Import</button>
       </div>
     </div>
 
@@ -1867,13 +1951,13 @@
     <div class="pf-options-section">
       <div class="pf-opt-title" data-ic-before="folder">Manage</div>
       <div class="pf-opt-grid">
-        <button class="pf-undo-btn" id="pf-category-btn" title="Manage categories" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="folder"></span> Categories</button>
-        <button class="pf-undo-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="bell"></span> Reminder</button>
-        <button class="pf-undo-btn" id="pf-activity-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="clipboard"></span> Activity Log</button>
-        <button class="pf-undo-btn" id="pf-archive-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="archive"></span> Archive</button>
-        <button class="pf-undo-btn" id="pf-trash-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="trash"></span> Trash</button>
-        <button class="pf-undo-btn" id="pf-snapshots-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
-        <button class="pf-undo-btn" id="pf-error-btn" style="justify-content:flex-start;position:relative;"><span class="pf-opt-ico" data-ic="alert"></span> Error Log<span class="pf-error-dot" id="pf-error-dot-btn" style="top:2px;right:4px;"></span></button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-category-btn" title="Manage categories" ><span class="pf-opt-ico" data-ic="folder"></span> Categories</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" ><span class="pf-opt-ico" data-ic="bell"></span> Reminder</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-activity-btn" ><span class="pf-opt-ico" data-ic="clipboard"></span> Activity Log</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-archive-btn" ><span class="pf-opt-ico" data-ic="archive"></span> Archive</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-trash-btn" ><span class="pf-opt-ico" data-ic="trash"></span> Trash</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-snapshots-btn" ><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
+        <button class="pf-undo-btn pf-opt-btn pf-btn-rel" id="pf-error-btn" ><span class="pf-opt-ico" data-ic="alert"></span> Error Log<span class="pf-error-dot pf-error-dot-pos" id="pf-error-dot-btn"></span></button>
       </div>
     </div>
 
@@ -1881,46 +1965,46 @@
     <div class="pf-options-section">
       <div class="pf-opt-title" data-ic-before="upload">Export</div>
       <div class="pf-opt-grid">
-        <button class="pf-undo-btn" id="pf-export-csv" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="file"></span> CSV</button>
-        <button class="pf-undo-btn" id="pf-export-pdf" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="file-text"></span> PDF</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-export-csv" ><span class="pf-opt-ico" data-ic="file"></span> CSV</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-export-pdf" ><span class="pf-opt-ico" data-ic="file-text"></span> PDF</button>
       </div>
     </div>
 
     <!-- ☁️ Cloud Sync — Firebase -->
     <div class="pf-options-section">
       <div class="pf-opt-title" data-ic-before="cloud">Cloud Sync — Firebase</div>
-      <div id="pf-firebase-section" style="display:grid;grid-template-columns:1fr;gap:6px;">
-        <div id="pf-firebase-status" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);">Not signed in</div>
-        <div id="pf-firebase-last-sync" style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);display:none;"></div>
-        <button class="pf-undo-btn" id="pf-firebase-signin" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="key"></span> Sign in with Google</button>
-        <button class="pf-undo-btn" id="pf-firebase-signout" style="justify-content:flex-start;display:none;"><span class="pf-opt-ico" data-ic="exit"></span> Sign Out</button>
+      <div class="pf-firebase-section" id="pf-firebase-section">
+        <div class="pf-firebase-status" id="pf-firebase-status">Not signed in</div>
+        <div class="pf-firebase-last-sync" id="pf-firebase-last-sync" style="display:none;"></div>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signin" ><span class="pf-opt-ico" data-ic="key"></span> Sign in with Google</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signout"  style="display:none"><span class="pf-opt-ico" data-ic="exit"></span> Sign Out</button>
         <div class="pf-opt-grid">
-          <button class="pf-undo-btn" id="pf-firebase-push" style="justify-content:flex-start;" disabled><span class="pf-opt-ico" data-ic="upload"></span> Push</button>
-          <button class="pf-undo-btn" id="pf-firebase-pull" style="justify-content:flex-start;" disabled><span class="pf-opt-ico" data-ic="download"></span> Pull</button>
+          <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-push"  disabled><span class="pf-opt-ico" data-ic="upload"></span> Push</button>
+          <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-pull"  disabled><span class="pf-opt-ico" data-ic="download"></span> Pull</button>
         </div>
-        <label style="display:flex;align-items:center;gap:6px;font-size: calc(var(--font-size-base) - 2px);color:var(--text-dim);margin-top:4px;">
+        <label class="pf-check-row pf-mt-4">
           <input type="checkbox" id="pf-firebase-autosync"> Auto-sync on changes
         </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size: calc(var(--font-size-base) - 2px);color:var(--text-dim);">
+        <label class="pf-check-row">
           <input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
         </label>
-        <button class="pf-undo-btn" id="pf-firebase-backups-btn" style="justify-content:flex-start;margin-top:4px;" disabled><span class="pf-opt-ico" data-ic="planner"></span> Restore from Backup</button>
-        <div id="pf-firebase-backups-list" style="display:none;margin-top:6px;max-height:200px;overflow-y:auto;"></div>
-        <p style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);margin-top:4px;">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
+        <button class="pf-undo-btn pf-opt-btn pf-mt-4" id="pf-firebase-backups-btn"  disabled><span class="pf-opt-ico" data-ic="planner"></span> Restore from Backup</button>
+        <div class="pf-firebase-backups-list" id="pf-firebase-backups-list" style="display:none;"></div>
+        <p class="pf-firebase-note">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
       </div>
     </div>
 
     <!-- 🔄 Auto-Backup -->
     <div class="pf-options-section">
       <div class="pf-opt-title" data-ic-before="refresh">Auto-Backup</div>
-      <label style="display:flex;align-items:center;gap:6px;font-size: calc(var(--font-size-base) - 1px);color:var(--text);">
+      <label class="pf-check-row pf-check-row-lg">
         Every
-        <input type="number" id="pf-autobackup-min" min="0" max="120" value="0" style="width:48px;padding:2px 4px;border-radius:6px;border:1px solid var(--card-border);background:var(--sub-bg);color:var(--text);font-size: calc(var(--font-size-base) - 1px);text-align:center;">
-        min <span style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);">(0 = off)</span>
+        <input type="number" id="pf-autobackup-min" min="0" max="120" value="0" class="pf-input-num">
+        min <span class="pf-hint">(0 = off)</span>
       </label>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:6px;overflow:hidden;">
-        <button class="pf-undo-btn" id="pf-autobackup-dir" style="justify-content:flex-start;flex-shrink:0;"><span class="pf-opt-ico" data-ic="folder"></span> Choose folder</button>
-        <span id="pf-autobackup-path" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+      <div class="pf-check-row pf-mt-6 pf-overflow-hidden">
+        <button class="pf-undo-btn pf-opt-btn pf-shrink-0" id="pf-autobackup-dir" ><span class="pf-opt-ico" data-ic="folder"></span> Choose folder</button>
+        <span class="pf-hint pf-autobackup-path" id="pf-autobackup-path"></span>
       </div>
     </div>
 
@@ -1935,11 +2019,11 @@
       </div>
       <input type="range" id="pf-font-size" class="pf-range-input" style="display:none;" min="10" max="20" step="1" value="15">
       <span id="pf-font-size-val" style="display:none;">15px</span>
-      <div style="margin-top:10px;margin-bottom:8px;">
+      <div class="pf-theme-divider">
         <button class="pf-undo-btn pf-theme-btn" id="pf-theme-auto">Auto (System)</button>
       </div>
-      <div style="font-size: calc(var(--font-size-base) - 4px);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:6px;margin-top:12px;">Console Themes</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <div class="pf-theme-sec-label">Console Themes</div>
+      <div class="pf-theme-btn-row">
         <button class="pf-undo-btn pf-theme-btn" id="pf-theme-midnight-cyan">Midnight Cyan</button>
         <button class="pf-undo-btn pf-theme-btn" id="pf-theme-amber-crt">Amber CRT</button>
         <button class="pf-undo-btn pf-theme-btn" id="pf-theme-phosphor-green">Phosphor Green</button>
@@ -1951,13 +2035,13 @@
     <!-- ⌨️ Shortcuts -->
     <div class="pf-options-section">
       <div class="pf-opt-title">⌨️ Shortcuts</div>
-      <button class="pf-undo-btn" id="pf-shortcuts-btn" style="justify-content:flex-start;"><span class="pf-opt-ico" data-ic="keyboard"></span> Keyboard Shortcuts</button>
+      <button class="pf-undo-btn pf-opt-btn" id="pf-shortcuts-btn" ><span class="pf-opt-ico" data-ic="keyboard"></span> Keyboard Shortcuts</button>
     </div>
 
     <!-- ℹ️ About -->
-    <div class="pf-options-section" style="border-top:1px solid var(--card-border);padding-top:12px;margin-top:8px;">
+    <div class="pf-options-section pf-section-divider">
       <div class="pf-opt-title">ℹ️ About</div>
-      <div style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);line-height:1.6;">
+      <div class="pf-firebase-about">
         <strong>Orga-naes</strong> v1.0.0<br>
         A lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views — all stored locally in your browser.<br><br>
         Created by <strong>Sean Ques</strong>
@@ -1976,89 +2060,89 @@
     <div class="pf-options-title">Activity Log</div>
     <div class="pf-activity-list" id="pf-activity-list"><div class="pf-activity-empty">No activity yet.</div></div>
   </div>
-  <div class="pf-activity-panel" id="pf-calendar-panel" style="display:none;width:min(95vw,1100px);max-height:min(90vh,750px);height:85vh;">
-    <div class="pf-cal-layout" style="display:flex;flex:1;overflow:hidden;gap:0;min-height:0;">
-      <div class="pf-cal-left" style="flex:0 0 40%;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--card-border);padding-right:8px;">
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;padding:12px 8px;margin-bottom:6px;background:var(--header-bg);border-radius:6px;">
-          <button class="pf-undo-btn" id="pf-cal-prev" style="padding:4px 10px;font-size:var(--font-size-base);">◀</button>
-          <span id="pf-cal-month" style="flex:1;text-align:center;font-size: calc(var(--font-size-base) + 2px);font-weight:700;font-family:var(--font-sans);letter-spacing:-0.3px;"></span>
-          <button class="pf-undo-btn" id="pf-cal-today-btn" style="padding:4px 12px;font-size: calc(var(--font-size-base) - 3px);font-weight:600;background:var(--accent);color:var(--accent-contrast);border-radius:6px;">Today</button>
-          <button class="pf-undo-btn" id="pf-cal-next" style="padding:4px 10px;font-size:var(--font-size-base);">▶</button>
+  <div class="pf-activity-panel" id="pf-calendar-panel" style="display:none;">
+    <div class="pf-cal-layout">
+      <div class="pf-cal-left">
+        <div class="pf-cal-head">
+          <button class="pf-undo-btn pf-cal-nav" id="pf-cal-prev">◀</button>
+          <span class="pf-cal-month" id="pf-cal-month"></span>
+          <button class="pf-undo-btn pf-btn-accent" id="pf-cal-today-btn">Today</button>
+          <button class="pf-undo-btn pf-cal-nav" id="pf-cal-next">▶</button>
         </div>
-        <div id="pf-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;overflow-y:auto;flex:1;font-size: calc(var(--font-size-base) - 3px);"></div>
+        <div class="pf-cal-grid" id="pf-cal-grid"></div>
       </div>
-      <div class="pf-cal-right" style="flex:1;display:flex;flex-direction:column;overflow:hidden;overflow-x:hidden;padding-left:14px;">
-        <div id="pf-cal-detail-title" style="flex-shrink:0;font-size:var(--font-size-base);font-weight:700;font-family:var(--font-sans);padding:12px 8px;margin-bottom:6px;background:var(--header-bg);border-radius:6px;text-align:center;">Select a date</div>
-        <div class="pf-activity-list" id="pf-cal-detail-list" style="overflow-y:auto;overflow-x:hidden;flex:1;"><div class="pf-activity-empty">Click a date to see tasks.</div></div>
+      <div class="pf-cal-right">
+        <div class="pf-cal-detail-title" id="pf-cal-detail-title">Select a date</div>
+        <div class="pf-activity-list pf-scroll-x" id="pf-cal-detail-list"><div class="pf-activity-empty">Click a date to see tasks.</div></div>
       </div>
     </div>
   </div>
-  <div class="pf-activity-panel" id="pf-today-panel" style="display:none;width:min(420px,90vw);">
-    <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);">
-      <span style="font-size: calc(var(--font-size-base) + 8px);">⭐</span>
-      <div style="flex:1;">
-        <div style="font-family:var(--font-sans);font-weight:700;font-size: calc(var(--font-size-base) + 2px);letter-spacing:-0.3px;">Today's Focus</div>
-        <span id="pf-today-date" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);font-weight:400;"></span>
+  <div class="pf-activity-panel" id="pf-today-panel" style="display:none;">
+    <div class="pf-panel-head">
+      <span class="pf-panel-head-icon">⭐</span>
+      <div class="pf-flex-1">
+        <div class="pf-panel-title-lg">Today's Focus</div>
+        <span class="pf-hint" id="pf-today-date"></span>
       </div>
     </div>
     <div class="pf-activity-list" id="pf-today-list"><div class="pf-activity-empty">No tasks for today. Add from project context menu.</div></div>
-    <div style="padding-top:10px;border-top:1px solid var(--card-border);margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
-      <button class="pf-undo-btn" id="pf-today-clear-btn" style="padding:4px 8px;font-size: calc(var(--font-size-base) - 4px);border-radius:6px;border:1px solid var(--card-border);">Clear All</button>
-      <button class="pf-undo-btn" id="pf-today-carry-btn" style="padding:4px 8px;font-size: calc(var(--font-size-base) - 4px);border-radius:6px;background:color-mix(in srgb, var(--accent) 12%, transparent);color:var(--accent);font-weight:600;">Carry Over</button>
-      <button class="pf-undo-btn" id="pf-today-overdue-btn" style="padding:4px 8px;font-size: calc(var(--font-size-base) - 4px);border-radius:6px;background:color-mix(in srgb, var(--danger, #ef4444) 12%, transparent);color:var(--danger, #ef4444);font-weight:600;">+ Overdue</button>
-      <button class="pf-undo-btn" id="pf-today-due-btn" style="padding:4px 8px;font-size: calc(var(--font-size-base) - 4px);border-radius:6px;background:color-mix(in srgb, var(--accent) 12%, transparent);color:var(--accent);font-weight:600;">+ Today</button>
+    <div class="pf-today-actions">
+      <button class="pf-undo-btn" class="pf-undo-btn pf-btn-small" id="pf-today-clear-btn">Clear All</button>
+      <button class="pf-undo-btn" class="pf-undo-btn pf-btn-chip pf-chip-accent" id="pf-today-carry-btn">Carry Over</button>
+      <button class="pf-undo-btn" class="pf-undo-btn pf-btn-chip pf-chip-danger" id="pf-today-overdue-btn">+ Overdue</button>
+      <button class="pf-undo-btn" class="pf-undo-btn pf-btn-chip pf-chip-accent" id="pf-today-due-btn">+ Today</button>
     </div>
   </div>
-  <div class="pf-activity-panel" id="pf-duelist-panel" style="display:none;width:min(700px,90vw);max-height:min(85vh,700px);height:75vh;flex-direction:column;">
-    <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);flex-shrink:0;">
-      <span style="font-size: calc(var(--font-size-base) + 8px);">📋</span>
-      <div style="font-family:var(--font-sans);font-weight:700;font-size: calc(var(--font-size-base) + 2px);letter-spacing:-0.3px;">Tasks by Due Date</div>
+  <div class="pf-activity-panel" id="pf-duelist-panel" style="display:none;">
+    <div class="pf-panel-head">
+      <span class="pf-panel-head-icon">📋</span>
+      <div class="pf-panel-title-lg">Tasks by Due Date</div>
     </div>
-    <div class="pf-activity-list" id="pf-duelist-list" style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding:4px;"></div>
+    <div class="pf-activity-list pf-scroll-x pf-min-h-0 pf-pad-4" id="pf-duelist-list"></div>
   </div>
-  <div class="pf-activity-panel" id="pf-weekly-panel" style="display:none;width:min(98vw,1600px);max-height:min(95vh,1000px);height:92vh;">
-    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;padding:12px 16px;background:var(--header-bg);border-radius:6px 10px 0 0;border-bottom:1px solid var(--card-border);">
-      <button class="pf-undo-btn" id="pf-week-prev" style="padding:4px 10px;font-size:var(--font-size-base);">◀</button>
-      <span id="pf-week-label" style="flex:1;text-align:center;font-size: calc(var(--font-size-base) + 2px);font-weight:700;font-family:var(--font-sans);letter-spacing:-0.3px;"></span>
-      <button class="pf-undo-btn" id="pf-week-today" style="padding:4px 12px;font-size: calc(var(--font-size-base) - 3px);font-weight:600;background:var(--accent);color:var(--accent-contrast);border-radius:6px;">This Week</button>
-      <button class="pf-undo-btn" id="pf-week-next" style="padding:4px 10px;font-size:var(--font-size-base);">▶</button>
+  <div class="pf-activity-panel" id="pf-weekly-panel" style="display:none;">
+    <div class="pf-week-head">
+      <button class="pf-undo-btn pf-cal-nav" id="pf-week-prev">◀</button>
+      <span class="pf-cal-month" id="pf-week-label"></span>
+      <button class="pf-undo-btn pf-btn-accent" id="pf-week-today">This Week</button>
+      <button class="pf-undo-btn pf-cal-nav" id="pf-week-next">▶</button>
     </div>
-    <div id="pf-week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;gap:10px;flex:1;overflow-y:auto;min-height:0;padding:14px 12px;"></div>
-    <div id="pf-week-backlog" style="border-top:1px solid var(--card-border);padding:10px 16px;flex-shrink:0;max-height:190px;display:flex;flex-direction:column;gap:6px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size: calc(var(--font-size-base) - 2px);font-weight:700;flex:1;">📥 Backlog <span id="pf-week-backlog-count" style="font-weight:400;color:var(--text-dim);"></span></span>
-        <button class="pf-undo-btn" id="pf-backlog-arrange-btn" style="padding:3px 10px;font-size: calc(var(--font-size-base) - 4px);font-weight:600;" title="Spread backlog tasks across the rest of this week, starting today">↻ Auto-arrange</button>
+    <div class="pf-week-grid" id="pf-week-grid"></div>
+    <div class="pf-week-backlog" id="pf-week-backlog">
+      <div class="pf-week-backlog-head">
+        <span class="pf-week-backlog-label">📥 Backlog <span id="pf-week-backlog-count" class="pf-dim"></span></span>
+        <button class="pf-undo-btn" class="pf-undo-btn pf-btn-autoarrange" id="pf-backlog-arrange-btn" title="Spread backlog tasks across the rest of this week, starting today">↻ Auto-arrange</button>
       </div>
-      <div id="pf-week-backlog-list" class="pf-week-backlog-list" style="display:flex;flex-wrap:wrap;gap:6px;overflow-y:auto;min-height:38px;"></div>
+      <div id="pf-week-backlog-list" class="pf-week-backlog-list pf-week-backlog-flow"></div>
     </div>
-    <div style="padding:10px 16px;border-top:1px solid var(--card-border);display:flex;gap:8px;align-items:center;flex-shrink:0;background:var(--header-bg);border-radius:0 0 10px 10px;">
-      <span style="flex:1;font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);text-align:right;font-style:italic;">Drag tasks between days or into Backlog · Click + to add manually</span>
+    <div class="pf-week-foot">
+      <span class="pf-week-foot-hint">Drag tasks between days or into Backlog · Click + to add manually</span>
     </div>
   </div>
-  <div class="pf-activity-panel" id="pf-archive-panel" style="display:none;width:min(500px,90vw);max-height:min(80vh,700px);">
-    <div class="pf-options-title">📦 Archive <span id="pf-archive-count" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);font-weight:400;"></span></div>
-    <div class="pf-activity-list" id="pf-archive-list" style="overflow-y:auto;flex:1;min-height:0;"><div class="pf-activity-empty">Archive is empty.</div></div>
+  <div class="pf-activity-panel" id="pf-archive-panel" style="display:none;">
+    <div class="pf-options-title">📦 Archive <span id="pf-archive-count" class="pf-panel-count"></span></div>
+    <div class="pf-activity-list pf-scroll-x" id="pf-archive-list"><div class="pf-activity-empty">Archive is empty.</div></div>
   </div>
   <div class="pf-activity-panel" id="pf-trash-panel" style="display:none">
-    <div class="pf-options-title">Trash <span id="pf-trash-count" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);font-weight:400;"></span></div>
+    <div class="pf-options-title">Trash <span id="pf-trash-count" class="pf-panel-count"></span></div>
     <div class="pf-activity-list" id="pf-trash-list"><div class="pf-activity-empty">Trash is empty.</div></div>
-    <div style="padding-top:8px;border-top:1px solid var(--card-border);margin-top:8px;display:flex;gap:6px;">
-      <button class="pf-undo-btn" id="pf-trash-empty-btn" style="color:var(--danger);">Empty Trash</button>
-      <span style="flex:1;font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);align-self:center;text-align:right;">Auto-deletes after 30 days</span>
+    <div class="pf-footer-actions">
+      <button class="pf-undo-btn" class="pf-undo-btn pf-btn-danger-text" id="pf-trash-empty-btn">Empty Trash</button>
+      <span class="pf-panel-note">Auto-deletes after 30 days</span>
     </div>
   </div>
-  <div class="pf-activity-panel" id="pf-snapshots-panel" style="display:none;width:min(500px,90vw);max-height:min(80vh,700px);">
-    <div class="pf-options-title">🕒 Version History <span id="pf-snapshots-count" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);font-weight:400;"></span></div>
-    <div class="pf-activity-list" id="pf-snapshots-list" style="overflow-y:auto;flex:1;min-height:0;"><div class="pf-activity-empty">No snapshots yet.</div></div>
+  <div class="pf-activity-panel" id="pf-snapshots-panel" style="display:none;">
+    <div class="pf-options-title">🕒 Version History <span id="pf-snapshots-count" class="pf-panel-count"></span></div>
+    <div class="pf-activity-list pf-scroll-x" id="pf-snapshots-list"><div class="pf-activity-empty">No snapshots yet.</div></div>
   </div>
-  <div class="pf-activity-panel" id="pf-error-panel" style="display:none;width:min(560px,90vw);max-height:min(80vh,700px);">
-    <div class="pf-options-title">⚠️ Error Log <span id="pf-error-count" style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);font-weight:400;"></span></div>
-    <div class="pf-activity-list" id="pf-error-list" style="overflow-y:auto;flex:1;min-height:0;"><div class="pf-activity-empty">No errors logged. 🎉</div></div>
-    <div style="padding-top:8px;border-top:1px solid var(--card-border);margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+  <div class="pf-activity-panel" id="pf-error-panel" style="display:none;">
+    <div class="pf-options-title">⚠️ Error Log <span id="pf-error-count" class="pf-panel-count"></span></div>
+    <div class="pf-activity-list pf-scroll-x" id="pf-error-list"><div class="pf-activity-empty">No errors logged. 🎉</div></div>
+    <div class="pf-footer-actions pf-wrap">
       <button class="pf-undo-btn" id="pf-error-copy-btn">Copy</button>
       <button class="pf-undo-btn" id="pf-error-export-btn">Export</button>
-      <button class="pf-undo-btn" id="pf-error-clear-btn" style="color:var(--danger);">Clear Log</button>
-      <span style="flex:1;font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);align-self:center;text-align:right;">Keeps the most recent 200 entries</span>
+      <button class="pf-undo-btn" class="pf-undo-btn pf-btn-danger-text" id="pf-error-clear-btn">Clear Log</button>
+      <span class="pf-panel-note">Keeps the most recent 200 entries</span>
     </div>
   </div>
   <div class="pf-shortcuts-panel" id="pf-shortcuts-panel" style="display:none">
@@ -2107,12 +2191,12 @@
   </div>
   <button class="pf-fab" id="pf-fab" title="Actions">+</button>
 
-  <div class="pf-activity-panel" id="pf-copy-modal" style="display:none;width:min(500px,90vw);max-height:min(80vh,600px);height:60vh;flex-direction:column;">
-    <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--card-border);flex-shrink:0;">
-      <span style="font-size: calc(var(--font-size-base) + 8px);">📋</span>
-      <div id="pf-copy-modal-title" style="font-family:var(--font-sans);font-weight:700;font-size: calc(var(--font-size-base) + 2px);letter-spacing:-0.3px;">Copy to Project</div>
+  <div class="pf-activity-panel" id="pf-copy-modal" style="display:none;">
+    <div class="pf-panel-head">
+      <span class="pf-panel-head-icon">📋</span>
+      <div class="pf-panel-title-lg" id="pf-copy-modal-title">Copy to Project</div>
     </div>
-    <div class="pf-activity-list" id="pf-copy-modal-list" style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding:4px;"></div>
+    <div class="pf-activity-list pf-scroll-x pf-min-h-0 pf-pad-4" id="pf-copy-modal-list"></div>
   </div>
   <div class="pf-conflict-modal" id="pf-conflict-modal">
     <div class="pf-conflict-box">
@@ -2130,7 +2214,7 @@
   <nav class="pf-bottom-nav" id="pf-bottom-nav">
     <button class="pf-bottom-nav-btn pf-bottom-active" data-nav="projects" title="Projects"><span data-ic="list"></span><span>Projects</span></button>
     <button class="pf-bottom-nav-btn" data-nav="today" title="Today"><span data-ic="star"></span><span>Today</span></button>
-    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates" style="position:relative;"><span data-ic="calendar"></span><span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
+    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates"><span data-ic="calendar"></span><span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
     <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar"><span data-ic="calendar-week"></span><span>Calendar</span></button>
     <button class="pf-bottom-nav-btn" data-nav="options" title="Options"><span data-ic="menu"></span><span>Options</span></button>
     <div class="pf-connection-dot pf-online" id="pf-connection-dot" title="Online"></div>
@@ -2141,18 +2225,18 @@
   <div class="pf-split-view" id="pf-split-view">
     <div class="pf-split-list" id="pf-split-list"></div>
     <div class="pf-split-divider" id="pf-split-divider"></div>
-    <div class="pf-split-detail" id="pf-split-detail"><div class="pf-empty" style="display:block;">Select a project from the list to view details.</div></div>
+    <div class="pf-split-detail" id="pf-split-detail"><div class="pf-empty">Select a project from the list to view details.</div></div>
   </div>
   <div class="pf-canvas-wrap" id="pf-canvas-wrap">
     <div class="pf-canvas" id="pf-canvas">
       <div class="pf-category-zones" id="pf-category-zones"></div>
-      <div class="pf-empty" id="pf-empty" style="display: block;">Click <b>+ New project</b>, then click the project card to expand it and add subtasks inside.</div>
+      <div class="pf-empty" id="pf-empty">Click <b>+ New project</b>, then click the project card to expand it and add subtasks inside.</div>
     </div>
     <div class="pf-zoom-controls">
       <button class="pf-zoom-btn" id="pf-zoom-out" title="Zoom out">−</button>
       <span class="pf-zoom-level" id="pf-zoom-level">100%</span>
       <button class="pf-zoom-btn" id="pf-zoom-in" title="Zoom in">+</button>
-      <button class="pf-zoom-btn" id="pf-zoom-reset" title="Reset zoom" style="font-size: calc(var(--font-size-base) - 3px);">⟲</button>
+      <button class="pf-zoom-btn" class="pf-zoom-btn pf-zoom-btn-sm" id="pf-zoom-reset" title="Reset zoom">⟲</button>
     </div>
   </div>
   <div class="pf-toast" id="pf-toast" aria-live="polite"></div>
