@@ -88,7 +88,7 @@
   @media (max-width: 1400px) {
     .pf-bottom-nav {
       display: flex; position: fixed; bottom: 12px; left: 16px; right: 16px; z-index: var(--z-chrome);
-      background: var(--card, #2a2a3e); border: 1px solid var(--card-border, #3a3a5e);
+      background: var(--card); border: 1px solid var(--card-border);
       padding: 6px 8px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
       justify-content: space-around; align-items: center;
       border-radius: var(--radius-overlay); transition: transform 0.3s var(--ease-console), opacity 0.3s var(--ease-console);
@@ -112,11 +112,11 @@
       -webkit-tap-highlight-color: transparent;
     }
     .pf-bottom-nav-btn span { font-size: calc(var(--font-size-base) - 5px); font-weight: 500; }
-    .pf-bottom-nav-btn.pf-bottom-active { color: var(--accent, #5544aa); opacity: 1; background: color-mix(in srgb, var(--accent) 15%, transparent); font-weight: 700; }
+    .pf-bottom-nav-btn.pf-bottom-active { color: var(--accent); opacity: 1; background: color-mix(in srgb, var(--accent) 15%, transparent); font-weight: 700; }
     .pf-bottom-nav-btn:active { background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: var(--radius-container); }
     .pf-bottom-badge {
       position: absolute; top: 2px; right: 6px; min-width: 16px; height: 16px;
-      background: var(--danger, #ef4444); color: #fff; font-size: calc(var(--font-size-base) - 5px); font-weight: 700;
+      background: var(--danger); color: #fff; font-size: calc(var(--font-size-base) - 5px); font-weight: 700;
       border-radius: 50%; display: flex; align-items: center; justify-content: center;
       padding: 0 4px; line-height: 1;
     }
@@ -124,24 +124,24 @@
       position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 8px; height: 8px;
       border-radius: 50%; z-index: var(--z-transient); transition: background 0.3s;
     }
-    .pf-connection-dot.pf-online { background: var(--completed, #4ade80); }
-    .pf-connection-dot.pf-offline { background: var(--danger, #ef4444); animation: pf-offline-blink 1.5s infinite; }
+    .pf-connection-dot.pf-online { background: var(--completed); }
+    .pf-connection-dot.pf-offline { background: var(--danger); animation: pf-offline-blink 1.5s infinite; }
     @keyframes pf-offline-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
     .pf-error-dot {
       position: absolute; top: -3px; right: -3px; min-width: 14px; height: 14px;
-      background: var(--danger, #ef4444); color: #fff; font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700;
+      background: var(--danger); color: #fff; font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700;
       border-radius: 50%; display: none; align-items: center; justify-content: center;
       padding: 0 3px; line-height: 1; z-index: calc(var(--z-base) + 1);
     }
-    .pf-error-item { border-left: 3px solid var(--danger, #ef4444); padding-left: 8px !important; }
-    .pf-error-item .pf-error-ctx { font-weight: 700; color: var(--danger, #ef4444); }
+    .pf-error-item { border-left: 3px solid var(--danger); padding-left: 8px !important; }
+    .pf-error-item .pf-error-ctx { font-weight: 700; color: var(--danger); }
     .pf-error-item .pf-error-msg { font-size: calc(var(--font-size-base) - 2.5px); color: var(--text-dim); word-break: break-word; }
 
     .pf-update-pill {
       position: fixed; top: 14px; right: 14px; z-index: var(--z-transient);
       display: flex; align-items: center; gap: var(--space-sm);
-      background: var(--toast-bg, #141a22); color: var(--text, #d7dde5);
-      border: 1px solid color-mix(in srgb, var(--accent, #2fd4ff) 45%, transparent);
+      background: var(--toast-bg); color: var(--text);
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
       border-radius: var(--radius-pill); padding: 7px 14px 7px 10px;
       font-size: calc(var(--font-size-base) - 1.5px); font-weight: 600; cursor: pointer;
@@ -149,10 +149,10 @@
        transition: opacity 0.25s var(--ease-console), transform 0.25s var(--ease-console), visibility 0s linear 0.25s;
     }
     .pf-update-pill.pf-update-pill-show { opacity: 1; transform: translateY(0); pointer-events: auto; visibility: visible; transition-delay: 0s, 0s, 0s; }
-    .pf-update-pill:hover { border-color: var(--accent, #2fd4ff); }
+    .pf-update-pill:hover { border-color: var(--accent); }
     .pf-update-pill .pf-update-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent, #2fd4ff); flex-shrink: 0;
+      background: var(--accent); flex-shrink: 0;
       animation: pf-offline-blink 1.5s infinite;
     }
     @media (max-width: 640px) {
@@ -161,7 +161,7 @@
 
     .pf-fab {
       display: flex; position: fixed; bottom: 84px; right: 16px; z-index: var(--z-chrome);
-      width: 48px; height: 48px; border-radius: 50%; background: var(--accent, #7b68ee);color: var(--accent-contrast, #fff); font-size: calc(var(--font-size-base) + 10px); font-weight: 300; border: none;
+      width: 48px; height: 48px; border-radius: 50%; background: var(--accent);color: var(--accent-contrast); font-size: calc(var(--font-size-base) + 10px); font-weight: 300; border: none;
       align-items: center; justify-content: center; cursor: pointer;
       transition: transform 0.2s var(--ease-console), background 0.15s, opacity 0.3s var(--ease-console);
       opacity: 0; pointer-events: none;
@@ -176,7 +176,7 @@
     }
     .pf-fab-menu.pf-fab-menu-open { display: flex; }
     .pf-fab-menu-item {
-      display: flex; align-items: center; gap: 8px; background: var(--card, #2a2a3e);
+      display: flex; align-items: center; gap: 8px; background: var(--card);
       border: 1px solid var(--card-border); border-radius: var(--radius-pill); padding: 8px 14px;
       color: var(--text); font-size: calc(var(--font-size-base) - 2px); font-weight: 500; cursor: pointer;
       transition: background 0.15s;
@@ -200,7 +200,7 @@
     #pf-root .pf-toolbar { display: none !important; }
     #pf-root .pf-search-wrap.pf-search-open {
       position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: calc(var(--z-chrome) + 1);
-      background: var(--card, #2a2a3e); border: 1px solid var(--card-border, #3a3a5e);
+      background: var(--card); border: 1px solid var(--card-border);
       border-radius: var(--radius-pill); padding: 6px 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
       display: inline-flex; align-items: center; height: 40px; width: clamp(220px, 70vw, 400px);
        animation: pf-search-float-in 0.2s var(--ease-out-strong) forwards;
@@ -842,7 +842,7 @@
     60% { stroke-width: 3; opacity: 0.9; filter: drop-shadow(0 0 2px var(--completed)); }
     100% { stroke-width: 2; opacity: 1; filter: none; }
   }
-  #pf-root .pf-streak-badge { font-size: calc(var(--font-size-base) - 3px); padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--ongoing, #f5b84d) 15%, transparent); color: var(--ongoing, #f5b84d); font-weight: 700; margin-left: 6px; }
+  #pf-root .pf-streak-badge { font-size: calc(var(--font-size-base) - 3px); padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--ongoing) 15%, transparent); color: var(--ongoing); font-weight: 700; margin-left: 6px; }
   #pf-root .pf-xp-badge { font-size: calc(var(--font-size-base) - 3px); padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); font-weight: 700; margin-left: 4px; }
   #pf-root .pf-freeze-badge { font-size: calc(var(--font-size-base) - 3px); padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--depth3) 15%, transparent); color: var(--depth3, #5cc8e8); font-weight: 700; margin-left: 4px; cursor: default; }
   #pf-root .pf-emoji-btn { background: transparent; border: none; font-size: calc(var(--font-size-base) + 2px); cursor: pointer; padding: 0 2px; line-height: 1; transition: transform 0.15s; }
@@ -858,8 +858,8 @@
   #pf-root .pf-split-delete-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid var(--accent); border-radius: 6px; margin: 6px 0; }
   #pf-root .pf-split-delete-bar button { background: transparent; border: 1px solid var(--card-border); color: var(--text); border-radius: 6px; padding: 3px 8px; font-size: calc(var(--font-size-base) - 4px); cursor: pointer; font-weight: 500; transition: border-color 0.15s, background 0.15s; }
   #pf-root .pf-split-delete-bar button:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
-  #pf-root .pf-split-delete-bar button[data-action="delete"] { color: var(--danger, #ef4444); border-color: var(--danger, #ef4444); }
-  #pf-root .pf-split-delete-bar button[data-action="delete"]:hover { background: color-mix(in srgb, var(--danger, #ef4444) 10%, transparent); }
+  #pf-root .pf-split-delete-bar button[data-action="delete"] { color: var(--danger); border-color: var(--danger); }
+  #pf-root .pf-split-delete-bar button[data-action="delete"]:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
   #pf-root .pf-split-delete-bar span { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
   #pf-root .pf-split-list-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: transform 0.15s; }
   @media (hover: hover) and (pointer: fine) {
@@ -921,7 +921,7 @@
   #pf-root .pf-cat-items-wrap { overflow: hidden;     transition: max-height 0.3s var(--ease-console), opacity 0.25s var(--ease-console); max-height: 2000px; opacity: 1; }
   #pf-root .pf-cat-items-wrap.pf-collapsed { max-height: 0; opacity: 0; }
   #pf-root .pf-pull-indicator { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: 32px; height: 32px; border-radius: 50%; background: var(--card); border: 2px solid var(--accent); display: none; z-index: var(--z-toast); font-size: calc(var(--font-size-base) + 4px); line-height: 28px; text-align: center; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none; }
-  #pf-root .pf-scroll-top { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(10px); width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--accent-contrast, #fff); border: none; font-size: calc(var(--font-size-base) + 4px); line-height: 40px; text-align: center; cursor: pointer; z-index: var(--z-chrome); box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s var(--ease-out-strong), transform 0.25s var(--ease-out-strong); }
+  #pf-root .pf-scroll-top { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(10px); width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--accent-contrast); border: none; font-size: calc(var(--font-size-base) + 4px); line-height: 40px; text-align: center; cursor: pointer; z-index: var(--z-chrome); box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s var(--ease-out-strong), transform 0.25s var(--ease-out-strong); }
   #pf-root .pf-scroll-top.pf-visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
   #pf-root.pf-device-mobile .pf-scroll-top { bottom: 80px; }
   #pf-ctx-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: var(--z-menu); backdrop-filter: blur(2px); }
@@ -1035,7 +1035,7 @@
   #pf-root .pf-node-resize:hover { opacity: 1 !important; color: var(--accent); }
   #pf-root .pf-node-resize svg { display: block; }
   #pf-root .pf-node.pf-dragging { opacity: 0.4; cursor: grabbing; box-shadow: 0 10px 28px rgba(0,0,0,0.45); z-index: calc(var(--z-sticky) + 1); }
-  #pf-root .pf-node-header.pf-drop-copy-target { outline: 2px dashed var(--completed); outline-offset: -2px; border-radius: var(--radius-container) var(--radius-container) 0 0; background: color-mix(in srgb, var(--completed, #22a35e) 8%, transparent); }
+  #pf-root .pf-node-header.pf-drop-copy-target { outline: 2px dashed var(--completed); outline-offset: -2px; border-radius: var(--radius-container) var(--radius-container) 0 0; background: color-mix(in srgb, var(--completed) 8%, transparent); }
   #pf-root.pf-paste-armed .pf-node-header, #pf-root.pf-paste-armed .pf-subrow { cursor: copy; }
   #pf-root.pf-paste-armed .pf-node-header:hover { outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: var(--radius-container) var(--radius-container) 0 0; }
   #pf-root.pf-paste-armed .pf-subrow:hover { outline: 2px dashed var(--accent); outline-offset: -2px; }
@@ -1078,7 +1078,7 @@
   #pf-root .pf-node-desc:focus { color: var(--text); }
   #pf-root .pf-node-desc-row { display: flex; align-items: center; gap: 8px; padding: 0 11px 8px 61px; }
   #pf-root .pf-node-del {
-    background: transparent; color: var(--danger, #ef4444); font-size: calc(var(--font-size-base) - 1px); line-height: 1;
+    background: transparent; color: var(--danger); font-size: calc(var(--font-size-base) - 1px); line-height: 1;
     padding: 0 0 0 4px; opacity: 1; transition: color 0.15s; flex-shrink: 0;
   }
   #pf-root .pf-node-del:hover { color: var(--danger); }
@@ -1212,6 +1212,7 @@
   #pf-root .pf-due-chip.pf-due-soon { color: var(--ongoing); border-color: color-mix(in srgb, var(--ongoing) 40%, transparent); background: var(--ongoing-bg); }
   #pf-root .pf-due-chip.pf-due-overdue { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
   #pf-root .pf-due-input { font-size: calc(var(--font-size-base) - 2.5px); background: var(--card); color: var(--text); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 4px; color-scheme: dark; font-family: var(--font-sans); }
+  #pf-root.pf-theme-light .pf-due-input { color-scheme: light; }
   #pf-root .pf-recur-chip {
     background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
     padding: 4px 9px; border-radius: 100px; border: 1px solid var(--card-border); cursor: pointer;
@@ -1282,7 +1283,7 @@
 
   #pf-root .pf-toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(12px); background: var(--toast-bg); color: #fff; border: 1px solid var(--card-border); padding: 10px 16px; border-radius: var(--radius-overlay); font-size: calc(var(--font-size-base) - 1.5px); font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: var(--z-toast); opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 12px; }
   #pf-root .pf-toast.pf-toast-show { pointer-events: auto; }
-  #pf-root .pf-toast-undo { background: var(--accent); color: var(--accent-contrast, #fff); border: none; border-radius: var(--radius-container); padding: 4px 10px; font-size: calc(var(--font-size-base) - 3px); font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  #pf-root .pf-toast-undo { background: var(--accent); color: var(--accent-contrast); border: none; border-radius: var(--radius-container); padding: 4px 10px; font-size: calc(var(--font-size-base) - 3px); font-weight: 600; cursor: pointer; transition: background 0.15s; }
   #pf-root .pf-toast-undo:hover { background: color-mix(in srgb, var(--accent) 85%, #000); }
   #pf-root .pf-toast.pf-toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #pf-root .pf-toast.pf-toast-error { border-color: color-mix(in srgb, var(--danger) 50%, transparent); color: var(--danger); }
@@ -1551,7 +1552,7 @@
     box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 15%, transparent);
   }
   .pf-week-col-dragover { border-color: var(--accent) !important; }
-  .pf-week-col-dragover-blocked { border-color: var(--danger, #ef4444) !important; cursor: not-allowed; }
+  .pf-week-col-dragover-blocked { border-color: var(--danger) !important; cursor: not-allowed; }
 
   .pf-week-col-header {
     font-size: calc(var(--font-size-base) - 4px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
@@ -1747,7 +1748,7 @@
   #pf-root .pf-dim { color: var(--text-dim); font-weight: 400; }
   #pf-root .pf-hint { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
   /* toolbar badges */
-  #pf-root .pf-desktop-badge { position: absolute; top: -4px; right: -4px; min-width: 14px; height: 14px; background: var(--danger, #ef4444); color: #fff; font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0 3px; line-height: 1; }
+  #pf-root .pf-desktop-badge { position: absolute; top: -4px; right: -4px; min-width: 14px; height: 14px; background: var(--danger); color: #fff; font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0 3px; line-height: 1; }
   #pf-root .pf-error-dot-pos { top: 2px; right: 4px; }
   /* firebase options section */
   #pf-root .pf-firebase-section { display: grid; grid-template-columns: 1fr; gap: 6px; }
@@ -1778,7 +1779,7 @@
   #pf-root #pf-today-clear-btn { border: 1px solid var(--card-border); }
   #pf-root .pf-btn-chip { padding: 4px 8px; font-size: calc(var(--font-size-base) - 4px); border-radius: 6px; font-weight: 600; }
   #pf-root .pf-chip-accent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
-  #pf-root .pf-chip-danger { background: color-mix(in srgb, var(--danger, #ef4444) 12%, transparent); color: var(--danger, #ef4444); }
+  #pf-root .pf-chip-danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
   #pf-root .pf-btn-danger-text { color: var(--danger); }
   #pf-root .pf-btn-autoarrange { padding: 3px 10px; font-size: calc(var(--font-size-base) - 4px); font-weight: 600; }
   #pf-root .pf-zoom-btn-sm { font-size: calc(var(--font-size-base) - 3px); }
@@ -1858,12 +1859,12 @@
   /* One visible focus ring for every interactive element. Specific components
      may still override; this closes the coverage gaps. */
   :focus-visible {
-    outline: 2px solid var(--accent, #2fd4ff);
+    outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
   #pf-root .pf-node-title:focus-visible,
   #pf-root .pf-subrow-title:focus-visible {
-    outline: 2px solid var(--accent, #2fd4ff);
+    outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
 
