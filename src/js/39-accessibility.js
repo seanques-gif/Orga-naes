@@ -128,7 +128,7 @@
           dragStartEl = targetEl;
           startX = _lastPointerX;
           startY = _lastPointerY;
-          showToast('✓ Selected — drag to move, or tap others to multi-select');
+          showToast('✓ Selected. Drag to move, or tap others to multi-select');
         }, HOLD_DELAY);
       }
     });

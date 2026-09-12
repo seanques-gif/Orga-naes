@@ -64,7 +64,7 @@
     unreadErrorCount = 0; updateErrorBadge();
   });
   document.getElementById('pf-error-copy-btn').addEventListener('click', async () => {
-    if (!errorLog.length) { showToast('Nothing to copy — log is empty'); return; }
+    if (!errorLog.length) { showToast('Nothing to copy (log is empty)'); return; }
     const text = errorLogAsText();
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -82,7 +82,7 @@
     }
   });
   document.getElementById('pf-error-export-btn').addEventListener('click', () => {
-    if (!errorLog.length) { showToast('Nothing to export — log is empty'); return; }
+    if (!errorLog.length) { showToast('Nothing to export (log is empty)'); return; }
     const blob = new Blob([errorLogAsText()], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

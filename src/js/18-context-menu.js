@@ -168,7 +168,7 @@
       ...(!isMobile ? [{ icon: 'link', label: 'Dependencies', action: () => { const chip = root.querySelector('[data-sub-id="' + s.id + '"] .pf-dep-chip'); if (chip) chip.click(); else { const row = root.querySelector('[data-sub-id="' + s.id + '"]'); if (row) { const tempChip = buildDependencyChip(p, s); tempChip.style.position = 'absolute'; tempChip.style.opacity = '0'; row.appendChild(tempChip); tempChip.click(); } } } }] : []),
       ...(!isMobile ? [{ icon: 'arrow-up', label: 'Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
       { icon: 'clipboard', label: 'Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
-      { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied — click a project to paste as main task, or a task to nest under it'); } },
+      { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied. Click a project to paste as main task, or a task to nest under it'); } },
       ...(!isMobile ? [{ icon: 'refresh', label: 'Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return 'Repeat: ' + labels[next]; } }] : []),
       { sep: true },
       { icon: 'trash', label: 'Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },

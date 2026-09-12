@@ -465,14 +465,14 @@ None. No applicable hard rule fails on the shipped design.
 
 ### Tier 2 — Approve with findings
 
-- **Em-dashes in ~30 user-visible strings** (4 template lines, ~26 toast/title/label
-  strings across 10 JS modules). The skill's rule is absolute ("zero, binary, no
-  limited-use allowance") but its scope is landing pages, where punctuation is
-  brand voice. In a productivity app, the em-dash here is ordinary sentence
-  punctuation in instructional copy ("copied — click a project to paste"), not an
-  AI tell. **Recommendation: apply the ban as a copy-hygiene improvement** (rewrite
-  to periods/colons/parentheses) at leisure — small, mechanical, zero-risk. Not a
-  gate for a product-UI release, and honestly recorded here rather than suppressed.
+- ~~**Em-dashes in ~30 user-visible strings** (4 template lines, ~26 toast/title/label
+  strings across 10 JS modules).~~ **FIXED 2026-09-12:** all user-visible em-dashes
+  rewritten to periods, colons, parentheses, or the attribution hyphen (quote
+  attributions use the skill's sanctioned ` - ` form; metadata separators use the
+  rationed middle-dot). Verified: zero em-dashes in any rendered DOM text node
+  (TreeWalker sweep of the live preview — only `<STYLE>`/`<SCRIPT>` dev comments
+  retain them, by design), built artifact carries the new strings, and the full
+  gate stayed green (43 functional assertions + token + date suites).
 
 ### Tier 3 — Approved
 
@@ -487,10 +487,10 @@ None. No applicable hard rule fails on the shipped design.
   justification; the skill's target (pure values killing depth in *surfaces*) does
   not occur in the themeable surface palette.
 
-**Verdict: APPROVE** (with one Tier 2 copy-hygiene finding; zero applicable blocks).
-All three formal skill passes are now complete: impeccable audit (3F, 2026-09-11),
-review-animations (APPROVE, 2026-09-11), taste-skill (APPROVE with one finding,
-2026-09-12).
+**Verdict: APPROVE** (the single Tier 2 finding is now FIXED 2026-09-12 — zero
+open findings from this pass). All three formal skill passes are now complete:
+impeccable audit (3F, 2026-09-11), review-animations (APPROVE, 2026-09-11),
+taste-skill (APPROVE, all findings closed, 2026-09-12).
 
 **Verification at verdict time:** `npm run build` byte-identical (no diff);
 `npm test` green (43 functional + token + date suites); every mechanical check in

@@ -212,8 +212,8 @@
     }
     let idbOk = false;
     try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); tx.objectStore('kv').put({ key: key, value: value }); idbOk = true; } } catch (e) { if (typeof logError === 'function') logError('IndexedDB write (' + key + ')', e); }
-    if (!lsOk && !idbOk) { showToast('⚠ Storage full — data may not persist. Export your data soon.', true); if (typeof logError === 'function') logError('Storage write failed (' + key + ')', new Error('Both localStorage and IndexedDB unavailable')); }
-    else if (!lsOk && idbOk) { showToast('⚠ localStorage full — using IndexedDB fallback', true); }
+    if (!lsOk && !idbOk) { showToast('⚠ Storage full: data may not persist. Export your data soon.', true); if (typeof logError === 'function') logError('Storage write failed (' + key + ')', new Error('Both localStorage and IndexedDB unavailable')); }
+    else if (!lsOk && idbOk) { showToast('⚠ localStorage full, using IndexedDB fallback', true); }
     else if (lsQuotaErr && idbOk) { /* both work, but LS hit quota on this write — silent */ }
     return true;
   }

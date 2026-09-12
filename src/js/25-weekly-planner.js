@@ -252,7 +252,7 @@
     _clearWeeklyDragVisuals();
     _wtd = null;
     if (targetDay && !(targetDay === fromDay && targetTaskId === taskId)) moveWeeklyTask(taskId, fromDay, targetDay, targetTaskId, insertBefore);
-    else if (blocked) showToast("Can't move tasks to a finished week — they'd just roll forward to today", true);
+    else if (blocked) showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true);
   }
   function _cancelWeeklyTouchDrag() {
     if (!_wtd) return;
@@ -490,7 +490,7 @@
         row.draggable = true;
         row.dataset.taskId = t.id;
         row.dataset.day = ds;
-        row.title = t.title + (t.projectTitle ? ' — ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '') + ' • Drag to Backlog to remove, or check it off';
+        row.title = t.title + (t.projectTitle ? ' · ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '') + ' • Drag to Backlog to remove, or check it off';
         row.className = 'pf-week-task' + (accentColor ? ' pf-week-task-accent' : '') + (t.done ? ' pf-week-task-done' : '');
         if (accentColor) row.style.setProperty('--pf-task-accent', accentColor);
         const check = document.createElement('input');
@@ -551,7 +551,7 @@
           col.classList.remove('pf-week-col-dragover-blocked');
           const before = row.style.borderTop !== '';
           row.style.borderTop = ''; row.style.borderBottom = '';
-          if (ds < todayStr) { showToast("Can't move tasks to a finished week — they'd just roll forward to today", true); return; }
+          if (ds < todayStr) { showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true); return; }
           const backlogRaw = e.dataTransfer.getData('application/backlog-task');
           if (backlogRaw) { const { id } = JSON.parse(backlogRaw); moveBacklogTaskToDay(id, ds); renderWeeklyPanel(); return; }
           const raw = e.dataTransfer.getData('application/weekly-task');
@@ -585,7 +585,7 @@
         col.classList.remove('pf-week-col-dragover');
         col.classList.remove('pf-week-col-dragover-blocked');
         if (ds < todayStr) {
-          if (e.dataTransfer.getData('application/weekly-task') || e.dataTransfer.getData('application/backlog-task') || e.dataTransfer.getData('text/plain')) showToast("Can't move tasks to a finished week — they'd just roll forward to today", true);
+          if (e.dataTransfer.getData('application/weekly-task') || e.dataTransfer.getData('application/backlog-task') || e.dataTransfer.getData('text/plain')) showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true);
           return;
         }
         const backlogRaw = e.dataTransfer.getData('application/backlog-task');
@@ -633,7 +633,7 @@
     if (!backlogData.length) {
       const empty = document.createElement('div');
       empty.className = 'pf-week-backlog-empty';
-      empty.textContent = 'Nothing in backlog — overdue planner tasks land here to be sorted manually.';
+      empty.textContent = 'Nothing in backlog. Overdue planner tasks land here to be sorted manually.';
       list.appendChild(empty);
     }
     backlogData.forEach(t => {
@@ -644,7 +644,7 @@
       chip.dataset.taskId = t.id;
       chip.className = 'pf-week-backlog-chip' + (accentColor ? ' pf-week-backlog-chip-accent' : '');
       if (accentColor) chip.style.setProperty('--pf-task-accent', accentColor);
-      chip.title = t.title + (t.projectTitle ? ' — ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '');
+      chip.title = t.title + (t.projectTitle ? ' · ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '');
       const check = document.createElement('input');
       check.type = 'checkbox';
       check.className = 'pf-week-backlog-chip-check';
@@ -766,7 +766,7 @@
       const ds = weekDateStr(d);
       if (ds >= todayStr) candidateDays.push(ds);
     }
-    if (!candidateDays.length) { showToast("Can't auto-arrange into a finished week — switch to the current or a future week", true); return; }
+    if (!candidateDays.length) { showToast("Can't auto-arrange into a finished week (switch to the current or a future week)", true); return; }
     weeklySnapshot();
     const toPlace = backlogData.slice();
     toPlace.forEach(t => {

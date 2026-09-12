@@ -42,7 +42,7 @@
       const n = clip.length;
       clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
       splitMultiSelect = []; if (listViewActive) { renderSplitList(); renderSplitDetail(); }
-      showToast((n > 1 ? n + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it');
+      showToast((n > 1 ? n + ' tasks' : 'Task') + ' copied. Click a project to paste as main task(s), or a task to nest under it');
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
@@ -50,7 +50,7 @@
       e.preventDefault();
       _pasteArmed = true;
       root.classList.add('pf-paste-armed');
-      showToast('Click a project to paste as main task(s), or a task to nest under it — Esc to cancel');
+      showToast('Click a project to paste as main task(s), or a task to nest under it (Esc to cancel)');
     }
     if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && root.classList.contains('pf-device-desktop')) {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;

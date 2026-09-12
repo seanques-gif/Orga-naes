@@ -1952,7 +1952,7 @@
     </div>
   </div>
   <div class="pf-category-popover" id="pf-new-project-popover" style="display:none">
-    <div class="pf-category-title">New project — pick a category</div>
+    <div class="pf-category-title">New project: pick a category</div>
     <div class="pf-category-list" id="pf-new-project-cat-list"></div>
     <div class="pf-category-add-row">
       <input type="text" id="pf-new-project-cat-input" class="pf-category-add-input" placeholder="New category name" maxlength="30">
@@ -1996,7 +1996,7 @@
 
     <!-- ☁️ Cloud Sync — Firebase -->
     <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="cloud">Cloud Sync — Firebase</div>
+      <div class="pf-opt-title" data-ic-before="cloud">Cloud Sync (Firebase)</div>
       <div class="pf-firebase-section" id="pf-firebase-section">
         <div class="pf-firebase-status" id="pf-firebase-status">Not signed in</div>
         <div class="pf-firebase-last-sync" id="pf-firebase-last-sync" style="display:none;"></div>
@@ -2067,13 +2067,13 @@
       <div class="pf-opt-title">ℹ️ About</div>
       <div class="pf-firebase-about">
         <strong>Orga-naes</strong> v1.0.0<br>
-        A lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views — all stored locally in your browser.<br><br>
+        A lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views, all stored locally in your browser.<br><br>
         Created by <strong>Sean Ques</strong>
       </div>
     </div>
   </div>
   <div class="pf-comment-panel" id="pf-comment-panel" style="display:none">
-    <div class="pf-options-title">Comments — <span id="pf-comment-task-name"></span></div>
+    <div class="pf-options-title">Comments: <span id="pf-comment-task-name"></span></div>
     <div class="pf-comment-list" id="pf-comment-list"></div>
     <div class="pf-comment-input-row">
       <input type="text" id="pf-comment-input" class="pf-comment-input" placeholder="Add a comment…" maxlength="200">
@@ -2571,7 +2571,7 @@
       const n = clip.length;
       clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
       splitMultiSelect = []; if (listViewActive) { renderSplitList(); renderSplitDetail(); }
-      showToast((n > 1 ? n + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it');
+      showToast((n > 1 ? n + ' tasks' : 'Task') + ' copied. Click a project to paste as main task(s), or a task to nest under it');
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
@@ -2579,7 +2579,7 @@
       e.preventDefault();
       _pasteArmed = true;
       root.classList.add('pf-paste-armed');
-      showToast('Click a project to paste as main task(s), or a task to nest under it — Esc to cancel');
+      showToast('Click a project to paste as main task(s), or a task to nest under it (Esc to cancel)');
     }
     if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && root.classList.contains('pf-device-desktop')) {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
@@ -2839,8 +2839,8 @@
     }
     let idbOk = false;
     try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); tx.objectStore('kv').put({ key: key, value: value }); idbOk = true; } } catch (e) { if (typeof logError === 'function') logError('IndexedDB write (' + key + ')', e); }
-    if (!lsOk && !idbOk) { showToast('⚠ Storage full — data may not persist. Export your data soon.', true); if (typeof logError === 'function') logError('Storage write failed (' + key + ')', new Error('Both localStorage and IndexedDB unavailable')); }
-    else if (!lsOk && idbOk) { showToast('⚠ localStorage full — using IndexedDB fallback', true); }
+    if (!lsOk && !idbOk) { showToast('⚠ Storage full: data may not persist. Export your data soon.', true); if (typeof logError === 'function') logError('Storage write failed (' + key + ')', new Error('Both localStorage and IndexedDB unavailable')); }
+    else if (!lsOk && idbOk) { showToast('⚠ localStorage full, using IndexedDB fallback', true); }
     else if (lsQuotaErr && idbOk) { /* both work, but LS hit quota on this write — silent */ }
     return true;
   }
@@ -3302,7 +3302,7 @@
   async function load() {
     try { const res = await safeGet(STORE_KEY, false); if (res && res.value) projects = JSON.parse(res.value); } catch (e) {
       logError('Load projects (main store corrupt, falling back to legacy)', e);
-      try { const legacy = await safeGet('project-flow-graph', false); if (legacy && legacy.value) { const flat = JSON.parse(legacy.value); const tops = flat.filter(n => !n.parentId); projects = tops.map(t => ({ id: t.id, title: t.title, status: t.status, x: t.x, y: t.y, expanded: false, subtasks: flat.filter(c => c.parentId === t.id).map(c => ({ id: c.id, title: c.title, status: c.status })) })); } } catch (e2) { projects = []; logError('Load projects (legacy fallback also failed — data may be lost)', e2); }
+      try { const legacy = await safeGet('project-flow-graph', false); if (legacy && legacy.value) { const flat = JSON.parse(legacy.value); const tops = flat.filter(n => !n.parentId); projects = tops.map(t => ({ id: t.id, title: t.title, status: t.status, x: t.x, y: t.y, expanded: false, subtasks: flat.filter(c => c.parentId === t.id).map(c => ({ id: c.id, title: c.title, status: c.status })) })); } } catch (e2) { projects = []; logError('Load projects (legacy fallback also failed: data may be lost)', e2); }
     }
     if (!projects.length) { await recoverFromIDB(); }
     const result = validateAndRepair(projects);
@@ -3529,7 +3529,7 @@
 
   function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
-  function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked — complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }
+  function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked: complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }
   function deleteSubtask(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (!confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return; snapshot(); const arr = findSubParentArray(p.subtasks, subId); if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); } (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); render(); }
   function promoteSubToProject(parentProject, sub) {
     snapshot();
@@ -3815,7 +3815,7 @@
       '<span style="width:1px;align-self:stretch;background:var(--card-border);flex-shrink:0;"></span>' +
       '<button class="pf-selbar-btn" data-sub-action="cycle">Status</button>' +
       '<button class="pf-selbar-btn" data-sub-action="due">Due</button>' +
-      '<button class="pf-selbar-btn" data-sub-action="copy"' + (spansMultiple ? ' title="Copy to… only works from a single project — narrow your selection to one project"' : '') + '>Copy to…</button>' +
+      '<button class="pf-selbar-btn" data-sub-action="copy"' + (spansMultiple ? ' title="Copy to… only works from a single project (narrow your selection to one project)"' : '') + '>Copy to…</button>' +
       '<button class="pf-selbar-btn" data-sub-action="copy-clip" title="Ctrl+C">Copy</button>' +
       '<button class="pf-selbar-btn" data-sub-action="delete" style="color:var(--danger);">Delete</button>' +
       '<button class="pf-selbar-btn pf-selbar-close" data-sub-action="clear" title="Clear selection">✕</button>';
@@ -3828,13 +3828,13 @@
       e.stopPropagation();
       const action = btn.dataset.subAction;
       if (action === 'copy') {
-        if (spansMultiple) { showToast('⚠ "Copy to…" needs a single-project selection — narrow your selection first', true); return; }
+        if (spansMultiple) { showToast('⚠ "Copy to…" needs a single-project selection. Narrow your selection first', true); return; }
         openCopyToProjectModal(p, subMultiSelect.slice());
       } else if (action === 'copy-clip') {
         const clip = buildClipboardFromSelection();
         if (!clip || !clip.length) return;
         _taskClipboard = clip;
-        showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it');
+        showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied. Click a project to paste as main task(s), or a task to nest under it');
       } else if (action === 'cycle') {
         openStatusMenu(btn, null, (st) => {
           try {
@@ -3843,7 +3843,7 @@
             subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.status = st; s.completedAt = st === 'completed' ? new Date().toISOString() : null; touched.add(owner); } });
             scheduleSave(); render(); touched.forEach(pr => checkAllCompleted(pr));
             requestAnimationFrame(() => renderSubSelectBar(p));
-          } catch (err) { logError('Bulk set status', err); showToast('⚠ Set status failed — see console', true); }
+          } catch (err) { logError('Bulk set status', err); showToast('⚠ Set status failed. See console', true); }
         });
       } else if (action === 'due') {
         const input = document.createElement('input');
@@ -4933,7 +4933,7 @@
       ...(!isMobile ? [{ icon: 'link', label: 'Dependencies', action: () => { const chip = root.querySelector('[data-sub-id="' + s.id + '"] .pf-dep-chip'); if (chip) chip.click(); else { const row = root.querySelector('[data-sub-id="' + s.id + '"]'); if (row) { const tempChip = buildDependencyChip(p, s); tempChip.style.position = 'absolute'; tempChip.style.opacity = '0'; row.appendChild(tempChip); tempChip.click(); } } } }] : []),
       ...(!isMobile ? [{ icon: 'arrow-up', label: 'Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
       { icon: 'clipboard', label: 'Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
-      { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied — click a project to paste as main task, or a task to nest under it'); } },
+      { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied. Click a project to paste as main task, or a task to nest under it'); } },
       ...(!isMobile ? [{ icon: 'refresh', label: 'Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return 'Repeat: ' + labels[next]; } }] : []),
       { sep: true },
       { icon: 'trash', label: 'Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },
@@ -5307,7 +5307,7 @@
     unreadErrorCount = 0; updateErrorBadge();
   });
   document.getElementById('pf-error-copy-btn').addEventListener('click', async () => {
-    if (!errorLog.length) { showToast('Nothing to copy — log is empty'); return; }
+    if (!errorLog.length) { showToast('Nothing to copy (log is empty)'); return; }
     const text = errorLogAsText();
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -5325,7 +5325,7 @@
     }
   });
   document.getElementById('pf-error-export-btn').addEventListener('click', () => {
-    if (!errorLog.length) { showToast('Nothing to export — log is empty'); return; }
+    if (!errorLog.length) { showToast('Nothing to export (log is empty)'); return; }
     const blob = new Blob([errorLogAsText()], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -5474,7 +5474,7 @@
       const isOverdue = d < today;
       const isToday = d.getTime() === today.getTime();
       const cls = isOverdue ? 'color:var(--danger);font-weight:600;' : isToday ? 'color:var(--accent);font-weight:600;' : '';
-      const path = it.project ? ' <span style="color:var(--text-dim);font-size: calc(var(--font-size-base) - 4px);">— ' + escapeHtml(it.project) + '</span>' : '';
+      const path = it.project ? ' <span style="color:var(--text-dim);font-size: calc(var(--font-size-base) - 4px);">· ' + escapeHtml(it.project) + '</span>' : '';
       const row = document.createElement('div');
       row.className = 'pf-due-row'; // 3B-3: recipe in 14-utilities.css (was cssText)
       row.innerHTML = '<span class="pf-status-dot" style="background:var(--' + it.status + ')"></span>' +
@@ -5910,7 +5910,7 @@
     _clearWeeklyDragVisuals();
     _wtd = null;
     if (targetDay && !(targetDay === fromDay && targetTaskId === taskId)) moveWeeklyTask(taskId, fromDay, targetDay, targetTaskId, insertBefore);
-    else if (blocked) showToast("Can't move tasks to a finished week — they'd just roll forward to today", true);
+    else if (blocked) showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true);
   }
   function _cancelWeeklyTouchDrag() {
     if (!_wtd) return;
@@ -6148,7 +6148,7 @@
         row.draggable = true;
         row.dataset.taskId = t.id;
         row.dataset.day = ds;
-        row.title = t.title + (t.projectTitle ? ' — ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '') + ' • Drag to Backlog to remove, or check it off';
+        row.title = t.title + (t.projectTitle ? ' · ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '') + ' • Drag to Backlog to remove, or check it off';
         row.className = 'pf-week-task' + (accentColor ? ' pf-week-task-accent' : '') + (t.done ? ' pf-week-task-done' : '');
         if (accentColor) row.style.setProperty('--pf-task-accent', accentColor);
         const check = document.createElement('input');
@@ -6209,7 +6209,7 @@
           col.classList.remove('pf-week-col-dragover-blocked');
           const before = row.style.borderTop !== '';
           row.style.borderTop = ''; row.style.borderBottom = '';
-          if (ds < todayStr) { showToast("Can't move tasks to a finished week — they'd just roll forward to today", true); return; }
+          if (ds < todayStr) { showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true); return; }
           const backlogRaw = e.dataTransfer.getData('application/backlog-task');
           if (backlogRaw) { const { id } = JSON.parse(backlogRaw); moveBacklogTaskToDay(id, ds); renderWeeklyPanel(); return; }
           const raw = e.dataTransfer.getData('application/weekly-task');
@@ -6243,7 +6243,7 @@
         col.classList.remove('pf-week-col-dragover');
         col.classList.remove('pf-week-col-dragover-blocked');
         if (ds < todayStr) {
-          if (e.dataTransfer.getData('application/weekly-task') || e.dataTransfer.getData('application/backlog-task') || e.dataTransfer.getData('text/plain')) showToast("Can't move tasks to a finished week — they'd just roll forward to today", true);
+          if (e.dataTransfer.getData('application/weekly-task') || e.dataTransfer.getData('application/backlog-task') || e.dataTransfer.getData('text/plain')) showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true);
           return;
         }
         const backlogRaw = e.dataTransfer.getData('application/backlog-task');
@@ -6291,7 +6291,7 @@
     if (!backlogData.length) {
       const empty = document.createElement('div');
       empty.className = 'pf-week-backlog-empty';
-      empty.textContent = 'Nothing in backlog — overdue planner tasks land here to be sorted manually.';
+      empty.textContent = 'Nothing in backlog. Overdue planner tasks land here to be sorted manually.';
       list.appendChild(empty);
     }
     backlogData.forEach(t => {
@@ -6302,7 +6302,7 @@
       chip.dataset.taskId = t.id;
       chip.className = 'pf-week-backlog-chip' + (accentColor ? ' pf-week-backlog-chip-accent' : '');
       if (accentColor) chip.style.setProperty('--pf-task-accent', accentColor);
-      chip.title = t.title + (t.projectTitle ? ' — ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '');
+      chip.title = t.title + (t.projectTitle ? ' · ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '');
       const check = document.createElement('input');
       check.type = 'checkbox';
       check.className = 'pf-week-backlog-chip-check';
@@ -6424,7 +6424,7 @@
       const ds = weekDateStr(d);
       if (ds >= todayStr) candidateDays.push(ds);
     }
-    if (!candidateDays.length) { showToast("Can't auto-arrange into a finished week — switch to the current or a future week", true); return; }
+    if (!candidateDays.length) { showToast("Can't auto-arrange into a finished week (switch to the current or a future week)", true); return; }
     weeklySnapshot();
     const toPlace = backlogData.slice();
     toPlace.forEach(t => {
@@ -6971,14 +6971,14 @@
 
   // SUBSECTION: Motivational Quotes
   const QUOTES = [
-    '"The secret of getting ahead is getting started." — Mark Twain',
-    '"Done is better than perfect." — Sheryl Sandberg',
+    '"The secret of getting ahead is getting started." - Mark Twain',
+    '"Done is better than perfect." - Sheryl Sandberg',
     '"Small steps every day lead to big results."',
     '"Focus on progress, not perfection."',
     '"Your future self will thank you."',
     '"Great things are done by a series of small things."',
     '"Start where you are. Use what you have. Do what you can."',
-    '"The only way to do great work is to love what you do." — Steve Jobs'
+    '"The only way to do great work is to love what you do." - Steve Jobs'
   ];
 
   // SUBSECTION: Emoji Picker
@@ -7224,7 +7224,7 @@
           dragStartEl = targetEl;
           startX = _lastPointerX;
           startY = _lastPointerY;
-          showToast('✓ Selected — drag to move, or tap others to multi-select');
+          showToast('✓ Selected. Drag to move, or tap others to multi-select');
         }, HOLD_DELAY);
       }
     });
@@ -8610,7 +8610,7 @@ if ('serviceWorker' in navigator) {
   // Manual "Push to Cloud" (Ctrl+S dialog): only requires being signed in — must work even with autosync off.
   window._firebasePushManual = function() {
     if (!_fbUser) { window._pf.showToast('⚠ Sign in first to push', true); return; }
-    if (!navigator.onLine) { window._pf.showToast('⚠ You are offline — will sync when back online', true); _fbOfflineQueue = true; return; }
+    if (!navigator.onLine) { window._pf.showToast('⚠ You are offline. Will sync when back online', true); _fbOfflineQueue = true; return; }
     clearTimeout(_fbPushTimer);
     // Fast path: if local data hasn't moved since our own last known-good push,
     // we already know we match the cloud — no need to ask it. Skipping the round
@@ -8941,12 +8941,12 @@ if ('serviceWorker' in navigator) {
     // Ownership first: what each side has that the other doesn't. A project
     // only in cloud is cloud-only; a project only local is local-only.
     // Skip a section entirely when it has nothing in it.
-    if (diffs.removed.length) diffHtml += '<b>Local has (not in cloud) — ' + diffs.removed.length + ':</b><br>' + diffs.removed.slice(0, 3).map(p => '• ' + labelFor(p)).join('<br>') + '<br>';
-    if (diffs.added.length) diffHtml += '<b>Cloud has (not in local) — ' + diffs.added.length + ':</b><br>' + diffs.added.slice(0, 3).map(p => '• ' + labelFor(p)).join('<br>') + '<br>';
+    if (diffs.removed.length) diffHtml += '<b>Local has (not in cloud): ' + diffs.removed.length + ':</b><br>' + diffs.removed.slice(0, 3).map(p => '• ' + labelFor(p)).join('<br>') + '<br>';
+    if (diffs.added.length) diffHtml += '<b>Cloud has (not in local): ' + diffs.added.length + ':</b><br>' + diffs.added.slice(0, 3).map(p => '• ' + labelFor(p)).join('<br>') + '<br>';
     // Projects that exist on both sides but differ aren't "owned" by either
     // side, so they get their own section rather than being duplicated into
     // both blocks above — shown once, with what changed underneath.
-    if (diffs.changed.length) diffHtml += '<b>Modified (in both, but different) — ' + diffs.changed.length + ':</b><br>' + diffs.changed.slice(0, 5).map(p => '• ' + labelFor(p)).join('<br>') + (diffs.changed.length > 5 ? '<br>…+' + (diffs.changed.length - 5) + ' more' : '') + '<br>';
+    if (diffs.changed.length) diffHtml += '<b>Modified (in both, but different): ' + diffs.changed.length + ':</b><br>' + diffs.changed.slice(0, 5).map(p => '• ' + labelFor(p)).join('<br>') + (diffs.changed.length > 5 ? '<br>…+' + (diffs.changed.length - 5) + ' more' : '') + '<br>';
     if (!diffHtml) diffHtml = 'Minor differences detected';
     localEl.innerHTML = '<b>Local:</b> ' + local.length + ' projects · ' + localStats.tasks + ' tasks · ' + localStats.completed + ' done' + (localBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + localBadge + '</span>' : '');
     remoteEl.innerHTML = '<b>Cloud:</b> ' + remote.length + ' projects · ' + remoteStats.tasks + ' tasks · ' + remoteStats.completed + ' done' + (remoteBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + remoteBadge + '</span>' : '') + '<br><br>' + diffHtml;

@@ -197,7 +197,7 @@
   async function load() {
     try { const res = await safeGet(STORE_KEY, false); if (res && res.value) projects = JSON.parse(res.value); } catch (e) {
       logError('Load projects (main store corrupt, falling back to legacy)', e);
-      try { const legacy = await safeGet('project-flow-graph', false); if (legacy && legacy.value) { const flat = JSON.parse(legacy.value); const tops = flat.filter(n => !n.parentId); projects = tops.map(t => ({ id: t.id, title: t.title, status: t.status, x: t.x, y: t.y, expanded: false, subtasks: flat.filter(c => c.parentId === t.id).map(c => ({ id: c.id, title: c.title, status: c.status })) })); } } catch (e2) { projects = []; logError('Load projects (legacy fallback also failed — data may be lost)', e2); }
+      try { const legacy = await safeGet('project-flow-graph', false); if (legacy && legacy.value) { const flat = JSON.parse(legacy.value); const tops = flat.filter(n => !n.parentId); projects = tops.map(t => ({ id: t.id, title: t.title, status: t.status, x: t.x, y: t.y, expanded: false, subtasks: flat.filter(c => c.parentId === t.id).map(c => ({ id: c.id, title: c.title, status: c.status })) })); } } catch (e2) { projects = []; logError('Load projects (legacy fallback also failed: data may be lost)', e2); }
     }
     if (!projects.length) { await recoverFromIDB(); }
     const result = validateAndRepair(projects);

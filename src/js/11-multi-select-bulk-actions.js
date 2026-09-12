@@ -23,7 +23,7 @@
       '<span style="width:1px;align-self:stretch;background:var(--card-border);flex-shrink:0;"></span>' +
       '<button class="pf-selbar-btn" data-sub-action="cycle">Status</button>' +
       '<button class="pf-selbar-btn" data-sub-action="due">Due</button>' +
-      '<button class="pf-selbar-btn" data-sub-action="copy"' + (spansMultiple ? ' title="Copy to… only works from a single project — narrow your selection to one project"' : '') + '>Copy to…</button>' +
+      '<button class="pf-selbar-btn" data-sub-action="copy"' + (spansMultiple ? ' title="Copy to… only works from a single project (narrow your selection to one project)"' : '') + '>Copy to…</button>' +
       '<button class="pf-selbar-btn" data-sub-action="copy-clip" title="Ctrl+C">Copy</button>' +
       '<button class="pf-selbar-btn" data-sub-action="delete" style="color:var(--danger);">Delete</button>' +
       '<button class="pf-selbar-btn pf-selbar-close" data-sub-action="clear" title="Clear selection">✕</button>';
@@ -36,13 +36,13 @@
       e.stopPropagation();
       const action = btn.dataset.subAction;
       if (action === 'copy') {
-        if (spansMultiple) { showToast('⚠ "Copy to…" needs a single-project selection — narrow your selection first', true); return; }
+        if (spansMultiple) { showToast('⚠ "Copy to…" needs a single-project selection. Narrow your selection first', true); return; }
         openCopyToProjectModal(p, subMultiSelect.slice());
       } else if (action === 'copy-clip') {
         const clip = buildClipboardFromSelection();
         if (!clip || !clip.length) return;
         _taskClipboard = clip;
-        showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied — click a project to paste as main task(s), or a task to nest under it');
+        showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied. Click a project to paste as main task(s), or a task to nest under it');
       } else if (action === 'cycle') {
         openStatusMenu(btn, null, (st) => {
           try {
@@ -51,7 +51,7 @@
             subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.status = st; s.completedAt = st === 'completed' ? new Date().toISOString() : null; touched.add(owner); } });
             scheduleSave(); render(); touched.forEach(pr => checkAllCompleted(pr));
             requestAnimationFrame(() => renderSubSelectBar(p));
-          } catch (err) { logError('Bulk set status', err); showToast('⚠ Set status failed — see console', true); }
+          } catch (err) { logError('Bulk set status', err); showToast('⚠ Set status failed. See console', true); }
         });
       } else if (action === 'due') {
         const input = document.createElement('input');

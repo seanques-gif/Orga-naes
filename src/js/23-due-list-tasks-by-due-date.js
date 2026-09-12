@@ -20,7 +20,7 @@
       const isOverdue = d < today;
       const isToday = d.getTime() === today.getTime();
       const cls = isOverdue ? 'color:var(--danger);font-weight:600;' : isToday ? 'color:var(--accent);font-weight:600;' : '';
-      const path = it.project ? ' <span style="color:var(--text-dim);font-size: calc(var(--font-size-base) - 4px);">— ' + escapeHtml(it.project) + '</span>' : '';
+      const path = it.project ? ' <span style="color:var(--text-dim);font-size: calc(var(--font-size-base) - 4px);">· ' + escapeHtml(it.project) + '</span>' : '';
       const row = document.createElement('div');
       row.className = 'pf-due-row'; // 3B-3: recipe in 14-utilities.css (was cssText)
       row.innerHTML = '<span class="pf-status-dot" style="background:var(--' + it.status + ')"></span>' +
