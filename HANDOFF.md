@@ -1,8 +1,8 @@
 # Orga-naes — AI Handoff Document
 
 **Project:** Orga-naes — single-file vanilla JS personal project manager PWA
-**Phase:** 3F (impeccable audit + sidecar) — **COMPLETE** 2026-09-11. All design phases (3A–3F) done; verdict APPROVE with zero open findings. **Phase 4 (verify & ship): **COMPLETE — REDESIGN SHIPPED** — screenshot matrix + reduced-motion (`2ed562f`), INP/perf (`58dc947`), smoke test + pill a11y fix (`66f9d26`), PWA offline runtime-verified on a real localhost server (install ✅ / offline boot from cache ✅ / update flow + cache purge ✅ — full results in REDESIGN-FINDINGS.md). Known post-ship candidates (non-blocking, in findings): list-render chunking for very large datasets; remove `skipWaiting()` from sw.js install if the update pill should ask instead of auto-reloading.
-**Last updated:** 2026-09-12 — **REDESIGN SHIPPED.** All phases (0→4) complete: Mission Control retheme, motion (3E), scales (3C), SVG chrome (3B-4/D10), FAB tokenization, 3F audit + sidecar, and the full Phase 4 verification battery (5-preset screenshot matrix, reduced-motion rAF gates, 42-project perf check, all-flows smoke test, PWA offline runtime-verified).
+**Phase:** ALL DONE — redesign shipped (0→4), pre-release audit closed with verdict **GO**, FN-01 test gate built and cleared, 3B-3 done-as-scoped, clean-clone reproducibility verified. **The only remaining release actions are owner actions: `git push -u origin main` (parked until the owner authorizes) and post-push GitHub settings (Secret scanning, Push protection, Dependabot).** Authoritative audit record: `AUDIT-CANONICAL.md` (supersedes all intermediate audit merges). Known post-ship candidates (non-blocking): list-render chunking for very large datasets; `skipWaiting()` auto-reload policy; CSP design; SRI/self-host SDK; RTDB `.validate` rules.
+**Last updated:** 2026-09-12 (post-ship session) — REDESIGN SHIPPED and PRE-RELEASE CLOSE-OUT COMPLETE: three-pass security/functional/UI audit reconciled into `AUDIT-CANONICAL.md` (GO); owner ruled the test-coverage gap (FN-01) a release gate → cleared by `tests/functional.test.mjs` (43 assertions booting the real built artifact, wired into `npm test`); the new suite caught a real crash bug (REDO-01: Ctrl+Y after Ctrl+Z corrupted `projects`) — fixed and verified; UX-01 narrow-desktop list floor fixed; UX-03 aria-live regions added; SEC-07 .gitignore hygiene; clean-clone rebuild byte-identical; 3B-3 inline-style peel completed as scoped (template 129→32, JS recipes extracted, promote-icon Daylight bug fixed). All work committed locally; **nothing pushed**.
 
 ---
 
@@ -12,11 +12,12 @@
 2. Read `AGENTS.md` for build rules.
 3. Read `REDESIGN-PLAN.md` for full context.
 4. Read `DESIGN.md` for the Mission Control design spec.
-5. Run `npm run verify` to confirm current state is green.
+5. Run `npm run verify` to confirm current state is green (build + all three test suites).
+6. For the audit/release record, read `AUDIT-CANONICAL.md` — it is the single source of truth; the other audit-*.md files in the repo root are superseded history (gitignored).
 
-## Pre-release audit (2026-09-12)
+## Pre-release audit (2026-09-12) — CLOSED, verdict GO
 
-Full security/release audit run before public GitHub publication. **Verdict: GO** (after decisions implemented in commit below). Working tree + full Git history secret sweep: clean (only the Firebase web config — public client config, RTDB verified 401 on anonymous read; no genuine secrets ever committed; `project-flow.json` personal data never entered history). Findings: F2 `escapeHtml` quote-escaping gap (fixed, self-XSS scope), F3 licensing (MIT added), F4 commit-email exposure (accepted as-is per owner), F1/T1 Firebase RTDB rules console check (owner, pending), F6–F8 INFO (deferred: SRI on Firebase CDN scripts, CSP candidate). New: `LICENSE` (MIT), `README.md`, `SECURITY.md`.
+Three independent passes (agent live-probes + GLM static review + cross-verification) reconciled into **`AUDIT-CANONICAL.md`** — read that file for the final findings register, owner-decisions record, and reproducible verification commands. Headlines: secret sweep clean (Firebase web config is public client config; RTDB rules `"$uid === auth.uid"` owner-published and verified against all 17 client paths, anonymous read → 401; `project-flow.json` never in history). FN-01 (no functional tests) was ruled a release gate by the owner and CLEARED; REDO-01 (redo crash) found by the new suite and fixed; UX-01 (narrow-desktop list squeeze) and UX-03 (aria-live) fixed; commit-email exposure accepted by owner (PRV-01, rides with the push). Deferred LOWs: CSP design (SEC-04), SRI/self-host (SEC-05/08), import schema + `.validate` (SEC-03/06). `LICENSE` (MIT), `README.md`, `SECURITY.md` shipped in `4e64f10`.
 
 ---
 
@@ -45,8 +46,12 @@ src/
 build.mjs                 zero-dep Node build (concat + inject → Orga-naes.html)
 Orga-naes.html            generated build output (never edit directly)
 tests/
-  design-tokens.test.mjs  design-rule guard (reads built file)
-  date-utils.test.mjs     date logic
+  design-tokens.test.mjs   design-rule guard (reads built file)
+  date-utils.test.mjs      date logic
+  functional.test.mjs      43-assertion functional gate (vm harness boots the real
+                           built artifact: CRUD, undo/redo, export, malformed
+                           import, repair-on-load, IDB recovery, Firebase
+                           push/pull vs fake RTDB, SW statics)
 ```
 
 **Workflow:** edit `src/` → `npm run build` → `npm test` → open `Orga-naes.html`
@@ -92,16 +97,18 @@ Motion tokens (`--ease-console`, `--ease-out-strong`, `--dur-*`) now live on `:r
 - Stripped duplicates from 8 panels.
 - `.pf-conflict-box` moved from `90-print.css`.
 
-### Phase 3B-3 — Inline style peel (partial) ⏳
-- Options panel icon spans, section titles, theme buttons, grid layouts converted.
-- Template inline count: 281 → 238. JS inline: still ~135 assignments.
+### Phase 3B-3 — Inline style peel ✅ DONE-AS-SCOPED (2026-09-12, `c2ebb07` + `350aaab`)
+- **Template: 129 → 32.** ~97 static style attributes peeled into semantic, token-driven classes in `14-utilities.css` (utilities, panel chrome, button variants, calendar/today/weekly/firebase internals; panel geometries → id rules). The 32 remaining are JS-toggled `display:none` boot-hiding that `openModal`/`closeAllModals` and badge/banner reveals depend on — structurally required to stay inline.
+- **JS-side triaged, not blindly peeled:** ~230 assignments are legitimate dynamic work (drag geometry, resize, display/opacity fades, transitions) and stay. ~75 duplicated recipe strings (status menu, due-rows ×3, status dots, ext chips, category controls) extracted to `14-utilities.css`; the CSS `:hover` rule also replaced the status menu's JS mouseenter/mouseleave dance. ~15 unique one-offs (drag ghost, overlays) documented as legitimate inline.
+- **Daylight bug fixed en route:** promote-to-project SVG used `stroke="#ffffff"` on a transparent chip — invisible in light themes; now `currentColor` + `.pf-ext-chip { color: var(--text) }`.
+- Sanctioned exceptions (documented in REDESIGN-PLAN.md): `#fff` on user-picked category colors (13-auto-arrange), black-alpha elevation shadows in overlays.
 
 ### Phase 3D — States & a11y ✅
 - `src/styles/15-a11y.css` — reduced-motion, hover-gate, focus-visible, reduced-transparency.
 - **0 AA failures across all 6 themes** (verified via automated contrast audit).
 - Daylight preset fixed: status/danger colors darkened for AA.
 
-### Phase 3E — Motion (current, ~85%)
+### Phase 3E — Motion ✅ COMPLETE 2026-09-11 (review-animations verdict: APPROVE with findings)
 
 #### Motion tokens (defined in `02-tokens.css:38-43`)
 ```css
@@ -162,7 +169,7 @@ Zero bare `ease`/`ease-in` remain in `src/`.
 #### After swaps: verification
 ```bash
 npm run build        # regenerate Orga-naes.html
-npm test             # design-tokens guard + date utils
+npm test             # all three suites (design-tokens + date-utils + functional gate)
 ```
 
 #### After verification: write review-animations verdict — DONE
@@ -216,11 +223,11 @@ Key findings for the verdict:
 
 | Phase | Scope | Notes |
 |-------|-------|-------|
-| **3B-3 rest** | Peel remaining inline styles → classes | ~129 in template, ~134 in JS. Select-bar violation FIXED (2026-09-11, peeled into `.pf-sub-select-bar`). |
+| **3B-3 rest** | Peel remaining inline styles → classes | ✅ DONE-AS-SCOPED 2026-09-12 — see Phase 3B-3 section above. Select-bar violation was already fixed (2026-09-11). |
 | **3B-4** | Replace emoji-as-icons with SVG | ✅ DONE 2026-09-11: D10 resolved — SVG chrome, emoji stays user content. Sprite + `pfIcon()` in `src/js/00-svg-icons.js` (first JS fragment); static markup hydrates via `[data-ic]` / `[data-ic-before]`; `.pf-ic` sizes to `1em`, ink = `currentColor`. Converted: toolbar, options panel, FAB menu, bottom nav, both ctx menus, sort bar, recur chip, dep/comment chips. Known remaining: transient toast prefixes kept by design; FAB trigger `+` and scroll-top `↑` ASCII glyphs kept; mobile-swipe ext-comment uses the same converted path. NOTE: `42-modal-helpers` now publishes `window._pf` via `Object.assign` so the icon export survives. |
 | **3C** | Spacing/radius/z-index scales, retire resting shadows | ✅ DONE 2026-09-11: `--space-*` + `--z-*` tokens (on `:root`, shared with body-level elements), z-ladder 0 literals, radii → 4/6/10/pill (+50% circles, 2px mark exception), F12 resting shadows retired (hover lift kept). |
 | **3F** | Polish: impeccable detector, design.json sidecar | ✅ DONE 2026-09-11: 56 detector findings audited — 3 real fixes (update-pill undefined `--panel` → `--toast-bg`; body-appended save modal + drag ghosts re-parented into `#pf-root` so palette tokens resolve; sublist 9px → `--radius-overlay`), online dot → `var(--completed)`. `.impeccable/design.json` regenerated for Mission Control (rules include Token-Scope + SVG-Chrome). Remaining detector hits are static-analysis false positives (contrast can't see tokens) or accepted exceptions (confetti palette, HTML report export, print sheet, `#000` selection ring). |
-| **4** | Verify & ship | ▶ IN PROGRESS 2026-09-11: screenshot matrix (5 presets × desktop-band, captured in REDESIGN-FINDINGS) + reduced-motion done (2 rAF gaps fixed: particles, confetti). Remaining: phone/>1400px visual captures (real browser), INP/perf, PWA offline, smoke test, final commit. |
+| **4** | Verify & ship | ✅ COMPLETE 2026-09-12: screenshot matrix + reduced-motion (`2ed562f`), INP/perf 42-project stress (`58dc947`), all-flows smoke test + update-pill a11y (`66f9d26`), PWA offline runtime-verified (`d93e9a9`), redesign-shipped commit. Plus post-ship close-out: audit GO, FN-01 gate cleared, REDO-01/UX-01/UX-03 fixed, clean-clone PASS, 3B-3 done-as-scoped. |
 
 ---
 
@@ -233,7 +240,9 @@ Key findings for the verdict:
 | `src/styles/09-components-selection-panels.css` | Nodes, subrows, badges, selection, drag-drop, status flash |
 | `src/styles/15-a11y.css` | Reduced-motion, hover-gate, focus-visible, reduced-transparency |
 | `src/js/36-theme-presets.js` | 5 presets, CONSOLE_INK, White-Pair runtime |
-| `src/js/11-multi-select-bulk-actions.js:21` | Inline cssText for select bar (has hardcoded rgba + literal bezier) |
+| `src/styles/14-utilities.css` | 3B-3 peeled classes (template slice 1 + JS recipe slice 2) + sr-only utility consumer classes |
+| `tests/functional.test.mjs` | FN-01 functional gate — boots the real built artifact in a vm sandbox |
+| `AUDIT-CANONICAL.md` | Authoritative pre-release audit record (GO; supersedes audit-merged/hybrid/findings) |
 | `tests/design-tokens.test.mjs` | Enforces One-Root, Tint-Through-Token, White-Pair, GUARDED_HEX |
 
 ---
