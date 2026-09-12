@@ -1,3 +1,135 @@
+  /* SUBSECTION: Utilities — static patterns lifted out of inline styles.
+     Only theme-independent, non-dynamic styling belongs here. Anything the JS
+     sets per-render (positions, computed colors) stays inline by necessity. */
+  #pf-root .pf-opt-ico { display: inline-block; width: 20px; text-align: center; }
+  /* Inline SVG chrome icons (D10): size follows the button font, ink follows text color.
+     12px floor: 1em inherits subtractive calcs that compound with the display-scale
+     slider (60% × (base − 5px) ≈ 4px) — icons carry meaning and must stay legible. */
+  #pf-root .pf-ic { width: max(12px, 1em); height: max(12px, 1em); display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
+  #pf-root .pf-opt-ico .pf-ic,
+  #pf-root .pf-fab-icon .pf-ic,
+  #pf-root .pf-bottom-nav-btn .pf-ic { width: calc(var(--font-size-base) + 2px); height: calc(var(--font-size-base) + 2px); vertical-align: middle; }
+  #pf-root .pf-ic-title { width: max(12px, calc(var(--font-size-base) - 1px)); height: max(12px, calc(var(--font-size-base) - 1px)); vertical-align: -0.15em; margin-right: 4px; opacity: 0.85; }
+  #pf-root .pf-recur-ic { margin-right: 3px; opacity: 0.9; }
+  #pf-root .pf-opt-title {
+    font-size: calc(var(--font-size-base) - 3px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  #pf-root .pf-theme-btn { padding: 5px 12px; font-size: calc(var(--font-size-base) - 3px); }
+  #pf-root .pf-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  /* SUBSECTION: 3B-3 slice 1 — semantic classes peeled from template inline styles.
+     Values are copied verbatim from the removed style="" attributes. display:none
+     boot-hiding intentionally stays inline wherever JS reveals via style.display=''. */
+  /* generic utilities */
+  #pf-root .pf-opt-btn { justify-content: flex-start; }
+  #pf-root .pf-btn-rel { position: relative; }
+  #pf-root .pf-tb-right { margin-left: auto; }
+  #pf-root .pf-mt-4 { margin-top: 4px; }
+  #pf-root .pf-mt-6 { margin-top: 6px; }
+  #pf-root .pf-shrink-0 { flex-shrink: 0; }
+  #pf-root .pf-overflow-hidden { overflow: hidden; }
+  #pf-root .pf-scroll-x { overflow-x: hidden; }
+  #pf-root .pf-min-h-0 { min-height: 0; }
+  #pf-root .pf-pad-4 { padding: 4px; }
+  #pf-root .pf-flex-1 { flex: 1; }
+  #pf-root .pf-wrap { flex-wrap: wrap; }
+  #pf-root .pf-dim { color: var(--text-dim); font-weight: 400; }
+  #pf-root .pf-hint { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
+  /* toolbar badges */
+  #pf-root .pf-desktop-badge { position: absolute; top: -4px; right: -4px; min-width: 14px; height: 14px; background: var(--danger); color: #fff; font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0 3px; line-height: 1; }
+  #pf-root .pf-error-dot-pos { top: 2px; right: 4px; }
+  /* firebase options section */
+  #pf-root .pf-firebase-section { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  #pf-root .pf-firebase-status { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
+  #pf-root .pf-firebase-last-sync { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); }
+  #pf-root .pf-firebase-backups-list { margin-top: 6px; max-height: 200px; overflow-y: auto; }
+  #pf-root .pf-firebase-note { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); margin-top: 4px; }
+  #pf-root .pf-firebase-about { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); line-height: 1.6; }
+  #pf-root .pf-check-row { display: flex; align-items: center; gap: 6px; font-size: calc(var(--font-size-base) - 2px); color: var(--text-dim); }
+  #pf-root .pf-check-row-lg { font-size: calc(var(--font-size-base) - 1px); color: var(--text); }
+  #pf-root .pf-input-num { width: 48px; padding: 2px 4px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: calc(var(--font-size-base) - 1px); text-align: center; }
+  #pf-root .pf-autobackup-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* options panel: theme section + footer */
+  #pf-root .pf-theme-divider { margin-top: 10px; margin-bottom: 8px; }
+  #pf-root .pf-theme-sec-label { font-size: calc(var(--font-size-base) - 4px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 6px; margin-top: 12px; }
+  #pf-root .pf-theme-btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  #pf-root .pf-section-divider { border-top: 1px solid var(--card-border); padding-top: 12px; margin-top: 8px; }
+  /* shared panel chrome (geometry lives on the id rules below) */
+  #pf-root .pf-panel-head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); flex-shrink: 0; }
+  #pf-root .pf-panel-head-icon { font-size: calc(var(--font-size-base) + 8px); }
+  #pf-root .pf-panel-title-lg { font-family: var(--font-sans); font-weight: 700; font-size: calc(var(--font-size-base) + 2px); letter-spacing: -0.3px; }
+  #pf-root .pf-panel-count { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); font-weight: 400; }
+  #pf-root .pf-footer-actions { padding-top: 8px; border-top: 1px solid var(--card-border); margin-top: 8px; display: flex; gap: 6px; }
+  #pf-root .pf-panel-note { flex: 1; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); align-self: center; text-align: right; }
+  /* button variants */
+  #pf-root .pf-btn-accent { padding: 4px 12px; font-size: calc(var(--font-size-base) - 3px); font-weight: 600; background: var(--accent); color: var(--accent-contrast); border-radius: 6px; }
+  #pf-root .pf-btn-small { padding: 4px 8px; font-size: calc(var(--font-size-base) - 4px); border-radius: 6px; }
+  #pf-root #pf-today-clear-btn { border: 1px solid var(--card-border); }
+  #pf-root .pf-btn-chip { padding: 4px 8px; font-size: calc(var(--font-size-base) - 4px); border-radius: 6px; font-weight: 600; }
+  #pf-root .pf-chip-accent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+  #pf-root .pf-chip-danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+  #pf-root .pf-btn-danger-text { color: var(--danger); }
+  #pf-root .pf-btn-autoarrange { padding: 3px 10px; font-size: calc(var(--font-size-base) - 4px); font-weight: 600; }
+  #pf-root .pf-zoom-btn-sm { font-size: max(11px, calc(var(--font-size-base) - 3px)); }
+  /* calendar panel internals */
+  #pf-root .pf-cal-layout { display: flex; flex: 1; overflow: hidden; gap: 0; min-height: 0; }
+  #pf-root .pf-cal-left { flex: 0 0 40%; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--card-border); padding-right: 8px; }
+  #pf-root .pf-cal-head { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 12px 8px; margin-bottom: 6px; background: var(--header-bg); border-radius: 6px; }
+  #pf-root .pf-cal-nav { padding: 4px 10px; font-size: var(--font-size-base); }
+  #pf-root .pf-cal-month { flex: 1; text-align: center; font-size: calc(var(--font-size-base) + 2px); font-weight: 700; font-family: var(--font-sans); letter-spacing: -0.3px; }
+  #pf-root .pf-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; overflow-y: auto; flex: 1; font-size: calc(var(--font-size-base) - 3px); }
+  #pf-root .pf-cal-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; overflow-x: hidden; padding-left: 14px; }
+  #pf-root .pf-cal-detail-title { flex-shrink: 0; font-size: var(--font-size-base); font-weight: 700; font-family: var(--font-sans); padding: 12px 8px; margin-bottom: 6px; background: var(--header-bg); border-radius: 6px; text-align: center; }
+  /* today panel internals */
+  #pf-root .pf-today-actions { padding-top: 10px; border-top: 1px solid var(--card-border); margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  /* weekly planner internals */
+  #pf-root .pf-week-head { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 12px 16px; background: var(--header-bg); border-radius: 6px 10px 0 0; border-bottom: 1px solid var(--card-border); }
+  #pf-root .pf-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; gap: 10px; flex: 1; overflow-y: auto; min-height: 0; padding: 14px 12px; }
+  #pf-root .pf-week-backlog { border-top: 1px solid var(--card-border); padding: 10px 16px; flex-shrink: 0; max-height: 190px; display: flex; flex-direction: column; gap: 6px; }
+  #pf-root .pf-week-backlog-head { display: flex; align-items: center; gap: 8px; }
+  #pf-root .pf-week-backlog-label { font-size: calc(var(--font-size-base) - 2px); font-weight: 700; flex: 1; }
+  #pf-root .pf-week-backlog-flow { display: flex; flex-wrap: wrap; gap: 6px; overflow-y: auto; min-height: 38px; }
+  #pf-root .pf-week-foot { padding: 10px 16px; border-top: 1px solid var(--card-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; background: var(--header-bg); border-radius: 0 0 10px 10px; }
+  #pf-root .pf-week-foot-hint { flex: 1; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); text-align: right; font-style: italic; }
+  /* panel geometry (id-scoped: one instance each; display:none stays inline for JS toggling) */
+  #pf-root #pf-calendar-panel { width: min(95vw, 1100px); max-height: min(90vh, 750px); height: 85vh; }
+  #pf-root #pf-today-panel { width: min(420px, 90vw); }
+  #pf-root #pf-duelist-panel { width: min(700px, 90vw); max-height: min(85vh, 700px); height: 75vh; flex-direction: column; }
+  #pf-root #pf-weekly-panel { width: min(98vw, 1600px); max-height: min(95vh, 1000px); height: 92vh; }
+  #pf-root #pf-archive-panel { width: min(500px, 90vw); max-height: min(80vh, 700px); }
+  #pf-root #pf-snapshots-panel { width: min(500px, 90vw); max-height: min(80vh, 700px); }
+  #pf-root #pf-error-panel { width: min(560px, 90vw); max-height: min(80vh, 700px); }
+  #pf-root #pf-copy-modal { width: min(500px, 90vw); max-height: min(80vh, 600px); height: 60vh; flex-direction: column; }
+
+  /* SUBSECTION: 3B-3 slice 2 — recipes extracted from JS-generated markup.
+     Replaces duplicated cssText/inline-prop writes; dynamic parts (status
+     colors, drag geometry) remain inline by necessity. */
+  /* row recipe shared by due-list, copy-to-project modal, weekly drag rows */
+  #pf-root .pf-due-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--card-border); margin-bottom: 4px; background: var(--card); cursor: pointer; transition: border-color 0.15s, transform 0.1s; }
+  /* status dots: size/shape in class, color (user-picked or status token) stays inline */
+  #pf-root .pf-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  #pf-root .pf-status-dot-sm { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  /* text truncation */
+  #pf-root .pf-ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pf-root .pf-ellip-flex { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* swipe-extend meta chips (edit / promote) — color: var(--text) so inline
+     SVGs drawn with stroke=currentColor stay visible in every preset (Daylight fix) */
+  #pf-root .pf-ext-chip { background: transparent; border: 1px solid var(--card-border); border-radius: 100px; padding: 2px 7px; cursor: pointer; font-size: calc(var(--font-size-base) - 4.5px); display: inline-flex; align-items: center; justify-content: center; color: var(--text); }
+  /* canvas status menu (06-project-crud-archive-trash) */
+  #pf-root .pf-status-menu { position: fixed; z-index: var(--z-menu); background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius-overlay); box-shadow: 0 6px 24px rgba(0,0,0,0.35); padding: 4px; min-width: 140px; font-size: calc(var(--font-size-base) - 2px); }
+  #pf-root .pf-status-menu-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius-container); cursor: pointer; color: var(--text); }
+  #pf-root .pf-status-menu-item.pf-current { background: color-mix(in srgb, var(--accent) 18%, transparent); font-weight: 700; }
+  #pf-root .pf-status-menu-item:not(.pf-current):hover { background: var(--card-hover); }
+  /* split-list category label controls */
+  #pf-root .pf-cat-add { background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) + 2px); font-weight: 700; cursor: pointer; margin-right: 4px; padding: 0 2px; border-radius: 6px; line-height: 1; }
+  #pf-root .pf-empty-hint { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); padding: 8px 16px; font-style: italic; opacity: 0.7; }
+  #pf-root .pf-ext-inline { cursor: pointer; display: inline-flex; align-items: center; }
+
   /* ===== NOTES — standalone note-taking (top-bar Notes view) =====
      Token-driven per DESIGN.md: One-Root type scale, Tint-Through-Token
      washes, card/sub surfaces only. Workspace is wider than a standard
