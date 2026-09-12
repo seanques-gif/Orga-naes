@@ -41,7 +41,12 @@
     (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks);
     if (p._manualStatus) { delete p._manualStatus; }
     checkAllCompleted(p); scheduleSave(); render();
-    if (!skipConfirm) showToast('Moved to recycle bin');
+    if (!skipConfirm) {
+      // Undo = restore from the recycle bin (same function its Restore button calls).
+      showToast('"' + (s ? s.title : 'Subtask') + '" moved to Recycle Bin', false, false, () => {
+        if (typeof restoreFromTrash === 'function') restoreFromTrash(subId);
+      }, 'Undo');
+    }
   }
   function promoteSubToProject(parentProject, sub) {
     snapshot();

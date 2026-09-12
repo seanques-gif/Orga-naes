@@ -75,8 +75,13 @@
       } else if (action === 'delete') {
         if (!confirm('Move ' + subMultiSelect.length + ' task(s) to the Recycle Bin?')) return;
         snapshot();
+        const deletedIds = subMultiSelect.slice();
         subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; deleteSubtask(owner.id, id, true); });
         clearSubSelect(); scheduleSave(); render();
+        // One toast for the batch; Undo restores every task that was just binned.
+        showToast('Moved ' + deletedIds.length + ' task' + (deletedIds.length === 1 ? '' : 's') + ' to Recycle Bin', false, false, () => {
+          deletedIds.forEach(id => { if (typeof restoreFromTrash === 'function') restoreFromTrash(id); });
+        }, 'Undo');
       } else if (action === 'clear') {
         clearSubSelect();
         root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());

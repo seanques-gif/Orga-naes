@@ -57,7 +57,8 @@
   }
 
   function fmtNoteDate(iso) {
-    try { const d = new Date(iso); return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
+    if (!iso) return '';
+    try { const d = new Date(iso); if (isNaN(d.getTime())) return ''; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
   }
 
   function noteMatches(n) {
@@ -132,7 +133,7 @@
         const n = noteById(id);
         if (!n) return;
         if (!confirm('Move note "' + (n.title || 'Untitled') + '" to the Recycle Bin?')) return;
-        if (deleteNoteById(id)) showToast('Moved to Recycle Bin');
+        deleteNoteById(id); // Undo toast comes from the chokepoint
       });
     });
     renderNotesSelBar();
@@ -163,10 +164,12 @@
         } else if (action === 'delete') {
           if (!confirm('Move ' + notesSelection.length + ' note' + (notesSelection.length === 1 ? '' : 's') + ' to the Recycle Bin?')) return;
           const ids = notesSelection.slice();
-          ids.forEach(deleteNoteById);
+          ids.forEach(id => deleteNoteById(id, { silent: true }));
           notesSelection = [];
           renderNotesList(); renderNotesEditor();
-          showToast('Moved ' + ids.length + ' note' + (ids.length === 1 ? '' : 's') + ' to Recycle Bin');
+          showToast('Moved ' + ids.length + ' note' + (ids.length === 1 ? '' : 's') + ' to Recycle Bin', false, false, () => {
+            ids.forEach(id => { if (typeof window._pf.restoreFromTrash === 'function') window._pf.restoreFromTrash(id); });
+          }, 'Undo');
         } else if (action === 'clear') {
           notesSelection = []; renderNotesList();
         }
@@ -261,8 +264,11 @@
   // as do automated tests — one code path means one place for the durability
   // contract to live. Notes land in the recycle bin (30-day TTL); the
   // tombstone still records the deletion so snapshot recovery can't
-  // resurrect a note the user deliberately binned.
-  function deleteNoteById(id) {
+  // resurrect a note the user deliberately binned. The toast carries an
+  // Undo button (restore-from-bin is the undo — same function the bin's
+  // Restore button calls). Pass { silent: true } to suppress it (bulk
+  // batches show one restore-all toast instead).
+  function deleteNoteById(id, opts) {
     const n = noteById(id);
     if (!n) return false;
     notes = notes.filter(x => x.id !== id);
@@ -274,6 +280,12 @@
     renderNotesList();
     renderNotesEditor();
     renderNotesSelBar();
+    if (!(opts && opts.silent)) {
+      const label = n.title || 'Untitled';
+      showToast('"' + label + '" moved to Recycle Bin', false, false, () => {
+        if (typeof window._pf.restoreFromTrash === 'function') window._pf.restoreFromTrash(id);
+      }, 'Undo');
+    }
     return true;
   }
   window._pf.deleteNoteById = deleteNoteById;
@@ -281,7 +293,7 @@
   function deleteActiveNote() {
     if (!noteById(activeNoteId)) return;
     if (!confirm('Move this note to the Recycle Bin?')) return;
-    if (deleteNoteById(activeNoteId)) showToast('Moved to Recycle Bin');
+    deleteNoteById(activeNoteId); // Undo toast comes from the chokepoint
   }
 
   function togglePin() {
