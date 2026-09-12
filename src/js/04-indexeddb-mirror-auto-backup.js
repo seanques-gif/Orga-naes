@@ -35,10 +35,11 @@
     });
   }
   let _lastIdbSnapshotHash = null;
-  async function idbSaveSnapshot(data) {
+  async function idbSaveSnapshot(data, notes) {
     const db = await openIDB();
     if (!db) return;
     const snapshot = { timestamp: new Date().toISOString(), projects: data };
+    if (notes) snapshot.notes = notes;
     const tx = db.transaction(IDB_STORE, 'readwrite');
     tx.objectStore(IDB_STORE).add(snapshot);
     tx.oncomplete = () => {
@@ -85,11 +86,16 @@
   // the last one saved — skips false positives caused by transient UI state
   // (e.g. a project's `expanded` flag flipping just from clicking to view it).
   function _maybeSaveSnapshot() {
-    if (!projects.length) return;
-    const hash = JSON.stringify(_snapshotNormalize(projects));
+    // Notes ride along in every snapshot (durability: they live outside the
+    // projects graph and cloud sync). getNotesSnapshot returns null until the
+    // notes module has finished loading, so a boot-time tick can't overwrite
+    // the last good notes copy with an empty array.
+    const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    if (!projects.length && !notesSnap) return;
+    const hash = JSON.stringify({ p: _snapshotNormalize(projects), n: notesSnap || null });
     if (hash === _lastIdbSnapshotHash) return;
     _lastIdbSnapshotHash = hash;
-    idbSaveSnapshot(JSON.parse(JSON.stringify(projects)));
+    idbSaveSnapshot(JSON.parse(JSON.stringify(projects)), notesSnap ? JSON.parse(JSON.stringify(notesSnap)) : null);
   }
   function startIdbSnapshotBackup() {
     if (_autoBackupTimer) clearInterval(_autoBackupTimer);
@@ -101,6 +107,10 @@
     const snap = await idbGetLatest();
     if (snap && snap.projects && snap.projects.length) {
       projects = snap.projects;
+      // Hand notes recovery to the notes module (it knows its own load state).
+      if (snap.notes && Array.isArray(snap.notes) && window._pf && typeof window._pf.restoreNotesSnapshot === 'function') {
+        window._pf.restoreNotesSnapshot(snap.notes);
+      }
       scheduleSave();
       render();
       showToast('♻️ Recovered from backup (' + new Date(snap.timestamp).toLocaleString() + ')');
@@ -108,6 +118,35 @@
     }
     return false;
   }
+
+  // Notes-specific recovery: runs independently of project recovery, because
+  // the common loss case is exactly one store failing while the others survive
+  // (quota error on the notes key, corruption, accidental key deletion).
+  // Walks snapshots newest→oldest and takes the FIRST with non-empty notes:
+  // after a notes-loss event, later snapshots legitimately record notes:[]
+  // (the app booted with none), so "latest" is not necessarily "best".
+  window._pf.recoverNotesFromSnapshot = async function() {
+    const db = await openIDB();
+    if (!db || !window._pf || typeof window._pf.restoreNotesSnapshot !== 'function') return 0;
+    return new Promise((resolve) => {
+      let recovered = 0;
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).openCursor(null, 'prev');
+      req.onsuccess = (e) => {
+        const c = e.target.result;
+        if (!c) { resolve(recovered); return; }
+        const notes = c.value && c.value.notes;
+        if (Array.isArray(notes) && notes.length) {
+          window._pf.restoreNotesSnapshot(notes);
+          recovered = notes.length;
+          resolve(recovered);
+          return;
+        }
+        c.continue();
+      };
+      req.onerror = () => resolve(0);
+    });
+  };
 
   // Wipes the auto-backup snapshot store. Without this, signing out or
   // switching accounts leaves the previous account's data sitting in this

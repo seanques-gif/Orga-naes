@@ -3092,10 +3092,11 @@
     });
   }
   let _lastIdbSnapshotHash = null;
-  async function idbSaveSnapshot(data) {
+  async function idbSaveSnapshot(data, notes) {
     const db = await openIDB();
     if (!db) return;
     const snapshot = { timestamp: new Date().toISOString(), projects: data };
+    if (notes) snapshot.notes = notes;
     const tx = db.transaction(IDB_STORE, 'readwrite');
     tx.objectStore(IDB_STORE).add(snapshot);
     tx.oncomplete = () => {
@@ -3142,11 +3143,16 @@
   // the last one saved — skips false positives caused by transient UI state
   // (e.g. a project's `expanded` flag flipping just from clicking to view it).
   function _maybeSaveSnapshot() {
-    if (!projects.length) return;
-    const hash = JSON.stringify(_snapshotNormalize(projects));
+    // Notes ride along in every snapshot (durability: they live outside the
+    // projects graph and cloud sync). getNotesSnapshot returns null until the
+    // notes module has finished loading, so a boot-time tick can't overwrite
+    // the last good notes copy with an empty array.
+    const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    if (!projects.length && !notesSnap) return;
+    const hash = JSON.stringify({ p: _snapshotNormalize(projects), n: notesSnap || null });
     if (hash === _lastIdbSnapshotHash) return;
     _lastIdbSnapshotHash = hash;
-    idbSaveSnapshot(JSON.parse(JSON.stringify(projects)));
+    idbSaveSnapshot(JSON.parse(JSON.stringify(projects)), notesSnap ? JSON.parse(JSON.stringify(notesSnap)) : null);
   }
   function startIdbSnapshotBackup() {
     if (_autoBackupTimer) clearInterval(_autoBackupTimer);
@@ -3158,6 +3164,10 @@
     const snap = await idbGetLatest();
     if (snap && snap.projects && snap.projects.length) {
       projects = snap.projects;
+      // Hand notes recovery to the notes module (it knows its own load state).
+      if (snap.notes && Array.isArray(snap.notes) && window._pf && typeof window._pf.restoreNotesSnapshot === 'function') {
+        window._pf.restoreNotesSnapshot(snap.notes);
+      }
       scheduleSave();
       render();
       showToast('♻️ Recovered from backup (' + new Date(snap.timestamp).toLocaleString() + ')');
@@ -3165,6 +3175,35 @@
     }
     return false;
   }
+
+  // Notes-specific recovery: runs independently of project recovery, because
+  // the common loss case is exactly one store failing while the others survive
+  // (quota error on the notes key, corruption, accidental key deletion).
+  // Walks snapshots newest→oldest and takes the FIRST with non-empty notes:
+  // after a notes-loss event, later snapshots legitimately record notes:[]
+  // (the app booted with none), so "latest" is not necessarily "best".
+  window._pf.recoverNotesFromSnapshot = async function() {
+    const db = await openIDB();
+    if (!db || !window._pf || typeof window._pf.restoreNotesSnapshot !== 'function') return 0;
+    return new Promise((resolve) => {
+      let recovered = 0;
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).openCursor(null, 'prev');
+      req.onsuccess = (e) => {
+        const c = e.target.result;
+        if (!c) { resolve(recovered); return; }
+        const notes = c.value && c.value.notes;
+        if (Array.isArray(notes) && notes.length) {
+          window._pf.restoreNotesSnapshot(notes);
+          recovered = notes.length;
+          resolve(recovered);
+          return;
+        }
+        c.continue();
+      };
+      req.onerror = () => resolve(0);
+    });
+  };
 
   // Wipes the auto-backup snapshot store. Without this, signing out or
   // switching accounts leaves the previous account's data sitting in this
@@ -6915,7 +6954,7 @@
   // archive }, silently leaving trash, Today's Focus, the Weekly Planner,
   // reminders, and category emoji colors out of every backup file.
   function buildFullBackupPayload() {
-    return {
+    const payload = {
       projects: projects,
       categories: categories,
       collapsedCategories: collapsedCategories,
@@ -6926,6 +6965,11 @@
       reminders: reminders,
       categoryEmojis: categoryEmojis
     };
+    // Notes are part of a full backup. getNotesSnapshot returns null before
+    // the notes module loads (boot race) — omit rather than write [].
+    const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    if (notesSnap) payload.notes = notesSnap;
+    return payload;
   }
 
   document.getElementById('pf-export').addEventListener('click', async () => {
@@ -7049,7 +7093,7 @@
 
   function extractImportData(parsed) {
     let data = null, importedCategories = [], importedCollapsed = {};
-    let importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null;
+    let importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null;
     if (Array.isArray(parsed)) {
       data = parsed;
     } else if (typeof parsed === 'object' && parsed !== null) {
@@ -7063,8 +7107,9 @@
       if (parsed.weeklyData && typeof parsed.weeklyData === 'object') importedWeekly = parsed.weeklyData;
       if (Array.isArray(parsed.reminders)) importedReminders = parsed.reminders;
       if (parsed.categoryEmojis && typeof parsed.categoryEmojis === 'object') importedEmojis = parsed.categoryEmojis;
+      if (Array.isArray(parsed.notes)) importedNotes = parsed.notes;
     }
-    return { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis };
+    return { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes };
   }
 
   // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
@@ -7088,7 +7133,7 @@
     return (Array.isArray(data) ? data : []).filter(p => p != null).map(p => sanitizeImportedNode(p, seenIds));
   }
 
-  function applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis) {
+  function applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes) {
     snapshot();
     projects = sanitizeImportedProjects(data);
     projects.forEach(p => { p.expanded = false; });
@@ -7103,7 +7148,15 @@
     if (importedWeekly) { weeklyData = importedWeekly; saveWeekly(); renderWeeklyPanel(); restoredExtras++; }
     if (Array.isArray(importedReminders)) { reminders = importedReminders; saveReminders(); restoredExtras++; }
     if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); restoredExtras++; }
-    showToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders from backup)' : ''));
+    if (importedNotes) {
+      // Merge by id (imported wins on conflict), preserving any local notes.
+      const byId = {};
+      (window._pf && Array.isArray(window._pf.getNotesSnapshot) ? window._pf.getNotesSnapshot() || [] : []).forEach(n => { byId[n.id] = n; });
+      importedNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string').forEach(n => { byId[n.id] = n; });
+      const merged = Object.values(byId);
+      if (window._pf && typeof window._pf.replaceNotes === 'function') { window._pf.replaceNotes(merged); restoredExtras++; }
+    }
+    showToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders/notes from backup)' : ''));
   }
 
   importInput.addEventListener('change', () => {
@@ -7115,7 +7168,7 @@
       if (error) { showToast(error, true); importInput.value = ''; return; }
       try {
         const { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis } = extractImportData(parsed);
-        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis); }
+        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
     };
@@ -8101,6 +8154,9 @@
     notesSaveTimer = setTimeout(async () => {
       const res = await safeSet(NOTES_KEY, JSON.stringify(notes), false);
       if (!res) { showToast('⚠ Note save failed', true); logError('Save notes', new Error('safeSet failed')); }
+      // Nudge the auto-snapshot so a fresh copy lands within seconds of an
+      // edit, not at the next 5-minute tick.
+      if (typeof _maybeSaveSnapshot === 'function') { try { _maybeSaveSnapshot(); } catch (e) {} }
     }, 350);
   }
 
@@ -8503,6 +8559,60 @@
     renderNoteView();
     renderNotesList(); // preview text in list may change
   }
+
+  // ===== Backup integration =====
+  // Notes ride in auto-snapshots and full export/import. getNotesSnapshot
+  // returns null until notes have loaded (never report a boot-time empty
+  // array as real data); restoreNotesSnapshot only accepts notes when the
+  // primary store yielded nothing at boot (keeps recovery one-way).
+  let notesLoadedEmpty = false; // primary store read succeeded but had no notes
+
+  window._pf.getNotesSnapshot = function() {
+    if (!notesLoaded) return null;
+    return notes.slice();
+  };
+  window._pf.restoreNotesSnapshot = function(snapNotes) {
+    if (!Array.isArray(snapNotes)) return;
+    if (notesLoaded && notes.length) return; // live data exists; recovery is only for loss
+    notes = snapNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string')
+      .map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
+    notesLoaded = true;
+    notesLoadedEmpty = false;
+    saveNotes();
+  };
+  window._pf.clearNotesRuntime = function() {
+    notes = []; notesLoaded = true; notesLoadedEmpty = false; activeNoteId = null; notesSelection = [];
+    renderNotesList(); renderNotesEditor();
+  };
+
+  // Eager load at boot: guarantees the 5-minute snapshot tick and manual
+  // exports see real notes data instead of the pre-load null/[].
+  (function eagerLoadNotes() {
+    loadNotes().then(() => {
+      notesLoadedEmpty = notes.length === 0;
+      // Primary store yielded nothing at boot — try snapshot recovery before
+      // declaring the notes truly gone. Runs regardless of project state.
+      if (notesLoadedEmpty && window._pf && typeof window._pf.recoverNotesFromSnapshot === 'function') {
+        window._pf.recoverNotesFromSnapshot().then((n) => {
+          if (n > 0) showToast('♻️ Recovered ' + n + ' note' + (n === 1 ? '' : 's') + ' from backup');
+        });
+      }
+    });
+  })();
+
+  // Import bridge: replace the in-memory set (merge already done by caller),
+  // persist, and refresh any open UI.
+  window._pf.replaceNotes = function(nextNotes) {
+    if (!Array.isArray(nextNotes)) return;
+    const clean = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string');
+    if (!clean.length) return; // never let a malformed import wipe real notes
+    notes = clean;
+    notesLoaded = true;
+    if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
+    saveNotes();
+    renderNotesList();
+    renderNotesEditor();
+  };
     // SUBSECTION: Scroll Shadows
     function checkScroll() {
       const list = root.querySelector('.pf-split-list');

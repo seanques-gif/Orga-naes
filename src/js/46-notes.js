@@ -32,6 +32,9 @@
     notesSaveTimer = setTimeout(async () => {
       const res = await safeSet(NOTES_KEY, JSON.stringify(notes), false);
       if (!res) { showToast('⚠ Note save failed', true); logError('Save notes', new Error('safeSet failed')); }
+      // Nudge the auto-snapshot so a fresh copy lands within seconds of an
+      // edit, not at the next 5-minute tick.
+      if (typeof _maybeSaveSnapshot === 'function') { try { _maybeSaveSnapshot(); } catch (e) {} }
     }, 350);
   }
 
@@ -434,3 +437,57 @@
     renderNoteView();
     renderNotesList(); // preview text in list may change
   }
+
+  // ===== Backup integration =====
+  // Notes ride in auto-snapshots and full export/import. getNotesSnapshot
+  // returns null until notes have loaded (never report a boot-time empty
+  // array as real data); restoreNotesSnapshot only accepts notes when the
+  // primary store yielded nothing at boot (keeps recovery one-way).
+  let notesLoadedEmpty = false; // primary store read succeeded but had no notes
+
+  window._pf.getNotesSnapshot = function() {
+    if (!notesLoaded) return null;
+    return notes.slice();
+  };
+  window._pf.restoreNotesSnapshot = function(snapNotes) {
+    if (!Array.isArray(snapNotes)) return;
+    if (notesLoaded && notes.length) return; // live data exists; recovery is only for loss
+    notes = snapNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string')
+      .map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
+    notesLoaded = true;
+    notesLoadedEmpty = false;
+    saveNotes();
+  };
+  window._pf.clearNotesRuntime = function() {
+    notes = []; notesLoaded = true; notesLoadedEmpty = false; activeNoteId = null; notesSelection = [];
+    renderNotesList(); renderNotesEditor();
+  };
+
+  // Eager load at boot: guarantees the 5-minute snapshot tick and manual
+  // exports see real notes data instead of the pre-load null/[].
+  (function eagerLoadNotes() {
+    loadNotes().then(() => {
+      notesLoadedEmpty = notes.length === 0;
+      // Primary store yielded nothing at boot — try snapshot recovery before
+      // declaring the notes truly gone. Runs regardless of project state.
+      if (notesLoadedEmpty && window._pf && typeof window._pf.recoverNotesFromSnapshot === 'function') {
+        window._pf.recoverNotesFromSnapshot().then((n) => {
+          if (n > 0) showToast('♻️ Recovered ' + n + ' note' + (n === 1 ? '' : 's') + ' from backup');
+        });
+      }
+    });
+  })();
+
+  // Import bridge: replace the in-memory set (merge already done by caller),
+  // persist, and refresh any open UI.
+  window._pf.replaceNotes = function(nextNotes) {
+    if (!Array.isArray(nextNotes)) return;
+    const clean = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string');
+    if (!clean.length) return; // never let a malformed import wipe real notes
+    notes = clean;
+    notesLoaded = true;
+    if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
+    saveNotes();
+    renderNotesList();
+    renderNotesEditor();
+  };

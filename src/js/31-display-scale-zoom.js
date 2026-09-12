@@ -44,7 +44,7 @@
   // archive }, silently leaving trash, Today's Focus, the Weekly Planner,
   // reminders, and category emoji colors out of every backup file.
   function buildFullBackupPayload() {
-    return {
+    const payload = {
       projects: projects,
       categories: categories,
       collapsedCategories: collapsedCategories,
@@ -55,6 +55,11 @@
       reminders: reminders,
       categoryEmojis: categoryEmojis
     };
+    // Notes are part of a full backup. getNotesSnapshot returns null before
+    // the notes module loads (boot race) — omit rather than write [].
+    const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    if (notesSnap) payload.notes = notesSnap;
+    return payload;
   }
 
   document.getElementById('pf-export').addEventListener('click', async () => {

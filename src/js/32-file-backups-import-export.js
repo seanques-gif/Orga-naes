@@ -98,7 +98,7 @@
 
   function extractImportData(parsed) {
     let data = null, importedCategories = [], importedCollapsed = {};
-    let importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null;
+    let importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null;
     if (Array.isArray(parsed)) {
       data = parsed;
     } else if (typeof parsed === 'object' && parsed !== null) {
@@ -112,8 +112,9 @@
       if (parsed.weeklyData && typeof parsed.weeklyData === 'object') importedWeekly = parsed.weeklyData;
       if (Array.isArray(parsed.reminders)) importedReminders = parsed.reminders;
       if (parsed.categoryEmojis && typeof parsed.categoryEmojis === 'object') importedEmojis = parsed.categoryEmojis;
+      if (Array.isArray(parsed.notes)) importedNotes = parsed.notes;
     }
-    return { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis };
+    return { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes };
   }
 
   // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
@@ -137,7 +138,7 @@
     return (Array.isArray(data) ? data : []).filter(p => p != null).map(p => sanitizeImportedNode(p, seenIds));
   }
 
-  function applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis) {
+  function applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes) {
     snapshot();
     projects = sanitizeImportedProjects(data);
     projects.forEach(p => { p.expanded = false; });
@@ -152,7 +153,15 @@
     if (importedWeekly) { weeklyData = importedWeekly; saveWeekly(); renderWeeklyPanel(); restoredExtras++; }
     if (Array.isArray(importedReminders)) { reminders = importedReminders; saveReminders(); restoredExtras++; }
     if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); restoredExtras++; }
-    showToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders from backup)' : ''));
+    if (importedNotes) {
+      // Merge by id (imported wins on conflict), preserving any local notes.
+      const byId = {};
+      (window._pf && Array.isArray(window._pf.getNotesSnapshot) ? window._pf.getNotesSnapshot() || [] : []).forEach(n => { byId[n.id] = n; });
+      importedNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string').forEach(n => { byId[n.id] = n; });
+      const merged = Object.values(byId);
+      if (window._pf && typeof window._pf.replaceNotes === 'function') { window._pf.replaceNotes(merged); restoredExtras++; }
+    }
+    showToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders/notes from backup)' : ''));
   }
 
   importInput.addEventListener('change', () => {
@@ -164,7 +173,7 @@
       if (error) { showToast(error, true); importInput.value = ''; return; }
       try {
         const { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis } = extractImportData(parsed);
-        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis); }
+        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
     };
