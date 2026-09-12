@@ -416,3 +416,84 @@ the items below are what remains of the original list.
    data intact → back online, make an edit, reload → update pill + "Refresh"
    toast appear → click → version reloads clean.
 5. Optional: Lighthouse PWA category (installability + offline pass).
+
+---
+
+## taste-skill verdict (formal pass, 2026-09-12)
+
+Scope: the full 88 KB / 1,206-line `taste-skill` ("design-taste-frontend"), read
+end-to-end and applied to the shipped Mission Control design. This closes the last
+open item from the plan's "Formal skill passes" section.
+
+### Scoping (the skill demands this first — Section 0 and Section 13)
+
+The skill self-scopes to **landing pages, portfolios, and redesigns** and declares
+itself **out of scope for "dashboards, dense product UI"** (Section 13). Orga-naes
+is a productivity *product UI* with a canvas, so whole sections (hero discipline,
+bento grids, logo walls, marquees, scroll storytelling, the React/Tailwind/Motion
+stack defaults of Section 3) **do not apply** — and their non-application is not a
+defect. What applies is everything that is good design invariant rather than
+landing-page tactic: the AI-tell bans, color/shape/theme locks, a11y and contrast
+guardrails, typography discipline, copy self-audit, and the redesign protocol
+(which this project followed from day one: audit-first, token extraction,
+preservation ledger — Section 11 was effectively the plan's Phase 0–2). Verdict is
+rendered only on the applicable subset, explicitly labeled as such.
+
+### Applicable checks — evidence at verdict time
+
+| Skill rule | Applicability | Evidence in `src/` | Result |
+|---|---|---|---|
+| §4.2 Color Consistency Lock (one accent, no drift) | Applicable | Single `--accent` signal; zero second-accent drift found across 16 CSS modules | PASS |
+| §4.2 LILA rule (no AI-purple default, saturation discipline) | Applicable | Cyan `#2fd4ff` on near-black cool neutrals; the design *is* the anti-default | PASS |
+| §4.4 Shape Consistency Lock (one radius system) | Applicable | 3C radii converged to `4/6/10/pill` (+documented mark exception); one documented rule, followed everywhere | PASS |
+| §4.11 Page Theme Lock (no mid-page theme inversion) | Applicable | One theme at a time via preset classes on `#pf-root`; 0 AA contrast failures across all 6 presets (3D audit) | PASS |
+| §6.B Reduced motion (non-negotiable) | Applicable | `15-a11y.css` reduced-motion block; particles + confetti rAF-gated (Phase 4) | PASS |
+| §9.A no pure black / no neon glow defaults | Applicable, with exceptions | Base palette uses off-black `#0a0d11`; the only accent-adjacent shadow is a 1px `color-mix(… 10%…)` ring — the skill's own "inner border" prescription. Pure `#000`/`#fff` residuals are all sanctioned: Daylight preset surfaces (`02-tokens.css:104,111,124`), mask-image gradients (not surfaces), `#000` selection ring + `#fff` swatch ring (3F accepted exceptions), `#fff` on user-picked category colors (no token can exist for arbitrary user data), out-of-root fallbacks (`var(--accent-contrast, #fff)`) | PASS with documented exceptions |
+| §9.F no decorative status dots | Applicable with a nuance | Orga-naes's dots (`pf-status-dot`, progress rings, online/error indicators) all encode **real semantic state** — the rule's explicit carve-out. Zero decorative dots found | PASS |
+| §9.G em-dash ban ("zero em-dashes visible", binary) | Applicable as copy hygiene; skill is landing-scoped | ~30 user-visible em-dashes: 4 in template copy ("New project — pick a category", "Cloud Sync — Firebase", About text, "Comments —"), ~26 in toast/title strings across 10 JS modules. All are sentence-punctuation em-dashes in functional UI copy, none used as design flourish | **TIER 2 — FINDING** |
+| §4.5 full interactive state cycle (tactile `:active`) | Applicable | FAB `scale(0.9)`, nav/menu item tints, drag-handle `grabbing`, undo-btn dim — press states exist on primary chrome | PASS |
+| §4.9 Copy Self-Audit + banned filler verbs | Applicable | 0 hits for "elevate/seamless/unleash/next-gen/revolutionize"; copy is functional and concrete | PASS |
+| §9.B typography discipline | Applicable | IBM Plex Sans/Mono pairing (§4.1's own example pairing), Plex Mono + `tabular-nums` reserved for measurement — a deliberate, non-default choice | PASS |
+| §3.A "never link Google Fonts via `<link>`" | Conflicts with product ground rule | Product identity (D8) mandates the `<link>` for single-file/no-build; `display=swap` present | EXCEPTION — product rule wins |
+| §3.C "NEVER hand-roll SVG icons" | Conflicts with product ground rule | D10 sprite is hand-rolled *by design* (zero-dependency ethos, §2 ground rules); one family, standardized sizing (`.pf-ic`), `currentColor` ink | EXCEPTION — product rule wins |
+| §3.D emoji ban | Overridden by D10 | Emoji = user content only, chrome fully SVG-converted (3B-4) | PASS per D10 |
+| §11.B audit-before-touching | Applicable | Phase 0–2 were exactly this (inventory, findings, spec, preservation ledger) | PASS |
+
+### Tier 1 — Block
+
+None. No applicable hard rule fails on the shipped design.
+
+### Tier 2 — Approve with findings
+
+- **Em-dashes in ~30 user-visible strings** (4 template lines, ~26 toast/title/label
+  strings across 10 JS modules). The skill's rule is absolute ("zero, binary, no
+  limited-use allowance") but its scope is landing pages, where punctuation is
+  brand voice. In a productivity app, the em-dash here is ordinary sentence
+  punctuation in instructional copy ("copied — click a project to paste"), not an
+  AI tell. **Recommendation: apply the ban as a copy-hygiene improvement** (rewrite
+  to periods/colons/parentheses) at leisure — small, mechanical, zero-risk. Not a
+  gate for a product-UI release, and honestly recorded here rather than suppressed.
+
+### Tier 3 — Approved
+
+- Stack defaults (React/Tailwind/Motion, design-system packages, icon libraries)
+  not applicable — the product ground rules (vanilla JS, zero deps, single file)
+  predate and override the skill's Section 3 stack; the skill itself says quiet
+  constraints override aesthetic preference, and a zero-dependency PWA identity is
+  exactly such a constraint.
+- Landing-page mechanics (hero rules, bento, marquees, logo walls, scroll
+  choreography) out of scope per the skill's own Section 13.
+- Pure `#000`/`#fff` residuals per the table above — each has a named, documented
+  justification; the skill's target (pure values killing depth in *surfaces*) does
+  not occur in the themeable surface palette.
+
+**Verdict: APPROVE** (with one Tier 2 copy-hygiene finding; zero applicable blocks).
+All three formal skill passes are now complete: impeccable audit (3F, 2026-09-11),
+review-animations (APPROVE, 2026-09-11), taste-skill (APPROVE with one finding,
+2026-09-12).
+
+**Verification at verdict time:** `npm run build` byte-identical (no diff);
+`npm test` green (43 functional + token + date suites); every mechanical check in
+the table above re-run fresh against `src/` this pass (em-dash grep, filler-verb
+grep, pure-hex audit with context, `:active` enumeration, accent-shadow scan,
+middle-dot strip count: 0).

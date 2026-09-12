@@ -141,10 +141,10 @@ migration notes. (Anti-reference preserved in `DESIGN-v1-night-workshop.md`.)
 - INP/perf check ✅ (42-project stress: idle 60fps locked, list render 12.7ms, one documented ~55ms long task on full-app render); PWA offline check ✅ (runtime-verified on real localhost server: install, offline boot from cache, update flow + cache purge); manual smoke of every inventory surface ✅ (all flows on real UI paths, 2 themes; +1 a11y fix).
 - Update `DESIGN.md` if drift; final commit ✅ this commit.
 
-### Formal skill passes — 2 of 3 done
+### Formal skill passes — ✅ ALL 3 DONE
 - ✅ **impeccable `audit` + `document`** — done 2026-09-11 in 3F (56 detector findings → 3 real fixes; `.impeccable/design.json` sidecar regenerated for Mission Control).
 - ✅ **`review-animations` Block/Approve verdict** — done 2026-09-11: **APPROVE with findings** (Tier 1 empty; FAB literals + select-bar rgba both since resolved). Verdict at the bottom of `REDESIGN-FINDINGS.md`.
-- ⬜ **`taste-skill` full read** — the one remaining formal pass (88 KB, previously truncated). Optional, non-gating; apply Operate-relevant rules or explicitly retire.
+- ✅ **`taste-skill` full read** — done 2026-09-12: **APPROVE with one Tier 2 finding** (~30 user-visible em-dashes — copy hygiene, non-gating; scoped honestly to the skill's applicable subset, with product ground rules overriding its stack/icon/font-delivery defaults). Full verdict at the bottom of `REDESIGN-FINDINGS.md`.
 
 ---
 
@@ -168,7 +168,7 @@ completed `#3ddc97` / waiting `#b39dff` / danger `#ff5c5c`.
 1. ✅ **Icons (D10) — DONE in 3B-4:** SVG chrome via `src/js/00-svg-icons.js` sprite + `pfIcon()` helper (`data-ic` / `data-ic-before` hydration for static markup), emoji kept as user content (task titles, categories, picker, toast prefixes). Chrome emoji eliminated: toolbar, options panel, FAB menu, bottom nav, both context menus, sort bar, recur chip, dependency + comment chips.
    content (recommended) / replace all / defer.
 2. ✅ **Commit checkpoints** — long since done; as of 2026-09-12 the full redesign + post-plan close-out (audit, test gate, fixes) is committed on local `main`.
-3. ⏭ **Remaining (none of it plan work):** owner push + GitHub settings; optional backlog (taste-skill read, CSP, SRI/self-host, `.validate` rules).
+3. ⏭ **Remaining (none of it plan work):** owner push + GitHub settings; optional backlog (em-dash copy hygiene, CSP, SRI/self-host, `.validate` rules).
 
 ---
 
