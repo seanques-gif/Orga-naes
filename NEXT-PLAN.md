@@ -20,7 +20,7 @@ Three independent workstreams picked up from the redesign plan's recorded leftov
 
 - Single-file artifact `Orga-naes.html`; no framework; zero-dependency build; offline-first; mobile+desktop parity.
 - Must-not-change ledger from REDESIGN-PLAN.md §2 stands (schema, keys, export formats, sync, nested-subtask engine, PWA, invariants, About credit).
-- Every change runs the chained change loop (AGENTS.md): one change → build → `npm test` → live-verify in the preview → commit. Suite is now 99 assertions / 12 tests + the 5×34 contrast gate; it must stay green at every commit.
+- Every change runs the chained change loop: one change → build → `npm test` → live-verify in the preview → commit. Then, and only then, the next change. Suite is now 99 assertions / 12 tests + the 5×34 contrast gate; it must stay green at every commit.
 - Phases are independent — any order works, but C changes how the artifact loads scripts and must re-verify **offline boot + cloud sync live** before its commit.
 
 ## 3. Decisions log (proposals — owner may override)
