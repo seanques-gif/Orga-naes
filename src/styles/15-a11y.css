@@ -29,3 +29,14 @@
     outline: 2px solid var(--accent, #2fd4ff);
     outline-offset: 1px;
   }
+
+  /* UX-03: visually-hidden live-region announcer — exposed to assistive tech
+     (screen readers announce changes) while taking no layout space. Used by
+     #pf-sr-announcer (role=alert) for newly logged errors; toasts announce
+     via aria-live=polite directly on #pf-toast. */
+  .pf-sr-only {
+    position: absolute; width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip: rect(0 0 0 0); clip-path: inset(50%);
+    overflow: hidden; white-space: nowrap;
+  }

@@ -460,7 +460,8 @@ __ORGA_CSS_MAIN__</style>
       <button class="pf-zoom-btn" id="pf-zoom-reset" title="Reset zoom" style="font-size: calc(var(--font-size-base) - 3px);">⟲</button>
     </div>
   </div>
-  <div class="pf-toast" id="pf-toast"></div>
+  <div class="pf-toast" id="pf-toast" aria-live="polite"></div>
+  <div id="pf-sr-announcer" class="pf-sr-only" role="alert" aria-live="assertive"></div>
   <div class="pf-resize-handle" id="pf-resize-handle" title="Drag to resize">
     <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
       <path d="M9.5 1.5L1.5 9.5M9.5 5.5L5.5 9.5M9.5 9.5L9.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>

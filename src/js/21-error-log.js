@@ -6,6 +6,20 @@
   const ERROR_LOG_MAX = 200;
   let errorLog = [];
   let unreadErrorCount = 0;
+  // UX-03: screen-reader announcer for newly logged errors (role="alert"
+  // in the template). Throttled so a burst or crash-loop can't flood
+  // assistive tech; the error log itself remains the complete record.
+  const _srAnnouncer = document.getElementById('pf-sr-announcer');
+  let _lastSrAnnounce = 0;
+  function announceError(context) {
+    try {
+      if (!_srAnnouncer) return;
+      const now = Date.now();
+      if (now - _lastSrAnnounce < 2000) return;
+      _lastSrAnnounce = now;
+      _srAnnouncer.textContent = 'Error logged: ' + context;
+    } catch (_) { /* announcer must never break error logging */ }
+  }
   function logError(context, err) {
     try {
       const message = err && err.message ? err.message : String(err == null ? 'Unknown error' : err);
@@ -15,6 +29,7 @@
       if (errorLog.length > ERROR_LOG_MAX) errorLog.length = ERROR_LOG_MAX;
       unreadErrorCount++;
       updateErrorBadge();
+      announceError(entry.context);
       safeSet(ERROR_KEY, JSON.stringify(errorLog), false);
       console.error('[Orga-naes] ' + context + ':', err);
     } catch (loggingFailure) {

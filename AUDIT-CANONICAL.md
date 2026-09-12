@@ -11,7 +11,8 @@
 
 - **FN-01 (test coverage) — ruled a GATE by the owner, and the gate is CLEARED.** The owner ruled that the 6-item functional test suite must exist before release (§3). It was built the same day: 43 assertions across 6 functional areas + SW statics, green via `npm test`, running the real built artifact in a vm sandbox (§5).
 - **No 🔴 CRITICAL or 🟠 HIGH findings remain open.**
-- **UX-01 (narrow-desktop list squeeze) is FIXED** — `min-width: min(220px, 45vw)` floor applied to the desktop-class split list, rebuilt, and verified in the preview (list 132px→220px at 529px; title went from 5px-visible/truncated to fully readable). Uncommitted; include in the close-out commit.
+- **UX-01 (narrow-desktop list squeeze) is FIXED** — `min-width: min(220px, 45vw)` floor applied to the desktop-class split list, rebuilt, and verified in the preview (list 132px→220px at 529px; title went from 5px-visible/truncated to fully readable). Committed in the close-out (`cadd41e`).
+- **UX-03 (aria-live) is FIXED pre-release** — toast live region + throttled error announcer, verified in preview (see §2).
 - The suite's first run **caught a real crash bug** (REDO-01, §4) that two audits and the Phase 4 smoke test had missed — direct validation of the owner's gate ruling.
 
 ---
@@ -66,7 +67,7 @@ Severity: 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW / ⚪ INFO. "Src" a
 |---|---|---|---|---|---|
 | UX-01 | 🟡→✅ | Desktop-class devices ≤768px: split-list had no px floor → 132px at 529px viewport, titles unreadable; drill-down is touch-gated so never applies | A (live-measured) | **FIXED (uncommitted)** | `05-responsive-tablet.css`: desktop-class rule now `min-width: min(220px, 45vw)` (floor beats the 30% max-width legally in CSS; 45vw keeps detail ≥55%). Rebuilt; verified in preview at 529/600/700/768px + before/after A/B (title 5px truncated → 93px fully visible). |
 | UX-02 | 🟢 LOW | 601 KB single file → parse cost | G | DEFERRED | Single-file distribution is the product's design goal. |
-| UX-03 | 🟡 MEDIUM | No `aria-live` regions (toasts/sync/error changes unannounced to SRs) | G (catch), X (verified) | OPEN — post-release | Small mechanical fix; roles/labels/focus/Escape-stack otherwise verified present. |
+| UX-03 | 🟡→✅ | No `aria-live` regions (toasts/sync/error changes unannounced to SRs) | G (catch), X (verified) | **FIXED (local commit, unpushed)** | `#pf-toast` gets `aria-live="polite"` (exists at boot, so SRs monitor it); new visually-hidden `#pf-sr-announcer` (`role="alert"`, sr-only utility in `15-a11y.css`) announced by `logError` with a 2s throttle so error bursts can't flood assistive tech. Ambient "Last synced" chip deliberately NOT live (30s self-updates would spam SRs); sync events already reach toasts. Verified live: boot structure, 1×1 clipped announcer, real logError → announcement, throttle holds. |
 | UX-04 | ⚪ INFO | Design-token discipline, touch instrumentation, empty states, keyboard docs | A,G | VERIFIED GOOD | Positive findings. |
 
 ### Release / Process
@@ -166,4 +167,4 @@ Primary sources (1) and (2) remain valid as raw evidence; (3)–(5) are working 
 
 **After publish:** enable GitHub Secret scanning + Push protection + Dependabot alerts.
 
-**Post-release backlog (priority order):** UX-03 `aria-live`; SEC-04 CSP design; SEC-05/SEC-08 SRI or self-host SDK/fonts; SEC-03/SEC-06 stricter import schema + `.validate` rules; bump `CACHE_VERSION` each release.
+**Post-release backlog (priority order):** SEC-04 CSP design; SEC-05/SEC-08 SRI or self-host SDK/fonts; SEC-03/SEC-06 stricter import schema + `.validate` rules; bump `CACHE_VERSION` each release. (UX-03 aria-live completed pre-release — see §2.)
