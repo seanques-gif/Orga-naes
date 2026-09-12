@@ -75,7 +75,7 @@
   #pf-root .pf-chip-danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
   #pf-root .pf-btn-danger-text { color: var(--danger); }
   #pf-root .pf-btn-autoarrange { padding: 3px 10px; font-size: calc(var(--font-size-base) - 4px); font-weight: 600; }
-  #pf-root .pf-zoom-btn-sm { font-size: calc(var(--font-size-base) - 3px); }
+  #pf-root .pf-zoom-btn-sm { font-size: max(11px, calc(var(--font-size-base) - 3px)); }
   /* calendar panel internals */
   #pf-root .pf-cal-layout { display: flex; flex: 1; overflow: hidden; gap: 0; min-height: 0; }
   #pf-root .pf-cal-left { flex: 0 0 40%; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--card-border); padding-right: 8px; }

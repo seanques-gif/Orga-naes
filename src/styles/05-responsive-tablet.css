@@ -62,7 +62,7 @@
   #pf-root.pf-device-desktop .pf-options-desktop { display: inline-flex !important; }
   #pf-root.pf-device-desktop .pf-search-wrap { display: inline-flex !important; }
   #pf-root .pf-shortcuts-hint { display: none !important; }
-  #pf-root.pf-device-desktop .pf-shortcuts-hint { display: inline-flex !important; font-size: calc(var(--font-size-base) - 3px); font-weight: 700; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; opacity: 0.5; }
+  #pf-root.pf-device-desktop .pf-shortcuts-hint { display: inline-flex !important; font-size: max(11px, calc(var(--font-size-base) - 3px)); font-weight: 700; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; opacity: 0.5; }
   #pf-root.pf-device-desktop .pf-shortcuts-hint:hover { opacity: 1; }
   #pf-root.pf-device-desktop .pf-fab,
   #pf-root.pf-device-desktop .pf-fab-menu,

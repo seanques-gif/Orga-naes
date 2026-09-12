@@ -704,7 +704,7 @@
   #pf-root.pf-device-desktop .pf-options-desktop { display: inline-flex !important; }
   #pf-root.pf-device-desktop .pf-search-wrap { display: inline-flex !important; }
   #pf-root .pf-shortcuts-hint { display: none !important; }
-  #pf-root.pf-device-desktop .pf-shortcuts-hint { display: inline-flex !important; font-size: calc(var(--font-size-base) - 3px); font-weight: 700; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; opacity: 0.5; }
+  #pf-root.pf-device-desktop .pf-shortcuts-hint { display: inline-flex !important; font-size: max(11px, calc(var(--font-size-base) - 3px)); font-weight: 700; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; opacity: 0.5; }
   #pf-root.pf-device-desktop .pf-shortcuts-hint:hover { opacity: 1; }
   #pf-root.pf-device-desktop .pf-fab,
   #pf-root.pf-device-desktop .pf-fab-menu,
@@ -960,9 +960,9 @@
   #pf-root .pf-split-detail .pf-node .pf-sublist { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
   #pf-root .pf-canvas { position: relative; width: 2200px; height: 1600px; transform-origin: 0 0; transition: transform 0.1s; }
   #pf-root .pf-zoom-controls { position: fixed; bottom: 14px; right: 14px; z-index: var(--z-sticky); display: flex; gap: var(--space-xs); align-items: center; }
-  #pf-root .pf-zoom-btn { background: var(--card); border: 1px solid var(--card-border); color: var(--text); width: 28px; height: 28px; border-radius: 6px; font-size: var(--font-size-base); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s; }
+  #pf-root .pf-zoom-btn { background: var(--card); border: 1px solid var(--card-border); color: var(--text); width: 28px; height: 28px; border-radius: 6px; font-size: max(12px, var(--font-size-base)); font-family: var(--font-mono); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s; }
   #pf-root .pf-zoom-btn:hover { border-color: var(--accent); color: var(--accent); }
-  #pf-root .pf-zoom-level { font-size: calc(var(--font-size-base) - 5px); color: var(--text-dim); min-width: 36px; text-align: center; }
+  #pf-root .pf-zoom-level { font-size: max(10px, calc(var(--font-size-base) - 5px)); color: var(--text-dim); min-width: 36px; text-align: center; }
 
   #pf-root .pf-node {
     position: absolute; width: auto; min-width: 420px; max-width: 420px;
@@ -1786,7 +1786,7 @@
   #pf-root .pf-chip-danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
   #pf-root .pf-btn-danger-text { color: var(--danger); }
   #pf-root .pf-btn-autoarrange { padding: 3px 10px; font-size: calc(var(--font-size-base) - 4px); font-weight: 600; }
-  #pf-root .pf-zoom-btn-sm { font-size: calc(var(--font-size-base) - 3px); }
+  #pf-root .pf-zoom-btn-sm { font-size: max(11px, calc(var(--font-size-base) - 3px)); }
   /* calendar panel internals */
   #pf-root .pf-cal-layout { display: flex; flex: 1; overflow: hidden; gap: 0; min-height: 0; }
   #pf-root .pf-cal-left { flex: 0 0 40%; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--card-border); padding-right: 8px; }
@@ -2267,7 +2267,7 @@
       <button class="pf-zoom-btn" id="pf-zoom-out" title="Zoom out">−</button>
       <span class="pf-zoom-level" id="pf-zoom-level">100%</span>
       <button class="pf-zoom-btn" id="pf-zoom-in" title="Zoom in">+</button>
-      <button class="pf-zoom-btn" class="pf-zoom-btn pf-zoom-btn-sm" id="pf-zoom-reset" title="Reset zoom">⟲</button>
+      <button class="pf-zoom-btn pf-zoom-btn-sm" id="pf-zoom-reset" title="Reset zoom">⟲</button>
     </div>
   </div>
   <div class="pf-toast" id="pf-toast" aria-live="polite"></div>
