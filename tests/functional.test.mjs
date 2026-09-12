@@ -15,6 +15,7 @@
 //   7.  IndexedDB recovery (localStorage wiped -> data restored from IDB mirror)
 //   8.  Firebase push/pull round-trip against a fake RTDB (per-user isolation path)
 //   9.  Service worker precache integrity (static: versioned cache, 4 assets, fetch handler)
+//   10. Icon hydration idempotency (double-run DOMContentLoaded → exactly 1 svg/title)
 //
 // Run: node tests/functional.test.mjs
 
@@ -66,7 +67,15 @@ class FakeElement {
   removeChild(c) { this.children = this.children.filter(x => x !== c); c.parentNode = null; return c; }
   remove() { if (this.parentNode) this.parentNode.removeChild(this); }
   insertBefore(c, ref) { const i = this.children.indexOf(ref); if (i < 0) this.children.push(c); else this.children.splice(i, 0, c); c.parentNode = this; return c; }
-  setAttribute(k, v) { this._attrs[k] = String(v); if (k === 'id') this.id = String(v); if (k === 'class') String(v).split(/\s+/).forEach(c => c && this.classList.add(c)); }
+  // Mimic afterbegin prepend closely enough for icon-hydration counting: the
+  // inserted markup is parsed into light-weight child nodes in front of existing ones.
+  insertAdjacentHTML(pos, html) {
+    if (pos !== 'afterbegin') return;
+    const nodes = this._parseFragment(html);
+    this.children = nodes.concat(this.children);
+    nodes.forEach(n => { n.parentNode = this; });
+  }
+  setAttribute(k, v) { this._attrs[k] = String(v); if (k === 'id') this.id = String(v); if (k === 'class') String(v).split(/\s+/).forEach(c => c && this.classList.add(c)); if (k.startsWith('data-')) { const dk = k.slice(5).replace(/-(\w)/g, (_, c) => c.toUpperCase()); this.dataset[dk] = String(v); } }
   getAttribute(k) { return k in this._attrs ? this._attrs[k] : null; }
   removeAttribute(k) { delete this._attrs[k]; }
   hasAttribute(k) { return k in this._attrs; }
@@ -100,18 +109,36 @@ class FakeElement {
   getBoundingClientRect() { return { x: 0, y: 0, top: 0, left: 0, right: 100, bottom: 100, width: 100, height: 100 }; }
   contains(_n) { return false; }
   get closest() { return () => null; }
+  // Tiny html-fragment parser: only needs to recognize <tag ...> ... </tag> and
+  // self-closing shapes for the icon markup the app inserts. Nested depth is
+  // tracked so `svg.pf-ic-title` class carrying is preserved on the right node.
+  _parseFragment(html) {
+    const out = [];
+    const stack = [];
+    for (const m of String(html).matchAll(/<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g)) {
+      const [, close, tag, attrs, selfClose] = m;
+      if (close) { stack.pop(); continue; }
+      const el = new FakeElement(tag);
+      for (const am of String(attrs).matchAll(/([\w-]+)\s*=\s*"([^"]*)"/g)) el.setAttribute(am[1], am[2]);
+      if (selfClose || /^(path|circle|rect|line|polyline|polygon|br|img|input|hr)$/i.test(tag)) { if (stack.length) stack[stack.length - 1].children.push(el); else out.push(el); el.parentNode = stack[stack.length - 1] || null; }
+      else if (stack.length) { stack[stack.length - 1].children.push(el); el.parentNode = stack[stack.length - 1]; stack.push(el); }
+      else { out.push(el); stack.push(el); }
+    }
+    return out;
+  }
 }
 function matcherFor(sel) {
   if (!sel) return () => false;
   if (sel.startsWith('[data-') && sel.endsWith(']')) { const k = sel.slice(1, -1); return (el) => el._attrs && k in el._attrs; }
   if (sel.startsWith('.')) { const c = sel.slice(1); return (el) => el.classList && el.classList.contains(c); }
+  if (/^[a-zA-Z][\w-]*$/.test(sel)) { const t = sel.toLowerCase(); return (el) => (el.tagName || '').toLowerCase() === t; }
   return () => false;
 }
 
 const byId = new Map();
-function makeDocument() {
+function makeDocument(readyState) {
   const doc = {
-    readyState: 'complete',
+    readyState: readyState || 'complete',
     body: new FakeElement('body'),
     documentElement: new FakeElement('html'),
     head: new FakeElement('head'),
@@ -256,7 +283,7 @@ function bootHarness(opts = {}) {
   byId.forEach(el => { el._listeners = {}; });
   const localStorage = opts.localStorage || makeLocalStorage();
   const indexedDB = makeIDB();
-  const doc = makeDocument();
+  const doc = makeDocument(opts.readyState);
   const raf = { queue: RAF_QUEUE };
   const ctx = {
     console: { log() {}, warn() {}, info() {}, debug() {}, error(...a) { APP_ERRORS.push(a.map(String).join(' ').slice(0, 200)); } },
@@ -584,6 +611,78 @@ function testServiceWorker() {
 }
 
 // ===========================================================================
+// TEST 10 — Icon hydration idempotency (F-UI-4 regression gate)
+// ===========================================================================
+// Reproduces the double-run condition that put two icons on every Options
+// section header: the bundle runs once while document.readyState === 'loading'
+// and again on the DOMContentLoaded "belt-and-suspenders" re-hydrate. The
+// [data-ic-before] prepend path must insert EXACTLY ONE svg per title.
+async function testIconHydration() {
+  // Seed the real section-title elements (the app's only [data-ic-before] uses)
+  const titles = [
+    ['pf-opt-title-data', 'folder', 'Data'],
+    ['pf-opt-title-manage', 'folder', 'Manage'],
+    ['pf-opt-title-export', 'upload', 'Export'],
+    ['pf-opt-title-cloud', 'cloud', 'Cloud Sync (Firebase)'],
+    ['pf-opt-title-autobackup', 'refresh', 'Auto-Backup'],
+    ['pf-opt-title-appearance', 'palette', 'Appearance'],
+  ];
+  for (const [id, ic, label] of titles) {
+    const el = byId.get(id) || new FakeElement('div');
+    if (!el.id) el.id = id;
+    el.setAttribute('data-ic-before', ic);
+    el.textContent = label;
+    el.children = [];
+    el._attrs = { 'data-ic-before': ic, id };
+    byId.set(id, el);
+  }
+
+  // Seed the known [data-ic] chrome spans pre-boot (in the browser they are
+  // real template elements): inline hydration fills them, DCL re-fire must
+  // leave them at one svg (innerHTML path is replacing, but verify it).
+  const spanIds = [
+    ['pf-firebase-push-ic', 'upload'], ['pf-firebase-pull-ic', 'download'],
+  ];
+  for (const [id, ic] of spanIds) {
+    const el = byId.get(id) || new FakeElement('span');
+    if (!el.id) el.id = id;
+    el.setAttribute('data-ic', ic);
+    el._attrs = { 'data-ic': ic };
+    el.children = [];
+    byId.set(id, el);
+  }
+
+  // Boot with readyState 'loading': the bundle hydrates inline, then the
+  // DOMContentLoaded safety pass must be a no-op (guarded) — not a second icon.
+  const h = await freshBoot({ readyState: 'loading' });
+  const doc = h.ctx.document;
+  await sleep(20);
+
+  // Re-fire DCL to prove idempotency under repeated hydration passes.
+  doc.dispatchEvent({ type: 'DOMContentLoaded' });
+  await sleep(10); h.flushRAF();
+
+  const countSvgs = (el) => el.querySelectorAll('svg').length;
+  const pf = h.ctx.window._pf;
+  check('icons: app booted', !!(pf && pf.getProjects));
+  for (const [id, , label] of titles) {
+    const el = byId.get(id);
+    check('icons: ' + label + ' has exactly one title svg', !!el && countSvgs(el) === 1, 'n=' + (el ? countSvgs(el) : 'missing'));
+    if (el) {
+      check('icons: ' + label + ' labeled hydrated once', el.dataset.icHydrated === '1');
+    }
+  }
+
+  const spans = spanIds.map(([id]) => byId.get(id)).filter(Boolean);
+  check('icons: [data-ic] spans seeded', spans.length === spanIds.length);
+  // innerHTML-replace semantics: exactly one <svg in the markup string after
+  // inline hydration AND the DCL re-fire (an append-based regression → 2).
+  const spanSvgs = (el) => (String(el._innerHTML).match(/<svg\b/g) || []).length;
+  check('icons: [data-ic] stays single-svg across DCL re-fire', spans.every(el => spanSvgs(el) === 1),
+    'bad: ' + spans.filter(el => spanSvgs(el) !== 1).length + '/' + spans.length);
+}
+
+// ===========================================================================
 // Run all
 // ===========================================================================
 const tests = [
@@ -593,6 +692,7 @@ const tests = [
   ['Malformed import', testMalformedImport],
   ['Persistence lifecycle', testPersistenceLifecycle],
   ['Firebase push/pull', testFirebaseRoundTrip],
+  ['Icon hydration', testIconHydration],
 ];
 for (const [name, fn] of tests) {
   try { await fn(); }
