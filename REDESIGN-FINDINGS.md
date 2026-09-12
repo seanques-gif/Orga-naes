@@ -755,3 +755,29 @@ project-gone refusal. Tamper-proven surgically: disabling the purge cutoff
 turns exactly the 2 purge assertions red; removing the restore tombstone-clear
 turns exactly the tombstone assertion red. Needed seams: `restoreFromTrash`
 + `deleteSubtask` now exposed on `window._pf` beside `deleteNoteById`.
+
+## F-UI-7 — Undo toasts for note and subtask deletes (owner-requested, 2026-09-13)
+
+Single note and subtask deletes now carry an **Undo** button on the toast
+(5-second window, the app's standard undoable-toast timing) so a fresh
+delete can be reversed without opening the Recycle Bin (`f406421`).
+
+Design: the toast lives **inside the deletion chokepoints** (`deleteNoteById`
+and the single `deleteSubtask` path), not at individual call sites — any
+future delete path inherits Undo automatically. The Undo action has no
+restore logic of its own: it calls `restoreFromTrash`, the exact tested
+function the bin's Restore button uses, so undo inherits the full durability
+contract — subtasks reattach at their recorded position, and undoing a note
+**clears its tombstone** so disaster recovery won't re-delete a brought-back
+note (verified live for both kinds).
+
+Bulk deletes stay quiet per-item: multi-select Delete on notes or tasks
+passes a `silent` flag through the chokepoint and shows one batch toast
+whose Undo restores every item in one go. Project deletes keep their
+pre-existing Undo. Call-site toasts were removed where the chokepoint now
+supplies them.
+
+Bonus fix surfaced by verification: notes imported without timestamps
+rendered "Invalid Date Invalid Date" on cards — `fmtNoteDate` now guards
+missing/invalid dates and renders blank instead. Suite held at 99/99
+(Test 12 unaffected); artifact pin re-verified through `npm run verify`.
