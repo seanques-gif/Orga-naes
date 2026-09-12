@@ -63,7 +63,9 @@
   function hydrateIcons(scope) {
     scope.querySelectorAll('[data-ic]').forEach(el => { el.innerHTML = pfIcon(el.dataset.ic); });
     scope.querySelectorAll('[data-ic-before]').forEach(el => {
+      if (el.dataset.icHydrated) return; // prepend is not idempotent — skip if already done
       el.insertAdjacentHTML('afterbegin', pfIcon(el.dataset.icBefore, 'pf-ic-title'));
+      el.dataset.icHydrated = '1';
     });
   }
   hydrateIcons(document);

@@ -547,3 +547,14 @@ token on both Midnight and Daylight.
      that could never render, purged after live proof that computed values are
      byte-identical without them. The two legitimate out-of-root fallbacks
      (`.pf-conflict-box`, `90-print.css` token-free sheet) keep theirs by design.
+
+4. **F-UI-4 (owner-reported, Options panel): section headers rendered two icons each.**
+   - **Cause:** `hydrateIcons` in `00-svg-icons.js` runs twice (inline + a
+     "belt-and-suspenders" DOMContentLoaded re-run). `[data-ic]` hydration is
+     idempotent (innerHTML replace), but `[data-ic-before]` used
+     `insertAdjacentHTML('afterbegin')` — prepend on every run. The 6 Options
+     section titles are the only `data-ic-before` uses, so each got 2 icons.
+   - **Fix:** hydration marker (`data-ic-hydrated`) makes the prepend
+     genuinely re-run safe; marker visible in DOM as evidence.
+   - **Verified live:** all 6 headers `svg.pf-ic-title` count = 1 (was 2);
+     all `[data-ic]` spans exactly 1 svg; suite green (43 assertions).
