@@ -120,9 +120,9 @@
     --waiting: #6a4fd0;
     --waiting-bg: color-mix(in srgb, var(--waiting) 12%, transparent);
     --danger: #c0392b;
-    --accent: #0a7ea4;
+    --accent: #0a7499; /* 4.67:1 vs bg / 5.29:1 on cards — accent is used as 12px text in list titles */
     --accent-contrast: #ffffff;
-    --depth0: #0a7ea4;
+    --depth0: #0a7499;
     --depth1: #b06a00;
     --depth2: #0f7a4a;
     --depth3: #1f7f92;
