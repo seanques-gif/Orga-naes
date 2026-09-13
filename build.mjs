@@ -36,6 +36,36 @@ out = inject(out, '__ORGA_CSS_MAIN__', cssMain);
 out = inject(out, '__ORGA_CSS_PRINT__', cssPrint);
 out = inject(out, '__ORGA_SCRIPT__', script);
 
+// ---- CSP (Phase C2) ----------------------------------------------------------
+// The policy is GENERATED, not hand-written: the hash below pins the exact
+// bytes of the one inline script this build produces. Any src/ change that
+// alters the app script invalidates the hash -> the build's own gate and the
+// test suite both fail until rebuilt. edit: nothing in this file to tune.
+const inlineScripts = [...out.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+if (inlineScripts.length !== 1) {
+  throw new Error(`CSP: expected exactly 1 inline script, found ${inlineScripts.length} — refusing to generate a wrong hash.`);
+}
+const scriptHashB64 = createHash('sha256').update(Buffer.from(inlineScripts[0], 'utf8')).digest('base64');
+const CSP = [
+  "default-src 'self'",
+  // The one inline app script is hash-pinned (no 'unsafe-inline'); gstatic
+  // hosts the three pinned-by-SRI Firebase compat bundles.
+  `script-src 'self' https://www.gstatic.com 'sha256-${scriptHashB64}'`,
+  // 'unsafe-inline' is honest necessity: the app is built on inline style
+  // attributes/blocks by design (single-file, no nonce possible in static HTML).
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  'font-src https://fonts.gstatic.com',
+  "img-src 'self' data:",
+  // RTDB REST + websocket (wildcard keeps scratch/practice copies working),
+  // Auth REST (identitytoolkit/securetoken under googleapis.com).
+  'connect-src \'self\' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com',
+  // Firebase auth handshake iframe lives on <project>.firebaseapp.com.
+  "frame-src 'self' https://*.firebaseapp.com",
+  'worker-src \'self\'',
+  'upgrade-insecure-requests',
+].join('; ');
+out = inject(out, '__ORGA_CSP__', CSP);
+
 const ARTIFACT = 'Orga-naes.html';
 const PIN_FILE = 'Orga-naes.html.sha256';
 const sha256 = (text) => createHash('sha256').update(Buffer.from(text, 'utf8')).digest('hex');
@@ -75,6 +105,7 @@ if (checkOnly) {
   const kb = (n) => (n / 1024).toFixed(1) + ' KB';
   console.log(`  css: ${order.cssMain.length}+${order.cssPrint.length} modules, ${kb(cssMain.length + cssPrint.length)}`);
   console.log(`  js:  ${order.script.length} modules, ${kb(script.length)}`);
+  console.log(`  csp: inline script pinned 'sha256-${scriptHashB64.slice(0, 10)}…'`);
   console.log(`  out: ${kb(out.length)}`);
   process.exit(0);
 }
@@ -86,5 +117,6 @@ const kb2 = (n) => (n / 1024).toFixed(1) + ' KB';
 console.log('Built Orga-naes.html');
 console.log(`  css: ${order.cssMain.length}+${order.cssPrint.length} modules, ${kb2(cssMain.length + cssPrint.length)}`);
 console.log(`  js:  ${order.script.length} modules, ${kb2(script.length)}`);
+console.log(`  csp: inline script pinned 'sha256-${scriptHashB64.slice(0, 10)}…'`);
 console.log(`  out: ${kb2(out.length)}`);
 console.log(`  pin: ${PIN_FILE} (${sha256(out).slice(0, 16)}…)`);
