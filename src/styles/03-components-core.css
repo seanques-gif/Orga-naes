@@ -126,6 +126,7 @@
   }
   #pf-root .pf-due-filter:focus { border-color: var(--accent); }
   #pf-root .pf-font-family-select { width: 100%; font-size: calc(var(--font-size-base) - 2px); padding: 6px 8px; }
+  #pf-root .pf-font-custom-input { width: 100%; font-size: calc(var(--font-size-base) - 2px); padding: 6px 8px; margin-top: 6px; height: auto; flex-shrink: 1; }
   #pf-root .pf-save { font-size: calc(var(--font-size-base) - 6px); color: var(--text-dim); width: auto; min-width: 55px; text-align: right; flex-shrink: 0; padding: 2px 6px; border-radius: 6px; transition: background 0.3s, color 0.3s, transform 0.2s; }
   #pf-root .pf-save.pf-save-fail { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger); font-weight: 700; animation: pf-save-shake 0.4s var(--ease-out-strong); }
   #pf-root .pf-save.pf-save-ok { color: var(--completed); }

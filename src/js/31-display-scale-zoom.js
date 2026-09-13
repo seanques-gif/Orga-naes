@@ -28,21 +28,125 @@
 
   // Font family picker (Appearance): '' = console default (IBM Plex via Google
   // Fonts), 'inter' = Inter (iOS-like; also loaded from Google Fonts), 'system'
-  // = platform UI stack. Applied through the --font-sans token so every
+  // = platform UI stack, 'custom' = any Google Fonts family typed by the user
+  // (loaded on demand). Applied through the --font-sans token so every
   // component follows; choice persists per device like the size/scale sliders.
   const FONTFAM_KEY = () => 'project-flow-font-family-' + currentDeviceSuffix();
+  const FONTCUSTOM_KEY = () => 'project-flow-font-custom-' + currentDeviceSuffix();
   const FONT_STACKS = {
     inter: "'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
     system: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
   };
   const fontSel = document.getElementById('pf-font-family');
+  const fontCustom = document.getElementById('pf-font-custom');
+  // Google Fonts families are letters, digits, spaces, and a small punctuation
+  // set (e.g. "PT Sans", "Playfair Display", "Fraunces 72pt"). The CSS2 API
+  // accepts both spaces and + separators; keep + so a URL fragment pasted by
+  // mistake still resolves. Anything outside this set is rejected outright.
+  const FONT_NAME_RE = /^[A-Za-z0-9 +.'\u00C0-\u024F-]{1,60}$/;
+  function cssEscapeName(name) {
+    return name.trim().replace(/["'\\]/g, '');
+  }
+  function gfontUrl(family, suffix) {
+    return 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(family).replace(/%20/g, '+') + suffix;
+  }
+  function loadLinkOnce(link, url) {
+    return new Promise((resolve, reject) => {
+      let done = false, sheetPoll = null, timeout = null;
+      const finish = (ok) => {
+        if (done) return;
+        done = true;
+        clearInterval(sheetPoll);
+        clearTimeout(timeout);
+        if (ok) resolve();
+        else reject(new Error('stylesheet failed'));
+      };
+      link.onload = () => finish(true);
+      link.onerror = () => finish(false);
+      // A stylesheet served from the HTTP cache can apply synchronously and
+      // never fire onload/onerror (observed in Chromium) — poll the applied
+      // sheet as ground truth alongside the events.
+      sheetPoll = setInterval(() => { if (link.sheet) finish(true); }, 50);
+      timeout = setTimeout(() => finish(!!link.sheet), 8000);
+      link.href = url;
+      if (link.sheet) finish(true);
+    });
+  }
+  // Existence oracle: the css2 API answers 200 for a known family/weight
+  // combo and 400 for an unknown one (or out-of-range weights). fetch works
+  // cross-origin here (the API is CORS-open), and unlike FontFaceSet probing
+  // it is not racy: no dependence on when @font-face rules register.
+  async function css2Ok(family, suffix) {
+    try { const r = await fetch(gfontUrl(family, suffix)); return r.ok; } catch (e) { return false; }
+  }
+  // Weight ladder: families define different weight ranges (Lora starts at
+  // 400, some display faces ship 400 only), and the css2 API rejects the
+  // WHOLE request if any requested weight is out of range. Try the rich set
+  // first, fall back to the classic pair, then to the bare family.
+  const WEIGHT_LADDER = [':wght@400;500;600;700', ':wght@400;700', ''];
+  async function injectGoogleFont(family) {
+    for (const suffix of WEIGHT_LADDER) {
+      if (!(await css2Ok(family, suffix))) continue;
+      const link = document.getElementById('pf-gfont-dynamic');
+      const el = link || (() => { const l = document.createElement('link'); l.id = 'pf-gfont-dynamic'; l.rel = 'stylesheet'; document.head.appendChild(l); return l; })();
+      try { await loadLinkOnce(el, gfontUrl(family, suffix)); } catch (e) { continue; }
+      // Warm the faces; glyphs arrive whenever ready (font-display: swap
+      // shows the fallback until then, same as the boot-time font link).
+      document.fonts.load("16px '" + cssEscapeName(family) + "'").catch(() => {});
+      return true;
+    }
+    return false;
+  }
   function applyFontFamily(v) {
     if (v && FONT_STACKS[v]) root.style.setProperty('--font-sans', FONT_STACKS[v]);
-    else root.style.removeProperty('--font-sans');
+    else if (v !== 'custom') root.style.removeProperty('--font-sans');
+  }
+  async function applyCustomFont(name, persist) {
+    const family = String(name || '').trim();
+    if (!family) { showToast('Type a font family name first.', true); return false; }
+    if (!FONT_NAME_RE.test(family)) { showToast('That does not look like a Google Fonts family name.', true); return false; }
+    const ok = await injectGoogleFont(family);
+    if (!ok) { showToast('Could not load "' + family + '". Check the name on fonts.google.com.', true); return false; }
+    root.style.setProperty('--font-sans', "'" + cssEscapeName(family) + "', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
+    if (persist) safeSet(FONTCUSTOM_KEY(), family, false);
+    showToast('Font applied: ' + family + '.');
+    return true;
+  }
+  function showHideCustomRow() {
+    if (fontCustom) fontCustom.style.display = (fontSel && fontSel.value === 'custom') ? '' : 'none';
   }
   if (fontSel) {
-    fontSel.addEventListener('change', () => { applyFontFamily(fontSel.value); safeSet(FONTFAM_KEY(), fontSel.value, false); });
-    (async function loadFontFamily() { try { const res = await safeGet(FONTFAM_KEY(), false); if (res && res.value !== undefined) { fontSel.value = res.value; applyFontFamily(res.value); } } catch (e) {} })();
+    fontSel.addEventListener('change', async () => {
+      showHideCustomRow();
+      if (fontSel.value === 'custom') {
+        if (fontCustom) { fontCustom.focus(); if (!fontCustom.value) fontCustom.placeholder = 'Family name, e.g. Nunito, Lora'; }
+        return;
+      }
+      applyFontFamily(fontSel.value);
+      safeSet(FONTFAM_KEY(), fontSel.value, false);
+    });
+    if (fontCustom) {
+      const commitCustom = async () => {
+        const ok = await applyCustomFont(fontCustom.value, true);
+        if (ok) safeSet(FONTFAM_KEY(), 'custom', false);
+      };
+      fontCustom.addEventListener('change', commitCustom);
+      fontCustom.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); commitCustom(); } });
+    }
+    (async function loadFontFamily() {
+      try {
+        const res = await safeGet(FONTFAM_KEY(), false);
+        if (res && res.value !== undefined) {
+          fontSel.value = res.value;
+          showHideCustomRow();
+          if (res.value === 'custom' && fontCustom) {
+            const saved = await safeGet(FONTCUSTOM_KEY(), false);
+            if (saved && saved.value) { fontCustom.value = saved.value; await applyCustomFont(saved.value, false); }
+            else fontSel.value = '';
+          } else applyFontFamily(res.value);
+        }
+      } catch (e) {}
+    })();
   }
 
   // Re-apply the correct device's saved size if the device class changes later
