@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-OelX/O3U0QB115LqWcUyXGdY9yQZxcFLDxKPAdaSsbo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-E93eFJrEfvY1ZooScaSZX27kcNdTvY389Sdo8jJ9aC8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -5188,7 +5188,11 @@
         const isMulti = splitMultiSelect.includes(p.id);
         item.className = 'pf-split-list-item' + (isActive ? ' pf-split-active' : '') + (isMulti ? ' pf-split-selected' : '') + (p.status === 'completed' ? ' pf-list-completed' : '');
         item.style.animationDelay = (Math.min(_itemAnimIdx++, 20) * 15) + 'ms';
-        item.setAttribute('onclick', '_splitSelect("' + p.id + '", event)');
+        // CSP (C2) blocks inline event-handler attributes (script-src has no
+        // 'unsafe-inline'), which silently left these rows unclickable — the
+        // attribute was set but never compiled. Use a real listener instead;
+        // _splitSelect lives on window and is defined by the time clicks land.
+        item.addEventListener('click', (e) => _splitSelect(p.id, e));
         item.addEventListener('dblclick', (e) => { e.stopPropagation(); _inlineRename(item, p); });
         if (!window.matchMedia('(pointer: coarse)').matches) item.draggable = true;
         item.dataset.projectId = p.id;
