@@ -1,0 +1,1847 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "projects": {
+          ".validate": "newData.val() === null || newData.hasChildren()",
+          "$i": {
+            ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+            "id": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+            },
+            "status": {
+              ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+            },
+            "category": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 40)"
+            },
+            "createdAt": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+            },
+            "completedAt": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+            },
+            "expanded": {
+              ".validate": "newData.isBoolean()"
+            },
+            "_manualStatus": {
+              ".validate": "newData.isBoolean()"
+            },
+            "x": {
+              ".validate": "newData.isNumber() && newData.val() >= -1000000 && newData.val() <= 1000000"
+            },
+            "y": {
+              ".validate": "newData.isNumber() && newData.val() >= -1000000 && newData.val() <= 1000000"
+            },
+            "recurrence": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+            },
+            "subtasks": {
+              ".validate": "newData.val() === null || newData.hasChildren()",
+              "$s": {
+                ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                "id": {
+                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                },
+                "title": {
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                },
+                "status": {
+                  ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                },
+                "expanded": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "createdAt": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                },
+                "dueAt": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                },
+                "completedAt": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                },
+                "recurrence": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                },
+                "blockedBy": {
+                  ".validate": "newData.val() === null || newData.hasChildren()",
+                  "$j": {
+                    ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                  }
+                },
+                "comments": {
+                  ".validate": "newData.val() === null || newData.hasChildren()",
+                  "$cm": {
+                    ".validate": "newData.hasChildren(['text', 'time'])",
+                    "text": {
+                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                    },
+                    "time": {
+                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                    },
+                    "$other": {
+                      ".validate": false
+                    }
+                  }
+                },
+                "subtasks": {
+                  ".validate": "newData.val() === null || newData.hasChildren()",
+                  "$s": {
+                    ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                    "id": {
+                      ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                    },
+                    "title": {
+                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                    },
+                    "status": {
+                      ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                    },
+                    "expanded": {
+                      ".validate": "newData.isBoolean()"
+                    },
+                    "createdAt": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                    },
+                    "dueAt": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                    },
+                    "completedAt": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                    },
+                    "recurrence": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                    },
+                    "blockedBy": {
+                      ".validate": "newData.val() === null || newData.hasChildren()",
+                      "$j": {
+                        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                      }
+                    },
+                    "comments": {
+                      ".validate": "newData.val() === null || newData.hasChildren()",
+                      "$cm": {
+                        ".validate": "newData.hasChildren(['text', 'time'])",
+                        "text": {
+                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                        },
+                        "time": {
+                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                        },
+                        "$other": {
+                          ".validate": false
+                        }
+                      }
+                    },
+                    "subtasks": {
+                      ".validate": "newData.val() === null || newData.hasChildren()",
+                      "$s": {
+                        ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                        "id": {
+                          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                        },
+                        "title": {
+                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                        },
+                        "status": {
+                          ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                        },
+                        "expanded": {
+                          ".validate": "newData.isBoolean()"
+                        },
+                        "createdAt": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                        },
+                        "dueAt": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                        },
+                        "completedAt": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                        },
+                        "recurrence": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                        },
+                        "blockedBy": {
+                          ".validate": "newData.val() === null || newData.hasChildren()",
+                          "$j": {
+                            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                          }
+                        },
+                        "comments": {
+                          ".validate": "newData.val() === null || newData.hasChildren()",
+                          "$cm": {
+                            ".validate": "newData.hasChildren(['text', 'time'])",
+                            "text": {
+                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                            },
+                            "time": {
+                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                            },
+                            "$other": {
+                              ".validate": false
+                            }
+                          }
+                        },
+                        "subtasks": {
+                          ".validate": "newData.val() === null || newData.hasChildren()",
+                          "$s": {
+                            ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                            "id": {
+                              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                            },
+                            "title": {
+                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                            },
+                            "status": {
+                              ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                            },
+                            "expanded": {
+                              ".validate": "newData.isBoolean()"
+                            },
+                            "createdAt": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                            },
+                            "dueAt": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                            },
+                            "completedAt": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                            },
+                            "recurrence": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                            },
+                            "blockedBy": {
+                              ".validate": "newData.val() === null || newData.hasChildren()",
+                              "$j": {
+                                ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                              }
+                            },
+                            "comments": {
+                              ".validate": "newData.val() === null || newData.hasChildren()",
+                              "$cm": {
+                                ".validate": "newData.hasChildren(['text', 'time'])",
+                                "text": {
+                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                },
+                                "time": {
+                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                },
+                                "$other": {
+                                  ".validate": false
+                                }
+                              }
+                            },
+                            "subtasks": {
+                              ".validate": "newData.val() === null || newData.hasChildren()",
+                              "$s": {
+                                ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                "id": {
+                                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                },
+                                "title": {
+                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                },
+                                "status": {
+                                  ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                },
+                                "expanded": {
+                                  ".validate": "newData.isBoolean()"
+                                },
+                                "createdAt": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                },
+                                "dueAt": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                },
+                                "completedAt": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                },
+                                "recurrence": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                },
+                                "blockedBy": {
+                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                  "$j": {
+                                    ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                  }
+                                },
+                                "comments": {
+                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                  "$cm": {
+                                    ".validate": "newData.hasChildren(['text', 'time'])",
+                                    "text": {
+                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                    },
+                                    "time": {
+                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                    },
+                                    "$other": {
+                                      ".validate": false
+                                    }
+                                  }
+                                },
+                                "subtasks": {
+                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                  "$s": {
+                                    ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                    "id": {
+                                      ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                    },
+                                    "title": {
+                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                    },
+                                    "status": {
+                                      ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                    },
+                                    "expanded": {
+                                      ".validate": "newData.isBoolean()"
+                                    },
+                                    "createdAt": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                    },
+                                    "dueAt": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                    },
+                                    "completedAt": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                    },
+                                    "recurrence": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                    },
+                                    "blockedBy": {
+                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                      "$j": {
+                                        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                      }
+                                    },
+                                    "comments": {
+                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                      "$cm": {
+                                        ".validate": "newData.hasChildren(['text', 'time'])",
+                                        "text": {
+                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                        },
+                                        "time": {
+                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                        },
+                                        "$other": {
+                                          ".validate": false
+                                        }
+                                      }
+                                    },
+                                    "subtasks": {
+                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                      "$s": {
+                                        ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                        "id": {
+                                          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                        },
+                                        "title": {
+                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                        },
+                                        "status": {
+                                          ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                        },
+                                        "expanded": {
+                                          ".validate": "newData.isBoolean()"
+                                        },
+                                        "createdAt": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                        },
+                                        "dueAt": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                        },
+                                        "completedAt": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                        },
+                                        "recurrence": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                        },
+                                        "blockedBy": {
+                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                          "$j": {
+                                            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                          }
+                                        },
+                                        "comments": {
+                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                          "$cm": {
+                                            ".validate": "newData.hasChildren(['text', 'time'])",
+                                            "text": {
+                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                            },
+                                            "time": {
+                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                            },
+                                            "$other": {
+                                              ".validate": false
+                                            }
+                                          }
+                                        },
+                                        "subtasks": {
+                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                          "$s": {
+                                            ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                            "id": {
+                                              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                            },
+                                            "title": {
+                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                            },
+                                            "status": {
+                                              ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                            },
+                                            "expanded": {
+                                              ".validate": "newData.isBoolean()"
+                                            },
+                                            "createdAt": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                            },
+                                            "dueAt": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                            },
+                                            "completedAt": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                            },
+                                            "recurrence": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                            },
+                                            "blockedBy": {
+                                              ".validate": "newData.val() === null || newData.hasChildren()",
+                                              "$j": {
+                                                ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                              }
+                                            },
+                                            "comments": {
+                                              ".validate": "newData.val() === null || newData.hasChildren()",
+                                              "$cm": {
+                                                ".validate": "newData.hasChildren(['text', 'time'])",
+                                                "text": {
+                                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                },
+                                                "time": {
+                                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                },
+                                                "$other": {
+                                                  ".validate": false
+                                                }
+                                              }
+                                            },
+                                            "subtasks": {
+                                              ".validate": "newData.val() === null || newData.hasChildren()",
+                                              "$s": {
+                                                ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                                "id": {
+                                                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                },
+                                                "title": {
+                                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                },
+                                                "status": {
+                                                  ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                                },
+                                                "expanded": {
+                                                  ".validate": "newData.isBoolean()"
+                                                },
+                                                "createdAt": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                },
+                                                "dueAt": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                                },
+                                                "completedAt": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                },
+                                                "recurrence": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                                },
+                                                "blockedBy": {
+                                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                                  "$j": {
+                                                    ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                  }
+                                                },
+                                                "comments": {
+                                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                                  "$cm": {
+                                                    ".validate": "newData.hasChildren(['text', 'time'])",
+                                                    "text": {
+                                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                    },
+                                                    "time": {
+                                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                    },
+                                                    "$other": {
+                                                      ".validate": false
+                                                    }
+                                                  }
+                                                },
+                                                "subtasks": {
+                                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                                  "$s": {
+                                                    ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                                    "id": {
+                                                      ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                    },
+                                                    "title": {
+                                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                    },
+                                                    "status": {
+                                                      ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                                    },
+                                                    "expanded": {
+                                                      ".validate": "newData.isBoolean()"
+                                                    },
+                                                    "createdAt": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                    },
+                                                    "dueAt": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                                    },
+                                                    "completedAt": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                    },
+                                                    "recurrence": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                                    },
+                                                    "blockedBy": {
+                                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                                      "$j": {
+                                                        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                      }
+                                                    },
+                                                    "comments": {
+                                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                                      "$cm": {
+                                                        ".validate": "newData.hasChildren(['text', 'time'])",
+                                                        "text": {
+                                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                        },
+                                                        "time": {
+                                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                        },
+                                                        "$other": {
+                                                          ".validate": false
+                                                        }
+                                                      }
+                                                    },
+                                                    "subtasks": {
+                                                      ".validate": "newData.val() === null"
+                                                    },
+                                                    "$other": {
+                                                      ".validate": false
+                                                    }
+                                                  }
+                                                },
+                                                "$other": {
+                                                  ".validate": false
+                                                }
+                                              }
+                                            },
+                                            "$other": {
+                                              ".validate": false
+                                            }
+                                          }
+                                        },
+                                        "$other": {
+                                          ".validate": false
+                                        }
+                                      }
+                                    },
+                                    "$other": {
+                                      ".validate": false
+                                    }
+                                  }
+                                },
+                                "$other": {
+                                  ".validate": false
+                                }
+                              }
+                            },
+                            "$other": {
+                              ".validate": false
+                            }
+                          }
+                        },
+                        "$other": {
+                          ".validate": false
+                        }
+                      }
+                    },
+                    "$other": {
+                      ".validate": false
+                    }
+                  }
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "categories": {
+          ".validate": "newData.val() === null || newData.hasChildren()",
+          "$c": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          }
+        },
+        "categoryEmojis": {
+          "$cat": {
+            ".validate": "$cat.length >= 1 && $cat.length <= 40 && newData.isString() && newData.val().length >= 1 && newData.val().length <= 24"
+          }
+        },
+        "archive": {
+          ".validate": "newData.val() === null || newData.hasChildren()",
+          "$i": {
+            ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+            "id": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+            },
+            "status": {
+              ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+            },
+            "category": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 40)"
+            },
+            "createdAt": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+            },
+            "completedAt": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+            },
+            "expanded": {
+              ".validate": "newData.isBoolean()"
+            },
+            "_manualStatus": {
+              ".validate": "newData.isBoolean()"
+            },
+            "x": {
+              ".validate": "newData.isNumber() && newData.val() >= -1000000 && newData.val() <= 1000000"
+            },
+            "y": {
+              ".validate": "newData.isNumber() && newData.val() >= -1000000 && newData.val() <= 1000000"
+            },
+            "recurrence": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+            },
+            "subtasks": {
+              ".validate": "newData.val() === null || newData.hasChildren()",
+              "$s": {
+                ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                "id": {
+                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                },
+                "title": {
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                },
+                "status": {
+                  ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                },
+                "expanded": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "createdAt": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                },
+                "dueAt": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                },
+                "completedAt": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                },
+                "recurrence": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                },
+                "blockedBy": {
+                  ".validate": "newData.val() === null || newData.hasChildren()",
+                  "$j": {
+                    ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                  }
+                },
+                "comments": {
+                  ".validate": "newData.val() === null || newData.hasChildren()",
+                  "$cm": {
+                    ".validate": "newData.hasChildren(['text', 'time'])",
+                    "text": {
+                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                    },
+                    "time": {
+                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                    },
+                    "$other": {
+                      ".validate": false
+                    }
+                  }
+                },
+                "subtasks": {
+                  ".validate": "newData.val() === null || newData.hasChildren()",
+                  "$s": {
+                    ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                    "id": {
+                      ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                    },
+                    "title": {
+                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                    },
+                    "status": {
+                      ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                    },
+                    "expanded": {
+                      ".validate": "newData.isBoolean()"
+                    },
+                    "createdAt": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                    },
+                    "dueAt": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                    },
+                    "completedAt": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                    },
+                    "recurrence": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                    },
+                    "blockedBy": {
+                      ".validate": "newData.val() === null || newData.hasChildren()",
+                      "$j": {
+                        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                      }
+                    },
+                    "comments": {
+                      ".validate": "newData.val() === null || newData.hasChildren()",
+                      "$cm": {
+                        ".validate": "newData.hasChildren(['text', 'time'])",
+                        "text": {
+                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                        },
+                        "time": {
+                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                        },
+                        "$other": {
+                          ".validate": false
+                        }
+                      }
+                    },
+                    "subtasks": {
+                      ".validate": "newData.val() === null || newData.hasChildren()",
+                      "$s": {
+                        ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                        "id": {
+                          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                        },
+                        "title": {
+                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                        },
+                        "status": {
+                          ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                        },
+                        "expanded": {
+                          ".validate": "newData.isBoolean()"
+                        },
+                        "createdAt": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                        },
+                        "dueAt": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                        },
+                        "completedAt": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                        },
+                        "recurrence": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                        },
+                        "blockedBy": {
+                          ".validate": "newData.val() === null || newData.hasChildren()",
+                          "$j": {
+                            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                          }
+                        },
+                        "comments": {
+                          ".validate": "newData.val() === null || newData.hasChildren()",
+                          "$cm": {
+                            ".validate": "newData.hasChildren(['text', 'time'])",
+                            "text": {
+                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                            },
+                            "time": {
+                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                            },
+                            "$other": {
+                              ".validate": false
+                            }
+                          }
+                        },
+                        "subtasks": {
+                          ".validate": "newData.val() === null || newData.hasChildren()",
+                          "$s": {
+                            ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                            "id": {
+                              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                            },
+                            "title": {
+                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                            },
+                            "status": {
+                              ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                            },
+                            "expanded": {
+                              ".validate": "newData.isBoolean()"
+                            },
+                            "createdAt": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                            },
+                            "dueAt": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                            },
+                            "completedAt": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                            },
+                            "recurrence": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                            },
+                            "blockedBy": {
+                              ".validate": "newData.val() === null || newData.hasChildren()",
+                              "$j": {
+                                ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                              }
+                            },
+                            "comments": {
+                              ".validate": "newData.val() === null || newData.hasChildren()",
+                              "$cm": {
+                                ".validate": "newData.hasChildren(['text', 'time'])",
+                                "text": {
+                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                },
+                                "time": {
+                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                },
+                                "$other": {
+                                  ".validate": false
+                                }
+                              }
+                            },
+                            "subtasks": {
+                              ".validate": "newData.val() === null || newData.hasChildren()",
+                              "$s": {
+                                ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                "id": {
+                                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                },
+                                "title": {
+                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                },
+                                "status": {
+                                  ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                },
+                                "expanded": {
+                                  ".validate": "newData.isBoolean()"
+                                },
+                                "createdAt": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                },
+                                "dueAt": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                },
+                                "completedAt": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                },
+                                "recurrence": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                },
+                                "blockedBy": {
+                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                  "$j": {
+                                    ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                  }
+                                },
+                                "comments": {
+                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                  "$cm": {
+                                    ".validate": "newData.hasChildren(['text', 'time'])",
+                                    "text": {
+                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                    },
+                                    "time": {
+                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                    },
+                                    "$other": {
+                                      ".validate": false
+                                    }
+                                  }
+                                },
+                                "subtasks": {
+                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                  "$s": {
+                                    ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                    "id": {
+                                      ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                    },
+                                    "title": {
+                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                    },
+                                    "status": {
+                                      ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                    },
+                                    "expanded": {
+                                      ".validate": "newData.isBoolean()"
+                                    },
+                                    "createdAt": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                    },
+                                    "dueAt": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                    },
+                                    "completedAt": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                    },
+                                    "recurrence": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                    },
+                                    "blockedBy": {
+                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                      "$j": {
+                                        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                      }
+                                    },
+                                    "comments": {
+                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                      "$cm": {
+                                        ".validate": "newData.hasChildren(['text', 'time'])",
+                                        "text": {
+                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                        },
+                                        "time": {
+                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                        },
+                                        "$other": {
+                                          ".validate": false
+                                        }
+                                      }
+                                    },
+                                    "subtasks": {
+                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                      "$s": {
+                                        ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                        "id": {
+                                          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                        },
+                                        "title": {
+                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                        },
+                                        "status": {
+                                          ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                        },
+                                        "expanded": {
+                                          ".validate": "newData.isBoolean()"
+                                        },
+                                        "createdAt": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                        },
+                                        "dueAt": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                        },
+                                        "completedAt": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                        },
+                                        "recurrence": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                        },
+                                        "blockedBy": {
+                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                          "$j": {
+                                            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                          }
+                                        },
+                                        "comments": {
+                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                          "$cm": {
+                                            ".validate": "newData.hasChildren(['text', 'time'])",
+                                            "text": {
+                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                            },
+                                            "time": {
+                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                            },
+                                            "$other": {
+                                              ".validate": false
+                                            }
+                                          }
+                                        },
+                                        "subtasks": {
+                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                          "$s": {
+                                            ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                            "id": {
+                                              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                            },
+                                            "title": {
+                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                            },
+                                            "status": {
+                                              ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                            },
+                                            "expanded": {
+                                              ".validate": "newData.isBoolean()"
+                                            },
+                                            "createdAt": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                            },
+                                            "dueAt": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                            },
+                                            "completedAt": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                            },
+                                            "recurrence": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                            },
+                                            "blockedBy": {
+                                              ".validate": "newData.val() === null || newData.hasChildren()",
+                                              "$j": {
+                                                ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                              }
+                                            },
+                                            "comments": {
+                                              ".validate": "newData.val() === null || newData.hasChildren()",
+                                              "$cm": {
+                                                ".validate": "newData.hasChildren(['text', 'time'])",
+                                                "text": {
+                                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                },
+                                                "time": {
+                                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                },
+                                                "$other": {
+                                                  ".validate": false
+                                                }
+                                              }
+                                            },
+                                            "subtasks": {
+                                              ".validate": "newData.val() === null || newData.hasChildren()",
+                                              "$s": {
+                                                ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                                "id": {
+                                                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                },
+                                                "title": {
+                                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                },
+                                                "status": {
+                                                  ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                                },
+                                                "expanded": {
+                                                  ".validate": "newData.isBoolean()"
+                                                },
+                                                "createdAt": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                },
+                                                "dueAt": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                                },
+                                                "completedAt": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                },
+                                                "recurrence": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                                },
+                                                "blockedBy": {
+                                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                                  "$j": {
+                                                    ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                  }
+                                                },
+                                                "comments": {
+                                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                                  "$cm": {
+                                                    ".validate": "newData.hasChildren(['text', 'time'])",
+                                                    "text": {
+                                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                    },
+                                                    "time": {
+                                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                    },
+                                                    "$other": {
+                                                      ".validate": false
+                                                    }
+                                                  }
+                                                },
+                                                "subtasks": {
+                                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                                  "$s": {
+                                                    ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                                    "id": {
+                                                      ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                    },
+                                                    "title": {
+                                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                    },
+                                                    "status": {
+                                                      ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                                    },
+                                                    "expanded": {
+                                                      ".validate": "newData.isBoolean()"
+                                                    },
+                                                    "createdAt": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                    },
+                                                    "dueAt": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                                    },
+                                                    "completedAt": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                    },
+                                                    "recurrence": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                                    },
+                                                    "blockedBy": {
+                                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                                      "$j": {
+                                                        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                      }
+                                                    },
+                                                    "comments": {
+                                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                                      "$cm": {
+                                                        ".validate": "newData.hasChildren(['text', 'time'])",
+                                                        "text": {
+                                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                        },
+                                                        "time": {
+                                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                        },
+                                                        "$other": {
+                                                          ".validate": false
+                                                        }
+                                                      }
+                                                    },
+                                                    "subtasks": {
+                                                      ".validate": "newData.val() === null"
+                                                    },
+                                                    "$other": {
+                                                      ".validate": false
+                                                    }
+                                                  }
+                                                },
+                                                "$other": {
+                                                  ".validate": false
+                                                }
+                                              }
+                                            },
+                                            "$other": {
+                                              ".validate": false
+                                            }
+                                          }
+                                        },
+                                        "$other": {
+                                          ".validate": false
+                                        }
+                                      }
+                                    },
+                                    "$other": {
+                                      ".validate": false
+                                    }
+                                  }
+                                },
+                                "$other": {
+                                  ".validate": false
+                                }
+                              }
+                            },
+                            "$other": {
+                              ".validate": false
+                            }
+                          }
+                        },
+                        "$other": {
+                          ".validate": false
+                        }
+                      }
+                    },
+                    "$other": {
+                      ".validate": false
+                    }
+                  }
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "$other": {
+              ".validate": false
+            },
+            "archivedAt": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+            }
+          }
+        },
+        "trash": {
+          ".validate": "newData.val() === null || newData.hasChildren()",
+          "$t": {
+            ".validate": "newData.hasChildren(['id', 'title'])",
+            "id": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+            },
+            "kind": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(project|subtask|note)$/))"
+            },
+            "deletedAt": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+            },
+            "index": {
+              ".validate": "newData.val() === null || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000)"
+            },
+            "projectId": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/))"
+            },
+            "projectTitle": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 200)"
+            },
+            "parentPath": {
+              ".validate": "newData.val() === null || newData.hasChildren()",
+              "$p": {
+                ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+              }
+            },
+            "node": {
+              ".validate": "newData.val() === null || newData.hasChildren()",
+              "$nk": {
+                ".validate": "newData.val() === null || newData.isBoolean() || newData.isNumber() || newData.isString() && newData.val().length <= 10000 || newData.hasChildren()"
+              }
+            },
+            "$other": {
+              ".validate": "newData.val() === null || newData.isBoolean() || newData.isNumber() || newData.isString() && newData.val().length <= 200 || newData.hasChildren()"
+            }
+          }
+        },
+        "updatedAt": {
+          ".validate": "newData.isNumber() && newData.val() >= 1500000000000 && newData.val() <= 4102444800000"
+        },
+        "appVersion": {
+          ".validate": "newData.isString() && newData.val().matches(/^\\d+\\.\\d+\\.\\d+$/) && newData.val().length <= 20"
+        },
+        "backups": {
+          "$date": {
+            ".validate": "$date.matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/) && (newData.val() === null || newData.hasChildren(['timestamp']))",
+            "projects": {
+              ".validate": "newData.val() === null || newData.hasChildren()",
+              "$i": {
+                ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                "id": {
+                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                },
+                "title": {
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                },
+                "status": {
+                  ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                },
+                "category": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 40)"
+                },
+                "createdAt": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                },
+                "completedAt": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                },
+                "expanded": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "_manualStatus": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "x": {
+                  ".validate": "newData.isNumber() && newData.val() >= -1000000 && newData.val() <= 1000000"
+                },
+                "y": {
+                  ".validate": "newData.isNumber() && newData.val() >= -1000000 && newData.val() <= 1000000"
+                },
+                "recurrence": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                },
+                "subtasks": {
+                  ".validate": "newData.val() === null || newData.hasChildren()",
+                  "$s": {
+                    ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                    "id": {
+                      ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                    },
+                    "title": {
+                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                    },
+                    "status": {
+                      ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                    },
+                    "expanded": {
+                      ".validate": "newData.isBoolean()"
+                    },
+                    "createdAt": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                    },
+                    "dueAt": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                    },
+                    "completedAt": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                    },
+                    "recurrence": {
+                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                    },
+                    "blockedBy": {
+                      ".validate": "newData.val() === null || newData.hasChildren()",
+                      "$j": {
+                        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                      }
+                    },
+                    "comments": {
+                      ".validate": "newData.val() === null || newData.hasChildren()",
+                      "$cm": {
+                        ".validate": "newData.hasChildren(['text', 'time'])",
+                        "text": {
+                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                        },
+                        "time": {
+                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                        },
+                        "$other": {
+                          ".validate": false
+                        }
+                      }
+                    },
+                    "subtasks": {
+                      ".validate": "newData.val() === null || newData.hasChildren()",
+                      "$s": {
+                        ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                        "id": {
+                          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                        },
+                        "title": {
+                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                        },
+                        "status": {
+                          ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                        },
+                        "expanded": {
+                          ".validate": "newData.isBoolean()"
+                        },
+                        "createdAt": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                        },
+                        "dueAt": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                        },
+                        "completedAt": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                        },
+                        "recurrence": {
+                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                        },
+                        "blockedBy": {
+                          ".validate": "newData.val() === null || newData.hasChildren()",
+                          "$j": {
+                            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                          }
+                        },
+                        "comments": {
+                          ".validate": "newData.val() === null || newData.hasChildren()",
+                          "$cm": {
+                            ".validate": "newData.hasChildren(['text', 'time'])",
+                            "text": {
+                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                            },
+                            "time": {
+                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                            },
+                            "$other": {
+                              ".validate": false
+                            }
+                          }
+                        },
+                        "subtasks": {
+                          ".validate": "newData.val() === null || newData.hasChildren()",
+                          "$s": {
+                            ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                            "id": {
+                              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                            },
+                            "title": {
+                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                            },
+                            "status": {
+                              ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                            },
+                            "expanded": {
+                              ".validate": "newData.isBoolean()"
+                            },
+                            "createdAt": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                            },
+                            "dueAt": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                            },
+                            "completedAt": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                            },
+                            "recurrence": {
+                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                            },
+                            "blockedBy": {
+                              ".validate": "newData.val() === null || newData.hasChildren()",
+                              "$j": {
+                                ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                              }
+                            },
+                            "comments": {
+                              ".validate": "newData.val() === null || newData.hasChildren()",
+                              "$cm": {
+                                ".validate": "newData.hasChildren(['text', 'time'])",
+                                "text": {
+                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                },
+                                "time": {
+                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                },
+                                "$other": {
+                                  ".validate": false
+                                }
+                              }
+                            },
+                            "subtasks": {
+                              ".validate": "newData.val() === null || newData.hasChildren()",
+                              "$s": {
+                                ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                "id": {
+                                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                },
+                                "title": {
+                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                },
+                                "status": {
+                                  ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                },
+                                "expanded": {
+                                  ".validate": "newData.isBoolean()"
+                                },
+                                "createdAt": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                },
+                                "dueAt": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                },
+                                "completedAt": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                },
+                                "recurrence": {
+                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                },
+                                "blockedBy": {
+                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                  "$j": {
+                                    ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                  }
+                                },
+                                "comments": {
+                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                  "$cm": {
+                                    ".validate": "newData.hasChildren(['text', 'time'])",
+                                    "text": {
+                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                    },
+                                    "time": {
+                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                    },
+                                    "$other": {
+                                      ".validate": false
+                                    }
+                                  }
+                                },
+                                "subtasks": {
+                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                  "$s": {
+                                    ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                    "id": {
+                                      ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                    },
+                                    "title": {
+                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                    },
+                                    "status": {
+                                      ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                    },
+                                    "expanded": {
+                                      ".validate": "newData.isBoolean()"
+                                    },
+                                    "createdAt": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                    },
+                                    "dueAt": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                    },
+                                    "completedAt": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                    },
+                                    "recurrence": {
+                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                    },
+                                    "blockedBy": {
+                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                      "$j": {
+                                        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                      }
+                                    },
+                                    "comments": {
+                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                      "$cm": {
+                                        ".validate": "newData.hasChildren(['text', 'time'])",
+                                        "text": {
+                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                        },
+                                        "time": {
+                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                        },
+                                        "$other": {
+                                          ".validate": false
+                                        }
+                                      }
+                                    },
+                                    "subtasks": {
+                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                      "$s": {
+                                        ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                        "id": {
+                                          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                        },
+                                        "title": {
+                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                        },
+                                        "status": {
+                                          ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                        },
+                                        "expanded": {
+                                          ".validate": "newData.isBoolean()"
+                                        },
+                                        "createdAt": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                        },
+                                        "dueAt": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                        },
+                                        "completedAt": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                        },
+                                        "recurrence": {
+                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                        },
+                                        "blockedBy": {
+                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                          "$j": {
+                                            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                          }
+                                        },
+                                        "comments": {
+                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                          "$cm": {
+                                            ".validate": "newData.hasChildren(['text', 'time'])",
+                                            "text": {
+                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                            },
+                                            "time": {
+                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                            },
+                                            "$other": {
+                                              ".validate": false
+                                            }
+                                          }
+                                        },
+                                        "subtasks": {
+                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                          "$s": {
+                                            ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                            "id": {
+                                              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                            },
+                                            "title": {
+                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                            },
+                                            "status": {
+                                              ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                            },
+                                            "expanded": {
+                                              ".validate": "newData.isBoolean()"
+                                            },
+                                            "createdAt": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                            },
+                                            "dueAt": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                            },
+                                            "completedAt": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                            },
+                                            "recurrence": {
+                                              ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                            },
+                                            "blockedBy": {
+                                              ".validate": "newData.val() === null || newData.hasChildren()",
+                                              "$j": {
+                                                ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                              }
+                                            },
+                                            "comments": {
+                                              ".validate": "newData.val() === null || newData.hasChildren()",
+                                              "$cm": {
+                                                ".validate": "newData.hasChildren(['text', 'time'])",
+                                                "text": {
+                                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                },
+                                                "time": {
+                                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                },
+                                                "$other": {
+                                                  ".validate": false
+                                                }
+                                              }
+                                            },
+                                            "subtasks": {
+                                              ".validate": "newData.val() === null || newData.hasChildren()",
+                                              "$s": {
+                                                ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                                "id": {
+                                                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                },
+                                                "title": {
+                                                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                },
+                                                "status": {
+                                                  ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                                },
+                                                "expanded": {
+                                                  ".validate": "newData.isBoolean()"
+                                                },
+                                                "createdAt": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                },
+                                                "dueAt": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                                },
+                                                "completedAt": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                },
+                                                "recurrence": {
+                                                  ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                                },
+                                                "blockedBy": {
+                                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                                  "$j": {
+                                                    ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                  }
+                                                },
+                                                "comments": {
+                                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                                  "$cm": {
+                                                    ".validate": "newData.hasChildren(['text', 'time'])",
+                                                    "text": {
+                                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                    },
+                                                    "time": {
+                                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                    },
+                                                    "$other": {
+                                                      ".validate": false
+                                                    }
+                                                  }
+                                                },
+                                                "subtasks": {
+                                                  ".validate": "newData.val() === null || newData.hasChildren()",
+                                                  "$s": {
+                                                    ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                                    "id": {
+                                                      ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                    },
+                                                    "title": {
+                                                      ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                    },
+                                                    "status": {
+                                                      ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                                    },
+                                                    "expanded": {
+                                                      ".validate": "newData.isBoolean()"
+                                                    },
+                                                    "createdAt": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                    },
+                                                    "dueAt": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                                    },
+                                                    "completedAt": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                    },
+                                                    "recurrence": {
+                                                      ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                                    },
+                                                    "blockedBy": {
+                                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                                      "$j": {
+                                                        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                      }
+                                                    },
+                                                    "comments": {
+                                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                                      "$cm": {
+                                                        ".validate": "newData.hasChildren(['text', 'time'])",
+                                                        "text": {
+                                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                        },
+                                                        "time": {
+                                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                        },
+                                                        "$other": {
+                                                          ".validate": false
+                                                        }
+                                                      }
+                                                    },
+                                                    "subtasks": {
+                                                      ".validate": "newData.val() === null || newData.hasChildren()",
+                                                      "$s": {
+                                                        ".validate": "newData.hasChildren(['id', 'title', 'status'])",
+                                                        "id": {
+                                                          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                        },
+                                                        "title": {
+                                                          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                        },
+                                                        "status": {
+                                                          ".validate": "newData.isString() && newData.val().matches(/^(planned|ongoing|waiting|completed)$/)"
+                                                        },
+                                                        "expanded": {
+                                                          ".validate": "newData.isBoolean()"
+                                                        },
+                                                        "createdAt": {
+                                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                        },
+                                                        "dueAt": {
+                                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/))"
+                                                        },
+                                                        "completedAt": {
+                                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                                                        },
+                                                        "recurrence": {
+                                                          ".validate": "newData.val() === null || (newData.isString() && newData.val().matches(/^(daily|weekdays|weekly|biweekly|monthly)$/))"
+                                                        },
+                                                        "blockedBy": {
+                                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                                          "$j": {
+                                                            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                                                          }
+                                                        },
+                                                        "comments": {
+                                                          ".validate": "newData.val() === null || newData.hasChildren()",
+                                                          "$cm": {
+                                                            ".validate": "newData.hasChildren(['text', 'time'])",
+                                                            "text": {
+                                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+                                                            },
+                                                            "time": {
+                                                              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                                                            },
+                                                            "$other": {
+                                                              ".validate": false
+                                                            }
+                                                          }
+                                                        },
+                                                        "subtasks": {
+                                                          ".validate": "newData.val() === null"
+                                                        },
+                                                        "$other": {
+                                                          ".validate": false
+                                                        }
+                                                      }
+                                                    },
+                                                    "$other": {
+                                                      ".validate": false
+                                                    }
+                                                  }
+                                                },
+                                                "$other": {
+                                                  ".validate": false
+                                                }
+                                              }
+                                            },
+                                            "$other": {
+                                              ".validate": false
+                                            }
+                                          }
+                                        },
+                                        "$other": {
+                                          ".validate": false
+                                        }
+                                      }
+                                    },
+                                    "$other": {
+                                      ".validate": false
+                                    }
+                                  }
+                                },
+                                "$other": {
+                                  ".validate": false
+                                }
+                              }
+                            },
+                            "$other": {
+                              ".validate": false
+                            }
+                          }
+                        },
+                        "$other": {
+                          ".validate": false
+                        }
+                      }
+                    },
+                    "$other": {
+                      ".validate": false
+                    }
+                  }
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "categories": {
+              ".validate": "newData.val() === null || newData.hasChildren()",
+              "$c": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+              }
+            },
+            "timestamp": {
+              ".validate": "newData.isNumber() && newData.val() >= 1500000000000 && newData.val() <= 4102444800000"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}
