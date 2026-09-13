@@ -299,7 +299,10 @@
     #pf-root #pf-toolbar-back { display: none !important; }
     #pf-root .pf-mobile-back { display: none !important; }
     #pf-root .pf-toolbar { display: none !important; }
-    #pf-root .pf-search-wrap.pf-search-open {
+    /* Fixed search bar is for touch layouts only — desktop-class devices use
+       the anchored popover below the search icon instead (without :not(), this
+       rule hijacked desktop windows ≤1400px wide and shifted the whole row). */
+    #pf-root:not(.pf-device-desktop) .pf-search-wrap.pf-search-open {
       position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: calc(var(--z-chrome) + 1);
       background: var(--card); border: 1px solid var(--card-border);
       border-radius: var(--radius-pill); padding: 6px 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
@@ -310,13 +313,18 @@
       from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
-    #pf-root .pf-search-wrap.pf-search-open .pf-search-toggle { display: none; }
-    #pf-root .pf-search-wrap.pf-search-open .pf-search {
+    #pf-root:not(.pf-device-desktop) .pf-search-wrap.pf-search-open .pf-search-toggle { display: none; }
+    /* inside the fixed bar, the popover becomes an ordinary inline container */
+    #pf-root:not(.pf-device-desktop) .pf-search-wrap.pf-search-open .pf-search-pop {
+      position: static; opacity: 1; visibility: visible; transform: none; pointer-events: auto;
+      display: flex; flex: 1; min-width: 0; padding: 0; border: none; background: transparent; box-shadow: none;
+    }
+    #pf-root:not(.pf-device-desktop) .pf-search-wrap.pf-search-open .pf-search-pop .pf-search {
       position: static; transform: none; width: 100% !important; max-width: 100% !important;
       opacity: 1; padding: 4px 8px; border: none; background: transparent; flex: 1;
       font-size: var(--font-size-base); height: auto;
     }
-    #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { width: 100% !important; max-width: 100% !important; border: none; }
+    #pf-root:not(.pf-device-desktop) .pf-search-wrap.pf-search-open .pf-search-pop .pf-search:focus { width: 100% !important; max-width: 100% !important; border: none; }
     #pf-root .pf-overdue-banner { top: 0; }
     #pf-root .pf-toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; top: auto !important; transform: translateX(-50%) translateY(12px) !important; z-index: calc(var(--z-toast) + 1) !important; }
     #pf-root .pf-toast.pf-toast-show { transform: translateX(-50%) translateY(0) !important; }
@@ -568,39 +576,48 @@
     outline-offset: -1px;
   }
   #pf-root .pf-stat.pf-stat-active b { color: var(--stat-c, var(--accent)); }
-  #pf-root .pf-search-wrap { position: relative; display: inline-flex; align-items: center; }
+  #pf-root .pf-search-wrap { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
   #pf-root .pf-search-toggle { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); cursor: pointer; border: none; padding: 4px 6px; border-radius: var(--radius-control); transition: color 0.12s, background 0.12s; }
   #pf-root .pf-search-toggle:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+  /* Search opens as a floating popover BELOW the icon: the toolbar row never
+     changes width, so opening/closing moves nothing (the old inline-expanding
+     input pushed every sibling after it onto a second row). */
+  #pf-root .pf-search-pop {
+    position: absolute; top: calc(100% + 8px); left: 0;
+    display: flex; align-items: center; gap: 4px;
+    min-width: 280px; padding: 6px 8px;
+    background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius-control);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35); z-index: calc(var(--z-chrome) + 1);
+    opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none;
+    transition: opacity 0.18s var(--ease-out-strong), transform 0.18s var(--ease-out-strong), visibility 0s linear 0.18s;
+  }
+  #pf-root .pf-search-wrap.pf-search-open .pf-search-pop {
+    opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto;
+    transition-delay: 0s;
+  }
   #pf-root .pf-search {
-    font-family: var(--font-sans); font-size: calc(var(--font-size-base) - 4px); padding: 5px 22px 5px 8px; border-radius: 6px;
+    font-family: var(--font-sans); font-size: calc(var(--font-size-base) - 2px);
+    flex: 1; width: 100%; min-width: 0; padding: 5px 8px; border-radius: 6px;
     border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text);
-    outline: none; width: 0; max-width: 0; opacity: 0; padding-left: 0; padding-right: 0; border: none;
-    caret-color: transparent; visibility: hidden;
-    transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s, visibility 0s linear 0.2s;
+    outline: none;
   }
-  #pf-root .pf-search-wrap.pf-search-open .pf-search {
-    width: 160px; max-width: 160px; opacity: 1; padding: 5px 22px 5px 8px;
-    border: 1px solid var(--card-border);
-    caret-color: auto; visibility: visible; transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s;
-  }
-  #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { border-color: var(--accent); width: 170px; max-width: 170px; }
   #pf-root .pf-search::placeholder { color: var(--text-dim); }
+  #pf-root .pf-search:focus { border-color: var(--accent); }
   #pf-root .pf-search-clear {
-    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-    background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 4px); line-height: 1;
-    width: 16px; height: 16px; border-radius: 50%; display: none; align-items: center;
+    background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); line-height: 1;
+    width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center;
     justify-content: center; cursor: pointer; transition: color 0.15s, background 0.15s;
+    flex-shrink: 0; visibility: hidden;
   }
   #pf-root .pf-search-clear:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
-  #pf-root .pf-search-wrap.pf-has-value .pf-search-clear { display: flex; }
+  #pf-root .pf-search-wrap.pf-has-value .pf-search-clear { visibility: visible; }
   #pf-root .pf-search-close {
-    position: relative; background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); line-height: 1;
-    width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center;
-    justify-content: center; cursor: pointer; border: 1px solid var(--card-border); margin-left: 4px;
-    transition: color 0.15s, background 0.15s;
+    background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); line-height: 1;
+    width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; border: 1px solid var(--card-border);
+    transition: color 0.15s, background 0.15s; flex-shrink: 0;
   }
   #pf-root .pf-search-close:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
-  #pf-root .pf-search-wrap.pf-search-open .pf-search-close { display: flex; }
   @media (max-width: 900px) {
     #pf-root .pf-search-wrap.pf-search-open ~ .pf-tb-group,
     #pf-root .pf-search-wrap.pf-search-open ~ .pf-options-mobile,
@@ -2288,7 +2305,7 @@
       <span id="pf-arrange" title="Auto-arrange" style="display:none;"></span>
       <span id="pf-autofit-all" title="Auto-fit all" style="display:none;"></span>
     </div>
-    <span class="pf-search-wrap" id="pf-search-wrap"><button class="pf-search-toggle" id="pf-search-toggle" title="Search"><span data-ic="search"></span></button><input type="text" class="pf-search" id="pf-search" placeholder="Search…" spellcheck="false"><button class="pf-search-clear" id="pf-search-clear" title="Clear search">×</button><button class="pf-search-close" id="pf-search-close" title="Close search">×</button></span>
+    <span class="pf-search-wrap" id="pf-search-wrap"><button class="pf-search-toggle" id="pf-search-toggle" title="Search"><span data-ic="search"></span></button><span class="pf-search-pop"><input type="text" class="pf-search" id="pf-search" placeholder="Search…" spellcheck="false"><button class="pf-search-clear" id="pf-search-clear" title="Clear search">×</button><button class="pf-search-close" id="pf-search-close" title="Close search">×</button></span></span>
     <button class="pf-undo-btn pf-shortcuts-hint" id="pf-shortcuts-hint" title="Keyboard Shortcuts (?)">?</button>
     <div class="pf-stats" id="pf-stats"></div>
     <div class="pf-save" id="pf-save"></div>
