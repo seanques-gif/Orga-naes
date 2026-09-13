@@ -36,11 +36,11 @@ Three independent workstreams picked up from the redesign plan's recorded leftov
 
 ## 4. Phases
 
-### Phase B — List-render chunking ⬜ (first: smallest, independent)
-- B1 ⬜ **Measure before:** rebuild the 42-project perf fixture; record long-task profile at 42 / 126 / 250 synthetic projects (before-numbers into REDESIGN-FINDINGS.md).
-- B2 ⬜ **Slice `render()`:** split list + detail + category zones into rAF-scheduled chunks inside the existing render loop; input arriving mid-render cancels superfluous chunks.
-- B3 ⬜ **Interaction priority:** status-toggle and expand paths paint the touched row in frame 1; full re-render deferred behind it.
-- B4 ⬜ **Measure after + regression note:** same fixture must show no long task > 50ms at 3× dataset; INP unchanged or better. (Vm-harness perf assertion explicitly out of scope — document the manual fixture instead.)
+### Phase B — List-render chunking ✅ COMPLETE 2026-09-13
+- B1 ✅ **Measured before:** warm baseline 10.3ms@42 / 62.8ms@126 / 156.2ms@250 (list build dominates, super-linear; cold-start@42 replicates the old ~55ms figure). Full tables in REDESIGN-FINDINGS.md Phase B section.
+- B2 ✅ **Sliced:** category labels sync; list items append in ~6ms rAF slices above a 60-project threshold (`0b4a4af`). Below threshold: byte-identical classic path.
+- B3 ✅ **Interaction priority + coalescing:** sync cost at 250 dropped 156→16ms (~85%); stale-chain token cancels superseded builds (burst-of-3 proof), bounding search-keystroke re-render cost.
+- B4 ✅ **Measured after:** 188/250 rows correct with the completed-filter math exact; 42-project board unchanged (15.0 vs 14.8ms); full suite green (99/99, pin verified). Virtualization was already present (`_virtualizeList`) and still runs post-chunk.
 
 ### Phase A — Notes↔Project linking ⬜ (second: the feature)
 - A1 ⬜ **Parser:** detect `@project:<id>` tokens in note bodies at render time; name-fallback resolution (N2).
