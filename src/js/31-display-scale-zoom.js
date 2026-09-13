@@ -26,6 +26,25 @@
   async function loadScale() { try { const res = await safeGet(SCALE_KEY(), false); if (res && res.value) { scaleInput.value = res.value; applyScale(res.value); } } catch (e) {} }
   loadScale();
 
+  // Font family picker (Appearance): '' = console default (IBM Plex via Google
+  // Fonts), 'inter' = Inter (iOS-like; also loaded from Google Fonts), 'system'
+  // = platform UI stack. Applied through the --font-sans token so every
+  // component follows; choice persists per device like the size/scale sliders.
+  const FONTFAM_KEY = () => 'project-flow-font-family-' + currentDeviceSuffix();
+  const FONT_STACKS = {
+    inter: "'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    system: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+  };
+  const fontSel = document.getElementById('pf-font-family');
+  function applyFontFamily(v) {
+    if (v && FONT_STACKS[v]) root.style.setProperty('--font-sans', FONT_STACKS[v]);
+    else root.style.removeProperty('--font-sans');
+  }
+  if (fontSel) {
+    fontSel.addEventListener('change', () => { applyFontFamily(fontSel.value); safeSet(FONTFAM_KEY(), fontSel.value, false); });
+    (async function loadFontFamily() { try { const res = await safeGet(FONTFAM_KEY(), false); if (res && res.value !== undefined) { fontSel.value = res.value; applyFontFamily(res.value); } } catch (e) {} })();
+  }
+
   // Re-apply the correct device's saved size if the device class changes later
   // (e.g. resizing a desktop browser window, or rotating/switching device type).
   let _pfLastDeviceSuffix = currentDeviceSuffix();

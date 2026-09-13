@@ -21,6 +21,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Inter is opt-in (Appearance > Font); fetched with display=swap, only
+     rendered when the user picks it. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <!--
@@ -242,6 +245,14 @@ __ORGA_CSS_MAIN__</style>
       </div>
       <input type="range" id="pf-font-size" class="pf-range-input" style="display:none;" min="10" max="20" step="1" value="15">
       <span id="pf-font-size-val" style="display:none;">15px</span>
+      <label class="pf-options-label" for="pf-font-family">Font</label>
+      <div class="pf-options-row">
+        <select id="pf-font-family" class="pf-due-filter pf-font-family-select" title="Interface font">
+          <option value="">Console default (IBM Plex)</option>
+          <option value="inter">Inter (clean, iOS-like)</option>
+          <option value="system">System (Segoe UI / SF Pro / Roboto)</option>
+        </select>
+      </div>
       <div class="pf-theme-divider">
         <button class="pf-undo-btn pf-theme-btn" id="pf-theme-auto">Auto (System)</button>
       </div>
