@@ -53,7 +53,7 @@ check("default-src is 'self'", (directives['default-src'] || []).join(' ') === "
 const ALLOWED = {
   'script-src': ["'self'", 'https://www.gstatic.com', actualHash],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-  'font-src': ['https://fonts.gstatic.com'],
+  'font-src': ['https://fonts.gstatic.com', 'data:'],
   'img-src': ["'self'", 'data:'],
   'connect-src': ["'self'", 'https://*.firebasedatabase.app', 'wss://*.firebasedatabase.app', 'https://*.googleapis.com', 'wss://*.firebaseio.com'],
   'frame-src': ["'self'", 'https://*.firebaseapp.com'],

@@ -54,7 +54,7 @@ const CSP = [
   // 'unsafe-inline' is honest necessity: the app is built on inline style
   // attributes/blocks by design (single-file, no nonce possible in static HTML).
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  'font-src https://fonts.gstatic.com',
+  'font-src https://fonts.gstatic.com data:',
   "img-src 'self' data:",
   // RTDB REST + websocket (wildcard keeps scratch/practice copies working),
   // Auth REST (identitytoolkit/securetoken under googleapis.com).
