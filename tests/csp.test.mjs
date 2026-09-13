@@ -15,6 +15,7 @@ import { readFileSync } from 'fs';
 import { createHash } from 'crypto';
 
 const html = readFileSync(new URL('../Orga-naes.html', import.meta.url), 'utf8');
+const template = readFileSync(new URL('../src/template.html', import.meta.url), 'utf8');
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -65,13 +66,21 @@ for (const [dir, expected] of Object.entries(ALLOWED)) {
 }
 check('upgrade-insecure-requests present', directives['upgrade-insecure-requests'] !== undefined);
 
-// ---- 5. every external script src is policy-covered ---------------------------
-const externalScripts = [...html.matchAll(/<script\s+src="([^"]+)"/g)].map(m => m[1]);
-check('external scripts exist (3 firebase bundles)', externalScripts.length === 3);
-check('all external scripts are gstatic https', externalScripts.every(s => s.startsWith('https://www.gstatic.com/')));
+// ---- 5. every external script src is policy-covered AND SRI-pinned -----------
+const externalScriptTags = [...html.matchAll(/<script\s+src="([^"]+)"([^>]*)><\/script>/g)];
+check('external scripts exist (3 firebase bundles)', externalScriptTags.length === 3);
+check('all external scripts are gstatic https', externalScriptTags.every(m => m[1].startsWith('https://www.gstatic.com/')));
+// SRI gate (Phase C3): a CDN script without integrity = supply-chain hole.
+for (const [, src, attrs] of externalScriptTags) {
+  const name = src.split('/').pop();
+  check(`SRI: ${name} carries sha384 integrity`, /integrity="sha384-[A-Za-z0-9+/=]{64}"/.test(attrs));
+  check(`SRI: ${name} sets crossorigin=anonymous`, /crossorigin="anonymous"/.test(attrs));
+}
+// Template pins SRI too (not just the artifact — build must preserve it).
+const tmplScriptTags = [...template.matchAll(/<script\s+src="([^"]+)"([^>]*)><\/script>/g)];
+check('template: all CDN scripts carry integrity', tmplScriptTags.length === 3 && tmplScriptTags.every(m => /integrity="sha384-/.test(m[2])));
 
 // ---- 6. template owns the policy (token present = generated, not hand-edited) --
-const template = readFileSync(new URL('../src/template.html', import.meta.url), 'utf8');
 check('template carries __ORGA_CSP__ token', template.includes('__ORGA_CSP__'));
 
 console.log(`CSP gate: ${pass} passed, ${fail} failed`);
