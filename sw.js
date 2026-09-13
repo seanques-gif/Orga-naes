@@ -1,4 +1,4 @@
-const CACHE_VERSION = '2026-09-13-0006';
+const CACHE_VERSION = '2026-09-13-0007';
 const CACHE_NAME = 'orga-naes-' + CACHE_VERSION;
 const ASSETS = [
   './Orga-naes.html',

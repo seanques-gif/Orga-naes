@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-E93eFJrEfvY1ZooScaSZX27kcNdTvY389Sdo8jJ9aC8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-8vjq2rSLnuolx+0i0Jngve6KYAEwC1TA5SBAsMIjmN4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1841,6 +1841,9 @@
      boot-hiding intentionally stays inline wherever JS reveals via style.display=''. */
   /* generic utilities */
   #pf-root .pf-opt-btn { justify-content: flex-start; }
+  /* Signed-out sync buttons: clickable (so the tap can explain itself via
+     toast) but visually dimmed so they still read as unavailable. */
+  #pf-root .pf-opt-btn.pf-opt-off { opacity: 0.45; }
   #pf-root .pf-btn-rel { position: relative; }
   #pf-root .pf-tb-right { margin-left: auto; }
   #pf-root .pf-mt-4 { margin-top: 4px; }
@@ -9603,6 +9606,10 @@ if ('serviceWorker' in navigator) {
   let _switchingAccount = false;
   let _pendingSwitchUser = null;
 
+  // The buttons stay clickable when signed out so a tap explains itself:
+  // silent `disabled` left users tapping a dead control with zero feedback
+  // (the '.pf-opt-btn[disabled]' dimming remains as a visual affordance,
+  // but the guard toasts below are what the user actually experiences).
   function setSignedIn(user) {
     _fbUser = user;
     statusEl.textContent = '✓ Signed in as ' + (user.displayName || user.email);
@@ -9611,6 +9618,8 @@ if ('serviceWorker' in navigator) {
     signoutBtn.style.display = '';
     pushBtn.disabled = false;
     pullBtn.disabled = false;
+    pushBtn.classList.remove('pf-opt-off');
+    pullBtn.classList.remove('pf-opt-off');
     if (!window._pfLoaded) { setTimeout(function() { setSignedIn(user); }, 500); return; }
 
     // Force a fresh pull whenever either: (a) this is a different account
@@ -9757,8 +9766,10 @@ if ('serviceWorker' in navigator) {
     statusEl.style.color = 'var(--text-dim)';
     signinBtn.style.display = '';
     signoutBtn.style.display = 'none';
-    pushBtn.disabled = true;
-    pullBtn.disabled = true;
+    pushBtn.disabled = false;
+    pullBtn.disabled = false;
+    pushBtn.classList.add('pf-opt-off');
+    pullBtn.classList.add('pf-opt-off');
     stopListener();
   }
 
@@ -9832,7 +9843,7 @@ if ('serviceWorker' in navigator) {
   // already handles correctly, so this button now goes through it instead of
   // duplicating (and drifting from) that logic.
   pushBtn.addEventListener('click', function() {
-    if (!_fbUser) return;
+    if (!_fbUser) { window._pf.showToast('⚠ Sign in first to push', true); return; }
     window._firebasePushManual();
   });
 
