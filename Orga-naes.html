@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Sn0XBpHUnwACQ7i8x4dLb3Y70F2COzPmGWYOgTETF8c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-L9M4DdmF89TTJLEdWKvOaNZ0Fq0QfdOvFE6248m4LIo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9511,18 +9511,49 @@ if ('serviceWorker' in navigator) {
       }, ms);
     });
   }
-  // The six standard cloud reads for the signed-in account, raced against the
-  // shared timeout. One builder so the SDK attempt and the REST fallback
-  // (withRetry below) return the identical results[i].val() shape.
+  // The six standard cloud reads for the signed-in account. RAW — no timeout
+  // race; callers cap it. One builder so both transports return the identical
+  // results[i].val() shape.
   function sdkReadResults() {
-    return Promise.race([Promise.all([
+    return Promise.all([
       userRef().once('value'),
       catRef().once('value'),
       archiveRef().once('value'),
       trashRef().once('value'),
       notesRef().once('value'),
       noteTombstonesRef().once('value')
-    ]), cloudReadTimeout()]);
+    ]);
+  }
+  // Speed: the original app's push/pull felt instant because each did ONE
+  // socket read. The rebuild reads six slices and (since the hardened design)
+  // compares before writing — necessary, but slow when the websocket is
+  // blocked on a machine (observed: every op burned the full 20s timeout
+  // before the REST fallback even started). So reads now HOT-FALLBACK: the
+  // SDK gets a short head start, then REST starts in parallel and whichever
+  // answers first wins. Healthy socket → still instant; blocked socket →
+  // ~3s first op, then pure REST for the rest of the session (transport
+  // memory in withRetry). Seam: _pf._restFallbackDelayMs (tests), and the
+  // overall 20s cap from cloudReadTimeout still applies.
+  function cloudReads() {
+    if (_sdkTimedOutThisSession && !(window._pf && window._pf._forceSdkFirst)) {
+      return Promise.race([restReadResults(), cloudReadTimeout()]);
+    }
+    var restDelay = (typeof window !== 'undefined' && window._pf && typeof window._pf._restFallbackDelayMs === 'number') ? window._pf._restFallbackDelayMs : 3000;
+    var settled = false;
+    var sdkP = sdkReadResults().then(function(r) { settled = true; return r; });
+    // REST only actually starts if the socket is STILL pending at the head-start
+    // mark — no wasted token/fetches when the SDK answered quickly.
+    var restP = new Promise(function(resolve) {
+      setTimeout(function() {
+        if (!settled) {
+          // The socket hasn't answered within the head start — treat it as
+          // slow for the rest of the session so later ops skip the wait.
+          _sdkTimedOutThisSession = true;
+          resolve(restReadResults());
+        }
+      }, restDelay);
+    });
+    return Promise.race([Promise.race([sdkP, restP]), cloudReadTimeout()]);
   }
   // Last-resort transport: read the account's data directly over HTTPS REST
   // (<databaseURL>/<path>.json?auth=<idToken>) instead of the SDK websocket.
@@ -9553,6 +9584,17 @@ if ('serviceWorker' in navigator) {
   // same already-settled failure again (the old form made the retry purely
   // decorative). The factory is also what lets attempt #2 switch transports —
   // the REST fallback above. Test seam: _pf._cloudReadRetryDelayMs.
+  //
+  // TRANSPORT MEMORY: once the SDK websocket has timed out once this session,
+  // every later operation starts on REST directly. On a machine where the
+  // realtime socket is blocked (extension, proxy — observed 2026-09-13),
+  // retrying the dead socket on each push/pull burned the full 20s timeout
+  // every time, making cloud ops feel 10-20x slower than the original app
+  // even though the fallback itself was fast. First use still prefers the
+  // SDK (it's also the realtime channel for the live listener), but the
+  // session never pays for the same dead socket twice. Test seam:
+  // _pf._forceSdkFirst resets the memory mid-test.
+  var _sdkTimedOutThisSession = false;
   function withRetry(makeAttempt, attemptLabel) {
     function run(attempt, p) {
       return p.then(null, function(err) {
@@ -9563,6 +9605,7 @@ if ('serviceWorker' in navigator) {
         // and made a *successful* fallback pull read as a failure
         // (user report 2026-09-13: modal opened, data arrived, badge said
         // "pull retry (REST fallback) / Cloud is not responding").
+        _sdkTimedOutThisSession = true;
         if (window._pf && window._pf.showToast) window._pf.showToast('☁ Cloud is slow — trying the backup route…');
         var delay = (typeof window !== 'undefined' && window._pf && typeof window._pf._cloudReadRetryDelayMs === 'number') ? window._pf._cloudReadRetryDelayMs : 2000;
         return new Promise(function(resolve) { setTimeout(resolve, delay); }).then(function() {
@@ -9570,7 +9613,8 @@ if ('serviceWorker' in navigator) {
         });
       });
     }
-    return run(1, makeAttempt(1));
+    var first = (!_sdkTimedOutThisSession || (window._pf && window._pf._forceSdkFirst)) ? 1 : 2;
+    return run(first, makeAttempt(first));
   }
   // Set whenever clearLocalUserData() wipes the local cache (sign-out or a
   // detected account switch), cleared only once a pull has actually
@@ -9998,12 +10042,12 @@ if ('serviceWorker' in navigator) {
     // through the shared catch like any other failure.
     const notesSettled = (window._pf && typeof window._pf.notesReady === 'function' && window._pf.notesReady.then) ? window._pf.notesReady.catch(function() {}) : Promise.resolve();
     withRetry(function(attempt) {
-      // Attempt 2 is a different transport entirely: plain HTTPS REST instead of
-      // the SDK websocket. If the realtime connection is dead in a way the
-      // goOffline/goOnline reset can't heal, the fallback still gets your data.
+      // Attempt 1 rides cloudReads() — SDK with a hot REST fallback racing it.
+      // Attempt 2 (only reached if BOTH timed out) is pure REST after the
+      // forced reconnect inside cloudReadTimeout().
       // Both attempts still wait for the notes async boot first (see below).
       return notesSettled.then(function() {
-        return attempt === 1 ? sdkReadResults() : restReadResults();
+        return attempt === 1 ? cloudReads() : restReadResults();
       });
     }, 'pull').then(function(results) {
       const projVal = results[0].val();
@@ -10467,7 +10511,7 @@ if ('serviceWorker' in navigator) {
     }
     window._pf.showToast('☁ Checking cloud data...');
     withRetry(function(attempt) {
-      return attempt === 1 ? sdkReadResults() : restReadResults();
+      return attempt === 1 ? cloudReads() : restReadResults();
     }, 'push-check').then(function(results) {
       const projVal = results[0].val();
       const catVal = results[1].val();
