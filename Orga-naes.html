@@ -498,7 +498,7 @@
   #pf-root .pf-toolbar .pf-stats + .pf-tb-group::before,
   #pf-root .pf-toolbar .pf-tb-group + .pf-stats::before {
     content: ''; width: 1px; height: 20px; background: var(--card-border);
-    margin-right: 6px; flex-shrink: 0; opacity: 0.7;
+    margin-right: 4px; flex-shrink: 0; opacity: 0.7;
   }
   #pf-root .pf-title {
     font-family: var(--font-sans); font-weight: 700; font-size: calc(var(--font-size-base) - 2px);
@@ -543,17 +543,23 @@
     background: color-mix(in srgb, var(--accent) 14%, transparent);
   }
   #pf-root .pf-stats {
-    display: flex; gap: 2px; margin-left: auto; font-size: calc(var(--font-size-base) - 5px);
+    display: flex; gap: 1px; margin-left: auto; font-size: calc(var(--font-size-base) - 5px);
     background: var(--sub-bg); border: 1px solid var(--card-border); border-radius: 999px;
-    padding: 2px; align-items: center;
+    padding: 2px; align-items: center; flex-shrink: 0;
   }
   #pf-root .pf-stat {
-    padding: 3px 9px; border-radius: 999px; font-weight: 600; display: flex;
-    align-items: center; gap: 5px; white-space: nowrap; cursor: pointer;
+    padding: 2px 7px; border-radius: 999px; font-weight: 600; display: flex;
+    align-items: center; gap: 4px; white-space: nowrap; cursor: pointer;
     color: var(--text-dim); transition: color 0.12s, background 0.12s;
   }
-  #pf-root .pf-stat b { color: var(--text); font-weight: 700; font-size: calc(var(--font-size-base) - 3px); }
+  #pf-root .pf-stat b { color: var(--text); font-weight: 700; font-size: calc(var(--font-size-base) - 4px); }
   #pf-root .pf-stat span { font-size: calc(var(--font-size-base) - 6px); }
+  /* Narrow desktop: drop the labels first, keep dot + count (the bar must stay
+     one row — the pre-existing flex-wrap:wrap pushed the whole capsule to a
+     second row the moment my additions outgrew the width). */
+  @media (max-width: 1250px) {
+    #pf-root .pf-stat span { display: none; }
+  }
   #pf-root .pf-stat:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
   #pf-root .pf-stat.pf-stat-active {
     background: var(--stat-bg, color-mix(in srgb, var(--stat-c, var(--accent)) 15%, transparent));
@@ -577,7 +583,7 @@
     border: 1px solid var(--card-border);
     caret-color: auto; visibility: visible; transition: width 0.2s, opacity 0.2s, padding 0.2s, border 0.2s, max-width 0.2s;
   }
-  #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { border-color: var(--accent); width: 190px; max-width: 190px; }
+  #pf-root .pf-search-wrap.pf-search-open .pf-search:focus { border-color: var(--accent); width: 170px; max-width: 170px; }
   #pf-root .pf-search::placeholder { color: var(--text-dim); }
   #pf-root .pf-search-clear {
     position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
