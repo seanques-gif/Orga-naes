@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-z4ArirhL5z8+jim4O8D50o/BYZHHv3zc7rzOTznXmNE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-OelX/O3U0QB115LqWcUyXGdY9yQZxcFLDxKPAdaSsbo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -400,7 +400,7 @@
        theme-dependent layers: palette and type. */
 
     /* Typography (Mission Control): sans for meaning, mono for measurement. */
-    --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-sans: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
     --font-size-base: clamp(11px, 1.8vw, 14px);
     font-family: var(--font-sans);
@@ -2381,8 +2381,8 @@
       <label class="pf-options-label" for="pf-font-family">Font</label>
       <div class="pf-options-row">
         <select id="pf-font-family" class="pf-due-filter pf-font-family-select" title="Interface font">
-          <option value="">Console default (IBM Plex)</option>
-          <option value="inter">Inter (clean, iOS-like)</option>
+          <option value="">Inter (default, iOS-like)</option>
+          <option value="plex">Console classic (IBM Plex)</option>
           <option value="system">System (Segoe UI / SF Pro / Roboto)</option>
           <option value="custom">Custom Google Font...</option>
         </select>
@@ -7275,15 +7275,17 @@
   async function loadScale() { try { const res = await safeGet(SCALE_KEY(), false); if (res && res.value) { scaleInput.value = res.value; applyScale(res.value); } } catch (e) {} }
   loadScale();
 
-  // Font family picker (Appearance): '' = console default (IBM Plex via Google
-  // Fonts), 'inter' = Inter (iOS-like; also loaded from Google Fonts), 'system'
-  // = platform UI stack, 'custom' = any Google Fonts family typed by the user
-  // (loaded on demand). Applied through the --font-sans token so every
-  // component follows; choice persists per device like the size/scale sliders.
+  // Font family picker (Appearance): '' = default Inter (embedded, iOS-like),
+  // 'plex' = console classic IBM Plex, 'system' = platform UI stack, 'custom'
+  // = any Google Fonts family typed by the user (loaded on demand). Applied
+  // through the --font-sans token so every component follows; choice persists
+  // per device like the size/scale sliders. Legacy saved value 'inter' (from
+  // when Inter was opt-in) resolves to the same look: the token default is
+  // now Inter, and unknown values simply clear the override.
   const FONTFAM_KEY = () => 'project-flow-font-family-' + currentDeviceSuffix();
   const FONTCUSTOM_KEY = () => 'project-flow-font-custom-' + currentDeviceSuffix();
   const FONT_STACKS = {
-    inter: "'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    plex: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
     system: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
   };
   const fontSel = document.getElementById('pf-font-family');
@@ -7386,6 +7388,15 @@
       try {
         const res = await safeGet(FONTFAM_KEY(), false);
         if (res && res.value !== undefined) {
+          if (res.value === 'inter') {
+            // Legacy: 'inter' was the opt-in value before Inter became the
+            // default. It now means the same as '' (token default); normalize
+            // so the select does not sit blank on an unmatched stored value.
+            fontSel.value = '';
+            applyFontFamily('');
+            safeSet(FONTFAM_KEY(), '', false);
+            return;
+          }
           fontSel.value = res.value;
           showHideCustomRow();
           if (res.value === 'custom' && fontCustom) {

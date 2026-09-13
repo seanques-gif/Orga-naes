@@ -76,7 +76,7 @@
        theme-dependent layers: palette and type. */
 
     /* Typography (Mission Control): sans for meaning, mono for measurement. */
-    --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-sans: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
     --font-size-base: clamp(11px, 1.8vw, 14px);
     font-family: var(--font-sans);

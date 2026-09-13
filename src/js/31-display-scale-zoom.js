@@ -26,15 +26,17 @@
   async function loadScale() { try { const res = await safeGet(SCALE_KEY(), false); if (res && res.value) { scaleInput.value = res.value; applyScale(res.value); } } catch (e) {} }
   loadScale();
 
-  // Font family picker (Appearance): '' = console default (IBM Plex via Google
-  // Fonts), 'inter' = Inter (iOS-like; also loaded from Google Fonts), 'system'
-  // = platform UI stack, 'custom' = any Google Fonts family typed by the user
-  // (loaded on demand). Applied through the --font-sans token so every
-  // component follows; choice persists per device like the size/scale sliders.
+  // Font family picker (Appearance): '' = default Inter (embedded, iOS-like),
+  // 'plex' = console classic IBM Plex, 'system' = platform UI stack, 'custom'
+  // = any Google Fonts family typed by the user (loaded on demand). Applied
+  // through the --font-sans token so every component follows; choice persists
+  // per device like the size/scale sliders. Legacy saved value 'inter' (from
+  // when Inter was opt-in) resolves to the same look: the token default is
+  // now Inter, and unknown values simply clear the override.
   const FONTFAM_KEY = () => 'project-flow-font-family-' + currentDeviceSuffix();
   const FONTCUSTOM_KEY = () => 'project-flow-font-custom-' + currentDeviceSuffix();
   const FONT_STACKS = {
-    inter: "'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    plex: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
     system: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
   };
   const fontSel = document.getElementById('pf-font-family');
@@ -137,6 +139,15 @@
       try {
         const res = await safeGet(FONTFAM_KEY(), false);
         if (res && res.value !== undefined) {
+          if (res.value === 'inter') {
+            // Legacy: 'inter' was the opt-in value before Inter became the
+            // default. It now means the same as '' (token default); normalize
+            // so the select does not sit blank on an unmatched stored value.
+            fontSel.value = '';
+            applyFontFamily('');
+            safeSet(FONTFAM_KEY(), '', false);
+            return;
+          }
           fontSel.value = res.value;
           showHideCustomRow();
           if (res.value === 'custom' && fontCustom) {
