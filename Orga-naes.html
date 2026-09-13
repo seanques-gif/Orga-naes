@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-cCaOVCZTblsMV1BixWlEinvFFFoF87BGOew1vh4v+zY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Sn0XBpHUnwACQ7i8x4dLb3Y70F2COzPmGWYOgTETF8c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9558,7 +9558,12 @@ if ('serviceWorker' in navigator) {
       return p.then(null, function(err) {
         if (!(err && err.message && err.message.includes('Cloud is not responding'))) throw err;
         if (attempt >= 2) throw err;
-        if (window._pf && window._pf.logError) window._pf.logError(attemptLabel + ' retry (REST fallback)', err);
+        // Informational, NOT an error: this is the recovery working as
+        // designed. Raising it via logError lit the toolbar error badge
+        // and made a *successful* fallback pull read as a failure
+        // (user report 2026-09-13: modal opened, data arrived, badge said
+        // "pull retry (REST fallback) / Cloud is not responding").
+        if (window._pf && window._pf.showToast) window._pf.showToast('☁ Cloud is slow — trying the backup route…');
         var delay = (typeof window !== 'undefined' && window._pf && typeof window._pf._cloudReadRetryDelayMs === 'number') ? window._pf._cloudReadRetryDelayMs : 2000;
         return new Promise(function(resolve) { setTimeout(resolve, delay); }).then(function() {
           return run(attempt + 1, makeAttempt(attempt + 1));
@@ -10647,6 +10652,10 @@ if ('serviceWorker' in navigator) {
   // Presents local versus cloud state; the user explicitly chooses which version wins.
   function showConflictModal(local, remote) {
     _pendingRemote = remote;
+    // The modal can open while the Options panel (or nothing at all) is in
+    // view — e.g. the auto-pull on reopen. Without this, the choice dialog
+    // silently waits off-screen and the app looks like it "did nothing".
+    if (window._pf && window._pf.showToast) window._pf.showToast('☁ Sync choice ready: local vs cloud — pick which version to keep');
     const modal = document.getElementById('pf-conflict-modal');
     const localEl = document.getElementById('pf-conflict-local');
     const remoteEl = document.getElementById('pf-conflict-remote');
