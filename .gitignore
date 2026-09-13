@@ -41,3 +41,6 @@ WALKTHROUGH-GUIDE.html
 Orga-naes-scratch-test.html
 # Scratch-project data export (practice data, not for GitHub)
 orga-naes-scratch-default-rtdb-export.json
+# Production data exports (owner backups, never for GitHub)
+*-default-rtdb-export.json
+orga-naes-export*.json
