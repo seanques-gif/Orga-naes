@@ -47,6 +47,21 @@ capsule dropping to a second row always starts as lost headroom). Pass a
 viewport: `npm run probe -- 1355 800`. CI runs it at 1260 / 1355 / 1400 in the
 `layout` job.
 
+```bash
+npm run visual         # visual baselines: toolbar + card, dark and light
+npm run visual:update  # rewrite the baselines (review the PNG/JSON diff first)
+```
+
+`npm run visual` screenshots five regions of the running app and compares them
+against `tests/baselines/`. The committed baseline is a *block-averaged
+fingerprint* of each region (`<name>.json`), not a raw pixel diff: CI renders text
+with a different rasteriser than a local machine, and raw pixels would fail on
+every run. Each region also ships its PNG as a human reference, and the script
+refuses to accept a "light" baseline whose mean luminance is dark — so a baseline
+can't silently capture the wrong theme. On failure the freshly captured PNGs land
+in `tests/baselines/current/` (uploaded as the `visual-drift` CI artifact). Single
+region: `node scripts/visual-baseline.cjs --only=card-head`.
+
 Source of truth is `src/` — never hand-edit `Orga-naes.html`; the build owns it.
 
 ## Run it

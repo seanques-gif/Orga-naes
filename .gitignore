@@ -43,3 +43,5 @@ orga-naes-scratch-default-rtdb-export.json
 *-default-rtdb-export.json
 _probe*
 orga-naes-export*.json
+# Visual-baseline captures from the last failing run (uploaded as a CI artifact)
+tests/baselines/current/
