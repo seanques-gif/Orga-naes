@@ -27,6 +27,60 @@
 
   function noteById(id) { return notes.find(n => n.id === id); }
 
+  // ===== Notes↔project links (NEXT-PLAN Phase A) =====
+  // Links are plain text tokens in the note body — @project:<id> — derived at
+  // render time, never stored separately, so they ride existing persistence
+  // (sync, export/import, snapshots, tombstones, recycle bin) for free.
+  // Resolution: exact id first; fall back to a stored name in the token
+  // ("@project:<id> Name"), so hand-typed or renamed links keep working.
+  var NOTE_LINK_RE = /@project:([A-Za-z0-9_-]+)(?:\s+([^@\n]*))?/g;
+  function parseNoteLinks(body) {
+    var out = [];
+    if (!body) return out;
+    var m;
+    NOTE_LINK_RE.lastIndex = 0;
+    while ((m = NOTE_LINK_RE.exec(body)) !== null) {
+      var token = m[0], id = m[1], label = (m[2] || '').trim();
+      var target = (window._pf.getProjects() || []).find(p => p.id === id);
+      var byName = null;
+      if (!target && label) {
+        var q = label.toLowerCase();
+        byName = (window._pf.getProjects() || []).find(p => (p.title || '').toLowerCase() === q) || null;
+      }
+      out.push({ id: id, label: label || (target ? target.title : ''), token: token,
+        project: target || byName, missing: !(target || byName) });
+    }
+    return out;
+  }
+  function noteLinks(n) { return n ? parseNoteLinks(n.body) : []; }
+  function noteLinkChipsHtml(n) {
+    var links = noteLinks(n);
+    if (!links.length) return '';
+    var chips = links.map(function(l) {
+      var cls = l.missing ? 'pf-note-link-chip pf-note-link-missing' : 'pf-note-link-chip';
+      return '<button class="' + cls + '" data-note-link="' + escapeHtml(l.id) + '" title="' +
+        (l.missing ? 'Project not found (link kept)' : 'Open project: ' + escapeHtml(l.project.title)) + '">' +
+        pfIcon('link', 'pf-note-link-ic') + escapeHtml(l.label || l.project && l.project.title || l.id) + '</button>';
+    }).join('');
+    return '<div class="pf-note-links">' + chips + '</div>';
+  }
+  // Bridge: notes → project detail (shared IIFE scope keeps this tiny).
+  function openProjectFromNote(id) {
+    var p = (window._pf.getProjects() || []).find(pr => pr.id === id);
+    if (!p) { showToast('Project not found', true); return; }
+    closeAllModals();
+    if (typeof window._splitSelect === 'function') window._splitSelect(p.id, null);
+  }
+  // Project-side: linked notes for a project id, used by the detail pane.
+  window._pf.notesForProject = function(projectId) {
+    return notes.filter(function(n) { return !noteTombstones[n.id] && noteLinks(n).some(function(l) { return l.id === projectId; }); });
+  };
+  // Project-side navigation seam: open Notes view on a specific note (wired in slice 2).
+  window._pf.openNoteFromProject = function(noteId) {
+    openNotesPanel();
+    setTimeout(function() { selectNote(noteId); }, 0);
+  };
+
   async function loadNotes() {
     if (notesLoaded) return;
     try { const res = await safeGet(NOTES_KEY, false); if (res && res.value) notes = JSON.parse(res.value); } catch (e) { notes = []; logError('Load notes', e); }
@@ -85,6 +139,7 @@
           '<button class="pf-notes-item-del" data-note-del="' + n.id + '" title="Delete note" aria-label="Delete note: ' + escapeHtml(n.title || 'Untitled') + '">' + pfIcon('trash', 'pf-notes-del-ic') + '</button>' +
         '</div>' +
         '<div class="pf-notes-item-preview">' + escapeHtml(preview) + '</div>' +
+        noteLinkChipsHtml(n) +
         '<div class="pf-notes-item-date">' + fmtNoteDate(n.updatedAt) + '</div>' +
         '</div>' +
         '</div>';
@@ -94,6 +149,7 @@
         const id = el.getAttribute('data-note-id');
         if (e.target.closest('[data-note-del]')) return; // delete button handles itself
         if (e.target.closest('[data-note-check]')) return; // checkbox handles itself
+        if (e.target.closest('[data-note-link]')) { openProjectFromNote(e.target.closest('[data-note-link]').getAttribute('data-note-link')); return; }
         if (e.ctrlKey || e.metaKey) { // ctrl/cmd-click on the row toggles selection too
           const idx = notesSelection.indexOf(id);
           if (idx === -1) notesSelection.push(id); else notesSelection.splice(idx, 1);

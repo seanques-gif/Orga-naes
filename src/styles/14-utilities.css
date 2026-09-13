@@ -311,3 +311,17 @@
   }
   #pf-root .pf-bin-kind[data-bin-kind="project"] { color: var(--accent); border-color: var(--accent); }
   #pf-root .pf-bin-kind[data-bin-kind="note"] { color: var(--text); opacity: 0.85; }
+
+  /* ===== Notes ↔ project link chips (Phase A) — token-driven ===== */
+  #pf-root .pf-note-links { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  #pf-root .pf-note-link-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: calc(var(--font-size-base) - 2px);
+    padding: 2px 8px; border-radius: var(--radius-chip, 999px);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    cursor: pointer;
+  }
+  #pf-root .pf-note-link-chip:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+  #pf-root .pf-note-link-missing { color: var(--text-dim); border-color: var(--sub-border, var(--card-border)); background: var(--sub-bg); cursor: default; }
+  #pf-root .pf-note-link-ic { width: 10px; height: 10px; flex-shrink: 0; }
