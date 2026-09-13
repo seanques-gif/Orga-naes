@@ -36,6 +36,8 @@
   function catRef() { return db.ref('users/' + _fbUser.uid + '/categories'); }
   function archiveRef() { return db.ref('users/' + _fbUser.uid + '/archive'); }
   function trashRef() { return db.ref('users/' + _fbUser.uid + '/trash'); }
+  function notesRef() { return db.ref('users/' + _fbUser.uid + '/notes'); }
+  function noteTombstonesRef() { return db.ref('users/' + _fbUser.uid + '/noteTombstones'); }
 
   const LAST_UID_KEY = 'pf-firebase-last-uid';
   // Set whenever clearLocalUserData() wipes the local cache (sign-out or a
@@ -138,6 +140,10 @@
   // Storage key constants (duplicated from main IIFE scope for cross-IIFE access)
   const STORE_KEY        = 'project-flow-graph-v2';
   const CATEGORIES_KEY   = 'project-flow-categories';
+  // Notes' localStorage keys (owned by the notes module, 46) — listed here so
+  // clearLocalUserData() removes them on account switch. Values must match 46-notes.js.
+  const NOTES_LOCAL_KEY      = 'project-flow-notes';
+  const NOTES_TOMB_LOCAL_KEY = 'project-flow-notes-tombstones';
   const CAT_EMOJI_KEY    = 'project-flow-cat-emojis';
   const ARCHIVE_KEY      = 'project-flow-archive';
   const TRASH_KEY        = 'project-flow-trash';
@@ -156,7 +162,11 @@
     localStorage.setItem(NEEDS_PULL_KEY, '1');
     const keysToClear = [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
      'pf-firebase-last-sync-time', ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY,
-     REMINDERS_KEY, COLLAPSED_CAT_KEY];
+     REMINDERS_KEY, COLLAPSED_CAT_KEY,
+     // Notes join the cloud (Phase C follow-up): they must switch accounts
+     // with everything else, or account B would silently inherit account A's
+     // notes (both localStorage and the IndexedDB mirror are cleared below).
+     NOTES_LOCAL_KEY, NOTES_TOMB_LOCAL_KEY];
     keysToClear.forEach(function(k) {
       try { localStorage.removeItem(k); } catch (e) {}
     });
@@ -232,12 +242,16 @@
         userRef().once('value'),
         catRef().once('value'),
         archiveRef().once('value'),
-        trashRef().once('value')
+        trashRef().once('value'),
+        notesRef().once('value'),
+        noteTombstonesRef().once('value')
       ]).then(function(results) {
         const projVal = results[0].val();
         const catVal = results[1].val();
         const archVal = results[2].val();
         const trashVal = results[3].val();
+        const notesVal = results[4].val();
+        const tombVal = results[5].val();
         // Always persist, even when the field is empty/falsy (a newer
         // account can legitimately have no archive/trash/categories yet).
         // clearLocalUserData() above only wiped localStorage + the
@@ -250,6 +264,12 @@
         window._pf.setProjects(fixProjects(projVal));
         window._pf.setArchive(fixProjects(archVal));
         window._pf.setTrash(fixProjects(trashVal));
+        // Same rule for notes: always persist the incoming account's set —
+        // empty included — mirroring how setArchive/setTrash behave above.
+        const incomingNotes = notesVal ? (Array.isArray(notesVal) ? notesVal.filter(Boolean) : Object.values(notesVal).filter(Boolean)) : [];
+        window._pf.adoptCloudNotes(incomingNotes, (tombVal && typeof tombVal === 'object') ? tombVal : {});
+        _notesPulledThisSession = true;
+        _lastPushedNotesHash = JSON.stringify(incomingNotes) + '|' + JSON.stringify((tombVal && typeof tombVal === 'object') ? tombVal : {});
         // Fresh account's data just silently replaced local state — reset push
         // bookkeeping to match it so the next autosync tick doesn't diff against
         // the previous account's stale baseline.
@@ -291,16 +311,31 @@
             userRef().once('value'),
             catRef().once('value'),
             archiveRef().once('value'),
-            trashRef().once('value')
+            trashRef().once('value'),
+            notesRef().once('value'),
+            noteTombstonesRef().once('value')
           ]).then(function(results) {
             const projVal = results[0].val();
             const catVal = results[1].val();
             const archVal = results[2].val();
             const trashVal = results[3].val();
+            const notesVal = results[4].val();
+            const tombVal = results[5].val();
             if (catVal) { window._pf.setCategories(Array.isArray(catVal) ? catVal : Object.values(catVal)); window._pf.saveCategories(); }
             if (projVal) { window._pf.setProjects(fixProjects(projVal)); }
             if (archVal) window._pf.setArchive(fixProjects(archVal));
             if (trashVal) window._pf.setTrash(fixProjects(trashVal));
+            // Notes adopt the cloud set when the cloud actually has one;
+            // an empty cloud leaves local notes alone (background adoption
+            // must not wipe notes the user can see right now) — the next
+            // push tick uploads them instead.
+            const bgNotes = notesVal ? (Array.isArray(notesVal) ? notesVal.filter(Boolean) : Object.values(notesVal).filter(Boolean)) : [];
+            const bgTombs = (tombVal && typeof tombVal === 'object') ? tombVal : {};
+            if (bgNotes.length > 0 || Object.keys(bgTombs).length > 0) {
+              window._pf.adoptCloudNotes(bgNotes, bgTombs);
+              _notesPulledThisSession = true;
+              _lastPushedNotesHash = JSON.stringify(bgNotes) + '|' + JSON.stringify(bgTombs);
+            }
             // Silent background adoption of remote data — reset bookkeeping so
             // this doesn't masquerade as unpushed local edits on the next tick.
             resetPushBookkeeping(window._pf.getProjects(), window._pf.getCategories(), window._pf.getArchive(), window._pf.getTrash());
@@ -408,17 +443,25 @@
   function _doPull() {
     if (!_fbUser) { window._pf.showToast('⚠ Sign in first to pull', true); return; }
     window._pf.showToast('☁ Checking cloud data...');
-    Promise.all([
+    // Notes must finish their async boot load before the notesMatch
+    // comparison below, or a pull issued right after open would see
+    // null and skip notes adoption entirely.
+    const notesSettled = (window._pf && typeof window._pf.notesReady === 'function' && window._pf.notesReady.then) ? window._pf.notesReady : Promise.resolve();
+    notesSettled.then(function() { return Promise.all([
       userRef().once('value'),
       catRef().once('value'),
       archiveRef().once('value'),
-      trashRef().once('value')
+      trashRef().once('value'),
+      notesRef().once('value'),
+      noteTombstonesRef().once('value')
     ]).then(function(results) {
       const projVal = results[0].val();
       const catVal = results[1].val();
       const archVal = results[2].val();
       const trashVal = results[3].val();
-      if (!projVal && !catVal) { window._pf.showToast('⚠ No data found in cloud', true); return; }
+      const notesVal = results[4].val();
+      const tombVal = results[5].val();
+      if (!projVal && !catVal && !notesVal) { window._pf.showToast('⚠ No data found in cloud', true); return; }
 
       const remoteProjects = fixProjects(projVal);
       const localProjects = window._pf.getProjects();
@@ -428,6 +471,14 @@
       const remoteCategories = catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)).filter(Boolean) : [];
       const remoteArchive = fixProjects(archVal);
       const remoteTrash = fixProjects(trashVal);
+      // Notes: RTDB stores the array as an index-keyed map; normalize back to
+      // an array in index order for a plain structural comparison.
+      const remoteNotes = notesVal ? (Array.isArray(notesVal) ? notesVal.filter(Boolean) : Object.values(notesVal).filter(Boolean)) : [];
+      const remoteNoteTombstones = (tombVal && typeof tombVal === 'object') ? tombVal : {};
+      const localNotesSnap = (window._pf.getNotesSnapshot && window._pf.getNotesSnapshot()) || null;
+      const notesMatch = !!localNotesSnap
+        && JSON.stringify(localNotesSnap.notes) === JSON.stringify(remoteNotes)
+        && JSON.stringify(localNotesSnap.tombstones) === JSON.stringify(remoteNoteTombstones);
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
       const archMatch = JSON.stringify(normalizeForSync(remoteArchive)) === JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
       const trashMatch = JSON.stringify(normalizeForSync(remoteTrash)) === JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
@@ -436,7 +487,7 @@
         if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
       });
 
-      if (remoteStr === localStr && catsMatch && archMatch && trashMatch) {
+      if (remoteStr === localStr && catsMatch && archMatch && trashMatch && notesMatch) {
         window._pf.showToast('✅ Local data already matches the cloud');
         localStorage.removeItem(NEEDS_PULL_KEY);
         window._pf.closeAllModals();
@@ -450,7 +501,7 @@
         // "Keep Remote" also needs categories/archive/trash, which aren't
         // otherwise available to that handler — stash them here.
         if (window._pf && window._pf.snapshot) window._pf.snapshot();
-        _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, trash: remoteTrash };
+        _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, trash: remoteTrash, notes: remoteNotes, noteTombstones: remoteNoteTombstones };
         showConflictModal(localProjects, remoteProjects);
         localStorage.removeItem(NEEDS_PULL_KEY);
         return;
@@ -465,6 +516,24 @@
       if (!catsMatch) { window._pf.setCategories(remoteCategories); window._pf.saveCategories(); updated.push('categories'); }
       if (!archMatch) { window._pf.setArchive(remoteArchive); updated.push('archive'); }
       if (!trashMatch) { window._pf.setTrash(remoteTrash); updated.push('trash'); }
+      if (!notesMatch && localNotesSnap) {
+        // Cloud has notes and they differ → adopt them wholesale (tombstones
+        // union inside replaceNotes decides deletions). Cloud empty + local
+        // notes present is a legit fresh-cloud state: leave it to the next
+        // push tick, which uploads the local set (fresh-device guard permits
+        // it because localHasNotes is true).
+        if (remoteNotes.length > 0 || Object.keys(remoteNoteTombstones).length > 0) {
+          window._pf.replaceNotes(remoteNotes, remoteNoteTombstones);
+          _notesPulledThisSession = true;
+          // Bookkeeping: the adopted set is now the baseline — without this,
+          // _lastPushedNotesHash stays stale and the next tick re-pushes the
+          // just-pulled set back up as if it were a local edit.
+          _lastPushedNotesHash = JSON.stringify(pfSnapNotes()) + '|' + JSON.stringify(pfSnapTombs());
+          updated.push('notes');
+        } else {
+          _lastPushedNotesHash = '';
+        }
+      }
       // Projects didn't change, but categories may have — resync bookkeeping
       // against what's now actually on both sides so a stale _lastPushedCatHash
       // doesn't cause a redundant categories re-push on the next autosync tick.
@@ -477,6 +546,7 @@
     }).catch(function(err) {
       window._pf.showToast('⚠ Pull failed: ' + (err.message || err), true);
       if (window._pf.logError) window._pf.logError('Firebase pull', err);
+    });
     });
   }
   pullBtn.addEventListener('click', _doPull);
@@ -589,6 +659,8 @@
     _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
     if (typeof archive !== 'undefined') _lastPushedArchiveHash = JSON.stringify(normalizeForSync(archive));
     if (typeof trash !== 'undefined') _lastPushedTrashHash = JSON.stringify(normalizeForSync(trash));
+    const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    _lastPushedNotesHash = notesSnap ? (JSON.stringify(notesSnap.notes) + '|' + JSON.stringify(notesSnap.tombstones)) : '';
   }
 
   // Pushes only changed project records where possible; deletions or reordering fall back to a full project write
@@ -639,6 +711,8 @@
     }
     try { db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))); } catch(e) { logError('Firebase push (categoryEmojis)', e); }
 
+    try { pushNotesIfNeeded().catch(function(e) { logError('Firebase push (notes)', e); }); } catch(e) { logError('Firebase push (notes)', e); }
+
     if (hasChanges || catChanged) {
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
       _lastPushedHash = currentHash;
@@ -649,6 +723,44 @@
   let _lastPushedCatHash = '';
   let _lastPushedArchiveHash = '';
   let _lastPushedTrashHash = '';
+  let _lastPushedNotesHash = '';
+  // Flipped once this session has adopted notes FROM the cloud (pull,
+  // realtime listener, or Keep Remote). Until then, a device whose local
+  // notes are empty must never push that emptiness up — it would erase the
+  // cloud notes before the first pull had a chance to bring them down.
+  let _notesPulledThisSession = false;
+
+  // Notes sync (Phase C follow-up): notes ride the cloud as one flat JSON
+  // payload plus a tombstones map — same full-set pattern as archive/trash
+  // (bulk, low-velocity, no realtime listener). The fresh-device guard above
+  // makes an empty local set a no-op against a populated cloud.
+  function pfSnapNotes() {
+    const s = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    return s ? s.notes : [];
+  }
+  function pfSnapTombs() {
+    const s = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    return s ? s.tombstones : {};
+  }
+  function pushNotesIfNeeded() {
+    const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    if (!notesSnap) return Promise.resolve();
+    const notesHash = JSON.stringify(notesSnap.notes) + '|' + JSON.stringify(notesSnap.tombstones);
+    if (notesHash === _lastPushedNotesHash) return Promise.resolve();
+    const localHasNotes = notesSnap.notes.length > 0 || Object.keys(notesSnap.tombstones).length > 0;
+    return notesRef().once('value').then(function(snap) {
+      const remoteNotes = snap.val();
+      const remoteCount = remoteNotes ? (Array.isArray(remoteNotes) ? remoteNotes.filter(Boolean).length : Object.keys(remoteNotes).length) : 0;
+      if (!localHasNotes && remoteCount > 0 && !_notesPulledThisSession) {
+        _lastPushedNotesHash = notesHash; // remember so we don't retry every tick
+        return undefined;
+      }
+      return Promise.all([
+        notesRef().set(JSON.parse(JSON.stringify(notesSnap.notes))),
+        noteTombstonesRef().set(JSON.parse(JSON.stringify(notesSnap.tombstones)))
+      ]).then(function() { _lastPushedNotesHash = notesHash; });
+    });
+  }
 
   // Performs a deliberate full cloud save of projects, categories, archive, and trash.
   function pushWithTimestamp() {
@@ -660,6 +772,7 @@
       db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))),
       archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive()))),
       trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
+      pushNotesIfNeeded().catch(function(e) { logError('Firebase push (notes)', e); }),
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
     ]);
     writePromise.then(function() { updateLastSync(); });
@@ -702,8 +815,11 @@
     const localCatHashNow = JSON.stringify(window._pf.getCategories());
     const localArchiveHashNow = JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
     const localTrashHashNow = JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
+    const notesSnapNow = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    const localNotesHashNow = notesSnapNow ? (JSON.stringify(notesSnapNow.notes) + '|' + JSON.stringify(notesSnapNow.tombstones)) : '';
     if (localSnapshotNow === _lastPushedSnapshot && localCatHashNow === _lastPushedCatHash &&
-        localArchiveHashNow === _lastPushedArchiveHash && localTrashHashNow === _lastPushedTrashHash) {
+        localArchiveHashNow === _lastPushedArchiveHash && localTrashHashNow === _lastPushedTrashHash &&
+        localNotesHashNow === _lastPushedNotesHash) {
       window._pf.showToast('✅ Already up to date with cloud');
       return;
     }
@@ -712,12 +828,16 @@
       userRef().once('value'),
       catRef().once('value'),
       archiveRef().once('value'),
-      trashRef().once('value')
+      trashRef().once('value'),
+      notesRef().once('value'),
+      noteTombstonesRef().once('value')
     ]).then(function(results) {
       const projVal = results[0].val();
       const catVal = results[1].val();
       const archVal = results[2].val();
       const trashVal = results[3].val();
+      const notesVal = results[4].val();
+      const tombVal = results[5].val();
       const remoteProjects = fixProjects(projVal);
       const localProjects = window._pf.getProjects();
       const localStr = JSON.stringify(normalizeForSync(localProjects));
@@ -726,10 +846,16 @@
       const remoteCategories = catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)).filter(Boolean) : [];
       const remoteArchive = fixProjects(archVal);
       const remoteTrash = fixProjects(trashVal);
+      const remoteNotes = notesVal ? (Array.isArray(notesVal) ? notesVal.filter(Boolean) : Object.values(notesVal).filter(Boolean)) : [];
+      const remoteNoteTombstones = (tombVal && typeof tombVal === 'object') ? tombVal : {};
+      const localNotesSnap = (window._pf.getNotesSnapshot && window._pf.getNotesSnapshot()) || null;
+      const notesMatch = !!localNotesSnap
+        && JSON.stringify(localNotesSnap.notes) === JSON.stringify(remoteNotes)
+        && JSON.stringify(localNotesSnap.tombstones) === JSON.stringify(remoteNoteTombstones);
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
       const archMatch = JSON.stringify(normalizeForSync(remoteArchive)) === JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
       const trashMatch = JSON.stringify(normalizeForSync(remoteTrash)) === JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
-      const fullMatch = remoteStr === localStr && catsMatch && archMatch && trashMatch;
+      const fullMatch = remoteStr === localStr && catsMatch && archMatch && trashMatch && notesMatch;
 
       if (projVal && fullMatch) {
         window._pf.showToast('✅ Already up to date with cloud');
@@ -753,7 +879,7 @@
       // edited on another device since the last sync. Show the same
       // local-vs-cloud comparison instead of silently overwriting it.
       if (window._pf && window._pf.snapshot) window._pf.snapshot();
-      _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, trash: remoteTrash };
+      _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, trash: remoteTrash, notes: remoteNotes, noteTombstones: remoteNoteTombstones };
       showConflictModal(localProjects, remoteProjects);
     }).catch(function(err) {
       window._pf.showToast('⚠ Failed to check cloud data: ' + (err && err.message ? err.message : 'unknown error'), true);
@@ -773,9 +899,14 @@
     const lastBackup = localStorage.getItem('pf-firebase-last-backup');
     if (lastBackup === today) return;
     const backupRef = db.ref('users/' + _fbUser.uid + '/backups/' + today);
+    const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
     backupRef.set({
       projects: JSON.parse(JSON.stringify(window._pf.getProjects())),
       categories: JSON.parse(JSON.stringify(window._pf.getCategories())),
+      // Notes ride the daily cloud backup too (null when notes haven't
+      // loaded — mirrors buildFullBackupPayload's omit-not-empty[] rule).
+      notes: notesSnap ? JSON.parse(JSON.stringify(notesSnap.notes)) : null,
+      noteTombstones: notesSnap ? JSON.parse(JSON.stringify(notesSnap.tombstones)) : null,
       timestamp: Date.now()
     });
     localStorage.setItem('pf-firebase-last-backup', today);
@@ -1078,6 +1209,11 @@
         if (extrasToApply.categories) { window._pf.setCategories(extrasToApply.categories); window._pf.saveCategories(); }
         window._pf.setArchive(extrasToApply.archive);
         window._pf.setTrash(extrasToApply.trash);
+        if (extrasToApply.notes) {
+          window._pf.adoptCloudNotes(extrasToApply.notes, extrasToApply.noteTombstones || {});
+          _notesPulledThisSession = true;
+          _lastPushedNotesHash = JSON.stringify(extrasToApply.notes) + '|' + JSON.stringify(extrasToApply.noteTombstones || {});
+        }
       }
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
       resetPushBookkeeping(preMutationProjects, categoriesToApply, archiveToApply, trashToApply);

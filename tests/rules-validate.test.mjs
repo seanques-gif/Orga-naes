@@ -52,8 +52,24 @@ check('real: trash note entry (long body OK)', OK(validate(ROOT, U + '/trash', [
   kind: 'note', id: 'nA1xxxxxx', title: 'Note', node: { id: 'nA1xxxxxx', title: 'Note', body: 'x'.repeat(9000), pinned: false }, deletedAt: now,
 }])));
 check('real: legacy trash entry (no kind/deletedAt)', OK(validate(ROOT, U + '/trash', [mkProject('pOld1zzzz', 'Ancient', 'completed')])));
+
+// notes cloud sync (46-notes.js newNote/adoptCloudNotes shape)
+function mkNote(id, title, body, extra = {}) {
+  return Object.assign({ id, title, body, pinned: false, createdAt: now, updatedAt: now }, extra);
+}
+const noteA = mkNote('nA1xxxxxx', 'Renovation ideas', 'Kitchen ideas @project:pA1x9zQr and more');
+const noteB = mkNote('nB2yyyyyy', '', 'x'.repeat(90000)); // long body within cap
+check('real: full notes set (whole-array)', OK(validate(ROOT, U + '/notes', [noteA, noteB])), JSON.stringify(validate(ROOT, U + '/notes', [noteA, noteB]).error || ''));
+check('real: index-keyed partial note update', OK(validate(ROOT, U + '/notes/0', noteA)));
+check('real: empty notes set serializes to null', OK(validate(ROOT, U + '/notes', null)));
+check('real: note with empty title (new note)', OK(validate(ROOT, U + '/notes/0', mkNote('nC3zzzzzz', '', 'just a body'))));
+check('real: noteTombstones map', OK(validate(ROOT, U + '/noteTombstones', { nOld12345: now, nOld67890: now })));
+check('real: noteTombstones emptied to null', OK(validate(ROOT, U + '/noteTombstones', null)));
 check('real: firebase auto-backup snapshot', OK(validate(ROOT, U + '/backups/2026-09-13', {
-  projects: [projA, projB], categories: ['Home'], timestamp: 1789261215842,
+  projects: [projA, projB], categories: ['Home'], notes: [noteA], noteTombstones: { nOld12345: now }, timestamp: 1789261215842,
+})));
+check('real: backup in older format (no notes key)', OK(validate(ROOT, U + '/backups/2026-09-12', {
+  projects: [projA], categories: [], timestamp: 1789261215842,
 })));
 check('real: backup day removed (null)', OK(validate(ROOT, U + '/backups/2026-09-13', null)));
 
@@ -77,6 +93,14 @@ deny('string in x coordinate', U + '/projects/0', mkProject('pEvil6fff', 'X', 'p
 deny('blockedBy with junk entry', U + '/projects/0', mkProject('pEvil7ggg', 'X', 'planned', [], { blockedBy: ['okid123456', '<script>'] }));
 deny('comment oversized text', U + '/projects/0', mkProject('pEvil8hhh', 'X', 'planned', [mkSub('sEvil1aaa', 'S', 'planned', [], { comments: [{ text: 'x'.repeat(201), time: now }] })]));
 deny('subtask unknown key', U + '/projects/0', mkProject('pEvil9iii', 'X', 'planned', [mkSub('sEvil2bbb', 'S', 'planned', [], { role: 'admin' })]));
+deny('note unknown key', U + '/notes/0', mkNote('nEvil1aaa', 'X', 'body', { isAdmin: true }));
+deny('note missing body', U + '/notes/0', { id: 'nEvil2bbb', title: 'X', pinned: false, createdAt: now, updatedAt: now });
+deny('note oversized body (100001)', U + '/notes/0', mkNote('nEvil3ccc', 'X', 'x'.repeat(100001)));
+deny('note title over 120', U + '/notes/0', mkNote('nEvil4ddd', 'x'.repeat(121), 'b'));
+deny('note bad id charset', U + '/notes/0', mkNote('n;drop--', 'X', 'b'));
+deny('note pinned as string', U + '/notes/0', mkNote('nEvil5eee', 'X', 'b', { pinned: 'yes' }));
+deny('noteTombstones with junk value', U + '/noteTombstones', { nEvil6fff: 'x'.repeat(36) });
+deny('noteTombstones scalar', U + '/noteTombstones', 'junk');
 deny('top-level unknown child', U + '/isAdmin', true);
 check('deny: write access to another uid', !writeAllowed(ROOT, 'users/otheruid/projects', { uid: 'testuid' }));
 check('deny: unauthenticated write', !writeAllowed(ROOT, U + '/projects', null));

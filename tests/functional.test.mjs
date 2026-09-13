@@ -657,6 +657,82 @@ async function testFirebaseRoundTrip() {
 }
 
 // ===========================================================================
+// TEST 8b — Notes cloud sync: push, fresh-device pull, tombstone round-trip,
+// and the fresh-device guard (empty local notes must not erase cloud notes).
+// Drives the app's REAL push/pull entries against the fake RTDB.
+// ===========================================================================
+async function testNotesCloudSync() {
+  const server = new Map();
+  const fb = makeFirebase(server);
+  const ls = makeLocalStorage();
+  ls.setItem('pf-firebase-autosync', 'true');
+  const h = await freshBoot({ firebase: fb, localStorage: ls });
+  const pf = h.ctx.window._pf;
+  check('notes-sync: adoptCloudNotes bridge exposed', typeof pf.adoptCloudNotes === 'function');
+  fb.__signIn('test-uid-notes');
+  await sleep(120);
+  // The pull button element is shared across boots in this harness and each
+  // boot replaces its click handler — capture DEVICE 1's handler now, before
+  // any other boot re-registers it.
+  const pull1 = (byId.get('pf-firebase-pull')._listeners.click || []).slice(-1)[0];
+  check('notes-sync: device-1 pull handler captured', typeof pull1 === 'function');
+
+  // Device 1: two notes, push through the app's own entry point
+  pf.replaceNotes([
+    { id: 'ns-n1', title: 'Cloud note', body: 'rides the sync', pinned: true },
+    { id: 'ns-n2', title: 'Second', body: 'me too', pinned: false },
+  ]);
+  await h.ctx.window._firebasePushNow();
+  await sleep(200);
+  const pushedNotes = server.get('users/test-uid-notes/notes');
+  const pushedTombs = server.get('users/test-uid-notes/noteTombstones');
+  check('notes-sync: push wrote notes array', Array.isArray(pushedNotes) && pushedNotes.length === 2, JSON.stringify(pushedNotes || null).slice(0, 80));
+  check('notes-sync: push wrote tombstones map', !!pushedTombs && typeof pushedTombs === 'object');
+
+  // Fresh device: empty local notes + populated cloud. A pull must adopt the
+  // cloud notes; the fresh-device guard must stop any push from erasing them.
+  const ls2 = makeLocalStorage();
+  ls2.setItem('pf-firebase-autosync', 'true'); // push entry points require autosync on
+  const h2 = await freshBoot({ firebase: fb, localStorage: ls2 });
+  const pf2 = h2.ctx.window._pf;
+  fb.__signIn('test-uid-notes');
+  await sleep(120);
+  const pullBtn = byId.get('pf-firebase-pull');
+  (pullBtn._listeners.click || []).forEach(fn => fn.call(pullBtn, { target: pullBtn, stopPropagation() {} }));
+  await sleep(400); h2.flushRAF();
+  const adopted = pf2.getNotesSnapshot().notes;
+  check('notes-sync: pull adopted cloud notes on fresh device', adopted.length === 2 && adopted.some(n => n.id === 'ns-n1'), 'n=' + adopted.length);
+
+  // Device 2 deletes one note (tombstone), pushes; Device 1 pulls: deletion wins
+  pf2.deleteNoteById('ns-n2');
+  await h2.ctx.window._firebasePushNow();
+  await sleep(200);
+  const tombsAfterDelete = server.get('users/test-uid-notes/noteTombstones');
+  check('notes-sync: delete pushed a tombstone', !!tombsAfterDelete && !!tombsAfterDelete['ns-n2']);
+  pull1.call(pullBtn, { target: pullBtn, stopPropagation() {} });
+  await sleep(400); h.flushRAF();
+  const after = pf.getNotesSnapshot();
+  check('notes-sync: pull on device 1 applies the tombstone', after.notes.length === 1 && after.notes[0].id === 'ns-n1' && !!after.tombstones['ns-n2'], JSON.stringify(after).slice(0, 100));
+
+  // Fresh-device guard: a THIRD device with zero notes and autosync must not
+  // erase the cloud notes via its own push ticks.
+  const ls3 = makeLocalStorage();
+  ls3.setItem('pf-firebase-autosync', 'true');
+  const h3 = await freshBoot({ firebase: fb, localStorage: ls3 });
+  fb.__signIn('test-uid-notes');
+  await sleep(250); // notes eager-load resolves to empty; autosync tick window
+  await h3.ctx.window._firebasePushNow();
+  await sleep(200);
+  // Expected cloud state at this point: device 2 deleted ns-n2 and pushed,
+  // so a healthy cloud holds exactly ns-n1 + the ns-n2 tombstone. Device 3's
+  // push (0 notes) must have changed neither — if its empty set had gone up,
+  // ns-n1 would be gone and tombstones wiped.
+  const cloudAfterFreshDevice = server.get('users/test-uid-notes/notes');
+  const tombsAfterFreshDevice = server.get('users/test-uid-notes/noteTombstones');
+  check('notes-sync: fresh device with 0 notes did NOT erase cloud notes', Array.isArray(cloudAfterFreshDevice) && cloudAfterFreshDevice.length === 1 && cloudAfterFreshDevice[0].id === 'ns-n1' && !!tombsAfterFreshDevice['ns-n2'], 'notes=' + JSON.stringify(cloudAfterFreshDevice || []).slice(0, 60) + ' tombs=' + JSON.stringify(tombsAfterFreshDevice));
+}
+
+// ===========================================================================
 // TEST 9 — Service worker precache integrity (static)
 // ===========================================================================
 function testServiceWorker() {
@@ -958,6 +1034,7 @@ const tests = [
   ['Happy-path import', testHappyPathImport],
   ['Persistence lifecycle', testPersistenceLifecycle],
   ['Firebase push/pull', testFirebaseRoundTrip],
+  ['Notes cloud sync', testNotesCloudSync],
   ['Icon hydration', testIconHydration],
   ['Notes tombstones', testNotesTombstoneLifecycle],
   ['Notes↔project links', testNoteProjectLinks],

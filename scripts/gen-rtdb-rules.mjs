@@ -143,6 +143,24 @@ function archiveNode() {
   return n;
 }
 
+// One note node (46-notes.js newNote/adoptCloudNotes shape: exactly six keys;
+// adoptCloudNotes re-maps every incoming note to this exact shape, and title
+// legitimately starts as an empty string on new notes → min length 0).
+function noteNode() {
+  return {
+    '.validate': `newData.hasChildren(['id', 'title', 'body', 'pinned', 'createdAt', 'updatedAt'])`,
+    id: { '.validate': isId },
+    title: { '.validate': str(0, 120) },
+    body: { '.validate': str(0, 100000) },
+    pinned: { '.validate': 'newData.isBoolean()' },
+    createdAt: { '.validate': orNull(str(1, 35)) },
+    updatedAt: { '.validate': str(1, 35) },
+    '$other': { '.validate': false },
+  };
+}
+// Tombstones map: note-id → ISO deletion timestamp (46-notes.js recordNoteTombstone).
+const noteTombstonesNode = { '.validate': container, '$nid': { '.validate': str(1, 35) } };
+
 const rules = {
   rules: {
     users: {
@@ -153,6 +171,8 @@ const rules = {
         categories: strArray,
         categoryEmojis: { '$cat': { '.validate': `$cat.length >= 1 && $cat.length <= 40 && ${str(1, 24)}` } },          archive: { '.validate': container, '$i': archiveNode() },
         trash: { '.validate': container, '$t': trashEntryNode() },
+        notes: { '.validate': container, '$i': noteNode() },
+        noteTombstones: noteTombstonesNode,
         updatedAt: { '.validate': isNum(1500000000000, 4102444800000) },
         appVersion: {
           '.validate': `newData.isString() && newData.val().matches(/^\\d+\\.\\d+\\.\\d+$/) && newData.val().length <= 20`,
@@ -164,6 +184,8 @@ const rules = {
             '.validate': `$date.matches(/${DATE_RE}/) && (newData.val() === null || newData.hasChildren(['timestamp']))`,
             projects: { '.validate': container, '$i': projectNode() },
             categories: strArray,
+            notes: { '.validate': container, '$i': noteNode() },
+            noteTombstones: noteTombstonesNode,
             timestamp: { '.validate': isNum(1500000000000, 4102444800000) },
             '$other': { '.validate': false },
           },
@@ -178,7 +200,7 @@ const rules = {
 };
 
 // ---- self-checks (fail the generator rather than ship drifted rules) --------
-const knownTop = new Set(['projects', 'categories', 'categoryEmojis', 'archive', 'trash', 'updatedAt', 'appVersion', 'backups', '$other']);
+const knownTop = new Set(['projects', 'categories', 'categoryEmojis', 'archive', 'trash', 'notes', 'noteTombstones', 'updatedAt', 'appVersion', 'backups', '$other']);
 const userNode = rules.rules.users.$uid;
 for (const k of Object.keys(userNode)) {
   if (!k.startsWith('.') && !knownTop.has(k)) throw new Error('unexpected top-level child in generator: ' + k);

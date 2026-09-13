@@ -1230,6 +1230,39 @@
             }
           }
         },
+        "notes": {
+          ".validate": "newData.val() === null || newData.hasChildren()",
+          "$i": {
+            ".validate": "newData.hasChildren(['id', 'title', 'body', 'pinned', 'createdAt', 'updatedAt'])",
+            "id": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 120"
+            },
+            "body": {
+              ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 100000"
+            },
+            "pinned": {
+              ".validate": "newData.isBoolean()"
+            },
+            "createdAt": {
+              ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+            },
+            "updatedAt": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "noteTombstones": {
+          ".validate": "newData.val() === null || newData.hasChildren()",
+          "$nid": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+          }
+        },
         "updatedAt": {
           ".validate": "newData.isNumber() && newData.val() >= 1500000000000 && newData.val() <= 4102444800000"
         },
@@ -1828,6 +1861,39 @@
               ".validate": "newData.val() === null || newData.hasChildren()",
               "$c": {
                 ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+              }
+            },
+            "notes": {
+              ".validate": "newData.val() === null || newData.hasChildren()",
+              "$i": {
+                ".validate": "newData.hasChildren(['id', 'title', 'body', 'pinned', 'createdAt', 'updatedAt'])",
+                "id": {
+                  ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,32}$/)"
+                },
+                "title": {
+                  ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 120"
+                },
+                "body": {
+                  ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 100000"
+                },
+                "pinned": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "createdAt": {
+                  ".validate": "newData.val() === null || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 35)"
+                },
+                "updatedAt": {
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "noteTombstones": {
+              ".validate": "newData.val() === null || newData.hasChildren()",
+              "$nid": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 35"
               }
             },
             "timestamp": {

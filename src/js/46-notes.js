@@ -86,10 +86,14 @@
     setTimeout(function() { selectNote(noteId); }, 0);
   };
 
+  let loadEpoch = 0; // bumped when cloud sync adopts a new note set — stale in-flight loads must not clobber it
+
   async function loadNotes() {
     if (notesLoaded) return;
-    try { const res = await safeGet(NOTES_KEY, false); if (res && res.value) notes = JSON.parse(res.value); } catch (e) { notes = []; logError('Load notes', e); }
-    try { const res2 = await safeGet(NOTES_TOMB_KEY, false); if (res2 && res2.value) noteTombstones = JSON.parse(res2.value) || {}; } catch (e) { noteTombstones = {}; }
+    const epoch = ++loadEpoch;
+    try { const res = await safeGet(NOTES_KEY, false); if (epoch !== loadEpoch) return; if (res && res.value) notes = JSON.parse(res.value); } catch (e) { notes = []; logError('Load notes', e); }
+    try { const res2 = await safeGet(NOTES_TOMB_KEY, false); if (epoch !== loadEpoch) return; if (res2 && res2.value) noteTombstones = JSON.parse(res2.value) || {}; } catch (e) { noteTombstones = {}; }
+    if (epoch !== loadEpoch) return; // an adoption happened while this read was in flight
     notesLoaded = true;
   }
   function saveTombstones() { safeSet(NOTES_TOMB_KEY, JSON.stringify(noteTombstones), false); }
@@ -630,6 +634,7 @@
   // the tombstone matters — otherwise boot recovery would immediately
   // re-delete what the user just restored.
   window._pf.adoptRestoredNote = function(note) {
+    ++loadEpoch; // same stale-boot-read protection as adoptCloudNotes
     if (!note || typeof note.id !== 'string') return;
     delete noteTombstones[note.id];
     saveTombstones();
@@ -642,14 +647,16 @@
   };
 
   // Eager load at boot: guarantees the 5-minute snapshot tick and manual
-  // exports see real notes data instead of the pre-load null/[].
-  (function eagerLoadNotes() {
-    loadNotes().then(() => {
+  // exports see real notes data instead of the pre-load null/[]. Exposed as
+  // _pf.notesReady so cloud-sync flows can AWAIT a definitive load instead
+  // of racing the unresolved boot read (a pull issued right after open).
+  window._pf.notesReady = (function eagerLoadNotes() {
+    return loadNotes().then(() => {
       notesLoadedEmpty = notes.length === 0;
       // Primary store yielded nothing at boot — try snapshot recovery before
       // declaring the notes truly gone. Runs regardless of project state.
       if (notesLoadedEmpty && window._pf && typeof window._pf.recoverNotesFromSnapshot === 'function') {
-        window._pf.recoverNotesFromSnapshot().then((n) => {
+        return window._pf.recoverNotesFromSnapshot().then((n) => {
           if (n > 0) showToast('♻️ Recovered ' + n + ' note' + (n === 1 ? '' : 's') + ' from backup');
         });
       }
@@ -658,7 +665,33 @@
 
   // Import bridge: replace the in-memory set (merge already done by caller),
   // persist, and refresh any open UI.
+  // Cloud-sync bridge (45): unconditionally adopt the cloud's note set —
+  // used on account switch and cloud pull, where the incoming account's
+  // notes (empty included) must replace local state, mirroring setArchive/
+  // setTrash semantics. Tombstones union newest-wins so a deletion recorded
+  // on any device stays deleted everywhere. Unlike replaceNotes (import),
+  // there is deliberately no empty-set refusal: an account with zero notes
+  // switching in must clear the previous account's notes.
+  window._pf.adoptCloudNotes = function(cloudNotes, cloudTombstones) {
+    ++loadEpoch; // discard any in-flight boot read — its stale resolve must not overwrite this adoption
+    const clean = Array.isArray(cloudNotes) ? cloudNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string') : [];
+    if (cloudTombstones && typeof cloudTombstones === 'object') {
+      Object.keys(cloudTombstones).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (cloudTombstones[k] || '')) noteTombstones[k] = cloudTombstones[k]; });
+    }
+    notes = clean.filter(n => !isTombstoned(n.id))
+      .map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
+    notesLoaded = true;
+    notesLoadedEmpty = notes.length === 0;
+    if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
+    if (Array.isArray(notesSelection) && notesSelection.length) notesSelection = notesSelection.filter(id => noteById(id));
+    saveTombstones();
+    saveNotes();
+    renderNotesList();
+    renderNotesEditor();
+  };
+
   window._pf.replaceNotes = function(nextNotes, incomingTombstones) {
+    ++loadEpoch; // an in-flight boot read must not clobber an import/merge
     if (!Array.isArray(nextNotes)) return;
     const clean = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string');
     if (!clean.length) return; // never let a malformed import wipe real notes
