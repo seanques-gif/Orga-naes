@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-3kLiCGEcRwijM4j84+8ADfcOJiJKh0DFAzCveCKR5mE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-lRVdQDtxZO8uaFxmV3zLQeJls08qX0QRRsqgQbKA6/Q='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9510,21 +9510,61 @@ if ('serviceWorker' in navigator) {
       }, ms);
     });
   }
-  // Wraps a read-promise (normally Promise.all([...refs]) with cloudReadTimeout
-  // raced in) so a transient timeout is retried once after a delay. Keeps the same
-  // per-attempt timeout — the retry is for wake-from-sleep / network flaps,
-  // not for a genuinely unreachable server. Test seam: _pf._cloudReadRetryDelayMs.
-  function withRetry(readPromise, attemptLabel) {
-    return readPromise.then(null, function(err) {
-      if (err && err.message && err.message.includes('Cloud is not responding')) {
-        if (window._pf && window._pf.logError) window._pf.logError(attemptLabel + ' retry', err);
-        var delay = (typeof window !== 'undefined' && window._pf && typeof window._pf._cloudReadRetryDelayMs === 'number') ? window._pf._cloudReadRetryDelayMs : 2000;
-        return new Promise(function(resolve, reject) {
-          setTimeout(function() { readPromise.then(resolve, reject); }, delay);
-        });
-      }
-      throw err;
+  // The six standard cloud reads for the signed-in account, raced against the
+  // shared timeout. One builder so the SDK attempt and the REST fallback
+  // (withRetry below) return the identical results[i].val() shape.
+  function sdkReadResults() {
+    return Promise.race([Promise.all([
+      userRef().once('value'),
+      catRef().once('value'),
+      archiveRef().once('value'),
+      trashRef().once('value'),
+      notesRef().once('value'),
+      noteTombstonesRef().once('value')
+    ]), cloudReadTimeout()]);
+  }
+  // Last-resort transport: read the account's data directly over HTTPS REST
+  // (<databaseURL>/<path>.json?auth=<idToken>) instead of the SDK websocket.
+  // If the realtime socket is wedged in a way the goOffline/goOnline reset
+  // inside cloudReadTimeout() can't heal (extension blocking wss, proxy,
+  // stuck half-open socket), this independent plain-fetch path still delivers
+  // the same JSON. Returns the same .val() wrappers, so callers don't care
+  // which transport won. Guarded for the test fake (no getIdToken): it then
+  // re-throws the friendly timeout message so the retry chain gives up cleanly.
+  function restReadResults() {
+    if (!_fbUser || typeof _fbUser.getIdToken !== 'function') {
+      return Promise.reject(new Error('Cloud is not responding. Check your connection, then try again.'));
+    }
+    return _fbUser.getIdToken().then(function(token) {
+      var base = firebaseConfig.databaseURL;
+      var paths = ['projects', 'categories', 'archive', 'trash', 'notes', 'noteTombstones'];
+      return Promise.all(paths.map(function(p) {
+        return fetch(base + '/users/' + encodeURIComponent(_fbUser.uid) + '/' + p + '.json?auth=' + token)
+          .then(function(r) { if (!r.ok) throw new Error('Cloud read failed over fallback (HTTP ' + r.status + ')'); return r.json(); });
+      })).then(function(vals) {
+        return vals.map(function(v) { return { val: function() { return v; } }; });
+      });
     });
+  }
+  // Runs a cloud-read attempt and, when it dies with the shared timeout error,
+  // retries ONCE with a FRESH attempt after a delay. Takes an attempt FACTORY,
+  // not a promise: re-awaiting the original promise would only observe the
+  // same already-settled failure again (the old form made the retry purely
+  // decorative). The factory is also what lets attempt #2 switch transports —
+  // the REST fallback above. Test seam: _pf._cloudReadRetryDelayMs.
+  function withRetry(makeAttempt, attemptLabel) {
+    function run(attempt, p) {
+      return p.then(null, function(err) {
+        if (!(err && err.message && err.message.includes('Cloud is not responding'))) throw err;
+        if (attempt >= 2) throw err;
+        if (window._pf && window._pf.logError) window._pf.logError(attemptLabel + ' retry (REST fallback)', err);
+        var delay = (typeof window !== 'undefined' && window._pf && typeof window._pf._cloudReadRetryDelayMs === 'number') ? window._pf._cloudReadRetryDelayMs : 2000;
+        return new Promise(function(resolve) { setTimeout(resolve, delay); }).then(function() {
+          return run(attempt + 1, makeAttempt(attempt + 1));
+        });
+      });
+    }
+    return run(1, makeAttempt(1));
   }
   // Set whenever clearLocalUserData() wipes the local cache (sign-out or a
   // detected account switch), cleared only once a pull has actually
@@ -9951,14 +9991,15 @@ if ('serviceWorker' in navigator) {
     // so swallow the error and proceed — pull continues, errors surface
     // through the shared catch like any other failure.
     const notesSettled = (window._pf && typeof window._pf.notesReady === 'function' && window._pf.notesReady.then) ? window._pf.notesReady.catch(function() {}) : Promise.resolve();
-    withRetry(Promise.race([notesSettled.then(function() { return Promise.all([
-      userRef().once('value'),
-      catRef().once('value'),
-      archiveRef().once('value'),
-      trashRef().once('value'),
-      notesRef().once('value'),
-      noteTombstonesRef().once('value')
-    ]); }), cloudReadTimeout()]), 'pull').then(function(results) {
+    withRetry(function(attempt) {
+      // Attempt 2 is a different transport entirely: plain HTTPS REST instead of
+      // the SDK websocket. If the realtime connection is dead in a way the
+      // goOffline/goOnline reset can't heal, the fallback still gets your data.
+      // Both attempts still wait for the notes async boot first (see below).
+      return notesSettled.then(function() {
+        return attempt === 1 ? sdkReadResults() : restReadResults();
+      });
+    }, 'pull').then(function(results) {
       const projVal = results[0].val();
       const catVal = results[1].val();
       const archVal = results[2].val();
@@ -10340,14 +10381,9 @@ if ('serviceWorker' in navigator) {
       return;
     }
     window._pf.showToast('☁ Checking cloud data...');
-    withRetry(Promise.race([Promise.all([
-      userRef().once('value'),
-      catRef().once('value'),
-      archiveRef().once('value'),
-      trashRef().once('value'),
-      notesRef().once('value'),
-      noteTombstonesRef().once('value')
-    ]), cloudReadTimeout()]), 'push-check').then(function(results) {
+    withRetry(function(attempt) {
+      return attempt === 1 ? sdkReadResults() : restReadResults();
+    }, 'push-check').then(function(results) {
       const projVal = results[0].val();
       const catVal = results[1].val();
       const archVal = results[2].val();
