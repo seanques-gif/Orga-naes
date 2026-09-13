@@ -338,3 +338,18 @@
   #pf-root .pf-mention-item:hover, #pf-root .pf-mention-active { background: color-mix(in srgb, var(--accent) 14%, transparent); }
   #pf-root .pf-mention-ic { width: 11px; height: 11px; color: var(--text-dim); flex-shrink: 0; }
   #pf-root .pf-mention-empty { padding: 6px 8px; color: var(--text-dim); font-size: calc(var(--font-size-base) - 1px); }
+  #pf-root .pf-project-notes { margin-top: 10px; }
+  #pf-root .pf-project-notes-head {
+    display: flex; align-items: center; gap: 6px;
+    font-size: var(--font-size-base); color: var(--text-dim); margin-bottom: 6px;
+  }
+  #pf-root .pf-project-notes-ic { width: 12px; height: 12px; }
+  #pf-root .pf-project-notes-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; text-align: left; padding: 6px 10px; cursor: pointer;
+    background: var(--sub-bg); border: 1px solid var(--sub-border); border-radius: var(--radius-control);
+    color: var(--text); font-size: calc(var(--font-size-base) - 1px); margin-bottom: 4px;
+  }
+  #pf-root .pf-project-notes-row:hover { border-color: var(--accent); }
+  #pf-root .pf-project-notes-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pf-root .pf-project-notes-date { color: var(--text-dim); flex-shrink: 0; }

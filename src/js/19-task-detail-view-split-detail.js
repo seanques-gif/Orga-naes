@@ -14,7 +14,30 @@
       splitDetail.appendChild(el);
     } catch (e) { logError('renderSplitDetail', e); splitDetail.innerHTML = '<div class="pf-empty" style="display:block;">Error rendering project. Check console for details.</div>'; }
     if (subMultiSelect.length > 0) renderSubSelectBar(p);
+    renderProjectNotesSection(p);
     requestAnimationFrame(() => { requestAnimationFrame(_equalizeColumnWidths); });
+  }
+  // ===== Project-side notes list (Phase A slice 3): notes whose body links
+  // to this project via @project:<id>. Click opens Notes on that note.
+  function renderProjectNotesSection(p) {
+    var linked = (window._pf.notesForProject ? window._pf.notesForProject(p.id) : []);
+    if (!linked.length) return;
+    var sec = document.createElement('div');
+    sec.className = 'pf-project-notes';
+    var head = document.createElement('div');
+    head.className = 'pf-project-notes-head';
+    head.innerHTML = pfIcon('file-text', 'pf-project-notes-ic') + '<span>Notes (' + linked.length + ')</span>';
+    sec.appendChild(head);
+    linked.forEach(function(n) {
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'pf-project-notes-row';
+      row.innerHTML = '<span class="pf-project-notes-title">' + escapeHtml(n.title || 'Untitled') + '</span>' +
+        '<span class="pf-project-notes-date">' + (window._pf.fmtNoteDate ? window._pf.fmtNoteDate(n.updatedAt) : '') + '</span>';
+      row.addEventListener('click', function() { window._pf.openNoteFromProject(n.id); });
+      sec.appendChild(row);
+    });
+    splitDetail.appendChild(sec);
   }
 
   function _equalizeColumnWidths() {

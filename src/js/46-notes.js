@@ -345,6 +345,7 @@
     return true;
   }
   window._pf.deleteNoteById = deleteNoteById;
+  window._pf.fmtNoteDate = fmtNoteDate;
 
   function deleteActiveNote() {
     if (!noteById(activeNoteId)) return;
