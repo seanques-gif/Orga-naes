@@ -11,6 +11,9 @@ if ('serviceWorker' in navigator) {
   }
   function _pfShowUpdatePill() {
     if (!_pfUpdatePill) return;
+    // hidden attribute = CSS-independent safety (browsers hide it even if
+    // app styles fail to load mid-update); the class then animates it in.
+    _pfUpdatePill.hidden = false;
     _pfUpdatePill.classList.add('pf-update-pill-show');
   }
   if (_pfUpdatePill) {
@@ -18,8 +21,15 @@ if ('serviceWorker' in navigator) {
     _pfUpdatePill.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _pfActivateUpdate(); } });
   }
   navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    // A worker may already be waiting from a previous session (pill was
+    // missed/dismissed) — surface it again on boot instead of losing it.
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      _pfPendingWorker = reg.waiting;
+      _pfShowUpdatePill();
+    }
     reg.addEventListener('updatefound', function() {
       const newWorker = reg.installing;
+      if (!newWorker) return;
       newWorker.addEventListener('statechange', function() {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           _pfPendingWorker = newWorker;

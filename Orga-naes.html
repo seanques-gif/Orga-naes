@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-Km8AGyFfSGPr3h06tYV5LXgp5n3eOabj5kRixoegNs8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-qqhrZ+S+o9KfC8dC3Hp/brjO1RrFuqt2ew8whq+9j/E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -150,6 +150,9 @@
        transition: opacity 0.25s var(--ease-console), transform 0.25s var(--ease-console), visibility 0s linear 0.25s;
     }
     .pf-update-pill.pf-update-pill-show { opacity: 1; transform: translateY(0); pointer-events: auto; visibility: visible; transition-delay: 0s, 0s, 0s; }
+    /* Author display beats the UA [hidden] rule — restate it explicitly so
+       the CSS-independent kill switch actually wins while hidden. */
+    .pf-update-pill[hidden] { display: none !important; }
     .pf-update-pill:hover { border-color: var(--accent); }
     .pf-update-pill .pf-update-dot {
       width: 8px; height: 8px; border-radius: 50%;
@@ -2510,7 +2513,7 @@
     <button class="pf-bottom-nav-btn" data-nav="options" title="Options"><span data-ic="menu"></span><span>Options</span></button>
     <div class="pf-connection-dot pf-online" id="pf-connection-dot" title="Online"></div>
   </nav>
-  <div class="pf-update-pill" id="pf-update-pill" title="A new version is ready" role="button" tabindex="0">
+  <div class="pf-update-pill" id="pf-update-pill" title="A new version is ready" role="button" tabindex="0" hidden>
     <span class="pf-update-dot"></span><span>Update ready</span>
   </div>
   <div class="pf-split-view" id="pf-split-view">
@@ -9109,6 +9112,9 @@ if ('serviceWorker' in navigator) {
   }
   function _pfShowUpdatePill() {
     if (!_pfUpdatePill) return;
+    // hidden attribute = CSS-independent safety (browsers hide it even if
+    // app styles fail to load mid-update); the class then animates it in.
+    _pfUpdatePill.hidden = false;
     _pfUpdatePill.classList.add('pf-update-pill-show');
   }
   if (_pfUpdatePill) {
@@ -9116,8 +9122,15 @@ if ('serviceWorker' in navigator) {
     _pfUpdatePill.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _pfActivateUpdate(); } });
   }
   navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    // A worker may already be waiting from a previous session (pill was
+    // missed/dismissed) — surface it again on boot instead of losing it.
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      _pfPendingWorker = reg.waiting;
+      _pfShowUpdatePill();
+    }
     reg.addEventListener('updatefound', function() {
       const newWorker = reg.installing;
+      if (!newWorker) return;
       newWorker.addEventListener('statechange', function() {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           _pfPendingWorker = newWorker;

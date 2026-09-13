@@ -75,6 +75,9 @@
        transition: opacity 0.25s var(--ease-console), transform 0.25s var(--ease-console), visibility 0s linear 0.25s;
     }
     .pf-update-pill.pf-update-pill-show { opacity: 1; transform: translateY(0); pointer-events: auto; visibility: visible; transition-delay: 0s, 0s, 0s; }
+    /* Author display beats the UA [hidden] rule — restate it explicitly so
+       the CSS-independent kill switch actually wins while hidden. */
+    .pf-update-pill[hidden] { display: none !important; }
     .pf-update-pill:hover { border-color: var(--accent); }
     .pf-update-pill .pf-update-dot {
       width: 8px; height: 8px; border-radius: 50%;
