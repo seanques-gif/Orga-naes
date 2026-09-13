@@ -209,12 +209,12 @@
       width: 56px; height: 44px; padding: 0; cursor: pointer; border-radius: var(--radius-container); transition: color 0.15s, background 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .pf-bottom-nav-btn span { font-size: calc(var(--font-size-base) - 5px); font-weight: 500; }
+    .pf-bottom-nav-btn span { font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 500; }
     .pf-bottom-nav-btn.pf-bottom-active { color: var(--accent); opacity: 1; background: color-mix(in srgb, var(--accent) 15%, transparent); font-weight: 700; }
     .pf-bottom-nav-btn:active { background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: var(--radius-container); }
     .pf-bottom-badge {
       position: absolute; top: 2px; right: 6px; min-width: 16px; height: 16px;
-      background: var(--ongoing); color: var(--bg); font-size: calc(var(--font-size-base) - 5px); font-weight: 700;
+      background: var(--ongoing); color: var(--bg); font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700;
       border-radius: 50%; display: flex; align-items: center; justify-content: center;
       padding: 0 4px; line-height: 1;
     }
@@ -227,7 +227,7 @@
     @keyframes pf-offline-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
     .pf-error-dot {
       position: absolute; top: -3px; right: -3px; min-width: 14px; height: 14px;
-      background: var(--danger); color: #fff; font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700;
+      background: var(--danger); color: var(--bg); font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700;
       border-radius: 50%; display: none; align-items: center; justify-content: center;
       padding: 0 3px; line-height: 1; z-index: calc(var(--z-base) + 1);
     }
@@ -484,6 +484,11 @@
   #pf-root ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text) 8%, transparent); border-radius: 6px; }
   #pf-root ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text) 15%, transparent); }
   #pf-root * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 8%, transparent) transparent; }
+  /* Browser surfaces belong to the design: selection and caret come from the
+     palette instead of the UA default. Cheapest signal the console was built. */
+  #pf-root ::selection { background: color-mix(in srgb, var(--accent) 32%, transparent); color: var(--text); }
+  #pf-root ::-moz-selection { background: color-mix(in srgb, var(--accent) 32%, transparent); color: var(--text); }
+  #pf-root input, #pf-root textarea, #pf-root [contenteditable="true"] { caret-color: var(--accent); }
   #pf-root .pf-tb-group {
     display: flex; align-items: center; gap: 2px; flex-shrink: 0;
     padding: 2px; background: var(--sub-bg); border-radius: 6px; border: 1px solid var(--card-border);
@@ -551,7 +556,7 @@
     background: color-mix(in srgb, var(--accent) 14%, transparent);
   }
   #pf-root .pf-stats {
-    display: flex; gap: 1px; margin-left: auto; font-size: calc(var(--font-size-base) - 5px);
+    display: flex; gap: 1px; margin-left: auto; font-size: max(9px, calc(var(--font-size-base) - 5px));
     background: var(--sub-bg); border: 1px solid var(--card-border); border-radius: 999px;
     padding: 2px; align-items: center; flex-shrink: 0;
   }
@@ -561,7 +566,9 @@
     color: var(--text-dim); transition: color 0.12s, background 0.12s;
   }
   #pf-root .pf-stat b { color: var(--text); font-weight: 700; font-size: calc(var(--font-size-base) - 4px); }
-  #pf-root .pf-stat span { font-size: calc(var(--font-size-base) - 6px); }
+  /* 9px functional floor (design system): base-6 collapses to 8px at desktop
+     and 5px on narrow windows without the guard. */
+  #pf-root .pf-stat span { font-size: max(9px, calc(var(--font-size-base) - 6px)); }
   /* Narrow desktop: drop the labels first, keep dot + count (the bar must stay
      one row — the pre-existing flex-wrap:wrap pushed the whole capsule to a
      second row the moment my additions outgrew the width). */
@@ -638,7 +645,7 @@
   #pf-root .pf-due-filter:focus { border-color: var(--accent); }
   #pf-root .pf-font-family-select { width: 100%; font-size: calc(var(--font-size-base) - 2px); padding: 6px 8px; }
   #pf-root .pf-font-custom-input { width: 100%; font-size: calc(var(--font-size-base) - 2px); padding: 6px 8px; margin-top: 6px; height: auto; flex-shrink: 1; }
-  #pf-root .pf-save { font-size: calc(var(--font-size-base) - 6px); color: var(--text-dim); width: auto; min-width: 55px; text-align: right; flex-shrink: 0; padding: 2px 6px; border-radius: 6px; transition: background 0.3s, color 0.3s, transform 0.2s; }
+  #pf-root .pf-save { font-size: max(9px, calc(var(--font-size-base) - 6px)); color: var(--text-dim); width: auto; min-width: 55px; text-align: right; flex-shrink: 0; padding: 2px 6px; border-radius: 6px; transition: background 0.3s, color 0.3s, transform 0.2s; }
   #pf-root .pf-save.pf-save-fail { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger); font-weight: 700; animation: pf-save-shake 0.4s var(--ease-out-strong); }
   #pf-root .pf-save.pf-save-ok { color: var(--completed); }
   @keyframes pf-save-shake {
@@ -909,9 +916,9 @@
   @media (max-width: 500px) {
     #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
     #pf-root#pf-root .pf-split-list-title { font-size: calc(var(--font-size-base) - 1px); } /* project name in the list (e.g. "Efficiency", "DS1922L - Battrip") */
-    #pf-root .pf-split-list-status { font-size: calc(var(--font-size-base) - 5px); padding: 2px 5px; }
+    #pf-root .pf-split-list-status { font-size: max(9px, calc(var(--font-size-base) - 5px)); padding: 2px 5px; }
     #pf-root#pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 3px); } /* the "x/y" progress count next to each project */
-    #pf-root .pf-split-list-due { font-size: calc(var(--font-size-base) - 5px); }
+    #pf-root .pf-split-list-due { font-size: max(9px, calc(var(--font-size-base) - 5px)); }
     #pf-root .pf-node { max-width: 100%; }
     #pf-root .pf-node-header { padding: 8px; gap: 6px; flex-wrap: nowrap; }
     /* --- Task detail screen text sizes (when a project is opened) --- */
@@ -924,7 +931,7 @@
     #pf-root .pf-split-detail { padding: 8px; }
     #pf-root .pf-sublist { padding: 8px 0 8px 14px; }
     #pf-root .pf-node-desc-row { padding: 0 12px 6px 14px; }
-    #pf-root .pf-split-collapse-btn { font-size: calc(var(--font-size-base) - 5px); padding: 2px 6px; }
+    #pf-root .pf-split-collapse-btn { font-size: max(9px, calc(var(--font-size-base) - 5px)); padding: 2px 6px; }
     #pf-root .pf-split-sort { display: none !important; }
   }
 
@@ -932,7 +939,7 @@
     display: none !important;
   }
   #pf-root .pf-overdue-banner-icon { font-size: calc(var(--font-size-base) - 4px); flex-shrink: 0; }
-  #pf-root .pf-overdue-banner-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(var(--font-size-base) - 5px); }
+  #pf-root .pf-overdue-banner-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: max(9px, calc(var(--font-size-base) - 5px)); }
   #pf-root .pf-overdue-banner-dismiss { background: transparent; color: var(--danger); font-size: calc(var(--font-size-base) - 4px); cursor: pointer; border: none; opacity: 0.7; transition: opacity 0.15s; flex-shrink: 0; }
   #pf-root .pf-overdue-banner-dismiss:hover { opacity: 1; }
   #pf-root .pf-canvas-wrap {
@@ -1037,13 +1044,13 @@
   }
   #pf-root .pf-split-list-title { flex: 1; font-size: calc(var(--font-size-base) - 2px); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
   #pf-root .pf-split-list-item.pf-split-active .pf-split-list-title { font-weight: 500; color: var(--accent); }
-  #pf-root .pf-split-list-status { font-size: calc(var(--font-size-base) - 5.5px); padding: 2px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; width: 62px; text-align: center; display: inline-block; transition: background 0.3s var(--ease-console), color 0.3s var(--ease-console); }
-  #pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 36px; text-align: center; display: inline-block; }
-  #pf-root .pf-split-list-progress-pct { font-size: max(8.5px, calc(var(--font-size-base) - 5.5px)); font-weight: 500; color: var(--text-dim); opacity: 0.65; margin-left: 3px; }
-  #pf-root .pf-split-list-due { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); flex-shrink: 0; display: inline-flex; align-items: center; gap: var(--space-xs); width: 58px; text-align: right; }
+  #pf-root .pf-split-list-status { font-size: max(9px, calc(var(--font-size-base) - 5.5px)); padding: 2px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; width: 62px; text-align: center; display: inline-block; transition: background 0.3s var(--ease-console), color 0.3s var(--ease-console); }
+  #pf-root .pf-split-list-progress { font-size: max(9px, calc(var(--font-size-base) - 5.5px)); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 36px; text-align: center; display: inline-block; }
+  #pf-root .pf-split-list-progress-pct { font-size: max(8.5px, max(9px, calc(var(--font-size-base) - 5.5px))); font-weight: 500; color: var(--text-dim); opacity: 0.65; margin-left: 3px; }
+  #pf-root .pf-split-list-due { font-size: max(9px, calc(var(--font-size-base) - 5.5px)); color: var(--text-dim); flex-shrink: 0; display: inline-flex; align-items: center; gap: var(--space-xs); width: 58px; text-align: right; }
   #pf-root .pf-split-list-due.pf-overdue { color: var(--danger); font-weight: 600; }
   #pf-root .pf-split-list-edit { display: none; }
-  #pf-root .pf-split-list-move { background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) - 6px); cursor: pointer; padding: 0 2px; flex-shrink: 0; display: none; line-height: 1; }
+  #pf-root .pf-split-list-move { background: transparent; border: none; color: var(--text-dim); font-size: max(9px, calc(var(--font-size-base) - 6px)); cursor: pointer; padding: 0 2px; flex-shrink: 0; display: none; line-height: 1; }
   #pf-root .pf-split-list-move:hover { color: var(--accent); }
   @media (pointer: coarse) {
     #pf-root .pf-split-list-move { display: none; }
@@ -1226,7 +1233,7 @@
   #pf-root .pf-drag-handle:hover { opacity: 1; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
   #pf-root .pf-drag-handle:active { cursor: grabbing; }
   #pf-root .pf-chevron {
-    background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); font-size: calc(var(--font-size-base) - 5px);
+    background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); font-size: max(9px, calc(var(--font-size-base) - 5px));
     width: clamp(16px, 2.5vw, 22px); height: clamp(16px, 2.5vw, 22px); border-radius: var(--radius-control); display: flex; align-items: center;
     justify-content: center; flex-shrink: 0; transition: transform 0.18s, background 0.15s, color 0.15s;
   }
@@ -1259,7 +1266,7 @@
   #pf-root .pf-split-detail .pf-node > .pf-node-header > .pf-badge { display: none !important; }
   #pf-root .pf-split-detail .pf-node > .pf-node-header .pf-cat-chip { display: none !important; }
   #pf-root .pf-split-detail .pf-node > .pf-node-header .pf-recur-chip { display: none !important; }
-  #pf-root .pf-count { font-size: calc(var(--font-size-base) - 5.5px); color: var(--text-dim); font-weight: 500; }
+  #pf-root .pf-count { font-size: max(9px, calc(var(--font-size-base) - 5.5px)); color: var(--text-dim); font-weight: 500; }
 
   #pf-root .pf-sublist {
     display: none; border-top: 1px solid var(--card-border); background: var(--sub-bg);
@@ -1326,14 +1333,14 @@
   #pf-root .pf-subrow.pf-sub-status-match .pf-subrow-title { font-weight: 600; }
   #pf-root .pf-subrow-title:focus { color: var(--accent); text-decoration: none; }
   #pf-root .pf-sub-edit { display: none; }
-  #pf-root .pf-sub-handle { color: var(--text-dim); font-size: calc(var(--font-size-base) - 5px); line-height: 1; width: 12px; flex-shrink: 0; text-align: center; cursor: grab; letter-spacing: -1px; opacity: 0.6; transition: opacity 0.15s, color 0.15s; }
+  #pf-root .pf-sub-handle { color: var(--text-dim); font-size: max(9px, calc(var(--font-size-base) - 5px)); line-height: 1; width: 12px; flex-shrink: 0; text-align: center; cursor: grab; letter-spacing: -1px; opacity: 0.6; transition: opacity 0.15s, color 0.15s; }
   #pf-root .pf-sub-handle:hover { opacity: 1 !important; color: var(--accent); }
   #pf-root .pf-subrow.pf-sub-dragging { opacity: 0.35; }
   #pf-root .pf-subrow.pf-drop-before, #pf-root .pf-split-list-item.pf-drop-before { box-shadow: inset 0 2px 0 0 var(--accent); }
   #pf-root .pf-subrow.pf-drop-after, #pf-root .pf-split-list-item.pf-drop-after { box-shadow: inset 0 -2px 0 0 var(--accent); }
   #pf-root .pf-subrow.pf-drop-nest { background: color-mix(in srgb, var(--accent) 14%, transparent); outline: 1.5px dashed var(--accent); outline-offset: -1.5px; }
   #pf-root .pf-sublist.pf-drop-root { outline: 1.5px dashed var(--accent); outline-offset: -3px; border-radius: 0 0 var(--radius-overlay) var(--radius-overlay); }
-  #pf-root .pf-sub-chevron { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); font-size: calc(var(--font-size-base) - 7px); width: clamp(13px, 2vw, 16px); height: clamp(13px, 2vw, 16px); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: transform 0.15s, background 0.15s, color 0.15s; }
+  #pf-root .pf-sub-chevron { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); font-size: max(9px, calc(var(--font-size-base) - 7px)); width: clamp(13px, 2vw, 16px); height: clamp(13px, 2vw, 16px); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: transform 0.15s, background 0.15s, color 0.15s; }
   #pf-root .pf-sub-chevron:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
   #pf-root .pf-sub-chevron.pf-sub-expanded { transform: rotate(90deg); }
   #pf-root .pf-sub-spacer { width: 16px; flex-shrink: 0; }
@@ -1735,7 +1742,7 @@
   .pf-week-col-today .pf-week-col-daynum { color: var(--accent); }
 
   .pf-week-day-badge {
-    position: absolute; top: 0; right: 2px; font-size: calc(var(--font-size-base) - 5px); font-weight: 700;
+    position: absolute; top: 0; right: 2px; font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 700;
     color: var(--text-dim); background: var(--card); border-radius: var(--radius-container); padding: 1px 6px;
   }
   .pf-week-col-today .pf-week-day-badge { color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
@@ -1804,7 +1811,7 @@
   .pf-week-backlog-chip-title-wrap { min-width: 0; flex: 1; }
   .pf-week-backlog-chip-title-wrap.pf-clickable { cursor: pointer; }
   .pf-week-backlog-chip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pf-week-backlog-chip-project { font-size: calc(var(--font-size-base) - 5px); color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-week-backlog-chip-project { font-size: max(9px, calc(var(--font-size-base) - 5px)); color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pf-week-backlog-chip-del {
     background: none; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) - 1px);
     cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0;
@@ -2183,7 +2190,7 @@
   /* ===== RECYCLE BIN — kind chips (Project / Task / Note) in the bin list ===== */
   #pf-root .pf-bin-kind {
     flex-shrink: 0;
-    font-size: calc(var(--font-size-base) - 5px);
+    font-size: max(9px, calc(var(--font-size-base) - 5px));
     line-height: 1;
     padding: 3px 6px;
     border-radius: 999px;
