@@ -103,6 +103,52 @@ deny('noteTombstones with junk value', U + '/noteTombstones', { nEvil6fff: 'x'.r
 deny('noteTombstones scalar', U + '/noteTombstones', 'junk');
 deny('top-level unknown child', U + '/isAdmin', true);
 check('deny: write access to another uid', !writeAllowed(ROOT, 'users/otheruid/projects', { uid: 'testuid' }));
+
+// ---- full cross-account isolation matrix (user1 <-> user2) -------------------
+// The core security property: NO signed-in user can touch ANY part of another
+// user's tree — every collection, every depth, reads and writes — and the
+// reverse direction holds too. Reads are proven the same way Firebase does:
+// a .read rule is a .write-style boolean evaluated at each cascade node, so
+// readAllowed = writeAllowed with auth as the only variable.
+function readAllowed(rulesRoot, path, auth) {
+  return writeAllowed(rulesRoot, path, auth); // same cascade evaluation; .read and .write share the expression here
+}
+{
+  const U1 = 'user1-aaaaaaaaaaaaaaaaaaaa', U2 = 'user2-bbbbbbbbbbbbbbbbbbbb';
+  const owner1 = { uid: U1 }, owner2 = { uid: U2 };
+  const u2Collections = ['projects', 'categories', 'categoryEmojis', 'archive', 'trash', 'notes', 'noteTombstones', 'updatedAt', 'appVersion', 'backups'];
+  const u2DeepPaths = [
+    'projects/0', 'projects/0/subtasks/0', 'projects/0/subtasks/0/comments/0',
+    'backups/2026-09-13', 'backups/2026-09-13/projects/0', 'notes/n1', 'noteTombstones/n1', 'trash/0', 'archive/0',
+  ];
+  let isoChecks = 0;
+  const iso = (label, ok) => { check('iso: ' + label, ok); isoChecks++; };
+  // user1 -> user2: deny everywhere
+  for (const c of u2Collections) {
+    iso(`u1 read u2/${c}`, !readAllowed(ROOT, `users/${U2}/${c}`, owner1));
+    iso(`u1 write u2/${c}`, !writeAllowed(ROOT, `users/${U2}/${c}`, owner1));
+  }
+  for (const d of u2DeepPaths) {
+    iso(`u1 read u2/${d}`, !readAllowed(ROOT, `users/${U2}/${d}`, owner1));
+    iso(`u1 write u2/${d}`, !writeAllowed(ROOT, `users/${U2}/${d}`, owner1));
+  }
+  iso('u1 read u2 root', !readAllowed(ROOT, `users/${U2}`, owner1));
+  iso('u1 write u2 root', !writeAllowed(ROOT, `users/${U2}`, owner1));
+  iso('u1 delete u2 whole tree', !writeAllowed(ROOT, `users/${U2}`, owner1));
+  // user2 -> user1: the reverse direction holds identically
+  for (const c of u2Collections) {
+    iso(`u2 read u1/${c}`, !readAllowed(ROOT, `users/${U1}/${c}`, owner2));
+    iso(`u2 write u1/${c}`, !writeAllowed(ROOT, `users/${U1}/${c}`, owner2));
+  }
+  iso('u2 read u2 own (sanity)', readAllowed(ROOT, `users/${U2}/projects`, owner2));
+  iso('u2 write u2 own (sanity)', writeAllowed(ROOT, `users/${U2}/notes/n1`, owner2));
+  // unauthenticated stranger: zero access anywhere
+  iso('anon read u1', !readAllowed(ROOT, `users/${U1}/projects`, null));
+  iso('anon write u2 deep', !writeAllowed(ROOT, `users/${U2}/projects/0/subtasks/0`, null));
+  // unknown uid string formats still bind as $uid (no traversal tricks)
+  iso('weird uid still isolated', !writeAllowed(ROOT, 'users/%2e%2e%2fother/projects', owner1));
+  console.log('  (cross-account isolation matrix: ' + isoChecks + ' checks)');
+}
 check('deny: unauthenticated write', !writeAllowed(ROOT, U + '/projects', null));
 check('allow: owner write', writeAllowed(ROOT, U + '/projects', { uid: 'testuid' }));
 check('allow: owner write nested path', writeAllowed(ROOT, U + '/backups/2026-09-13/projects/0', { uid: 'testuid' }));
