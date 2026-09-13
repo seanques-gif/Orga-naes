@@ -415,6 +415,61 @@
   noteBodyEl.addEventListener('input', () => { updateNoteCount(); clearTimeout(notesSaveTimer); notesSaveTimer = setTimeout(commitNoteField, 350); });
   noteBodyEl.addEventListener('blur', commitNoteField);
 
+  // ===== @-mention popup (Phase A slice 2): type @ in the body to link a project
+  let mentionPopEl = null, mentionItems = [], mentionIdx = 0, mentionStart = -1;
+  function closeMentionPopup() { if (mentionPopEl) { mentionPopEl.remove(); mentionPopEl = null; } }
+  function mentionQueryAtCaret() {
+    const pos = noteBodyEl.selectionStart;
+    const m = noteBodyEl.value.slice(0, pos).match(/(?:^|\s)@([A-Za-z0-9_-]*)$/);
+    return m ? { q: m[1], start: pos - m[1].length - 1 } : null;
+  }
+  function buildMentionPop() {
+    mentionPopEl = document.createElement('div');
+    mentionPopEl.className = 'pf-mention-pop';
+    mentionPopEl.id = 'pf-mention-pop';
+    notesPanelEl.appendChild(mentionPopEl);
+    const tr = noteBodyEl.getBoundingClientRect(), pr = notesPanelEl.getBoundingClientRect();
+    mentionPopEl.style.left = Math.max(8, tr.left - pr.left) + 'px';
+    mentionPopEl.style.top = (tr.bottom - pr.top - 4) + 'px';
+  }
+  function renderMentionPopup() {
+    const st = mentionQueryAtCaret();
+    if (!st) { closeMentionPopup(); return; }
+    const q = st.q.toLowerCase();
+    mentionItems = (window._pf.getProjects() || []).filter(p => (p.title || '').toLowerCase().indexOf(q) !== -1).slice(0, 6);
+    mentionStart = st.start;
+    if (mentionIdx >= mentionItems.length) mentionIdx = Math.max(0, mentionItems.length - 1);
+    if (!mentionPopEl) buildMentionPop();
+    mentionPopEl.innerHTML = mentionItems.length
+      ? mentionItems.map((p, i) => '<button type="button" class="pf-mention-item' + (i === mentionIdx ? ' pf-mention-active' : '') + '" data-mention-i="' + i + '">' + pfIcon('folder', 'pf-mention-ic') + escapeHtml(p.title || 'Untitled') + '</button>').join('')
+      : '<div class="pf-mention-empty">No matching project</div>';
+    mentionPopEl.querySelectorAll('[data-mention-i]').forEach(el => {
+      el.addEventListener('mousedown', (ev) => { ev.preventDefault(); insertMention(mentionItems[+el.dataset.mentionI]); });
+    });
+  }
+  function insertMention(p) {
+    if (!p) { closeMentionPopup(); return; }
+    const pos = noteBodyEl.selectionStart;
+    const before = noteBodyEl.value.slice(0, mentionStart), after = noteBodyEl.value.slice(pos);
+    const ins = '@project:' + p.id + ' ' + (p.title || '') + ' ';
+    noteBodyEl.value = before + ins + after;
+    const np = (before + ins).length;
+    noteBodyEl.focus();
+    noteBodyEl.setSelectionRange(np, np);
+    closeMentionPopup();
+    noteBodyEl.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  noteBodyEl.addEventListener('input', renderMentionPopup);
+  noteBodyEl.addEventListener('keydown', (e) => {
+    if (!mentionPopEl) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); mentionIdx = Math.min(mentionIdx + 1, mentionItems.length - 1); renderMentionPopup(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); mentionIdx = Math.max(mentionIdx - 1, 0); renderMentionPopup(); }
+    else if ((e.key === 'Enter' || e.key === 'Tab') && mentionItems.length) { e.preventDefault(); insertMention(mentionItems[mentionIdx]); }
+    else if (e.key === 'Escape') { closeMentionPopup(); e.stopPropagation(); }
+  });
+  noteBodyEl.addEventListener('blur', () => { setTimeout(closeMentionPopup, 150); });
+  window._pf.registerEscDismissable({ check: () => !!mentionPopEl, run: closeMentionPopup });
+
   // ===== Editor enrichment: indent, checkboxes, checklist view =====
   const INDENT = '  '; // two spaces per level
   const CHECK_RE = /^(\s*)(\[ \]|\[x\])\s+/i;

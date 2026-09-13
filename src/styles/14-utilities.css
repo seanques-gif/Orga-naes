@@ -325,3 +325,16 @@
   #pf-root .pf-note-link-chip:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
   #pf-root .pf-note-link-missing { color: var(--text-dim); border-color: var(--sub-border, var(--card-border)); background: var(--sub-bg); cursor: default; }
   #pf-root .pf-note-link-ic { width: 10px; height: 10px; flex-shrink: 0; }
+  #pf-root .pf-mention-pop {
+    position: absolute; z-index: var(--z-float); min-width: 200px; max-width: 300px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: var(--radius-overlay); box-shadow: var(--shadow-hover); padding: 4px;
+  }
+  #pf-root .pf-mention-item {
+    display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
+    padding: 6px 8px; border: 0; background: transparent; color: var(--text);
+    font-size: calc(var(--font-size-base) - 1px); cursor: pointer; border-radius: 4px;
+  }
+  #pf-root .pf-mention-item:hover, #pf-root .pf-mention-active { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  #pf-root .pf-mention-ic { width: 11px; height: 11px; color: var(--text-dim); flex-shrink: 0; }
+  #pf-root .pf-mention-empty { padding: 6px 8px; color: var(--text-dim); font-size: calc(var(--font-size-base) - 1px); }
