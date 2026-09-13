@@ -231,7 +231,7 @@
       border-radius: 50%; display: none; align-items: center; justify-content: center;
       padding: 0 3px; line-height: 1; z-index: calc(var(--z-base) + 1);
     }
-    .pf-error-item { border-left: 3px solid var(--danger); padding-left: 8px !important; }
+    .pf-error-item { border-left: 1px solid var(--danger); padding-left: 10px !important; }
     .pf-error-item .pf-error-ctx { font-weight: 700; color: var(--danger); }
     .pf-error-item .pf-error-msg { font-size: calc(var(--font-size-base) - 2.5px); color: var(--text-dim); word-break: break-word; }
 
@@ -978,7 +978,7 @@
   #pf-root .pf-split-list-cat:hover { background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text); }
   #pf-root .pf-split-list-item {
     padding: 6px 12px 6px 10px; cursor: pointer; display: flex; align-items: center; gap: var(--space-xs);
-    border-left: 2px solid transparent; border-radius: 6px; margin: 1px 4px 1px 16px;
+    border-left: 1px solid transparent; border-radius: 6px; margin: 1px 4px 1px 16px;
     transition: background 0.1s, border-color 0.1s;
     position: relative;
   }
@@ -1030,7 +1030,7 @@
   #pf-root .pf-emoji-picker span { cursor: pointer; padding: 4px; border-radius: 6px; text-align: center; font-size: calc(var(--font-size-base) + 2px); transition: background 0.1s; }
   #pf-root .pf-emoji-picker span:hover { background: color-mix(in srgb, var(--accent) 15%, transparent); }
   #pf-root .pf-split-list-item:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
-  #pf-root .pf-split-list-item.pf-split-active { background: color-mix(in srgb, var(--accent) 8%, transparent); border-left: 3px solid var(--accent); border-radius: 0; }
+  #pf-root .pf-split-list-item.pf-split-active { background: color-mix(in srgb, var(--accent) 8%, transparent); border-left: 1px solid var(--accent); border-radius: 0; }
   #pf-root .pf-split-list-item.pf-split-selected { background: color-mix(in srgb, var(--text) 6%, transparent); border-left-color: var(--accent); touch-action: none; }
   #pf-root .pf-split-delete-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid var(--accent); border-radius: 6px; margin: 6px 0; }
   #pf-root .pf-split-delete-bar button { background: transparent; border: 1px solid var(--card-border); color: var(--text); border-radius: 6px; padding: 3px 8px; font-size: calc(var(--font-size-base) - 4px); cursor: pointer; font-weight: 500; transition: border-color 0.15s, background 0.15s; }
@@ -1142,7 +1142,7 @@
   #pf-root .pf-node {
     position: absolute; width: auto; min-width: 420px; max-width: 420px;
     background: var(--card); border: 1.5px solid var(--card-border); border-radius: var(--radius-overlay);
-    z-index: var(--z-base); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent); transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s, max-width 0.2s var(--ease-console);
+    z-index: var(--z-base); transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s, max-width 0.2s var(--ease-console);
   }
 
   /* Multi-select action bar (fixed, floating) */
@@ -1197,8 +1197,11 @@
   }
   #pf-root .pf-node.pf-expanded { min-width: 380px; max-width: 500px; }
   @media (hover: hover) and (pointer: fine) {
-    /* Hover lift is an interaction shadow — allowed under Flat-At-Rest. */
-    #pf-root .pf-node:hover { border-color: var(--hover-border); box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent); transform: translateY(-1px); }
+    /* Hover lift is an interaction shadow — allowed under Flat-At-Rest. The
+       zero-offset accent halo was removed: a resting ring belongs to no state,
+       and here the lift is already the interaction signal (craft floor: a
+       zero-offset colored halo is decoration). */
+    #pf-root .pf-node:hover { border-color: var(--hover-border); box-shadow: 0 8px 24px rgba(0,0,0,0.35); transform: translateY(-1px); }
   }
   #pf-root .pf-node.pf-node-selected { border-color: #ffffff; box-shadow: 0 0 0 2px #ffffff, 0 2px 10px rgba(0,0,0,0.25); }
   #pf-root.pf-theme-light .pf-node.pf-node-selected { border-color: #000000; box-shadow: 0 0 0 2px #000000, 0 2px 10px rgba(0,0,0,0.15); }
@@ -1329,7 +1332,7 @@
   #pf-root .pf-subrow.pf-sub-selected { background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 6px; touch-action: none; }
   #pf-root .pf-subrow.pf-sub-search-match { background: color-mix(in srgb, var(--ongoing) 15%, transparent); border-radius: 6px; }
   #pf-root .pf-subrow.pf-sub-search-match .pf-subrow-title { color: var(--accent); font-weight: 600; }
-  #pf-root .pf-subrow.pf-sub-status-match { background: color-mix(in srgb, var(--waiting) 12%, transparent); border-radius: 6px; border-left: 3px solid var(--waiting); }
+  #pf-root .pf-subrow.pf-sub-status-match { background: color-mix(in srgb, var(--waiting) 12%, transparent); border-radius: 6px; border-left: 1px solid var(--waiting); }
   #pf-root .pf-subrow.pf-sub-status-match .pf-subrow-title { font-weight: 600; }
   #pf-root .pf-subrow-title:focus { color: var(--accent); text-decoration: none; }
   #pf-root .pf-sub-edit { display: none; }
@@ -1763,7 +1766,7 @@
     margin-bottom: 5px; display: flex; align-items: flex-start; gap: 6px;
     cursor: grab; transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
   }
-  .pf-week-task-accent { padding-left: 7px; border-left: 3px solid var(--pf-task-accent, transparent); }
+  .pf-week-task-accent { padding-left: 9px; border-left: 1px solid var(--pf-task-accent, transparent); }
   @media (hover: hover) and (pointer: fine) {
     .pf-week-task:not(.pf-week-task-done):hover { border-color: var(--hover-border); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
   }
@@ -1806,7 +1809,7 @@
     cursor: grab; transition: border-color 0.15s, box-shadow 0.15s;
   }
   .pf-week-backlog-chip:hover { border-color: var(--hover-border); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-  .pf-week-backlog-chip-accent { border-left: 3px solid var(--pf-task-accent, transparent); }
+  .pf-week-backlog-chip-accent { padding-left: 10px; border-left: 1px solid var(--pf-task-accent, transparent); }
   .pf-week-backlog-chip-check { flex-shrink: 0; cursor: pointer; }
   .pf-week-backlog-chip-title-wrap { min-width: 0; flex: 1; }
   .pf-week-backlog-chip-title-wrap.pf-clickable { cursor: pointer; }
