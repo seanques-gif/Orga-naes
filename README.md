@@ -1,5 +1,7 @@
 # Orga-naes
 
+[![CI](https://github.com/seanques-gif/Orga-naes/actions/workflows/ci.yml/badge.svg)](https://github.com/seanques-gif/Orga-naes/actions/workflows/ci.yml)
+
 A personal project manager that lives entirely in **one HTML file**. No backend, no
 accounts, no install — your data stays in your browser.
 

@@ -1,0 +1,43 @@
+# CI — every push must build, verify, and pass the full suite.
+# Mirrors the local change loop: build → determinism gate → all six suites.
+# The RTDB production-export replay skips cleanly on fresh clones (the export
+# file is local-only), so CI sees the same checks a stranger's clone would.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build artifact from src/
+        run: npm run build
+
+      - name: Determinism gate + full test suite
+        run: npm run verify
+
+      - name: Committed artifact must match src/ exactly
+        run: |
+          if ! git diff --exit-code -- Orga-naes.html Orga-naes.html.sha256; then
+            echo "::error::Committed Orga-naes.html / pin differ from a fresh build. Run 'npm run build' and commit the triad (src + artifact + pin) together."
+            exit 1
+          fi
+        shell: bash
