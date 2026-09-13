@@ -35,7 +35,14 @@ Requires Node.js (any recent version).
 npm run build   # reassembles src/ into the single-file Orga-naes.html
 npm test        # six suites: design tokens, contrast, dates, CSP, functional (125), RTDB rules (141)
 npm run verify  # determinism gate (artifact pin byte-matches a fresh build) + test
+npm run probe   # real-browser gate: toolbar layout + craft-floor audit (headless Chrome)
 ```
+
+The probe drives the installed Chrome/Chromium over the DevTools protocol (no
+dependencies, `CHROME_PATH` to point at a specific binary). It starts the local
+server itself and fails on toolbar movement when search opens, a resting card
+shadow, or a one-sided colored border rail above 1px. Pass a viewport:
+`npm run probe -- 1355 800`. CI runs it at two desktop widths in the `layout` job.
 
 Source of truth is `src/` — never hand-edit `Orga-naes.html`; the build owns it.
 
