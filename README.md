@@ -62,6 +62,13 @@ can't silently capture the wrong theme. On failure the freshly captured PNGs lan
 in `tests/baselines/current/` (uploaded as the `visual-drift` CI artifact). Single
 region: `node scripts/visual-baseline.cjs --only=card-head`.
 
+The comparator tolerates 8px of sub-block misalignment and per-channel block
+deltas up to 24, because CI lays the same row out a pixel or two from a local
+machine. More than 1% of blocks drifting fails the run, and so does a single
+block 60+ away from every colour in its neighbourhood. If a browser update shifts
+rendering with no code change behind it, `npm run visual:update` is the recovery —
+read the diff it writes before committing.
+
 Source of truth is `src/` — never hand-edit `Orga-naes.html`; the build owns it.
 
 ## Run it
