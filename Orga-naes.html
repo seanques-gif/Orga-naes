@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-L9M4DdmF89TTJLEdWKvOaNZ0Fq0QfdOvFE6248m4LIo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-LlVLeiUnIaC5FVB3d8RtB4lZdRP31NO2by3MnwXacuE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -482,6 +482,24 @@
     overflow: visible;
   }
   #pf-root .pf-tb-sep { width: 1px; height: 20px; background: var(--card-border); margin: 0 4px; flex-shrink: 0; }
+  #pf-root .pf-toolbar .pf-tb-group + .pf-tb-group,
+  #pf-root .pf-toolbar .pf-new-btn + .pf-tb-group,
+  #pf-root .pf-toolbar .pf-tb-group + .pf-search-wrap,
+  #pf-root .pf-toolbar .pf-search-wrap + .pf-tb-group,
+  #pf-root .pf-toolbar .pf-shortcuts-hint + .pf-stats,
+  #pf-root .pf-toolbar .pf-search-wrap + .pf-shortcuts-hint,
+  #pf-root .pf-toolbar .pf-stats + .pf-tb-group,
+  #pf-root .pf-toolbar .pf-tb-group + .pf-stats { position: relative; }
+  #pf-root .pf-toolbar .pf-tb-group + .pf-tb-group::before,
+  #pf-root .pf-toolbar .pf-new-btn + .pf-tb-group::before,
+  #pf-root .pf-toolbar .pf-tb-group + .pf-search-wrap::before,
+  #pf-root .pf-toolbar .pf-search-wrap + .pf-tb-group::before,
+  #pf-root .pf-toolbar .pf-shortcuts-hint + .pf-stats::before,
+  #pf-root .pf-toolbar .pf-stats + .pf-tb-group::before,
+  #pf-root .pf-toolbar .pf-tb-group + .pf-stats::before {
+    content: ''; width: 1px; height: 20px; background: var(--card-border);
+    margin-right: 6px; flex-shrink: 0; opacity: 0.7;
+  }
   #pf-root .pf-title {
     font-family: var(--font-sans); font-weight: 700; font-size: calc(var(--font-size-base) - 2px);
     letter-spacing: 0.2px; display: flex; align-items: center; gap: 6px;
@@ -520,13 +538,30 @@
   #pf-root .pf-undo-btn:active:not(:disabled) { opacity: 0.7; }
   #pf-root .pf-undo-btn { touch-action: manipulation; }
   #pf-root .pf-undo-btn:disabled { opacity: 0.3; cursor: default; }
-  #pf-root .pf-undo-btn.pf-tb-active { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
-  #pf-root .pf-stats { display: flex; gap: 6px; margin-left: auto; font-size: calc(var(--font-size-base) - 5px); }
-  #pf-root .pf-stat {
-    padding: 3px 8px; border-radius: 100px; font-weight: 600; display: flex;
-    align-items: center; gap: 4px; white-space: nowrap;
+  #pf-root .pf-undo-btn.pf-tb-active {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
   }
-  #pf-root .pf-stat .pf-swatch { width: 5px; height: 5px; border-radius: 50%; }
+  #pf-root .pf-stats {
+    display: flex; gap: 2px; margin-left: auto; font-size: calc(var(--font-size-base) - 5px);
+    background: var(--sub-bg); border: 1px solid var(--card-border); border-radius: 999px;
+    padding: 2px; align-items: center;
+  }
+  #pf-root .pf-stat {
+    padding: 3px 9px; border-radius: 999px; font-weight: 600; display: flex;
+    align-items: center; gap: 5px; white-space: nowrap; cursor: pointer;
+    color: var(--text-dim); transition: color 0.12s, background 0.12s;
+  }
+  #pf-root .pf-stat b { color: var(--text); font-weight: 700; font-size: calc(var(--font-size-base) - 3px); }
+  #pf-root .pf-stat span { font-size: calc(var(--font-size-base) - 6px); }
+  #pf-root .pf-stat:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+  #pf-root .pf-stat.pf-stat-active {
+    background: var(--stat-bg, color-mix(in srgb, var(--stat-c, var(--accent)) 15%, transparent));
+    color: var(--stat-c, var(--accent));
+    outline: 1px solid color-mix(in srgb, var(--stat-c, var(--accent)) 55%, transparent);
+    outline-offset: -1px;
+  }
+  #pf-root .pf-stat.pf-stat-active b { color: var(--stat-c, var(--accent)); }
   #pf-root .pf-search-wrap { position: relative; display: inline-flex; align-items: center; }
   #pf-root .pf-search-toggle { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); cursor: pointer; border: none; padding: 4px 6px; border-radius: var(--radius-control); transition: color 0.12s, background 0.12s; }
   #pf-root .pf-search-toggle:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
@@ -3468,7 +3503,26 @@
   const errorPanel = document.getElementById('pf-error-panel');
   const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, notesPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal, errorPanel];
   function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
-  function openModal(el, displayValue) { closeAllModals(); el.style.display = displayValue; modalBackdrop.style.display = 'block'; _markOverlayOpen('modals'); }
+  function openModal(el, displayValue) {
+    closeAllModals();
+    el.style.display = displayValue;
+    modalBackdrop.style.display = 'block';
+    _markOverlayOpen('modals');
+    // Quiet Console: the toolbar buttons that OPEN a view panel get the active
+    // tint while that panel is open (and only while it's open). Keeps the
+    // long-standing .pf-tb-active class, which previously had no JS writer.
+    const VIEW_BTN_FOR_PANEL = {
+      'pf-today-panel': 'pf-today-btn',
+      'pf-duelist-panel': 'pf-duelist-btn',
+      'pf-calendar-panel': 'pf-calendar-btn',
+      'pf-weekly-panel': 'pf-weekly-btn',
+      'pf-notes-panel': 'pf-notes-btn'
+    };
+    document.querySelectorAll('#pf-today-btn, #pf-duelist-btn, #pf-calendar-btn, #pf-weekly-btn, #pf-notes-btn')
+      .forEach(b => b.classList.remove('pf-tb-active'));
+    const btnId = VIEW_BTN_FOR_PANEL[el.id];
+    if (btnId) { const b = document.getElementById(btnId); if (b) b.classList.add('pf-tb-active'); }
+  }
   modalBackdrop.addEventListener('click', closeAllModals);
 
   ALL_MODALS.forEach(panel => {
@@ -4275,7 +4329,10 @@
   // ============================================================
   let statusFilter = '';
     // SUBSECTION: Canvas Rendering (Nodes & Stats)
-  function renderStats() { const counts = { planned: 0, ongoing: 0, waiting: 0, completed: 0 }; function tally(list) { list.forEach(s => { if (counts[s.status] !== undefined) counts[s.status]++; if (s.subtasks && s.subtasks.length) tally(s.subtasks); }); } projects.forEach(p => { if (counts[p.status] !== undefined) counts[p.status]++; tally(p.subtasks); }); const streakHtml = _streak.count > 0 ? '<span class="pf-streak-badge">🔥 ' + _streak.count + '</span>' : ''; const freezeHtml = '<span class="pf-freeze-badge" title="Streak freezes (replenish weekly)">❄️ ' + _streakFreezes + '</span>'; const xpLvl = Math.floor(_xp / 100) + 1; const xpHtml = '<span class="pf-xp-badge">⭐ Lv.' + xpLvl + '</span>'; statsEl.innerHTML = STATUSES.map(s => '<span class="pf-stat' + (statusFilter === s ? ' pf-stat-active' : '') + '" data-status-filter="' + s + '" style="background:var(--' + s + '-bg); color:var(--' + s + ');cursor:pointer;' + (statusFilter === s ? 'outline:2px solid var(--' + s + ');outline-offset:1px;' : '') + '"><span class="pf-swatch" style="background:var(--' + s + ')"></span>' + STATUS_LABEL[s] + ' ' + counts[s] + '</span>').join('') + streakHtml + freezeHtml + xpHtml; statsEl.querySelectorAll('[data-status-filter]').forEach(el => { el.addEventListener('click', () => { const clicked = el.dataset.statusFilter; statusFilter = statusFilter === clicked ? '' : clicked; render(); }); }); }
+  function renderStats() { const counts = { planned: 0, ongoing: 0, waiting: 0, completed: 0 }; function tally(list) { list.forEach(s => { if (counts[s.status] !== undefined) counts[s.status]++; if (s.subtasks && s.subtasks.length) tally(s.subtasks); }); } projects.forEach(p => { if (counts[p.status] !== undefined) counts[p.status]++; tally(p.subtasks); }); const streakHtml = _streak.count > 0 ? '<span class="pf-streak-badge">🔥 ' + _streak.count + '</span>' : ''; const freezeHtml = '<span class="pf-freeze-badge" title="Streak freezes (replenish weekly)">❄️ ' + _streakFreezes + '</span>'; const xpLvl = Math.floor(_xp / 100) + 1; const xpHtml = '<span class="pf-xp-badge">⭐ Lv.' + xpLvl + '</span>'; // Quiet Console capsule: dot · bold count · dim label per segment. Status
+ // colors ride a custom property so CSS owns the active-tint styling; the
+ // click-to-filter behavior is unchanged.
+ statsEl.innerHTML = STATUSES.map(s => '<span class="pf-stat' + (statusFilter === s ? ' pf-stat-active' : '') + '" data-status-filter="' + s + '" style="--stat-c:var(--' + s + ');--stat-bg:var(--' + s + '-bg)" title="Filter by ' + STATUS_LABEL[s] + '"><span class="pf-swatch" style="background:var(--' + s + ')"></span><b>' + counts[s] + '</b><span>' + STATUS_LABEL[s] + '</span></span>').join('') + streakHtml + freezeHtml + xpHtml; statsEl.querySelectorAll('[data-status-filter]').forEach(el => { el.addEventListener('click', () => { const clicked = el.dataset.statusFilter; statusFilter = statusFilter === clicked ? '' : clicked; render(); }); }); }
 
   function projectEl(p) {
     const div = document.createElement('div'); div.className = 'pf-node' + (p.expanded ? ' pf-expanded' : ''); div.style.left = p.x + 'px'; div.style.top = p.y + 'px'; div.style.width = p.width ? (p.width + 'px') : ''; div.style.maxWidth = p.width ? 'none' : ''; div.dataset.id = p.id; if (p.createdAt) div.title = 'Created ' + formatDateTime(p.createdAt);
