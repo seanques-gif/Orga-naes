@@ -910,6 +910,44 @@ async function testRecycleBinLifecycle() {
 }
 
 // ===========================================================================
+// TEST 8b — Notes↔project links: parser resolution + chip derivation
+// Links are plain text (@project:<id> [Name]) derived at render time — never
+// stored on the project — so these checks pin the whole Phase A contract.
+// ===========================================================================
+async function testNoteProjectLinks() {
+  const h = await freshBoot();
+  const pf = h.ctx.window._pf;
+  setProjects(h, [
+    mkProject('lnk-a', 'Garden plan', 'planned'),
+    mkProject('lnk-b', 'Renamed project', 'ongoing'),
+  ]);
+  pf.replaceNotes([
+    { id: 'lnk-n1', title: 'Resolved', body: 'see @project:lnk-a Garden plan', pinned: false },
+    { id: 'lnk-n2', title: 'Fallback', body: 'typed @project:lnk-stale Renamed project', pinned: false },
+    { id: 'lnk-n3', title: 'Missing', body: 'old @project:zzz-gone Ghost link', pinned: false },
+    { id: 'lnk-n4', title: 'Plain', body: 'no links in this one', pinned: false },
+  ]);
+  const listHtml = (byId.get('pf-notes-list') || {})._innerHTML || '';
+  check('links: resolved id chip carries project id', listHtml.includes('data-note-link="lnk-a"'));
+  check('links: chip label shows project title', listHtml.includes('Garden plan'));
+  // Hand-typed token with a stale id but a matching title: chip must navigate
+  // by the RESOLVED project id (name fallback), not the stale token id.
+  check('links: name-fallback chip navigates by resolved id', listHtml.includes('data-note-link="lnk-b"'));
+  check('links: unresolved token kept as dimmed chip', listHtml.includes('data-note-link="zzz-gone"') && listHtml.includes('pf-note-link-missing'));
+  check('links: unresolved chip keeps its stored label', listHtml.includes('Ghost'));
+  check('links: plain note produces no chips', (listHtml.match(/data-note-link=/g) || []).length === 3, 'chips=' + (listHtml.match(/data-note-link=/g) || []).length);
+  // Project side: derived by scanning note text only
+  check('links: notesForProject finds id link', pf.notesForProject('lnk-a').some(n => n.id === 'lnk-n1'));
+  check('links: notesForProject resolves renamed target', pf.notesForProject('lnk-b').some(n => n.id === 'lnk-n2'));
+  check('links: notesForProject excludes plain notes', !pf.notesForProject('lnk-a').some(n => n.id === 'lnk-n4'));
+  check('links: notesForProject excludes tombstoned notes', !pf.notesForProject('lnk-a').some(n => n.id === 'lnk-n3') && (() => { pf.deleteNoteById('lnk-n1'); return !pf.notesForProject('lnk-a').some(n => n.id === 'lnk-n1'); })());
+  // Sync-format neutrality: the linked project object carries no link fields
+  const linked = projects(h).find(p => p.id === 'lnk-b');
+  const plain = projects(h).find(p => p.id === 'lnk-a');
+  check('links: project schema unchanged by links', JSON.stringify(Object.keys(linked).sort()) === JSON.stringify(Object.keys(plain).sort()), JSON.stringify(Object.keys(linked).sort()));
+}
+
+// ===========================================================================
 // Run all
 // ===========================================================================
 const tests = [
@@ -922,6 +960,7 @@ const tests = [
   ['Firebase push/pull', testFirebaseRoundTrip],
   ['Icon hydration', testIconHydration],
   ['Notes tombstones', testNotesTombstoneLifecycle],
+  ['Notes↔project links', testNoteProjectLinks],
   ['Recycle bin lifecycle', testRecycleBinLifecycle],
 ];
 for (const [name, fn] of tests) {

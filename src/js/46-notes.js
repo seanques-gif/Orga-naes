@@ -58,7 +58,10 @@
     if (!links.length) return '';
     var chips = links.map(function(l) {
       var cls = l.missing ? 'pf-note-link-chip pf-note-link-missing' : 'pf-note-link-chip';
-      return '<button class="' + cls + '" data-note-link="' + escapeHtml(l.id) + '" title="' +
+      // data-note-link carries the RESOLVED project id so a name-fallback chip
+      // (hand-typed token, stale id, matching title) still opens the right project.
+      var navId = (l.project ? l.project.id : l.id);
+      return '<button class="' + cls + '" data-note-link="' + escapeHtml(navId) + '" title="' +
         (l.missing ? 'Project not found (link kept)' : 'Open project: ' + escapeHtml(l.project.title)) + '">' +
         pfIcon('link', 'pf-note-link-ic') + escapeHtml(l.label || l.project && l.project.title || l.id) + '</button>';
     }).join('');
@@ -72,8 +75,10 @@
     if (typeof window._splitSelect === 'function') window._splitSelect(p.id, null);
   }
   // Project-side: linked notes for a project id, used by the detail pane.
+  // Match on the RESOLVED project id (not the raw token id) so hand-typed
+  // links whose stale token id resolves by title still count for the target.
   window._pf.notesForProject = function(projectId) {
-    return notes.filter(function(n) { return !noteTombstones[n.id] && noteLinks(n).some(function(l) { return l.id === projectId; }); });
+    return notes.filter(function(n) { return !noteTombstones[n.id] && noteLinks(n).some(function(l) { return (l.project ? l.project.id : l.id) === projectId; }); });
   };
   // Project-side navigation seam: open Notes view on a specific note (wired in slice 2).
   window._pf.openNoteFromProject = function(noteId) {
