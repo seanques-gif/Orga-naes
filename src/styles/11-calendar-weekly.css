@@ -46,7 +46,7 @@
     position: relative;
   }
   .pf-week-col-today .pf-week-col-header { border-bottom-color: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--accent); }
-  .pf-week-col-daynum { font-size: calc(var(--font-size-base) + 4px); font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 2px; }
+  .pf-week-col-daynum { font-size: calc(var(--font-size-base) + 4px); font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 2px; }
   .pf-week-col-today .pf-week-col-daynum { color: var(--accent); }
 
   .pf-week-day-badge {

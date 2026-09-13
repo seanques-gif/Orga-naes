@@ -90,7 +90,7 @@
 
     .pf-fab {
       display: flex; position: fixed; bottom: 84px; right: 16px; z-index: var(--z-chrome);
-      width: 48px; height: 48px; border-radius: 50%; background: var(--accent);color: var(--accent-contrast); font-size: calc(var(--font-size-base) + 10px); font-weight: 300; border: none;
+      width: 48px; height: 48px; border-radius: 50%; background: var(--accent);color: var(--accent-contrast); font-size: calc(var(--font-size-base) + 10px); font-weight: 400; border: none;
       align-items: center; justify-content: center; cursor: pointer;
       transition: transform 0.2s var(--ease-console), background 0.15s, opacity 0.3s var(--ease-console);
       opacity: 0; pointer-events: none;
