@@ -2,7 +2,7 @@
 
 Status legend: ✅ done · ⏳ in progress · ⬜ pending · 🔀 decision needed
 
-Last updated: 2026-09-13 — **DRAFTED** (post-release; nothing started).
+Last updated: 2026-09-13 — **COMPLETE.** All three phases (A notes↔project linking, B render chunking, C security backlog) shipped, verified, and released; Phase C rules are live in production. See the per-phase STATUS notes below. Post-plan work continues as ad-hoc change-loop commits (see HANDOFF.md eleventh pass).
 Baseline (released): `origin/main` @ `93dfcc9` — the full redesign + audit + Notes + recycle bin are public; fresh-clone verify byte-identical.
 Successor to: `REDESIGN-PLAN.md` (complete and released).
 

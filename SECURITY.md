@@ -23,12 +23,15 @@ This is a single-file, client-side application. Things worth knowing before repo
   rules; reports about rule misconfiguration (e.g. world-readable user data paths)
   are in scope.
 - **Cloud sync is opt-in** — with sync disabled, the app performs no network calls
-  except optional font/icon CDN fetches, and the service worker update check.
+  except the service worker update check. (Fonts are embedded in the artifact;
+  the Appearance > Font > Custom Google Font option fetches from fonts.googleapis.com
+  only when the user applies a custom family.)
 - **Backup import is trusted input** — importing a JSON backup executes nothing, but
   its strings are rendered into the UI. A crafted backup can only affect the person
   who chose to import it (self-XSS scope). Defense-in-depth fixes here are welcome.
-- **Content Security Policy** is not currently set; reports suggesting a CSP that
-  works with the inline single-file architecture are in scope.
+- **Content Security Policy** — a meta CSP ships in the artifact (hash-pinned
+  inline script, locked origins, `font-src` for embedded + custom fonts).
+  Tightening proposals that keep the single-file architecture working are in scope.
 
 ## Out of scope
 
