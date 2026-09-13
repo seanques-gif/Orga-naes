@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-lRVdQDtxZO8uaFxmV3zLQeJls08qX0QRRsqgQbKA6/Q='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-cCaOVCZTblsMV1BixWlEinvFFFoF87BGOew1vh4v+zY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2340,6 +2340,7 @@
         <div class="pf-firebase-last-sync" id="pf-firebase-last-sync" style="display:none;"></div>
         <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signin" ><span class="pf-opt-ico" data-ic="key"></span> Sign in with Google</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signout"  style="display:none"><span class="pf-opt-ico" data-ic="exit"></span> Sign Out</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-sync-diag" ><span class="pf-opt-ico" data-ic="search"></span> Run sync test</button>
         <div class="pf-opt-grid">
           <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-push"  disabled><span class="pf-opt-ico" data-ic="upload"></span> Push</button>
           <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-pull"  disabled><span class="pf-opt-ico" data-ic="download"></span> Pull</button>
@@ -10103,6 +10104,85 @@ if ('serviceWorker' in navigator) {
   }
   pullBtn.addEventListener('click', _doPull);
   pullBtn.addEventListener('touchend', function(e) { e.preventDefault(); _doPull(); });
+
+  // === SYNC DIAGNOSTIC ================================================
+  // After several distinct failure modes (wrong account, wedged websocket,
+  // unclear empty-cloud states) all surfaced as "pull shows nothing", this
+  // one-click probe separates the layers so the next report names the
+  // actual culprit: 1) signed in? 2) can the app itself read its own
+  // account over the SDK? 3) can the REST fallback reach the same data?
+  // 4) do the deployed rules match what's in the repo? Exposed as
+  // window._pf.runSyncDiagnostics() (runnable from any console) and wired
+  // to a #pf-sync-diag button if one exists in the template.
+  function runSyncDiagnostics() {
+    return new Promise(function(resolve) {
+      const out = { steps: [] };
+      const step = function(name, ok, detail) { out.steps.push({ name: name, ok: ok, detail: detail }); };
+      step('signed-in', !!_fbUser, _fbUser ? ('uid=' + _fbUser.uid) : 'not signed in — everything below will fail until sign-in works');
+      const chain = _fbUser
+        ? Promise.race([userRef().once('value'), cloudReadTimeout()])
+          .then(function(snap) {
+            const p = snap.val();
+            const n = p ? (Array.isArray(p) ? p.filter(Boolean).length : Object.keys(p).length) : 0;
+            step('sdk-read', true, 'projects=' + n);
+            return n;
+          })
+          .catch(function(err) {
+            step('sdk-read', false, (err && err.message) || 'read failed');
+            return -1;
+          })
+          .then(function(sdkCount) {
+            if (!_fbUser) return;
+            return _fbUser.getIdToken().then(function(token) {
+              return fetch(firebaseConfig.databaseURL + '/users/' + encodeURIComponent(_fbUser.uid) + '/projects.json?auth=' + token)
+                .then(function(r) { return r.json().then(function(j) { return { status: r.status, body: j }; }); });
+            }).then(function(res) {
+              if (res && res.body && res.body.error) {
+                step('rest-read', false, 'rules denied: ' + res.body.error);
+              } else {
+                const cnt = res.body ? (Array.isArray(res.body) ? res.body.filter(Boolean).length : Object.keys(res.body).length) : 0;
+                step('rest-read', true, 'projects=' + cnt);
+                if (sdkCount < 0 && cnt > 0) step('verdict', false, 'SDK is blocked but REST works — update to the latest build (REST fallback fix) or check for websocket-blocking extensions');
+              }
+            }).catch(function(err) {
+              step('rest-read', false, (err && err.message) || 'network error');
+            });
+          })
+          .then(function() {
+            if (_fbUser && _fbUser.getIdToken) {
+              return _fbUser.getIdToken().then(function(token) {
+                return fetch(firebaseConfig.databaseURL + '/users/' + encodeURIComponent(_fbUser.uid) + '/projects.json?shallow=true&auth=' + token)
+                  .then(function(r) { return r.json().then(function(j) { return { status: r.status, body: j }; }); });
+              }).then(function(res) {
+                const bodyStr = JSON.stringify(res.body || {});
+                const junk = bodyStr.indexOf('"users"') !== -1 ? ' + nested junk users node present' : '';
+                if (res.body && res.body.error) step('rules-check', false, res.body.error);
+                else step('rules-check', true, 'owner read allowed' + junk);
+              }).catch(function(e) { step('rules-check', false, (e && e.message) || 'probe failed'); });
+            }
+          })
+        : Promise.resolve();
+      chain.catch(function() {}).then(function() {
+        if (_fbUser && !out.steps.some(function(s) { return s.name === 'verdict'; })) {
+          const sdk = out.steps.find(function(s) { return s.name === 'sdk-read'; });
+          const rest = out.steps.find(function(s) { return s.name === 'rest-read'; });
+          if (sdk && rest && sdk.ok && rest.ok && sdk.detail === 'projects=0' && rest.detail === 'projects=0') {
+            step('verdict', false, 'this account has an empty cloud folder — your data likely lives under a different Google account');
+          }
+        }
+        if (window._pf && window._pf.showToast) {
+          const failed = out.steps.filter(function(s) { return s.ok === false && s.name !== 'verdict'; });
+          if (failed.length) window._pf.showToast('⚠ Sync test: ' + failed[0].name + ' failed — ' + (failed[0].detail || '').slice(0, 80), true);
+          else if (out.steps.some(function(s) { return s.name === 'verdict'; })) window._pf.showToast('⚠ ' + out.steps.find(function(s) { return s.name === 'verdict'; }).detail, true);
+          else window._pf.showToast('✅ Sync test passed: SDK and REST reads both work');
+        }
+        resolve(out);
+      });
+    });
+  }
+  window._pf.runSyncDiagnostics = runSyncDiagnostics;
+  const syncDiagBtn = document.getElementById('pf-sync-diag');
+  if (syncDiagBtn) syncDiagBtn.addEventListener('click', function() { runSyncDiagnostics(); });
 
   // Subscribes to remote changes and either applies them or presents a conflict decision.
   function startListener() {
