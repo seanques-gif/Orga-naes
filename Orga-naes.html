@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-8vjq2rSLnuolx+0i0Jngve6KYAEwC1TA5SBAsMIjmN4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-vNqgXqs8ukef0aMy1YiWONMCxRcbp5S3aKZZBEODlwo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9439,6 +9439,19 @@ if ('serviceWorker' in navigator) {
   function noteTombstonesRef() { return db.ref('users/' + _fbUser.uid + '/noteTombstones'); }
 
   const LAST_UID_KEY = 'pf-firebase-last-uid';
+
+  // One shared timeout for the cloud reads inside pull/push. If the SDK's
+  // realtime connection is wedged (wake-from-sleep, network flaps), a
+  // .once('value') can stay pending forever — without this, the user sees
+  // the "Checking cloud data..." toast hang eternally with no error.
+  function cloudReadTimeout() {
+    // Test seam: _pf._cloudReadTimeoutMs lets the functional suite exercise
+    // the timeout path in milliseconds instead of waiting the real 20s.
+    const ms = (typeof window !== 'undefined' && window._pf && window._pf._cloudReadTimeoutMs) || 20000;
+    return new Promise(function(_, reject) {
+      setTimeout(function() { reject(new Error('Cloud is not responding. Check your connection, then try again.')); }, ms);
+    });
+  }
   // Set whenever clearLocalUserData() wipes the local cache (sign-out or a
   // detected account switch), cleared only once a pull has actually
   // repopulated it. This is deliberately independent of LAST_UID_KEY: a
@@ -9853,15 +9866,21 @@ if ('serviceWorker' in navigator) {
     // Notes must finish their async boot load before the notesMatch
     // comparison below, or a pull issued right after open would see
     // null and skip notes adoption entirely.
-    const notesSettled = (window._pf && typeof window._pf.notesReady === 'function' && window._pf.notesReady.then) ? window._pf.notesReady : Promise.resolve();
-    notesSettled.then(function() { return Promise.all([
+    // A notes-boot rejection must not silently kill the pull chain (the
+    // pre-timeout bug: the "Checking cloud data..." toast hung forever with
+    // zero console output). A settled-but-undefined notes snapshot is the
+    // same state the code already handles below ("no data found in cloud"),
+    // so swallow the error and proceed — pull continues, errors surface
+    // through the shared catch like any other failure.
+    const notesSettled = (window._pf && typeof window._pf.notesReady === 'function' && window._pf.notesReady.then) ? window._pf.notesReady.catch(function() {}) : Promise.resolve();
+    Promise.race([notesSettled.then(function() { return Promise.all([
       userRef().once('value'),
       catRef().once('value'),
       archiveRef().once('value'),
       trashRef().once('value'),
       notesRef().once('value'),
       noteTombstonesRef().once('value')
-    ]).then(function(results) {
+    ]); }), cloudReadTimeout()]).then(function(results) {
       const projVal = results[0].val();
       const catVal = results[1].val();
       const archVal = results[2].val();
@@ -9953,7 +9972,6 @@ if ('serviceWorker' in navigator) {
     }).catch(function(err) {
       window._pf.showToast('⚠ Pull failed: ' + (err.message || err), true);
       if (window._pf.logError) window._pf.logError('Firebase pull', err);
-    });
     });
   }
   pullBtn.addEventListener('click', _doPull);
@@ -10236,14 +10254,14 @@ if ('serviceWorker' in navigator) {
       return;
     }
     window._pf.showToast('☁ Checking cloud data...');
-    Promise.all([
+    Promise.race([Promise.all([
       userRef().once('value'),
       catRef().once('value'),
       archiveRef().once('value'),
       trashRef().once('value'),
       notesRef().once('value'),
       noteTombstonesRef().once('value')
-    ]).then(function(results) {
+    ]), cloudReadTimeout()]).then(function(results) {
       const projVal = results[0].val();
       const catVal = results[1].val();
       const archVal = results[2].val();
@@ -10322,8 +10340,13 @@ if ('serviceWorker' in navigator) {
       timestamp: Date.now()
     });
     localStorage.setItem('pf-firebase-last-backup', today);
-    // Clean old backups (keep last 7)
-    db.ref('users/' + _fbUser.uid + '/backups').once('value').then(function(snap) {
+    // Clean old backups (keep last 7). Raced against cloudReadTimeout(): on a
+    // wedged connection this read could pend forever, leaving the daily
+    // auto-backup chain silently half-dead (same hang family as pull/push).
+    Promise.race([
+      db.ref('users/' + _fbUser.uid + '/backups').once('value'),
+      cloudReadTimeout()
+    ]).then(function(snap) {
       const val = snap.val();
       if (!val) return;
       const keys = Object.keys(val).sort();
@@ -10332,6 +10355,8 @@ if ('serviceWorker' in navigator) {
           db.ref('users/' + _fbUser.uid + '/backups/' + k).remove();
         });
       }
+    }).catch(function(err) {
+      if (window._pf.logError) window._pf.logError('Firebase backup cleanup', err);
     });
   }
   const autobackupCb = document.getElementById('pf-firebase-autobackup');
