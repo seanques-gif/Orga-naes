@@ -2049,6 +2049,21 @@
   #pf-root .pf-mention-item:hover, #pf-root .pf-mention-active { background: color-mix(in srgb, var(--accent) 14%, transparent); }
   #pf-root .pf-mention-ic { width: 11px; height: 11px; color: var(--text-dim); flex-shrink: 0; }
   #pf-root .pf-mention-empty { padding: 6px 8px; color: var(--text-dim); font-size: calc(var(--font-size-base) - 1px); }
+  #pf-root .pf-project-notes { margin-top: 10px; }
+  #pf-root .pf-project-notes-head {
+    display: flex; align-items: center; gap: 6px;
+    font-size: var(--font-size-base); color: var(--text-dim); margin-bottom: 6px;
+  }
+  #pf-root .pf-project-notes-ic { width: 12px; height: 12px; }
+  #pf-root .pf-project-notes-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; text-align: left; padding: 6px 10px; cursor: pointer;
+    background: var(--sub-bg); border: 1px solid var(--sub-border); border-radius: var(--radius-control);
+    color: var(--text); font-size: calc(var(--font-size-base) - 1px); margin-bottom: 4px;
+  }
+  #pf-root .pf-project-notes-row:hover { border-color: var(--accent); }
+  #pf-root .pf-project-notes-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pf-root .pf-project-notes-date { color: var(--text-dim); flex-shrink: 0; }
   /* SUBSECTION: Accessibility & Motion Preferences (F1/F2)
      Reduced motion keeps opacity/color but removes movement: durations collapse
      to ~0 (not `none`, so `animationend` listeners still fire). Hover motion is
@@ -5445,7 +5460,30 @@
       splitDetail.appendChild(el);
     } catch (e) { logError('renderSplitDetail', e); splitDetail.innerHTML = '<div class="pf-empty" style="display:block;">Error rendering project. Check console for details.</div>'; }
     if (subMultiSelect.length > 0) renderSubSelectBar(p);
+    renderProjectNotesSection(p);
     requestAnimationFrame(() => { requestAnimationFrame(_equalizeColumnWidths); });
+  }
+  // ===== Project-side notes list (Phase A slice 3): notes whose body links
+  // to this project via @project:<id>. Click opens Notes on that note.
+  function renderProjectNotesSection(p) {
+    var linked = (window._pf.notesForProject ? window._pf.notesForProject(p.id) : []);
+    if (!linked.length) return;
+    var sec = document.createElement('div');
+    sec.className = 'pf-project-notes';
+    var head = document.createElement('div');
+    head.className = 'pf-project-notes-head';
+    head.innerHTML = pfIcon('file-text', 'pf-project-notes-ic') + '<span>Notes (' + linked.length + ')</span>';
+    sec.appendChild(head);
+    linked.forEach(function(n) {
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'pf-project-notes-row';
+      row.innerHTML = '<span class="pf-project-notes-title">' + escapeHtml(n.title || 'Untitled') + '</span>' +
+        '<span class="pf-project-notes-date">' + (window._pf.fmtNoteDate ? window._pf.fmtNoteDate(n.updatedAt) : '') + '</span>';
+      row.addEventListener('click', function() { window._pf.openNoteFromProject(n.id); });
+      sec.appendChild(row);
+    });
+    splitDetail.appendChild(sec);
   }
 
   function _equalizeColumnWidths() {
@@ -8657,6 +8695,7 @@
     return true;
   }
   window._pf.deleteNoteById = deleteNoteById;
+  window._pf.fmtNoteDate = fmtNoteDate;
 
   function deleteActiveNote() {
     if (!noteById(activeNoteId)) return;
