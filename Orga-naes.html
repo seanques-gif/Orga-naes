@@ -9794,8 +9794,13 @@ if ('serviceWorker' in navigator) {
     _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
     if (typeof archive !== 'undefined') _lastPushedArchiveHash = JSON.stringify(normalizeForSync(archive));
     if (typeof trash !== 'undefined') _lastPushedTrashHash = JSON.stringify(normalizeForSync(trash));
-    const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
-    _lastPushedNotesHash = notesSnap ? (JSON.stringify(notesSnap.notes) + '|' + JSON.stringify(notesSnap.tombstones)) : '';
+    // Notes: '' = UNKNOWN, not "pushed". The next push tick then compares
+    // against the actual cloud (pushNotesIfNeeded reads it) instead of
+    // assuming the local set already made it up — otherwise a note set that
+    // failed to upload (e.g. rules rejected it) would never be retried until
+    // edited. Adoption sites re-pin the hash right after adopting, so pulled
+    // data is not immediately re-pushed.
+    _lastPushedNotesHash = '';
   }
 
   // Pushes only changed project records where possible; deletions or reordering fall back to a full project write
