@@ -7395,7 +7395,7 @@
       const { parsed, error } = parseImportJson(String(e.target.result || ''));
       if (error) { showToast(error, true); importInput.value = ''; return; }
       try {
-        const { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis } = extractImportData(parsed);
+        const { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones } = extractImportData(parsed);
         if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
