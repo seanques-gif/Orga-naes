@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-J63u+HbQvSsCEcfFHsp2PFLzEblTuNM/B8GcXCBdH9c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-3kLiCGEcRwijM4j84+8ADfcOJiJKh0DFAzCveCKR5mE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9769,7 +9769,11 @@ if ('serviceWorker' in navigator) {
         window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
         updateLastSync();
         localStorage.removeItem(NEEDS_PULL_KEY);
-        window._pf.showToast('☁ Loaded ' + (user.displayName || user.email) + '\u2019s data');
+        // Same wrong-account diagnosis on the auto-load path: signing into an
+        // account that has never pushed anything looks identical to data loss
+        // unless we say the loaded set was empty.
+        const loadedEmpty = !projVal && !catVal && !notesVal;
+        window._pf.showToast('☁ Loaded ' + (user.displayName || user.email) + '\u2019s data' + (loadedEmpty ? ' — this account has nothing in the cloud yet (is your data under a different Google account?)' : ''));
       }).catch(function(err) {
         window._pf.showToast('⚠ Failed to load ' + (user.displayName || user.email) + '\u2019s data: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (window._pf.logError) window._pf.logError('Firebase account-switch load', err);
@@ -9961,7 +9965,15 @@ if ('serviceWorker' in navigator) {
       const trashVal = results[3].val();
       const notesVal = results[4].val();
       const tombVal = results[5].val();
-      if (!projVal && !catVal && !notesVal) { window._pf.showToast('⚠ No data found in cloud', true); return; }
+      if (!projVal && !catVal && !notesVal) {
+        // An empty cloud almost always means "wrong account", not "lost data":
+        // Pull reads ONLY the signed-in account's own folder (per-user security
+        // rules), so projects stored under a different Google account are
+        // invisible here by design. Name the account that was checked so the
+        // mismatch is obvious instead of reading as a data-structure bug.
+        window._pf.showToast('⚠ Cloud is empty for account ' + _fbUser.uid + ' — your data may live under a different Google account', true);
+        return;
+      }
 
       const remoteProjects = fixProjects(projVal);
       const localProjects = window._pf.getProjects();
