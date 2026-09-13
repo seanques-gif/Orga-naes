@@ -8,10 +8,11 @@ Vanilla JavaScript, HTML, and CSS. Zero npm dependencies.
 ## What it does
 
 - **Canvas board + list view** for projects with nested subtasks (unlimited depth)
+- **Notes** with @project cross-links, multi-select, and a recycle bin (30-day TTL) for anything deleted
 - Task dependencies, comments, due dates, reminders, and a weekly planner
-- Archive, trash (30-day TTL), and a full undo/redo stack
-- Five theme presets, SVG icon chrome, keyboard shortcuts
-- Offline-first PWA: installable, works with no network, self-updating service worker
+- Archive, trash, and a full undo/redo stack
+- Five theme presets, a font picker (embedded fonts, custom Google Fonts), SVG icon chrome, keyboard shortcuts
+- Offline-first PWA: installable, works with no network, updates wait for your click
 - Import/export of JSON backups at any time
 
 ## Data & privacy
@@ -30,8 +31,8 @@ Requires Node.js (any recent version).
 
 ```bash
 npm run build   # reassembles src/ into the single-file Orga-naes.html
-npm test        # design-token and date-utils tests
-npm run verify  # build + test
+npm test        # six suites: design tokens, contrast, dates, CSP, functional (125), RTDB rules (141)
+npm run verify  # determinism gate (artifact pin byte-matches a fresh build) + test
 ```
 
 Source of truth is `src/` — never hand-edit `Orga-naes.html`; the build owns it.
