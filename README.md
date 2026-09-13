@@ -41,8 +41,11 @@ npm run probe   # real-browser gate: toolbar layout + craft-floor audit (headles
 The probe drives the installed Chrome/Chromium over the DevTools protocol (no
 dependencies, `CHROME_PATH` to point at a specific binary). It starts the local
 server itself and fails on toolbar movement when search opens, a resting card
-shadow, or a one-sided colored border rail above 1px. Pass a viewport:
-`npm run probe -- 1355 800`. CI runs it at two desktop widths in the `layout` job.
+shadow, a one-sided colored border rail above 1px, or a toolbar row left with
+less than 24px of slack (the bar wraps instead of degrading, so the status
+capsule dropping to a second row always starts as lost headroom). Pass a
+viewport: `npm run probe -- 1355 800`. CI runs it at 1260 / 1355 / 1400 in the
+`layout` job.
 
 Source of truth is `src/` — never hand-edit `Orga-naes.html`; the build owns it.
 
