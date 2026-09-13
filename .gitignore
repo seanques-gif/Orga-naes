@@ -32,4 +32,10 @@ AUDIT-CANONICAL.md
 # OS/editor noise
 Thumbs.db
 desktop.ini
+
+# Phase C owner guide (local-only, interactive)
 SHADOW-TEST-RUNBOOK.md
+WALKTHROUGH-GUIDE.html
+
+# Scratch-project practice copy built during the rules walkthrough (contains config keys)
+Orga-naes-scratch-test.html
