@@ -53,10 +53,14 @@ function checkNode(ruleNode, data, bound, pathStr) {
   // No .validate here is legal (e.g. a node holding only wildcard children):
   // RTDB descends into per-child rules. Proceed without a node-level gate.
   if (expr !== undefined) {
-    const ctx = { newData: data, vars: bound };
-    let ok;
-    try { ok = !!evalExpr(expr, ctx); } catch (e) { return { ok: false, reason: 'expr error at ' + pathStr + ': ' + e.message }; }
-    if (!ok) return { ok: false, reason: 'validate failed at ' + pathStr };
+    // Generator also emits boolean gates ('$other': {'.validate': false}).
+    if (typeof expr === 'boolean') { if (!expr) return { ok: false, reason: 'validate failed at ' + pathStr }; }
+    else {
+      const ctx = { newData: data, vars: bound };
+      let ok;
+      try { ok = !!evalExpr(expr, ctx); } catch (e) { return { ok: false, reason: 'expr error at ' + pathStr + ': ' + e.message }; }
+      if (!ok) return { ok: false, reason: 'validate failed at ' + pathStr };
+    }
   }
   if (data !== null && typeof data === 'object') {
     for (const k of Object.keys(data)) {

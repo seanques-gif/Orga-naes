@@ -63,7 +63,8 @@ function subNodeObject(depth) {
     createdAt: { '.validate': orNull(str(1, 35)) },
     dueAt: { '.validate': orNull(`newData.isString() && newData.val().matches(/${DATE_RE}/)`) },
     completedAt: { '.validate': orNull(str(1, 35)) },
-    recurrence: { '.validate': orNull(`newData.isString() && newData.val().matches(/${RECUR_RE}/)`) },
+    timeLogged: { '.validate': orNull(isNum(0, 1e9)) },   // seconds accumulated by the task timer
+    timerStart: { '.validate': orNull(isNum(1500000000000, 4102444800000)) }, // Date.now() while timer runs
     recurrence: { '.validate': orNull(`newData.isString() && newData.val().matches(/${RECUR_RE}/)`) },
     blockedBy: { '.validate': container, '$j': { '.validate': isId } },
     // comments: lazily created ({text,time}); splices can empty it -> null
@@ -88,6 +89,9 @@ function projectNode() {
     title: { '.validate': str(1, 200) },
     status: { '.validate': `newData.isString() && newData.val().matches(/${STATUS_RE}/)` },
     category: { '.validate': orNull(str(1, 40)) },
+    description: { '.validate': orNull(str(0, 2000)) }, // contenteditable desc; '' is legitimate
+    color: { '.validate': orNull(`newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)`) }, // #rrggbb palette color
+    dueAt: { '.validate': orNull(`newData.isString() && newData.val().matches(/${DATE_RE}/)`) }, // project-level due date
     createdAt: { '.validate': orNull(str(1, 35)) },
     completedAt: { '.validate': orNull(str(1, 35)) },
     expanded: { '.validate': 'newData.isBoolean()' },

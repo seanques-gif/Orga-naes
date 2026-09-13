@@ -43,4 +43,5 @@ Orga-naes-scratch-test.html
 orga-naes-scratch-default-rtdb-export.json
 # Production data exports (owner backups, never for GitHub)
 *-default-rtdb-export.json
+_probe*
 orga-naes-export*.json

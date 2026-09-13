@@ -119,6 +119,32 @@ deny('array member not an object', U + '/projects', [42]);
 // empty-object edge: {} writes null on delete paths — container rule allows null
 check('real: whole-subtree delete (projects null)', OK(validate(ROOT, U + '/projects', null)));
 
+// ---- real production export (pre-publish gate, Step 11a) ----------------------
+// Replays the ACTUAL cloud export through the rules so a publish can never
+// reject something the app has really written. Skips cleanly if no export is
+// present (fresh clones); validates every user, collection, and backup date.
+try {
+  const exportPath = new URL('../orga-naes-default-rtdb-export.json', import.meta.url);
+  const exp = JSON.parse(readFileSync(exportPath, 'utf8'));
+  let expChecks = 0;
+  for (const [uid, u] of Object.entries(exp.users || {})) {
+    const RU = 'users/' + uid;
+    check('export: stranger cannot write ' + uid.slice(0, 6), !writeAllowed(ROOT, RU + '/projects', { uid: 'stranger' }) && writeAllowed(ROOT, RU + '/projects', { uid }));
+    for (const [k, val] of Object.entries(u)) {
+      if (k === 'users') { console.log('  (legacy stray users/$uid/users node present — duplicate fragment, delete in console during 11b)'); continue; }
+      if (k === 'backups') {
+        for (const [date, snap] of Object.entries(val || {})) check('export: backup ' + date, OK(validate(ROOT, RU + '/backups/' + date, snap)));
+      } else {
+        check('export: ' + k + ' (' + uid.slice(0, 6) + ')', OK(validate(ROOT, RU + '/' + k, val)));
+      }
+      expChecks++;
+    }
+  }
+  console.log('  (production export replay: ' + expChecks + ' user nodes)');
+} catch (e) {
+  if (!/ENOENT/.test(String(e))) throw e; // no export present = fine
+}
+
 // ---- determinism: regenerate and byte-compare (drift gate) -------------------
 import { execFileSync } from 'child_process';
 const before = readFileSync(new URL('../database.rules.json', import.meta.url));
