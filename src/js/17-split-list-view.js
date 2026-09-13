@@ -57,7 +57,8 @@
     const extraCats = Object.keys(grouped).filter(c => c !== '__uncategorized__' && !categories.includes(c));
     if (extraCats.length) { categories.push(...extraCats); saveCategories(); }
     const catOrder = categories.concat(grouped['__uncategorized__'] ? ['__uncategorized__'] : []);
-    catOrder.forEach(cat => {
+    let _itemAnimIdx = 0;
+    function buildCatBlock(cat) {
       const group = grouped[cat] || [];
 
       const catLabel = document.createElement('div');
@@ -190,14 +191,14 @@
         hint.textContent = 'No projects in this category';
         catItemsWrap.appendChild(hint);
       }
-      let idx = 0;
-      group.forEach(p => {
+      splitList.appendChild(catItemsWrap);
+      _itemAnimIdx = 0;
+      return { wrap: catItemsWrap, makeItem: (p) => {
         const item = document.createElement('div');
         const isActive = p.id === splitSelectedId && splitMultiSelect.length <= 1;
         const isMulti = splitMultiSelect.includes(p.id);
         item.className = 'pf-split-list-item' + (isActive ? ' pf-split-active' : '') + (isMulti ? ' pf-split-selected' : '') + (p.status === 'completed' ? ' pf-list-completed' : '');
-        item.style.animationDelay = (Math.min(idx, 20) * 15) + 'ms';
-        idx++;
+        item.style.animationDelay = (Math.min(_itemAnimIdx++, 20) * 15) + 'ms';
         item.setAttribute('onclick', '_splitSelect("' + p.id + '", event)');
         item.addEventListener('dblclick', (e) => { e.stopPropagation(); _inlineRename(item, p); });
         if (!window.matchMedia('(pointer: coarse)').matches) item.draggable = true;
@@ -268,13 +269,46 @@
         item.querySelector('.pf-move-up').addEventListener('click', (e) => { e.stopPropagation(); const idx = projects.findIndex(pr => pr.id === p.id); if (idx <= 0) return; snapshot(); projects.splice(idx - 1, 0, projects.splice(idx, 1)[0]); scheduleSave(); renderSplitList(); });
         item.querySelector('.pf-move-down').addEventListener('click', (e) => { e.stopPropagation(); const idx = projects.findIndex(pr => pr.id === p.id); if (idx >= projects.length - 1) return; snapshot(); projects.splice(idx + 1, 0, projects.splice(idx, 1)[0]); scheduleSave(); renderSplitList(); });
         item.querySelector('.pf-split-list-ctx').addEventListener('click', (e) => { e.stopPropagation(); const rect = e.target.getBoundingClientRect(); _showCtxMenu(rect.left, rect.top, p); });
-        catItemsWrap.appendChild(item);
-      });
-      splitList.appendChild(catItemsWrap);
+        return item;
+      } };
+    }
+    const visibleCount = projects.filter(p => matchesSearch(p) && (showCompletedProjects || p.status !== 'completed')).length;
+    const useChunking = visibleCount > CHUNK_THRESHOLD;
+    const pending = [];
+    catOrder.forEach(cat => {
+      const block = buildCatBlock(cat);
+      const group = grouped[cat] || [];
+      if (useChunking && group.length > CHUNK_THRESHOLD) { pending.push({ block, items: group.slice() }); return; }
+      group.forEach(p => block.wrap.appendChild(block.makeItem(p)));
     });
+    if (useChunking && pending.length) {
+      const token = ++_listChunkToken;
+      (function stepChunk() {
+        if (token !== _listChunkToken) return; // superseded by a newer render
+        const sliceStart = performance.now();
+        while (pending.length && performance.now() - sliceStart < CHUNK_BUDGET_MS) {
+          const cur = pending[0];
+          cur.block.wrap.appendChild(cur.block.makeItem(cur.items.shift()));
+          if (!cur.items.length) pending.shift();
+          if (token !== _listChunkToken) return;
+        }
+        if (pending.length) requestAnimationFrame(stepChunk);
+        else _virtualizeList();
+      })();
+      return;
+    }
+    _listChunkToken++; // sync path: any pending chunked chain is now stale
     // Virtual scrolling: hide off-screen items when list is large
     _virtualizeList();
   }
+  // ---- Chunked list build (Phase B, NEXT-PLAN): above CHUNK_THRESHOLD projects,
+  // list items are appended in requestAnimationFrame slices with a per-slice time
+  // budget (category labels render synchronously, so the frame never looks empty).
+  // A monotonically increasing token cancels stale chains when a newer render
+  // starts - which also bounds the cost of search-keystroke re-renders. Below the
+  // threshold the build stays fully synchronous - identical to the classic path.
+  let _listChunkToken = 0;
+  const CHUNK_THRESHOLD = 60, CHUNK_BUDGET_MS = 6;
   let _splitVirtualCleanup = null;
   function _virtualizeList() {
     if (_splitVirtualCleanup) { _splitVirtualCleanup(); _splitVirtualCleanup = null; }
