@@ -39,3 +39,5 @@ WALKTHROUGH-GUIDE.html
 
 # Scratch-project practice copy built during the rules walkthrough (contains config keys)
 Orga-naes-scratch-test.html
+# Scratch-project data export (practice data, not for GitHub)
+orga-naes-scratch-default-rtdb-export.json
