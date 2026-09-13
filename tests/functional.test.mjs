@@ -54,13 +54,18 @@ class FakeElement {
     this.classList = { _s: new Set(), add(...c) { c.forEach(x => this._s.add(x)); }, remove(...c) { c.forEach(x => this._s.delete(x)); }, contains(c) { return this._s.has(c); }, toggle(c) { this._s.has(c) ? this._s.delete(c) : this._s.add(c); } };
     this._listeners = {};
     this._attrs = {};
-    this.textContent = '';
+    this._textContent = '';
     this._innerHTML = '';
     this.value = '';
     this.checked = false;
     this.disabled = false;
     this.uid = ++elCounter;
   }
+  // textContent mirrors the real DOM: a plain property can't reflect appended
+  // children, so toasts (span appended into #pf-toast) read as empty. Getter
+  // returns own text plus descendants' text; setter replaces own text only.
+  get textContent() { return this._textContent + this.children.map(c => c.textContent || '').join(''); }
+  set textContent(v) { this._textContent = String(v); this.children = []; }
   get innerHTML() { return this._innerHTML; }
   set innerHTML(v) { this._innerHTML = String(v); this.children = []; }
   get outerHTML() { return `<${this.tagName.toLowerCase()}${this.id ? ' id="' + this.id + '"' : ''}>${this._innerHTML}</${this.tagName.toLowerCase()}>`; }
@@ -526,8 +531,47 @@ async function testMalformedImport() {
     FileReaderCtor.prototype.readAsText = realFR;
     check('import/' + label + ': state survived', projects(h).length === 1 && (projects(h)[0] || {}).title === 'Precious state', 'n=' + projects(h).length);
     const toast = (byId.get('pf-toast') || {}).textContent || '';
-    check('import/' + label + ': rejection surfaced', /failed|invalid|empty|no valid|parse/i.test(toast) || (byId.get('pf-toast') || {})._innerHTML !== undefined, 'toast="' + toast.slice(0, 60) + '"');
+    check('import/' + label + ': rejection surfaced', /failed|invalid|empty|no valid|parse/i.test(toast) || /failed|invalid|empty|no valid|parse/i.test(deepText(byId.get('pf-toast'))), 'toast="' + toast.slice(0, 60) + '"');
   }
+}
+
+// ===========================================================================
+// TEST 4b — Happy-path import through the real change handler
+// (Regression net: the notes-durability change left importedNotes unbound in
+// the change handler, which made EVERY valid file import fail with
+// "importedNotes is not defined". Malformed-only coverage never reached
+// that line — this test drives a valid payload end to end.)
+// ===========================================================================
+async function testHappyPathImport() {
+  const h = await freshBoot();
+  const pf = h.ctx.window._pf;
+  setProjects(h, [mkProject('local1', 'Local board', 'planned')]);
+  const payload = {
+    projects: [mkProject('imp1', 'Imported board', 'planned', [mkSub('imp1-s1', 'sub', 'planned')])],
+    categories: ['Home'],
+    notes: [{ id: 'imp-n1', title: 'Linked note', body: 'see @project:imp1 Imported board', pinned: false, updatedAt: new Date().toISOString() }],
+    noteTombstones: { 'imp-ngone': new Date().toISOString() },
+  };
+  const content = JSON.stringify(payload);
+  const input = byId.get('pf-import-file');
+  check('import/happy: input element exists', !!input);
+  const FileReaderCtor = h.ctx.FileReader;
+  const realFR = FileReaderCtor.prototype.readAsText;
+  FileReaderCtor.prototype.readAsText = function () { this._pending = content; queueMicrotask(() => this.onload && this.onload({ target: { result: content } })); };
+  Object.defineProperty(input, 'files', { value: [{ name: 'backup.json' }], configurable: true });
+  input.dispatch ? input.dispatch('change', { target: input }) : (input._listeners.change || []).forEach(fn => fn({ target: input }));
+  await sleep(120); h.flushRAF();
+  FileReaderCtor.prototype.readAsText = realFR;
+  const loaded = projects(h);
+  check('import/happy: project imported with subtask tree', loaded.length === 1 && loaded[0].id === 'imp1' && loaded[0].subtasks.length === 1, 'n=' + loaded.length);
+  const snap = pf.getNotesSnapshot() || { notes: [] };
+  const n = snap.notes.find(x => x.id === 'imp-n1');
+  check('import/happy: note imported', !!n, 'notes=' + snap.notes.length);
+  check('import/happy: link text survived verbatim', !!n && n.body === 'see @project:imp1 Imported board', (n || {}).body);
+  check('import/happy: tombstone imported', !!pf.getNotesTombstones()['imp-ngone']);
+  check('import/happy: category imported', pf.getCategories().includes('Home'));
+  const toast = (byId.get('pf-toast') || {}).textContent || '';
+  check('import/happy: success surfaced', /imported/i.test(toast), 'toast="' + toast.slice(0, 60) + '"');
 }
 
 // ===========================================================================
@@ -873,6 +917,7 @@ const tests = [
   ['Undo/redo', testUndo],
   ['Export', testExport],
   ['Malformed import', testMalformedImport],
+  ['Happy-path import', testHappyPathImport],
   ['Persistence lifecycle', testPersistenceLifecycle],
   ['Firebase push/pull', testFirebaseRoundTrip],
   ['Icon hydration', testIconHydration],
