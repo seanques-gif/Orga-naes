@@ -1,4 +1,4 @@
-const CACHE_VERSION = '2026-09-13-0022';
+const CACHE_VERSION = '2026-09-14-0001';
 const CACHE_NAME = 'orga-naes-' + CACHE_VERSION;
 const ASSETS = [
   './Orga-naes.html',
@@ -33,14 +33,50 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
+// NAVIGATION REQUESTS (the app HTML itself) — network-first.
+//
+// The old cache-first fetch handler is what made deployments stall: GitHub
+// Pages can serve a stale response with old caching headers, so a user could
+// keep booting yesterday's build indefinitely and only a manual cache clear
+// (or DevTools "Update on reload") would break the loop. Also, when the HTML
+// is served from cache the running page keeps the OLD service worker alive,
+// so the "Update ready" pill never had a chance to appear — the update loop
+// was invisible AND unbreakable from inside the app.
+//
+// Network-first fixes both: every reload gets the newest HTML the server has
+// (keeping the SW script itself byte-identical so no new install is needed),
+// and the cache is only used when the device is offline. A failed network
+// response (5xx) falls back to cache too, so a broken deploy can't blank the
+// app. Firebase/API calls are unaffected (excluded below, as before).
 self.addEventListener('fetch', (e) => {
   if (e.request.url.includes('firebase') || e.request.url.includes('googleapis')) return;
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((resp) => {
+          if (resp && resp.ok) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+          }
+          return resp;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+  // Everything else (icons, manifest, same-origin assets): network-first with
+  // cache fallback. Precached assets make offline launches work; a 5xx also
+  // falls back to the cached copy so a partial deploy can't break the UI.
   e.respondWith(
-    fetch(e.request).then(resp => {
-      const clone = resp.clone();
-      caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-      return resp;
-    }).catch(() => caches.match(e.request))
+    fetch(e.request)
+      .then((resp) => {
+        if (resp && resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+        }
+        return resp;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
 
