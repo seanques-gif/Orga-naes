@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-hLAmOQ2jf3smKS/BMtHVdc+4eORwMv1xU7aKFuqm3dE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-TZICEJZuPYNboXb/xmlC7676dIWR2nrEhql50Yh6X3c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -10463,10 +10463,15 @@ if ('serviceWorker' in navigator) {
     const updates = {};
     let hasChanges = false;
 
-    // Detect changed/new projects
+    // Detect changed/new projects. update() keys are joined ONTO the ref's
+    // path — exactly like the REST PATCH body — so they must be RELATIVE
+    // ('projects/3'), not absolute ('users/<uid>/projects/3'). The absolute
+    // form made every selective push write to users/<uid>/users/<uid>/projects/3,
+    // a subtree no rule validates and no pull ever reads (real residue of it
+    // survived in the production export until 2026-09-14).
     projects.forEach((p, i) => {
       if (_lastPushedHash[p.id] !== currentHash[p.id]) {
-        updates['users/' + _fbUser.uid + '/projects/' + i] = JSON.parse(JSON.stringify(p));
+        updates['projects/' + i] = JSON.parse(JSON.stringify(p));
         hasChanges = true;
       }
     });
@@ -10481,10 +10486,16 @@ if ('serviceWorker' in navigator) {
     if (hasDeletion || orderChanged) {
       // Full push needed when projects removed (index shift) or reordered — partial index-keyed
       // updates would otherwise leave unchanged projects at their old cloud position.
-      userRef().set(JSON.parse(JSON.stringify(projects)));
+      userRef().set(JSON.parse(JSON.stringify(projects))).catch(function(err) {
+        window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+        logError('Firebase push (full set)', err);
+      });
       hasChanges = true;
     } else if (hasChanges) {
-      db.ref('users/' + _fbUser.uid).update(updates);
+      db.ref('users/' + _fbUser.uid).update(updates).catch(function(err) {
+        window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+        logError('Firebase push (selective)', err);
+      });
     }
     _lastPushedIdOrder = currentIdOrder;
 

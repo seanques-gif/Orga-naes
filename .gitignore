@@ -43,5 +43,7 @@ orga-naes-scratch-default-rtdb-export.json
 *-default-rtdb-export.json
 _probe*
 orga-naes-export*.json
+# Stray-node cleanup tool: run logs contain PRODUCTION payload snapshots — never commit
+scripts/stray-users-cleanup-logs/
 # Visual-baseline captures from the last failing run (uploaded as a CI artifact)
 tests/baselines/current/
