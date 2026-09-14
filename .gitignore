@@ -71,6 +71,7 @@ tests/baselines/current/
 project-flow-backup-*.json
 design-samples/
 pre-slim-backup.bundle
+backup-before-history-scrub.bundle
 
 # Git hooks (commit-msg footer blocker per AGENTS.md rule 7). Wired in via
 # repo-local core.hooksPath; auto-installed into fresh clones by the global
