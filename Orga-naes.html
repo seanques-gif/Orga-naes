@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-qPezZIz1Gl5VKrRbhWRsU6rAlrBNS7613gt+jWMgK58='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-VrF7OySUFUSgw/0D7MqL0XpdQk3c0LxJVedd0s5AUtg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -10593,18 +10593,10 @@ if ('serviceWorker' in navigator) {
     });
   }
 
-  // Performs a deliberate full cloud save of projects, categories, archive, and trash.
-  // The returned promise is capped by cloudWriteTimeout(), so callers' success/
-  // error toasts always fire — even when the socket is wedged and the write
-  // itself would otherwise pend forever. (Bookkeeping still resets up-front,
-  // exactly as before: a timed-out write is repaired by the next autosync
-  // tick's diff-based pushSelective(), which re-sends whatever actually
-  // differs — the same self-healing that covers an in-flight crash.)
-  function pushWithTimestamp() {
-    const projects = window._pf.getProjects();
-    resetPushBookkeeping(projects, window._pf.getCategories(), window._pf.getArchive(), window._pf.getTrash());
-    const writePromise = Promise.all([
-      userRef().set(JSON.parse(JSON.stringify(projects))),
+  // Full cloud save, transport 1: the SDK websocket (the classic path).
+  function sdkWriteAll() {
+    return Promise.all([
+      userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects()))),
       catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories()))),
       db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))),
       archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive()))),
@@ -10612,8 +10604,69 @@ if ('serviceWorker' in navigator) {
       pushNotesIfNeeded().catch(function(e) { logError('Firebase push (notes)', e); }),
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
     ]);
-    writePromise.then(function() { updateLastSync(); });
-    return Promise.race([writePromise, cloudWriteTimeout()]);
+  }
+  // Full cloud save, transport 2: ONE REST PATCH against the account node —
+  // the write-side twin of restReadResults(). Reads gained a REST fallback
+  // after the wedged-websocket incidents; writes were still SDK-only, so the
+  // observed 2026-09-14 21:28 failure was: socket wedges mid-session → SDK
+  // write times out loudly (the new cap working) → nothing rescues it, even
+  // though pulls on the same machine sail through on REST. PATCH (not PUT)
+  // so the account's other children (backups, appVersion) survive; each
+  // top-level key given replaces wholesale, so deletions propagate. Notes
+  // ride along only when pushing them is safe (same fresh-device guard as
+  // pushNotesIfNeeded — an empty local set must not erase cloud notes).
+  function restWriteAll() {
+    if (!_fbUser || typeof _fbUser.getIdToken !== 'function') {
+      return Promise.reject(new Error('Cloud is not responding — the push may not have completed. Check your connection and push again.'));
+    }
+    return _fbUser.getIdToken().then(function(token) {
+      const payload = {
+        projects: JSON.parse(JSON.stringify(window._pf.getProjects())),
+        categories: JSON.parse(JSON.stringify(window._pf.getCategories())),
+        categoryEmojis: JSON.parse(JSON.stringify(window._pf.getCategoryEmojis())),
+        archive: JSON.parse(JSON.stringify(window._pf.getArchive())),
+        trash: JSON.parse(JSON.stringify(window._pf.getTrash())),
+        updatedAt: Date.now()
+      };
+      const snap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+      if (snap && (snap.notes.length > 0 || Object.keys(snap.tombstones).length > 0 || _notesPulledThisSession)) {
+        payload.notes = JSON.parse(JSON.stringify(snap.notes));
+        payload.noteTombstones = JSON.parse(JSON.stringify(snap.tombstones));
+      }
+      return fetch(firebaseConfig.databaseURL + '/users/' + encodeURIComponent(_fbUser.uid) + '.json?auth=' + token, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function(r) {
+        if (!r.ok) throw new Error('Cloud write failed over fallback (HTTP ' + r.status + ')');
+        return r.json();
+      }).then(function(body) {
+        if (body && body.error) throw new Error('Cloud write denied: ' + body.error);
+      });
+    });
+  }
+  // Performs a deliberate full cloud save of projects, categories, archive,
+  // trash, notes, and the timestamp. Attempt 1 rides the SDK capped by
+  // cloudWriteTimeout(); if the socket is wedged, withRetry's retry switches
+  // transport to the REST write above — the same rescue reads already had —
+  // so callers' success/error toasts ALWAYS reflect a real outcome.
+  // (Bookkeeping still resets up-front: a timed-out SDK write that lands late
+  // is harmless — the retry sends the identical payload; one that never lands
+  // is repaired by the next autosync tick's diff-based pushSelective().)
+  function pushWithTimestamp() {
+    resetPushBookkeeping(window._pf.getProjects(), window._pf.getCategories(), window._pf.getArchive(), window._pf.getTrash());
+    const writePromise = withRetry(function(attempt) {
+      if (attempt === 1) return Promise.race([sdkWriteAll(), cloudWriteTimeout()]);
+      return Promise.race([restWriteAll(), cloudWriteTimeout()]);
+    }, 'push');
+    // Bookkeeping tap: .then(onFulfilled) alone derives a promise that rejects
+    // UNHANDLED when the write fails (Node crashes; in the browser it surfaces
+    // as "Uncaught (in promise)" noise — seen live with PERMISSION_DENIED).
+    // Giving the tap its own rejection handler keeps it purely observational;
+    // the RETURNED promise still rejects so the caller's .catch fires the
+    // error toast as before.
+    writePromise.then(function() { updateLastSync(); }, function() {});
+    return writePromise;
   }
 
   // Hook into scheduleSave to push on every change when autosync is on (debounced)
