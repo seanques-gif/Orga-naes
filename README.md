@@ -1,11 +1,9 @@
 # Orga-naes
 
-[![CI](https://github.com/seanques-gif/Orga-naes/actions/workflows/ci.yml/badge.svg)](https://github.com/seanques-gif/Orga-naes/actions/workflows/ci.yml)
-
 A personal project manager that lives entirely in **one HTML file**. No backend, no
 accounts, no install — your data stays in your browser.
 
-Vanilla JavaScript, HTML, and CSS. Zero npm dependencies.
+Vanilla JavaScript, HTML, and CSS. Zero dependencies.
 
 ## What it does
 
@@ -27,53 +25,9 @@ The Firebase web configuration included in the source is public client configura
 design — it identifies the project, not a credential. Access control is enforced by
 Realtime Database security rules.
 
-## Build & test
-
-Requires Node.js (any recent version).
-
-```bash
-npm run build   # reassembles src/ into the single-file Orga-naes.html
-npm test        # six suites: design tokens, contrast, dates, CSP, functional (125), RTDB rules (141)
-npm run verify  # determinism gate (artifact pin byte-matches a fresh build) + test
-npm run probe   # real-browser gate: toolbar layout + craft-floor audit (headless Chrome)
-```
-
-The probe drives the installed Chrome/Chromium over the DevTools protocol (no
-dependencies, `CHROME_PATH` to point at a specific binary). It starts the local
-server itself and fails on toolbar movement when search opens, a resting card
-shadow, a one-sided colored border rail above 1px, or a toolbar row left with
-less than 24px of slack (the bar wraps instead of degrading, so the status
-capsule dropping to a second row always starts as lost headroom). Pass a
-viewport: `npm run probe -- 1355 800`. CI runs it at 1260 / 1355 / 1400 in the
-`layout` job.
-
-```bash
-npm run visual         # visual baselines: toolbar + card, dark and light
-npm run visual:update  # rewrite the baselines (review the PNG/JSON diff first)
-```
-
-`npm run visual` screenshots five regions of the running app and compares them
-against `tests/baselines/`. The committed baseline is a *block-averaged
-fingerprint* of each region (`<name>.json`), not a raw pixel diff: CI renders text
-with a different rasteriser than a local machine, and raw pixels would fail on
-every run. Each region also ships its PNG as a human reference, and the script
-refuses to accept a "light" baseline whose mean luminance is dark — so a baseline
-can't silently capture the wrong theme. On failure the freshly captured PNGs land
-in `tests/baselines/current/` (uploaded as the `visual-drift` CI artifact). Single
-region: `node scripts/visual-baseline.cjs --only=card-head`.
-
-The comparator tolerates 8px of sub-block misalignment and per-channel block
-deltas up to 24, because CI lays the same row out a pixel or two from a local
-machine. More than 1% of blocks drifting fails the run, and so does a single
-block 60+ away from every colour in its neighbourhood. If a browser update shifts
-rendering with no code change behind it, `npm run visual:update` is the recovery —
-read the diff it writes before committing.
-
-Source of truth is `src/` — never hand-edit `Orga-naes.html`; the build owns it.
-
 ## Run it
 
-Serve the folder with any static server and open `Orga-naes.html`:
+Serve this folder with any static server and open `Orga-naes.html`:
 
 ```bash
 npx serve .
@@ -82,6 +36,13 @@ npx serve .
 
 A server (not `file://`) is required for the service worker and installability.
 Opening the file directly also works for casual use, minus PWA features.
+
+If you use **GitHub Pages**, the app is already served for you at
+`https://<your-username>.github.io/Orga-naes/Orga-naes.html`.
+
+> This repository intentionally contains only the app's runtime files. Development
+> happens in a private local checkout; new versions are published here as updated
+> built files.
 
 ## License
 
