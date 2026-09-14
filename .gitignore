@@ -65,6 +65,7 @@ tests/baselines/current/
 /REDESIGN-FINDINGS.md
 /SECURITY.md
 /PUBLISHING.md
+/LOCAL-SETUP.md
 /PF-DEBUG-LOGGER.md
 /orga-naes-default-rtdb-export.json
 project-flow-backup-*.json
