@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-mO9F9bkCSLckt2MYySf4JhDB5/AJNuDYH1ezasbDJok='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-qPezZIz1Gl5VKrRbhWRsU6rAlrBNS7613gt+jWMgK58='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9630,6 +9630,21 @@ if ('serviceWorker' in navigator) {
       }, ms);
     });
   }
+  // Writes get the same cap as reads. Symmetry with cloudReadTimeout(): a
+  // .set() over a half-open socket (wake-from-sleep, network flap) can stay
+  // pending forever too — observed live as "Overwrite cloud" clicked, data
+  // maybe written, and NO toast ever appearing, because the success/error
+  // toasts both hang off the write promise settling. The reconnect trick
+  // halves the pain of the next attempt the same way it does for reads.
+  function cloudWriteTimeout() {
+    const ms = (typeof window !== 'undefined' && window._pf && window._pf._cloudWriteTimeoutMs) || 20000;
+    return new Promise(function(_, reject) {
+      setTimeout(function() {
+        try { db.goOffline(); db.goOnline(); } catch (e) {}
+        reject(new Error('Cloud is not responding — the push may not have completed. Check your connection and push again.'));
+      }, ms);
+    });
+  }
   // The six standard cloud reads for the signed-in account. RAW — no timeout
   // race; callers cap it. One builder so both transports return the identical
   // results[i].val() shape.
@@ -10579,6 +10594,12 @@ if ('serviceWorker' in navigator) {
   }
 
   // Performs a deliberate full cloud save of projects, categories, archive, and trash.
+  // The returned promise is capped by cloudWriteTimeout(), so callers' success/
+  // error toasts always fire — even when the socket is wedged and the write
+  // itself would otherwise pend forever. (Bookkeeping still resets up-front,
+  // exactly as before: a timed-out write is repaired by the next autosync
+  // tick's diff-based pushSelective(), which re-sends whatever actually
+  // differs — the same self-healing that covers an in-flight crash.)
   function pushWithTimestamp() {
     const projects = window._pf.getProjects();
     resetPushBookkeeping(projects, window._pf.getCategories(), window._pf.getArchive(), window._pf.getTrash());
@@ -10592,7 +10613,7 @@ if ('serviceWorker' in navigator) {
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
     ]);
     writePromise.then(function() { updateLastSync(); });
-    return writePromise;
+    return Promise.race([writePromise, cloudWriteTimeout()]);
   }
 
   // Hook into scheduleSave to push on every change when autosync is on (debounced)
@@ -11028,6 +11049,10 @@ if ('serviceWorker' in navigator) {
     // destructive, one-way actions.
     pfConfirm('Keep local & push to cloud', 'This will overwrite the cloud with your local data. Any cloud-only changes will be lost.', 'Overwrite cloud').then(function(ok) { if (!ok) return;
     dismissConflictModal();
+    // Immediate feedback: the write can legitimately take a few seconds
+    // (large payload, slow network) — without this the gap between OK and
+    // the result toast looks like the button did nothing.
+    window._pf.showToast('☁ Pushing to cloud...');
     pushWithTimestamp().then(function() {
       window._pf.showToast('✅ Kept local data & pushed to cloud');
       window._pf.closeAllModals();
