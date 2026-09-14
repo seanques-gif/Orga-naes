@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-I+qjfKEdQZ+vfFMzXJZsQxUzFsgO1GyUhDdfZGnE70g='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-mO9F9bkCSLckt2MYySf4JhDB5/AJNuDYH1ezasbDJok='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2691,6 +2691,22 @@
       <div class="pf-conflict-btns">
         <button id="pf-conflict-keep-local">Keep Local &amp; Push</button>
         <button id="pf-conflict-keep-remote" class="pf-conflict-primary">Use Cloud</button>
+      </div>
+    </div>
+  </div>
+  <!-- In-app confirm dialog (window.confirm replacement): browsers silently
+       auto-dismiss native confirm() as "Cancel" once "Prevent this page from
+       creating additional dialogs" is ticked, which used to kill the
+       overwrite-cloud guard with zero UI. Rendered AFTER the conflict modal
+       so it stacks on top when both are open. Reuses pf-conflict classes —
+       no dedicated CSS. -->
+  <div class="pf-conflict-modal" id="pf-confirm-modal">
+    <div class="pf-conflict-box">
+      <div class="pf-conflict-title" id="pf-confirm-title">Please confirm</div>
+      <div class="pf-conflict-col" id="pf-confirm-message" style="margin-bottom:12px;"></div>
+      <div class="pf-conflict-btns">
+        <button id="pf-confirm-cancel">Cancel</button>
+        <button id="pf-confirm-ok" class="pf-conflict-primary">OK</button>
       </div>
     </div>
   </div>
@@ -10079,8 +10095,8 @@ if ('serviceWorker' in navigator) {
     });
   });
 
-  function _doSignout() {
-    if (!confirm('Sign out? Your local data on this device will be cleared until you sign back in.')) return;
+  async function _doSignout() {
+    if (!(await pfConfirm('Sign out', 'Your local data on this device will be cleared until you sign back in.', 'Sign out'))) return;
     if (window._pf && window._pf.stopAutoBackup) window._pf.stopAutoBackup();
     auth.signOut().then(function() {
       try { clearLocalUserData(); } catch (e) {}
@@ -10762,7 +10778,7 @@ if ('serviceWorker' in navigator) {
       backupsList.querySelectorAll('.pf-backup-restore-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
           const key = btn.dataset.backupKey;
-          if (!confirm('Restore backup from ' + key + '? This will overwrite your current data.')) return;
+          pfConfirm('Restore backup', 'Restore backup from ' + key + '? This will overwrite your current data.', 'Restore').then(function(ok) { if (!ok) return;
           window._pf.snapshot();
           const b = val[key];
           if (b.projects) {
@@ -10777,6 +10793,7 @@ if ('serviceWorker' in navigator) {
           }
           window._pf.showToast('✅ Restored backup from ' + key);
           backupsList.style.display = 'none';
+          });
         });
       });
     });
@@ -10790,6 +10807,42 @@ if ('serviceWorker' in navigator) {
   // "Keep Remote" can apply all of it, not just projects. Left null when
   // the modal was opened from the realtime listener or a manual Push,
   // neither of which have this extra data on hand.
+  // === In-app confirm (window.confirm replacement) ===
+  // Native confirm() has a fatal flaw for a destructive-action guard: once the
+  // user ticks the browser's "Prevent this page from creating additional
+  // dialogs" checkbox, EVERY future confirm() is silently answered "Cancel"
+  // with zero UI — the app then just does nothing, which looks exactly like a
+  // broken push button. This promise-based dialog is a real DOM element, so it
+  // can't be suppressed, and it matches the app's console styling.
+  let _confirmResolve = null;
+  function pfConfirm(title, message, okLabel) {
+    return new Promise(function(resolve) {
+      // A dialog already open (double-click) — treat as the user cancelling it.
+      if (_confirmResolve) { _confirmResolve(false); }
+      _confirmResolve = resolve;
+      document.getElementById('pf-confirm-title').textContent = title;
+      document.getElementById('pf-confirm-message').textContent = message;
+      document.getElementById('pf-confirm-ok').textContent = okLabel || 'OK';
+      document.getElementById('pf-confirm-modal').classList.add('pf-conflict-open');
+    });
+  }
+  function settleConfirm(result) {
+    document.getElementById('pf-confirm-modal').classList.remove('pf-conflict-open');
+    const r = _confirmResolve; _confirmResolve = null;
+    if (r) r(result);
+  }
+  document.getElementById('pf-confirm-ok').addEventListener('click', function() { settleConfirm(true); });
+  document.getElementById('pf-confirm-cancel').addEventListener('click', function() { settleConfirm(false); });
+  if (window._pf && window._pf.registerEscDismissable) {
+    window._pf.registerEscDismissable({
+      key: 'confirm-dialog',
+      // Registered after the 'conflict' entry, so with both dialogs open Escape
+      // dismisses THIS one first (top of the unshift-based stack).
+      check: function() { return document.getElementById('pf-confirm-modal').classList.contains('pf-conflict-open'); },
+      run: function() { settleConfirm(false); }
+    });
+  }
+
   let _pendingPullExtras = null;
   // Closes the modal without applying either side — the Escape-key
   // equivalent of Cancel. Safe to leave unresolved: the same conflict
@@ -10973,7 +11026,7 @@ if ('serviceWorker' in navigator) {
     // exist there (e.g. edits made on another device). Confirm first,
     // matching the pattern used elsewhere (backup restore) for
     // destructive, one-way actions.
-    if (!confirm('This will overwrite the cloud with your local data. Any cloud-only changes will be lost. Continue?')) return;
+    pfConfirm('Keep local & push to cloud', 'This will overwrite the cloud with your local data. Any cloud-only changes will be lost.', 'Overwrite cloud').then(function(ok) { if (!ok) return;
     dismissConflictModal();
     pushWithTimestamp().then(function() {
       window._pf.showToast('✅ Kept local data & pushed to cloud');
@@ -10982,12 +11035,13 @@ if ('serviceWorker' in navigator) {
       window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
       if (window._pf.logError) window._pf.logError('Firebase conflict push', err);
     });
+    });
   });
   document.getElementById('pf-conflict-keep-remote').addEventListener('click', function() {
     // Applying cloud data overwrites whatever is only on this device
     // (local-only projects, unsynced edits). Confirm first, same as
     // Keep Local, so neither side of this decision is a single misclick.
-    if (!confirm('This will replace your local data with the cloud version. Any local-only changes will be lost. Continue?')) return;
+    pfConfirm('Use cloud data', 'This will replace your local data with the cloud version. Any local-only changes will be lost.', 'Use cloud').then(function(ok) { if (!ok) return;
     const remoteToApply = _pendingRemote;
     const extrasToApply = _pendingPullExtras;
     dismissConflictModal();
@@ -11042,6 +11096,7 @@ if ('serviceWorker' in navigator) {
       }
       window._pf.closeAllModals();
     }
+    });
   });
 
   // Connection indicator
