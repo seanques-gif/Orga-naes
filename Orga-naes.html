@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-XHg71itZcM0i4Goq9hri7GIjboPe00oZd3doJH0bUmE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-vDZ7Ee26pY+GVxHJn0fd3uX5cPvSPXphlQdkCxXuudA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3102,6 +3102,12 @@
       saveModal.addEventListener('click', function(ev) { if (ev.target === saveModal) _removeSaveModal(); });
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+      // Notes panel open? Ctrl+F targets the notes search instead of the
+      // project search (the visible context wins).
+      const np = document.getElementById('pf-notes-panel');
+      if (np && np.style.display === 'flex' && window._pf.focusNotesSearch) {
+        e.preventDefault(); window._pf.focusNotesSearch(); return;
+      }
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
       e.preventDefault(); const sw = document.getElementById('pf-search-wrap'); const si = document.getElementById('pf-search'); sw.classList.add('pf-search-open');
       // Focus AFTER the popover's open transition: focusing during the
@@ -9573,6 +9579,13 @@
   document.getElementById('pf-note-list').addEventListener('click', () => toggleCheckboxLines());
   document.getElementById('pf-note-view').addEventListener('click', toggleNoteView);
   document.getElementById('pf-notes-search').addEventListener('input', (e) => { notesSearch = e.target.value.trim(); renderNotesList(); });
+  // Ctrl+F routing target (see 02-global-keyboard-shortcuts): focus the notes
+  // search and select any existing query so typing replaces it immediately.
+  window._pf.focusNotesSearch = function () {
+    const si = document.getElementById('pf-notes-search');
+    si.focus();
+    try { si.select(); } catch (e) {}
+  };
   noteTitleEl.addEventListener('input', () => { clearTimeout(notesSaveTimer); notesSaveTimer = setTimeout(commitNoteField, 350); });
   noteTitleEl.addEventListener('blur', commitNoteField);
   noteBodyEl.addEventListener('input', () => { updateNoteCount(); clearTimeout(notesSaveTimer); notesSaveTimer = setTimeout(commitNoteField, 350); });
