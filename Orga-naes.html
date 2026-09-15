@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-XsJdMHzctDczZ5mAIft6HRNNPn8E34UXwP/8zC+iV1E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-yq0DqvGsIQOUNag0dkdodNoYf1UiM66VO7DRIYXMCzQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -11819,6 +11819,11 @@ if ('serviceWorker' in navigator) {
     modal.classList.add('pf-conflict-open');
     if (window._pf && window._pf.markOverlayOpen) window._pf.markOverlayOpen('conflict');
   }
+  // Reopen idempotence: the open class is a no-op if already set, and the
+  // modal's Esc/Keep handlers resolve the CURRENT _pendingRemote (looked up
+  // at click time), so a second open over the first replaces the pending
+  // choice instead of stacking — no orphan dialog class of bug.
+
   document.getElementById('pf-conflict-keep-local').addEventListener('click', function() {
     // Overwriting the cloud can permanently discard changes that only
     // exist there (e.g. edits made on another device). Confirm first,
