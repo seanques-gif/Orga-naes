@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-GrykRd0sLIUqHyRqdiDAbALeFv2eMHFZs/rnA64tVHs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-m0f2VmY8qqkpCMeSKZgKrp7F5XxnhHMxPCZtwEE3lWo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2588,6 +2588,8 @@
           <div class="pf-notes-editor-foot">
             <span class="pf-notes-count" id="pf-note-count"></span>
             <span class="pf-notes-foot-actions">
+              <button class="pf-undo-btn" id="pf-note-undo" title="Undo note change (Ctrl+Z)" disabled><span data-ic="undo"></span></button>
+              <button class="pf-undo-btn" id="pf-note-redo" title="Redo note change (Ctrl+Y)" disabled><span data-ic="redo"></span></button>
               <button class="pf-undo-btn" id="pf-note-copy" title="Copy note text"><span data-ic="file"></span> Copy</button>
               <button class="pf-undo-btn" id="pf-note-pin" title="Pin to top"><span data-ic="star"></span> <span id="pf-note-pin-label">Pin</span></button>
               <button class="pf-undo-btn" id="pf-note-list" title="Toggle checkbox on line (Ctrl+L)"><span data-ic="check-square"></span> List</button>
@@ -3009,7 +3011,12 @@
   // SUBSECTION: Global Keyboard Shortcuts
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-      const ae = document.activeElement; if (ae && ae.isContentEditable) return; if (!root.contains(ae) && ae !== document.body) return;
+      const ae = document.activeElement;
+      const np = document.getElementById('pf-notes-panel');
+      if (np && np.style.display === 'flex' && window._pf.undoNote) {
+        e.preventDefault(); if (e.shiftKey) window._pf.redoNote(); else window._pf.undoNote(); return;
+      }
+      if (ae && ae.isContentEditable) return; if (!root.contains(ae) && ae !== document.body) return;
       e.preventDefault(); if (e.shiftKey) redo(); else undo();
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
@@ -3036,8 +3043,13 @@
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
       e.preventDefault(); const sw = document.getElementById('pf-search-wrap'); const si = document.getElementById('pf-search'); sw.classList.add('pf-search-open'); si.focus(); si.select();
     }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-      const ae = document.activeElement; if (ae && ae.isContentEditable) return;
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+      const ae = document.activeElement;
+      const np = document.getElementById('pf-notes-panel');
+      if (np && np.style.display === 'flex' && window._pf.redoNote) {
+        e.preventDefault(); window._pf.redoNote(); return;
+      }
+      if (ae && ae.isContentEditable) return;
       e.preventDefault(); redo();
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
@@ -8794,6 +8806,50 @@
   let notesSelection = [];   // multi-select ids, in click order
   let lastClickedNoteId = null; // shift-range anchor
 
+  // Notes undo/redo — independent of the projects-graph undo stack. Full-set
+  // snapshots are pushed at the START of each user mutation (create, delete,
+  // pin, text edit), so undo restores the exact prior note set. Cloud
+  // adoption/merge bypasses this on purpose: external state changes aren't
+  // local edits (and undoing across a pull is still possible via a stale
+  // snapshot, which then re-pushes on the next tick).
+  let notesUndoStack = [];
+  let notesRedoStack = [];
+  const NOTES_UNDO_MAX = 50;
+  function cloneNotes(arr) { return JSON.parse(JSON.stringify(arr)); }
+  function updateNotesHistoryButtons() {
+    if (noteUndoBtn) noteUndoBtn.disabled = notesUndoStack.length === 0;
+    if (noteRedoBtn) noteRedoBtn.disabled = notesRedoStack.length === 0;
+  }
+  function notesSnapshotPush() {
+    notesUndoStack.push(cloneNotes(notes));
+    if (notesUndoStack.length > NOTES_UNDO_MAX) notesUndoStack.shift();
+    notesRedoStack = [];
+    updateNotesHistoryButtons();
+  }
+  function notesHistoryReset() { notesUndoStack = []; notesRedoStack = []; updateNotesHistoryButtons(); }
+  function applyNotesSet(next) {
+    notes = next;
+    if (!noteById(activeNoteId)) activeNoteId = notes[0] ? notes[0].id : null;
+    saveNotes(); renderNotesList(); renderNotesEditor();
+    if (window._firebasePushNow) window._firebasePushNow();
+  }
+  function undoNote() {
+    if (!notesUndoStack.length) return;
+    notesRedoStack.push(cloneNotes(notes));
+    applyNotesSet(notesUndoStack.pop());
+    updateNotesHistoryButtons();
+    showToast('↩ Note undo (' + notesUndoStack.length + ' left)');
+  }
+  function redoNote() {
+    if (!notesRedoStack.length) return;
+    notesUndoStack.push(cloneNotes(notes));
+    applyNotesSet(notesRedoStack.pop());
+    updateNotesHistoryButtons();
+    showToast('↪ Note redo (' + notesRedoStack.length + ' left)');
+  }
+  window._pf.undoNote = undoNote;
+  window._pf.redoNote = redoNote;
+
   const notesPanelEl = document.getElementById('pf-notes-panel');
   const notesListEl = document.getElementById('pf-notes-list');
   const notesEditorEmptyEl = document.getElementById('pf-notes-editor-empty');
@@ -8802,6 +8858,8 @@
   const noteBodyEl = document.getElementById('pf-note-body');
   const noteCountEl = document.getElementById('pf-note-count');
   const notePinLabelEl = document.getElementById('pf-note-pin-label');
+  const noteUndoBtn = document.getElementById('pf-note-undo');
+  const noteRedoBtn = document.getElementById('pf-note-redo');
 
   function noteById(id) { return notes.find(n => n.id === id); }
 
@@ -9093,6 +9151,7 @@
 
   function newNote() {
     const n = { id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: '', body: '', pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    notesSnapshotPush();
     notes.unshift(n);
     if (typeof logActivity === 'function') logActivity('Created note "' + (n.title || 'Untitled') + '"');
     noteViewMode = 'edit';
@@ -9115,6 +9174,7 @@
   function deleteNoteById(id, opts) {
     const n = noteById(id);
     if (!n) return false;
+    notesSnapshotPush();
     if (typeof logActivity === 'function') logActivity('Deleted note "' + (n.title || 'Untitled') + '"');
     notes = notes.filter(x => x.id !== id);
     notesSelection = notesSelection.filter(x => x !== id);
@@ -9145,6 +9205,7 @@
   function togglePin() {
     const n = noteById(activeNoteId);
     if (!n) return;
+    notesSnapshotPush();
     n.pinned = !n.pinned;
     n.updatedAt = new Date().toISOString();
     saveNotes();
@@ -9176,6 +9237,7 @@
     const title = noteTitleEl.value.replace(/\s+/g, ' ').trim().slice(0, 120);
     const body = noteBodyEl.value.slice(0, 100000);
     if (title !== (n.title || '') || body !== (n.body || '')) {
+      notesSnapshotPush();
       n.title = title; n.body = body; n.updatedAt = new Date().toISOString();
       saveNotes();
       renderNotesList();
@@ -9197,6 +9259,8 @@
   document.getElementById('pf-note-del').addEventListener('click', deleteActiveNote);
   document.getElementById('pf-note-pin').addEventListener('click', togglePin);
   document.getElementById('pf-note-copy').addEventListener('click', copyActiveNote);
+  document.getElementById('pf-note-undo').addEventListener('click', undoNote);
+  document.getElementById('pf-note-redo').addEventListener('click', redoNote);
   document.getElementById('pf-note-list').addEventListener('click', () => toggleCheckboxLines());
   document.getElementById('pf-note-view').addEventListener('click', toggleNoteView);
   document.getElementById('pf-notes-search').addEventListener('input', (e) => { notesSearch = e.target.value.trim(); renderNotesList(); });
@@ -9405,6 +9469,7 @@
   };
   window._pf.clearNotesRuntime = function() {
     notes = []; notesLoaded = true; notesLoadedEmpty = false; activeNoteId = null; notesSelection = [];
+    notesHistoryReset();
     renderNotesList(); renderNotesEditor();
   };
 
