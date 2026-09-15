@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-WlVeGNxa+UDLaqTRKVyrAJNZfccSRccRd37KR2/HhOw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-PgnSC3QlfTxnDQVZrmHPbdceS5dSQynCfCzOUDwLBBI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9943,6 +9943,10 @@ if ('serviceWorker' in navigator) {
       if (window._pf.setCategories) window._pf.setCategories([]);
       if (window._pf.setArchive) window._pf.setArchive([]);
       if (window._pf.setTrash) window._pf.setTrash([]);
+      // Notes: storage keys above are not enough — the module keeps its set
+      // in memory and the panel renders from that, so without this bridge
+      // the signed-out user still sees the previous account's notes.
+      if (window._pf.clearNotesRuntime) window._pf.clearNotesRuntime();
       if (window._pf.clearEphemeralState) window._pf.clearEphemeralState();
       if (window._pf.render) window._pf.render();
       if (window._pf.renderSplitList) window._pf.renderSplitList();
