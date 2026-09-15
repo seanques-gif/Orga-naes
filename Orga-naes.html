@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-5OYNFu3O/KkTE99MhJUkCuqvWIuWvUvq/aHp9WM2FXM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-qDRveQ36pzwyyWjGTTejv9OLsyWRJvraojdrYWEBZ/c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2136,6 +2136,10 @@
   #pf-root .pf-fmt-btn {
     min-width: 30px; height: 26px; padding: 0 8px; font-size: calc(var(--font-size-base) + 1px);
     display: inline-flex; align-items: center; justify-content: center;
+  }
+  #pf-root .pf-fmt-btn.pf-fmt-active {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--accent); border-color: var(--accent);
   }
   #pf-root .pf-notes-rich {
     flex: 1; overflow-y: auto; outline: none; white-space: pre-wrap; word-break: break-word;
@@ -9692,6 +9696,30 @@
   // Format buttons: mousedown (not click) so the editor never loses focus or
   // its selection — same trick rich editors use. The subsequent input event
   // fires natively from execCommand; also emit manually for safety.
+  // Active-state indicators: while the cursor sits inside (or a selection
+  // spans) bold/italic/underlined runs, the matching toolbar button lights
+  // up. queryCommandState is the standard rich-editor mechanism; guarded
+  // because some environments throw on it before focus.
+  var fmtBtns = document.querySelectorAll('#pf-notes-fmt-bar [data-fmt]');
+  var fmtCmdFor = { bold: 'bold', italic: 'italic', underline: 'underline' };
+  function updateFmtActive() {
+    if (document.activeElement !== noteRichEl || !window.getSelection || !window.getSelection().rangeCount) {
+      fmtBtns.forEach(function (b) { b.classList.remove('pf-fmt-active'); });
+      return;
+    }
+    fmtBtns.forEach(function (b) {
+      var cmd = fmtCmdFor[b.dataset.fmt];
+      var on = false;
+      try { on = document.queryCommandState(cmd); } catch (err) { on = false; }
+      b.classList.toggle('pf-fmt-active', on);
+    });
+  }
+  noteRichEl.addEventListener('keyup', updateFmtActive);
+  noteRichEl.addEventListener('mouseup', updateFmtActive);
+  noteRichEl.addEventListener('focus', updateFmtActive);
+  document.addEventListener('selectionchange', function () {
+    if (document.activeElement === noteRichEl) updateFmtActive();
+  });
   document.getElementById('pf-notes-fmt-bar').addEventListener('mousedown', function (e) {
     var btn = e.target.closest('[data-fmt]');
     if (!btn) return;
@@ -9701,6 +9729,7 @@
     document.execCommand(btn.dataset.fmt, false, null);
     emitInput(noteRichEl);
     noteRichEl.focus();
+    updateFmtActive();
   });
   noteRichEl.addEventListener('keydown', function (e) {
     var k = (e.key || '').toLowerCase();
