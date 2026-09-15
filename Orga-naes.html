@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-PgnSC3QlfTxnDQVZrmHPbdceS5dSQynCfCzOUDwLBBI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-LtxE5/iepy3ioS1h3hbI6LM0Naognhk5Tl4KYqtlLgQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9478,6 +9478,12 @@
     if (cloudTombstones && typeof cloudTombstones === 'object') {
       Object.keys(cloudTombstones).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (cloudTombstones[k] || '')) noteTombstones[k] = cloudTombstones[k]; });
     }
+    // Heal stale tombstones: a local tombstone for a note the cloud still
+    // holds is residue (the old replaceNotes-during-pull bug manufactured
+    // these), not a real deletion — real deletions carry a CLOUD tombstone,
+    // and those were already unioned in above. Without this, one bad device
+    // keeps re-deleting its notes on every pull forever.
+    clean.forEach(n => { if (isTombstoned(n.id)) delete noteTombstones[n.id]; });
     const byIdMap = {};
     clean.forEach(n => { byIdMap[n.id] = n; });
     notes.forEach(n => { if (!byIdMap[n.id]) byIdMap[n.id] = n; }); // local-only survives
@@ -10659,6 +10665,18 @@ if ('serviceWorker' in navigator) {
         }
         if (!localHasNotes && remoteCount > 0 && !_notesPulledThisSession) {
           _lastPushedNotesHash = notesHash; // remember so we don't retry every tick
+          return undefined;
+        }
+        // Second guard: a device whose (empty) local set has tombstoned ALL of
+        // the cloud's live notes is not expressing a real deletion history —
+        // it is carrying residue (see mergeCloudNotes healing). Writing that
+        // up would erase notes the user can still see on other devices. A
+        // deliberate wipe is still possible: deleting notes one by one records
+        // cloud tombstones (deleteNoteById always does), so the tombstone map
+        // — not an empty array over live notes — carries that intent.
+        const liveRemote = remoteNotes.filter(function(n) { return n && !remoteNoteTombstones[n.id]; });
+        if (!localHasNotes && liveRemote.length > 0 && Object.keys(remoteNoteTombstones).length === 0) {
+          _lastPushedNotesHash = notesHash;
           return undefined;
         }
         return Promise.all([
