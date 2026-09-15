@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-9RvHxgIoqx4fcPbhMGzB61tgZvCWnKApzwdo7kKl+wQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-5OYNFu3O/KkTE99MhJUkCuqvWIuWvUvq/aHp9WM2FXM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2130,6 +2130,13 @@
     color: var(--text); font-family: var(--font-sans); font-size: max(12px, var(--font-size-base));
     line-height: 1.6; padding: 10px 4px; width: 100%;
   }
+  #pf-root .pf-notes-fmt-bar {
+    display: flex; gap: 2px; margin-bottom: 4px; flex-shrink: 0;
+  }
+  #pf-root .pf-fmt-btn {
+    min-width: 30px; height: 26px; padding: 0 8px; font-size: calc(var(--font-size-base) + 1px);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
   #pf-root .pf-notes-rich {
     flex: 1; overflow-y: auto; outline: none; white-space: pre-wrap; word-break: break-word;
     min-height: 0; cursor: text;
@@ -2623,6 +2630,11 @@
         </div>
         <div class="pf-notes-editor-main" id="pf-notes-editor-main" style="display:none;">
           <input type="text" class="pf-notes-note-title" id="pf-note-title" placeholder="Title" spellcheck="false">
+          <div class="pf-notes-fmt-bar" id="pf-notes-fmt-bar">
+            <button class="pf-undo-btn pf-fmt-btn" data-fmt="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+            <button class="pf-undo-btn pf-fmt-btn" data-fmt="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+            <button class="pf-undo-btn pf-fmt-btn" data-fmt="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+          </div>
           <textarea class="pf-notes-note-body" id="pf-note-body" style="display:none" placeholder="Write your note… (Tab indents, Ctrl+L makes checkboxes)" spellcheck="false"></textarea>
           <div class="pf-notes-note-body pf-notes-rich" id="pf-note-body-rich" contenteditable="true" spellcheck="false"></div>
           <div class="pf-notes-preview" id="pf-note-preview" style="display:none"></div>
@@ -9676,6 +9688,19 @@
       noteBodyEl.value = richSerialize();
       emitInput(noteBodyEl);
     } finally { richSyncing = false; }
+  });
+  // Format buttons: mousedown (not click) so the editor never loses focus or
+  // its selection — same trick rich editors use. The subsequent input event
+  // fires natively from execCommand; also emit manually for safety.
+  document.getElementById('pf-notes-fmt-bar').addEventListener('mousedown', function (e) {
+    var btn = e.target.closest('[data-fmt]');
+    if (!btn) return;
+    e.preventDefault();
+    var richFocused = document.activeElement === noteRichEl;
+    if (!richFocused) noteRichEl.focus();
+    document.execCommand(btn.dataset.fmt, false, null);
+    emitInput(noteRichEl);
+    noteRichEl.focus();
   });
   noteRichEl.addEventListener('keydown', function (e) {
     var k = (e.key || '').toLowerCase();
