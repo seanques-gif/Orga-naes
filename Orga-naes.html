@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-qDRveQ36pzwyyWjGTTejv9OLsyWRJvraojdrYWEBZ/c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-0byMmyxE2MALSaoEYNmV7DIaKqwuB7k4ID0Ep4H6xyA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1218,6 +1218,8 @@
   #pf-root.pf-paste-armed .pf-node-header, #pf-root.pf-paste-armed .pf-subrow { cursor: copy; }
   #pf-root.pf-paste-armed .pf-node-header:hover { outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: var(--radius-container) var(--radius-container) 0 0; }
   #pf-root.pf-paste-armed .pf-subrow:hover { outline: 2px dashed var(--accent); outline-offset: -2px; }
+  #pf-root.pf-move-armed .pf-node-header, #pf-root.pf-move-armed .pf-subrow { cursor: move; }
+  #pf-root.pf-move-armed .pf-node-header:hover, #pf-root.pf-move-armed .pf-subrow:hover { outline: 2px dashed var(--warning, #e8a33d); outline-offset: -2px; }
   #pf-root .pf-node.pf-node-drop-before { box-shadow: -4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
   #pf-root .pf-node.pf-node-drop-after { box-shadow: 4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
   #pf-root .pf-node.pf-drop-target::before, #pf-root .pf-node.pf-drop-target::after {
@@ -2850,6 +2852,8 @@
   // comments, the emoji picker, and transient toast prefixes.
   const PF_ICONS = {
     'plus': '<path d="M12 5v14M5 12h14"/>',
+    'scissors': '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88"/><path d="M14.47 14.48 20 20"/><path d="M8.12 8.12 12 12"/>',
+    'scissors': '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88"/><path d="M14.47 14.48 20 20"/><path d="M8.12 8.12 12 12"/>',
     'undo': '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
     'redo': '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
     'menu': '<path d="M4 6h16M4 12h16M4 18h16"/>',
@@ -4547,7 +4551,7 @@
     titleEl.addEventListener('touchend', (e) => { if (titleEl.contentEditable === 'true') return; _titleTapCount++; if (_titleTapCount === 2) { clearTimeout(_titleTapTimer); _titleTapCount = 0; e.preventDefault(); clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } else { clearTimeout(_titleTapTimer); _titleTapTimer = setTimeout(() => { _titleTapCount = 0; }, 350); } });
     titleEl.addEventListener('blur', () => { titleEl.contentEditable = 'false'; const val = titleEl.textContent.trim() || 'Untitled'; if (val !== p.title) { _lastProjectId = p.id; snapshot(); p.title = val; scheduleSave(); if (listViewActive) renderSplitList(); } }); titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
     const descEl = div.querySelector('.pf-node-desc'); descEl.addEventListener('pointerdown', (e) => e.stopPropagation()); descEl.addEventListener('click', (e) => e.stopPropagation()); descEl.addEventListener('blur', () => { const val = descEl.textContent.trim(); if (val !== (p.description || '')) { _lastProjectId = p.id; snapshot(); p.description = val || ''; scheduleSave(); } }); descEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); descEl.blur(); } });
-    div.querySelector('.pf-node-header').addEventListener('click', (e) => { if (_pasteArmed && _taskClipboard && _taskClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; } if (e.target.closest('.pf-node-title') || e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; toggleExpand(p.id); }, true);
+    div.querySelector('.pf-node-header').addEventListener('click', (e) => { if (_moveArmed && _moveClipboard && _moveClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); moveClipboardAsMain(p); return; } if (_pasteArmed && _taskClipboard && _taskClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; } if (e.target.closest('.pf-node-title') || e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; toggleExpand(p.id); }, true);
     makeDraggable(div, p); makeResizable(div, p); return div;
   }
 
@@ -4579,6 +4583,7 @@
       '<button class="pf-selbar-btn" data-sub-action="due">Due</button>' +
       '<button class="pf-selbar-btn" data-sub-action="copy"' + (spansMultiple ? ' title="Copy to… only works from a single project (narrow your selection to one project)"' : '') + '>Copy to…</button>' +
       '<button class="pf-selbar-btn" data-sub-action="copy-clip" title="Ctrl+C">Copy</button>' +
+      '<button class="pf-selbar-btn" data-sub-action="cut" title="Cut (move): click a project/task after cutting">Cut</button>' +
       '<button class="pf-selbar-btn" data-sub-action="delete" style="color:var(--danger);">Delete</button>' +
       '<button class="pf-selbar-btn pf-selbar-close" data-sub-action="clear" title="Clear selection">✕</button>';
     // Single delegated listener instead of one per button — also means the
@@ -4597,6 +4602,9 @@
         if (!clip || !clip.length) return;
         _taskClipboard = clip;
         showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied. Click a project to paste as main task(s), or a task to nest under it');
+      } else if (action === 'cut') {
+        cutSelection();
+        return;
       } else if (action === 'cycle') {
         openStatusMenu(btn, null, (st) => {
           try {
@@ -4745,7 +4753,7 @@
     row.querySelector('.pf-subrow-title').addEventListener('pointerdown', (e) => { const t = row.querySelector('.pf-subrow-title'); if (t.contentEditable === 'true') { e.stopPropagation(); return; } dragHandleArmed = true; });
     row.draggable = true;
     row.addEventListener('dragstart', (e) => { if (!dragHandleArmed) { e.preventDefault(); return; } e.stopPropagation(); dragHandleArmed = false; draggingSubId = s.id; draggingProjectId = p.id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', s.id); } catch (err) {} if (subMultiSelect.length && subMultiSelect.includes(s.id)) { _draggingSubIds = subMultiSelect.slice(); } else { _draggingSubIds = [s.id]; } requestAnimationFrame(() => row.classList.add('pf-sub-dragging')); });
-    row.addEventListener('click', (e) => { if (!_pasteArmed || !_taskClipboard || !_taskClipboard.length) return; if (e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates') || e.target.closest('.pf-sub-ctx-btn')) return; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); pasteClipboardUnder(p, s); }, true);
+    row.addEventListener('click', (e) => { if (_moveArmed && _moveClipboard && _moveClipboard.length) { if (e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates') || e.target.closest('.pf-sub-ctx-btn')) return; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); moveClipboardUnder(p, s); return; } if (!_pasteArmed || !_taskClipboard || !_taskClipboard.length) return; if (e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates') || e.target.closest('.pf-sub-ctx-btn')) return; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); pasteClipboardUnder(p, s); }, true);
     row.addEventListener('dragend', () => { row.classList.remove('pf-sub-dragging'); draggingSubId = null; draggingProjectId = null; clearIndicators(); });
     row.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId !== p.id || draggingSubId === s.id) return; e.preventDefault(); e.stopPropagation(); const rect = row.getBoundingClientRect(); const ratio = (e.clientY - rect.top) / rect.height; const zone = ratio < 0.25 ? 'before' : ratio > 0.75 ? 'after' : 'nest'; clearIndicators(); row.classList.add('pf-drop-' + zone); row.dataset.dropZone = zone; });
     row.addEventListener('dragleave', (e) => { if (e.target === row) row.classList.remove('pf-drop-before', 'pf-drop-after', 'pf-drop-nest'); });
@@ -4912,6 +4920,95 @@
   let selectedProjectId = null;
   let _taskClipboard = null; let _pasteArmed = false;
     // SUBSECTION: Clipboard (Copy/Paste)
+
+  // ===== Cut & Move =====
+  // The move clipboard holds LIVE node references (not clones) plus origin
+  // metadata, so pasting relocates the actual nodes — ids, createdAt, and
+  // any state stay intact (unlike copy, which clones with new ids).
+  // _moveOriginIds lets the move remove the originals after a successful
+  // paste; empty when the nodes came from an external source.
+  let _moveClipboard = null; // [{ node, fromProjectId }]
+  let _moveOriginIds = null; // Set of ids to remove post-paste
+  function buildMoveFromSelection() {
+    if (subMultiSelect.length) {
+      const byProject = new Map();
+      subMultiSelect.forEach(id => {
+        const owner = subSelectOwnerProject(id);
+        if (!owner) return;
+        if (!byProject.has(owner.id)) byProject.set(owner.id, []);
+        const node = findSubNode(owner.subtasks, id);
+        if (node) byProject.get(owner.id).push(node);
+      });
+      const out = [];
+      byProject.forEach((nodes, fromProjectId) => nodes.forEach(n => out.push({ node: n, fromProjectId: fromProjectId })));
+      return out;
+    }
+    if (splitMultiSelect.length) {
+      return splitMultiSelect.map(id => projects.find(pr => pr.id === id)).filter(Boolean).map(pr => ({ node: pr, fromProjectId: pr.id }));
+    }
+    return null;
+  }
+  function cutSelection() {
+    const moves = buildMoveFromSelection();
+    if (!moves || !moves.length) { showToast('Select task(s) to cut first', true); return; }
+    _moveClipboard = moves;
+    _moveOriginIds = new Set(moves.map(m => m.node.id));
+    showToast(moves.length === 1 ? '"' + moves[0].node.title + '" cut — click a project/task to move it' : moves.length + ' tasks cut — click a project/task to move them', false, true);
+  }
+  // Common completion: remove originals (unless they WERE a pasted-into
+  // project node), persist, render.
+  function finishMove(movedCount, label) {
+    if (_moveOriginIds && _moveOriginIds.size) {
+      _moveOriginIds.forEach(id => {
+        // remove from wherever it lives now (its original parent)
+        for (const pr of projects.slice()) {
+          if (pr.id === id) { continue; } // top-level node pasted as project below
+          const arr = findSubParentArray(pr.subtasks, id);
+          if (arr) { const idx = arr.findIndex(x => x.id === id); if (idx > -1) arr.splice(idx, 1); }
+        }
+      });
+    }
+    _moveClipboard = null; _moveOriginIds = null;
+    _pasteArmed = false; root.classList.remove('pf-paste-armed');
+    _moveArmed = false; root.classList.remove('pf-move-armed');
+    clearSubSelect(); splitMultiSelect = []; root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
+    scheduleSave(); autoArrangeProjects(true); render();
+    logActivity('Moved ' + movedCount + ' task(s) to "' + label + '"');
+  }
+  function moveClipboardAsMain(targetProject) {
+    if (!_moveClipboard || !_moveClipboard.length) return;
+    // Guard: moving a PROJECT onto itself (it's in splitMultiSelect too)
+    if (_moveClipboard.some(m => m.node.id === targetProject.id)) { showToast("⚠ Can't move a task into itself", true); return; }
+    snapshot();
+    _moveClipboard.forEach(m => {
+      const node = m.node;
+      if (!targetProject.subtasks) targetProject.subtasks = [];
+      targetProject.subtasks.push(node);
+      targetProject.expanded = true;
+    });
+    const label = targetProject.title, n = _moveClipboard.length;
+    if (targetProject._manualStatus) delete targetProject._manualStatus;
+    checkAllCompleted(targetProject);
+    finishMove(n, label);
+  }
+  function moveClipboardUnder(targetProject, targetSub) {
+    if (!_moveClipboard || !_moveClipboard.length) return;
+    if (_moveClipboard.some(m => m.node.id === targetSub.id || isDescendant(m.node, targetSub.id))) {
+      showToast("⚠ Can't move a task under itself or its own child", true);
+      return;
+    }
+    snapshot();
+    _moveClipboard.forEach(m => {
+      if (!targetSub.subtasks) targetSub.subtasks = [];
+      targetSub.subtasks.push(m.node);
+    });
+    targetSub.expanded = true;
+    const label = targetSub.title, n = _moveClipboard.length;
+    if (targetProject._manualStatus) delete targetProject._manualStatus;
+    checkAllCompleted(targetProject);
+    finishMove(n, label);
+  }
+  let _moveArmed = false;
   function pruneCloneToSelection(node, idSet) {
     const clone = { id: uid(), title: node.title, status: node.status || 'planned', expanded: false, createdAt: new Date().toISOString(), dueAt: node.dueAt || null, completedAt: node.completedAt || null, recurrence: node.recurrence || null, subtasks: [] };
     const anySelectedBelow = (node.subtasks || []).some(c => idSet.has(c.id) || nodeHasSelectedDescendant(c, idSet));
@@ -5739,6 +5836,7 @@
       ...(!isMobile ? [{ icon: 'arrow-up', label: 'Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
       { icon: 'clipboard', label: 'Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
       { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied. Click a project to paste as main task, or a task to nest under it'); } },
+      { icon: 'scissors', label: 'Cut (move — click a project/task after)', action: () => { _moveClipboard = [{ node: s, fromProjectId: p.id }]; _moveOriginIds = new Set([s.id]); _moveArmed = true; root.classList.add('pf-move-armed'); showToast('Cut "' + s.title + '" — click a project to move as main task, or a task to nest under it', false, true); } },
       ...(!isMobile ? [{ icon: 'refresh', label: 'Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return 'Repeat: ' + labels[next]; } }] : []),
       { sep: true },
       { icon: 'trash', label: 'Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },
