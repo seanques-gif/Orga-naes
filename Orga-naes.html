@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-m0f2VmY8qqkpCMeSKZgKrp7F5XxnhHMxPCZtwEE3lWo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DwUpGdZmLBoAeupcKCjcrvPNzNeLP0ymBCJwucAM8jE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8833,18 +8833,35 @@
     saveNotes(); renderNotesList(); renderNotesEditor();
     if (window._firebasePushNow) window._firebasePushNow();
   }
+  // Concise human summary of what an undo/redo changed, for the activity log.
+  function notesDiffSummary(prev, next) {
+    const prevById = {}; prev.forEach(n => { prevById[n.id] = n; });
+    const nextById = {}; next.forEach(n => { nextById[n.id] = n; });
+    let restored = 0, removed = 0, edited = 0;
+    next.forEach(n => { if (!prevById[n.id]) restored++; else if ((prevById[n.id].title || '') !== (n.title || '') || (prevById[n.id].body || '') !== (n.body || '')) edited++; });
+    prev.forEach(n => { if (!nextById[n.id]) removed++; });
+    const parts = [];
+    if (restored) parts.push(restored + ' restored');
+    if (removed) parts.push(removed + ' removed');
+    if (edited) parts.push(edited + ' edited');
+    return parts.length ? parts.join(', ') : 'no note changes';
+  }
   function undoNote() {
     if (!notesUndoStack.length) return;
+    const prev = notes;
     notesRedoStack.push(cloneNotes(notes));
     applyNotesSet(notesUndoStack.pop());
     updateNotesHistoryButtons();
+    if (typeof logActivity === 'function') logActivity('Undid note change (' + notesDiffSummary(prev, notes) + ')');
     showToast('↩ Note undo (' + notesUndoStack.length + ' left)');
   }
   function redoNote() {
     if (!notesRedoStack.length) return;
+    const prev = notes;
     notesUndoStack.push(cloneNotes(notes));
     applyNotesSet(notesRedoStack.pop());
     updateNotesHistoryButtons();
+    if (typeof logActivity === 'function') logActivity('Redid note change (' + notesDiffSummary(prev, notes) + ')');
     showToast('↪ Note redo (' + notesRedoStack.length + ' left)');
   }
   window._pf.undoNote = undoNote;
