@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-vDZ7Ee26pY+GVxHJn0fd3uX5cPvSPXphlQdkCxXuudA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-6vJrbZlyV0cGB1HIa7hsOo+r5yzkSnCoqW+sBbrpBKY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3084,6 +3084,11 @@
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
       if (!root.classList.contains('pf-device-desktop')) return;
+      // One save modal at a time: a second Ctrl+S re-focuses the existing
+      // dialog instead of stacking another copy (which previously left
+      // orphans Escape couldn't reach, since _saveModalEl only tracked the
+      // newest one).
+      if (_saveModalEl) { return; }
       const saveModal = document.createElement('div');
       saveModal.style.cssText = 'position:fixed;inset:0;z-index:calc(var(--z-drag) + 1);display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
       saveModal.innerHTML = '<div style="background:var(--card,#12161c);border:1px solid var(--card-border,#232a34);border-radius:var(--radius-overlay);padding:24px;min-width:260px;text-align:center;color:var(--text,#d7dde5);">' +
@@ -3100,6 +3105,9 @@
       saveModal.querySelector('#_save-cloud').addEventListener('click', function() { _removeSaveModal(); if (window._firebasePushManual) window._firebasePushManual(); else showToast('⚠ Sign in first to push', true); });
       saveModal.querySelector('#_save-cancel').addEventListener('click', function() { _removeSaveModal(); });
       saveModal.addEventListener('click', function(ev) { if (ev.target === saveModal) _removeSaveModal(); });
+      if (window._pf && window._pf.registerEscDismissable) {
+        window._pf.registerEscDismissable({ check: function() { return document.body.contains(saveModal); }, run: _removeSaveModal });
+      }
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
       // Notes panel open? Ctrl+F targets the notes search instead of the
