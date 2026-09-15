@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DcZSWA0wZwOxP07hjPUdaGn/ayzlPSFKIAN0TOqvGXc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-9RvHxgIoqx4fcPbhMGzB61tgZvCWnKApzwdo7kKl+wQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2130,6 +2130,11 @@
     color: var(--text); font-family: var(--font-sans); font-size: max(12px, var(--font-size-base));
     line-height: 1.6; padding: 10px 4px; width: 100%;
   }
+  #pf-root .pf-notes-rich {
+    flex: 1; overflow-y: auto; outline: none; white-space: pre-wrap; word-break: break-word;
+    min-height: 0; cursor: text;
+  }
+  #pf-root .pf-notes-rich u { text-underline-offset: 2px; }
   #pf-root .pf-notes-note-body::placeholder { color: var(--text-dim); opacity: 0.6; }
   #pf-root .pf-notes-editor-foot {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -2618,7 +2623,8 @@
         </div>
         <div class="pf-notes-editor-main" id="pf-notes-editor-main" style="display:none;">
           <input type="text" class="pf-notes-note-title" id="pf-note-title" placeholder="Title" spellcheck="false">
-          <textarea class="pf-notes-note-body" id="pf-note-body" placeholder="Write your note… (Tab indents, Ctrl+L makes checkboxes)" spellcheck="false"></textarea>
+          <textarea class="pf-notes-note-body" id="pf-note-body" style="display:none" placeholder="Write your note… (Tab indents, Ctrl+L makes checkboxes)" spellcheck="false"></textarea>
+          <div class="pf-notes-note-body pf-notes-rich" id="pf-note-body-rich" contenteditable="true" spellcheck="false"></div>
           <div class="pf-notes-preview" id="pf-note-preview" style="display:none"></div>
           <div class="pf-notes-editor-foot">
             <span class="pf-notes-count" id="pf-note-count"></span>
@@ -8989,6 +8995,7 @@
   const noteBodyEl = document.getElementById('pf-note-body');
   const noteCountEl = document.getElementById('pf-note-count');
   const notePinLabelEl = document.getElementById('pf-note-pin-label');
+  const noteRichEl = document.getElementById('pf-note-body-rich');
   const noteUndoBtn = document.getElementById('pf-note-undo');
   const noteRedoBtn = document.getElementById('pf-note-redo');
   const noteHistEl = document.getElementById('pf-note-hist');
@@ -9266,6 +9273,7 @@
     notesEditorMainEl.style.display = 'flex';
     if (noteTitleEl.value !== (n.title || '')) noteTitleEl.value = n.title || '';
     if (noteBodyEl.value !== (n.body || '')) noteBodyEl.value = n.body || '';
+    if (document.activeElement !== noteRichEl && noteBodyEl.value !== richSerialize()) richLoad(n.body || '');
     notePinLabelEl.textContent = n.pinned ? 'Unpin' : 'Pin';
     document.getElementById('pf-note-pin').title = n.pinned ? 'Unpin from top' : 'Pin to top';
     updateNoteCount();
@@ -9579,8 +9587,7 @@
     }
     ta.value = next;
     ta.selectionStart = cursorFrom; ta.selectionEnd = cursorTo;
-    var inpEv = new Event('input', { bubbles: true });
-    if (typeof ta.dispatchEvent === 'function') ta.dispatchEvent(inpEv); else ta.dispatch('input', inpEv);
+    emitInput(ta);
     ta.focus();
   }
 
@@ -9598,11 +9605,95 @@
     renderNoteView();
   }
 
+  // ===== Rich text surface =====
+  // The contenteditable div is the visible editor; the hidden textarea stays
+  // the model. Typing renders live (browser-native bold/italic/underline);
+  // every input serializes the DOM back to markdown into the textarea and
+  // fires its input event, so autosave, undo snapshots, cloud push, word
+  // count, and tests all keep working unchanged.
+  // Shared markdown -> HTML (escape FIRST, then swap markers — note content
+  // can never become markup). Used by both the rich surface and the preview.
+  function mdToHtml(escaped) {
+    return escaped
+      .replace(/__([^_\n]+)__/g, '<u>$1</u>')
+      .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<i>$2</i>');
+  }
+  function richLoad(body) {
+    noteRichEl.innerHTML = (body || '').split('\n').map(function (line) {
+      if (!line.trim()) return '<div><br></div>';
+      return '<div>' + mdToHtml(escapeHtml(line)) + '</div>';
+    }).join('');
+  }
+  function richSerialize() {
+    // DOM walk -> markdown. Unknown inline tags dissolve to their text, so
+    // pasted rich content degrades safely into plain text + known markers.
+    function walk(node, out) {
+      if (node.nodeType === 3) { out.push(node.nodeValue); return; }
+      if (node.nodeType !== 1) return;
+      var tag = node.tagName;
+      if (tag === 'BR') { out.push('\n'); return; }
+      var open = '', close = '';
+      if (tag === 'B' || tag === 'STRONG') { open = '**'; close = '**'; }
+      else if (tag === 'I' || tag === 'EM') { open = '*'; close = '*'; }
+      else if (tag === 'U') { open = '__'; close = '__'; }
+      var inner = [];
+      for (var c = node.firstChild; c; c = c.nextSibling) walk(c, inner);
+      var text = inner.join('');
+      if (tag === 'DIV' || tag === 'P') {
+        if (text) out.push(text);
+        out.push('\n');
+      } else {
+        out.push(open + text + close);
+      }
+    }
+    if (!noteRichEl.firstChild && noteRichEl.innerHTML) {
+      // No parsed children (innerHTML-only environment): reverse the render
+      // from the HTML string. Only our own tags exist, so this is safe.
+      return noteRichEl.innerHTML
+        .replace(/<div>/g, '\n').replace(/<\/(div|p)>/gi, '\n')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<(b|strong)>([\s\S]*?)<\/(b|strong)>/gi, '**$2**')
+        .replace(/<(i|em)>([\s\S]*?)<\/(i|em)>/gi, '*$2*')
+        .replace(/<u>([\s\S]*?)<\/u>/gi, '__$1__')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+        .replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/, '');
+    }
+    var out = [];
+    for (var c = noteRichEl.firstChild; c; c = c.nextSibling) walk(c, out);
+    return out.join('').replace(/\n{3,}/g, '\n\n').replace(/\n+$/, '');
+  }
+  function emitInput(el) {
+    var ev = new Event('input', { bubbles: true });
+    if (typeof el.dispatchEvent === 'function') el.dispatchEvent(ev); else el.dispatch('input', ev);
+  }
+  var richSyncing = false;
+  noteRichEl.addEventListener('input', function () {
+    if (richSyncing) return;
+    richSyncing = true;
+    try {
+      noteBodyEl.value = richSerialize();
+      emitInput(noteBodyEl);
+    } finally { richSyncing = false; }
+  });
+  noteRichEl.addEventListener('keydown', function (e) {
+    var k = (e.key || '').toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && (k === 'b' || k === 'i' || k === 'u')) {
+      e.preventDefault();
+      document.execCommand(k === 'b' ? 'bold' : k === 'i' ? 'italic' : 'underline', false, null);
+      emitInput(noteRichEl);
+    } else if (e.key === 'Tab' && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      document.execCommand('insertText', false, '  ');
+    }
+  });
+
   function renderNoteView() {
     const n = noteById(activeNoteId);
     const isView = noteViewMode === 'view' && n;
     document.getElementById('pf-note-view-label').textContent = isView ? 'Edit' : 'View';
-    noteBodyEl.style.display = isView ? 'none' : '';
+    noteRichEl.style.display = isView ? 'none' : '';
     const pv = document.getElementById('pf-note-preview');
     pv.style.display = isView ? '' : 'none';
     if (!isView) return;
@@ -9615,10 +9706,7 @@
     // then italic * — so combos like __***text***__ compose instead of the
     // bold pass splitting the triple-star fence and orphaning the
     // underscores.
-    const fmt = (esc) => esc
-      .replace(/__([^_\n]+)__/g, '<u>$1</u>')
-      .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
-      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<i>$2</i>');
+    const fmt = mdToHtml;
     pv.innerHTML = lines.map((line, idx) => {
       const esc = escapeHtml(line);
       const indent = line.match(/^\s*/)[0].length;
