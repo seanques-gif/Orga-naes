@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-UdSY187D66+V+nzSFGzAfKOX/nXCs7NbpjtRCbeRtY0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-rL9V3NDHt01/Uy5L8HwDiZ/fN/DJ/mPl46/JexT8XaY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2053,6 +2053,18 @@
   }
   #pf-root .pf-notes-resize-handle:hover::after,
   #pf-root .pf-notes-resize-handle.pf-dragging::after { opacity: 1; border-color: var(--accent); }
+  /* Shared resize handle for the other activity panels (same look). */
+  #pf-root .pf-panel-resize {
+    position: absolute; right: 0; bottom: 0; width: 18px; height: 18px;
+    cursor: nwse-resize; z-index: var(--z-sticky); touch-action: none;
+  }
+  #pf-root .pf-panel-resize::after {
+    content: ''; position: absolute; right: 4px; bottom: 4px; width: 8px; height: 8px;
+    border-right: 2px solid var(--text-dim); border-bottom: 2px solid var(--text-dim);
+    border-bottom-right-radius: 3px; opacity: 0.55; transition: opacity 0.12s;
+  }
+  #pf-root .pf-panel-resize:hover::after,
+  #pf-root .pf-panel-resize.pf-dragging::after { opacity: 1; border-color: var(--accent); }
   #pf-root .pf-notes-title {
     font-weight: 700; font-size: calc(var(--font-size-base) + 2px); color: var(--text);
     display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
@@ -3630,6 +3642,51 @@
     btn.addEventListener('click', (e) => { e.stopPropagation(); closeAllModals(); });
     panel.style.position = 'relative';
     panel.insertBefore(btn, panel.firstChild);
+  });
+
+  // Free-resize handles for the large activity panels (same idiom as the
+  // notes handle in 46-notes). Per-panel size persists under
+  // project-flow-panel-size-<id>; double-click resets. Skips panels that
+  // ship their own handle (notes) and tiny dialogs (copy modal).
+  document.querySelectorAll('.pf-activity-panel').forEach(panel => {
+    if (!panel || panel.id === 'pf-notes-panel' || panel.id === 'pf-copy-modal') return;
+    if (panel.querySelector('.pf-panel-resize')) return;
+    const h = document.createElement('div');
+    h.className = 'pf-panel-resize';
+    h.title = 'Drag to resize · double-click to reset';
+    h.innerHTML = '<span class=\"pf-panel-resize-grip\"></span>';
+    panel.appendChild(h);
+    const KEY = 'project-flow-panel-size-' + panel.id;
+    let dragging = false, startW = 0, startH = 0, startX = 0, startY = 0;
+    h.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      dragging = true; startX = e.clientX; startY = e.clientY;
+      startW = panel.offsetWidth; startH = panel.offsetHeight;
+      h.classList.add('pf-dragging');
+      h.setPointerCapture(e.pointerId);
+    });
+    h.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      panel.style.width = Math.min(window.innerWidth * 0.96, Math.max(380, startW + (e.clientX - startX))) + 'px';
+      panel.style.height = Math.min(window.innerHeight * 0.92, Math.max(280, startH + (e.clientY - startY))) + 'px';
+    });
+    const finish = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      h.classList.remove('pf-dragging');
+      try { h.releasePointerCapture(e.pointerId); } catch (err) {}
+      safeSet(KEY, JSON.stringify({ w: panel.style.width, h: panel.style.height }), false);
+    };
+    h.addEventListener('pointerup', finish);
+    h.addEventListener('pointercancel', finish);
+    h.addEventListener('dblclick', () => {
+      panel.style.width = ''; panel.style.height = '';
+      safeSet(KEY, '', false);
+      showToast('↺ Panel size reset');
+    });
+    (async function loadPanelSize() {
+      try { const res = await safeGet(KEY, false); if (res && res.value) { const s = JSON.parse(res.value); if (s && s.w) panel.style.width = s.w; if (s && s.h) panel.style.height = s.h; } } catch (e) {}
+    })();
   });
 
   function collectDueItems() {
