@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-QPUUs1SGkpsZs5dwQcYsUEhgKKIyC09XlRgA5N7IHGM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-feUG2YX7ZJhV8bjHvLHmXqGu9kRLEu+UxtyFJoAdHCk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9965,6 +9965,21 @@ if ('serviceWorker' in navigator) {
       if (window._pf.render) window._pf.render();
       if (window._pf.renderSplitList) window._pf.renderSplitList();
     }
+    // Post-wipe sweep: the render above lets debounced savers run, and they
+    // re-persist EMPTY shells (archive [], trash [], the today module's
+    // always-present day structure). Once that settles, remove the keys so
+    // a signed-out device holds zero user-data keys. Nothing is lost: the
+    // in-memory sets are empty by construction at this point, so these are
+    // not records — just the storage shapes those modules keep.
+    setTimeout(function() {
+      [ARCHIVE_KEY, TRASH_KEY, TODAY_KEY, ACTIVITY_KEY, WEEKLY_KEY, REMINDERS_KEY].forEach(function(k) {
+        try { localStorage.removeItem(k); } catch (e) {}
+        try { window._pf.openIDB_KV().then(function(db) {
+          if (!db) return;
+          try { db.transaction('kv', 'readwrite').objectStore('kv').delete(k); } catch (e) {}
+        }).catch(function(e) {}); } catch (e) {}
+      });
+    }, 0);
     _lastSyncTime = 0;
   }
 
