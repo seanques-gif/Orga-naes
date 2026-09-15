@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-VrF7OySUFUSgw/0D7MqL0XpdQk3c0LxJVedd0s5AUtg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-WlVeGNxa+UDLaqTRKVyrAJNZfccSRccRd37KR2/HhOw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9461,6 +9461,42 @@
     renderNotesEditor();
   };
 
+  // Pull bridge (45): merge the cloud's note set into local state WITHOUT
+  // discarding notes that exist only here. Pull semantics differ from
+  // account-switch (adoptCloudNotes, wholesale replace): a manual pull runs
+  // while the user is looking at their notes, so notes created locally but
+  // not yet pushed must survive the pull and ride up on the next push tick.
+  //   - Notes only in the cloud (or on both sides): cloud copy wins.
+  //   - Notes only local (never pushed): kept.
+  //   - Tombstones union newest-wins (same rule as the other bridges), then
+  //     any note the cloud tombstoned is dropped here too.
+  window._pf.mergeCloudNotes = function (cloudNotes, cloudTombstones) {
+    ++loadEpoch; // an in-flight boot read must not clobber this merge
+    const clean = Array.isArray(cloudNotes)
+      ? cloudNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string')
+      : [];
+    if (cloudTombstones && typeof cloudTombstones === 'object') {
+      Object.keys(cloudTombstones).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (cloudTombstones[k] || '')) noteTombstones[k] = cloudTombstones[k]; });
+    }
+    const byIdMap = {};
+    clean.forEach(n => { byIdMap[n.id] = n; });
+    notes.forEach(n => { if (!byIdMap[n.id]) byIdMap[n.id] = n; }); // local-only survives
+    notes = Object.keys(byIdMap)
+      .filter(id => !isTombstoned(id))
+      .map(id => {
+        const n = byIdMap[id];
+        return { id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() };
+      });
+    notesLoaded = true;
+    notesLoadedEmpty = notes.length === 0;
+    if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
+    if (Array.isArray(notesSelection)) notesSelection = [];
+    saveTombstones();
+    saveNotes();
+    renderNotesList();
+    renderNotesEditor();
+  };
+
   window._pf.replaceNotes = function(nextNotes, incomingTombstones) {
     ++loadEpoch; // an in-flight boot read must not clobber an import/merge
     if (!Array.isArray(nextNotes)) return;
@@ -9985,7 +10021,10 @@ if ('serviceWorker' in navigator) {
         const incomingNotes = notesVal ? (Array.isArray(notesVal) ? notesVal.filter(Boolean) : Object.values(notesVal).filter(Boolean)) : [];
         window._pf.adoptCloudNotes(incomingNotes, (tombVal && typeof tombVal === 'object') ? tombVal : {});
         _notesPulledThisSession = true;
-        _lastPushedNotesHash = JSON.stringify(incomingNotes) + '|' + JSON.stringify((tombVal && typeof tombVal === 'object') ? tombVal : {});
+        // Pin from the canonical snapshot (see notesSignature): the raw cloud
+        // payload's alphabetized keys never matched the snapshot hash, so the
+        // next autosync tick re-pushed the freshly adopted set wholesale.
+        _lastPushedNotesHash = JSON.stringify(pfSnapNotes()) + '|' + JSON.stringify(pfSnapTombs());
         // Fresh account's data just silently replaced local state — reset push
         // bookkeeping to match it so the next autosync tick doesn't diff against
         // the previous account's stale baseline.
@@ -10054,7 +10093,8 @@ if ('serviceWorker' in navigator) {
             if (bgNotes.length > 0 || Object.keys(bgTombs).length > 0) {
               window._pf.adoptCloudNotes(bgNotes, bgTombs);
               _notesPulledThisSession = true;
-              _lastPushedNotesHash = JSON.stringify(bgNotes) + '|' + JSON.stringify(bgTombs);
+              // Canonical pin — raw payload key order never matched (see notesSignature).
+              _lastPushedNotesHash = JSON.stringify(pfSnapNotes()) + '|' + JSON.stringify(pfSnapTombs());
             }
             // Silent background adoption of remote data — reset bookkeeping so
             // this doesn't masquerade as unpushed local edits on the next tick.
@@ -10174,7 +10214,7 @@ if ('serviceWorker' in navigator) {
     // same state the code already handles below ("no data found in cloud"),
     // so swallow the error and proceed — pull continues, errors surface
     // through the shared catch like any other failure.
-    const notesSettled = (window._pf && typeof window._pf.notesReady === 'function' && window._pf.notesReady.then) ? window._pf.notesReady.catch(function() {}) : Promise.resolve();
+    const notesSettled = (window._pf && window._pf.notesReady && typeof window._pf.notesReady.then === 'function') ? window._pf.notesReady.catch(function() {}) : Promise.resolve();
     withRetry(function(attempt) {
       // Attempt 1 rides cloudReads() — SDK with a hot REST fallback racing it.
       // Attempt 2 (only reached if BOTH timed out) is pure REST after the
@@ -10209,13 +10249,12 @@ if ('serviceWorker' in navigator) {
       const remoteArchive = fixProjects(archVal);
       const remoteTrash = fixProjects(trashVal);
       // Notes: RTDB stores the array as an index-keyed map; normalize back to
-      // an array in index order for a plain structural comparison.
+      // an array in index order for comparison.
       const remoteNotes = notesVal ? (Array.isArray(notesVal) ? notesVal.filter(Boolean) : Object.values(notesVal).filter(Boolean)) : [];
       const remoteNoteTombstones = (tombVal && typeof tombVal === 'object') ? tombVal : {};
       const localNotesSnap = (window._pf.getNotesSnapshot && window._pf.getNotesSnapshot()) || null;
       const notesMatch = !!localNotesSnap
-        && JSON.stringify(localNotesSnap.notes) === JSON.stringify(remoteNotes)
-        && JSON.stringify(localNotesSnap.tombstones) === JSON.stringify(remoteNoteTombstones);
+        && notesSignature(localNotesSnap) === notesSignature({ notes: remoteNotes, tombstones: remoteNoteTombstones });
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
       const archMatch = JSON.stringify(normalizeForSync(remoteArchive)) === JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
       const trashMatch = JSON.stringify(normalizeForSync(remoteTrash)) === JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
@@ -10254,17 +10293,21 @@ if ('serviceWorker' in navigator) {
       if (!archMatch) { window._pf.setArchive(remoteArchive); updated.push('archive'); }
       if (!trashMatch) { window._pf.setTrash(remoteTrash); updated.push('trash'); }
       if (!notesMatch && localNotesSnap) {
-        // Cloud has notes and they differ → adopt them wholesale (tombstones
-        // union inside replaceNotes decides deletions). Cloud empty + local
+        // Cloud has notes and they differ → merge them (tombstones union
+        // inside mergeCloudNotes decides deletions; local-only notes stay).
+        // Cloud empty + local
         // notes present is a legit fresh-cloud state: leave it to the next
         // push tick, which uploads the local set (fresh-device guard permits
         // it because localHasNotes is true).
         if (remoteNotes.length > 0 || Object.keys(remoteNoteTombstones).length > 0) {
-          window._pf.replaceNotes(remoteNotes, remoteNoteTombstones);
+          // Pull semantics (mergeCloudNotes): cloud wins per-id, notes that
+          // exist only locally (never pushed) SURVIVE — replaceNotes is the
+          // import bridge and would tombstone them as deleted-elsewhere.
+          window._pf.mergeCloudNotes(remoteNotes, remoteNoteTombstones);
           _notesPulledThisSession = true;
-          // Bookkeeping: the adopted set is now the baseline — without this,
-          // _lastPushedNotesHash stays stale and the next tick re-pushes the
-          // just-pulled set back up as if it were a local edit.
+          // Bookkeeping: pin the post-merge baseline so the next autosync
+          // tick pushes only genuine local edits (e.g. the surviving
+          // local-only notes), not an echo of what was just pulled.
           _lastPushedNotesHash = JSON.stringify(pfSnapNotes()) + '|' + JSON.stringify(pfSnapTombs());
           updated.push('notes');
         } else {
@@ -10565,6 +10608,23 @@ if ('serviceWorker' in navigator) {
   // payload plus a tombstones map — same full-set pattern as archive/trash
   // (bulk, low-velocity, no realtime listener). The fresh-device guard above
   // makes an empty local set a no-op against a populated cloud.
+  // Canonical, order-stable signature of a notes set. Local notes carry
+  // creation-order keys while Firebase alphabetizes every object's keys on
+  // write (body, createdAt, id, pinned, title, updatedAt), so comparing raw
+  // JSON.stringify output NEVER matched — a pull always believed notes
+  // differed, and the old raw comparisons fed the wrong adoption path.
+  // Field-joined (sorted ids + per-note fields) and tombstones compared
+  // via a sorted key list.
+  function notesSignature(snap) {
+    if (!snap) return 'null';
+    const notes = Array.isArray(snap.notes) ? snap.notes.slice().sort(function(a, b) { return String(a && a.id).localeCompare(String(b && b.id)); }) : [];
+    const notePart = notes.map(function(n) {
+      return [n.id, n.title, n.body, n.pinned ? 1 : 0, n.createdAt, n.updatedAt].map(function(v) { return v === undefined || v === null ? '' : String(v); }).join('\u0001');
+    }).join('\u0002');
+    const tombs = snap.tombstones && typeof snap.tombstones === 'object' ? snap.tombstones : {};
+    const tombPart = Object.keys(tombs).sort().map(function(k) { return k + '=' + tombs[k]; }).join('\u0002');
+    return notePart + '|' + tombPart;
+  }
   function pfSnapNotes() {
     const s = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
     return s ? s.notes : [];
@@ -10580,16 +10640,28 @@ if ('serviceWorker' in navigator) {
     if (notesHash === _lastPushedNotesHash) return Promise.resolve();
     const localHasNotes = notesSnap.notes.length > 0 || Object.keys(notesSnap.tombstones).length > 0;
     return notesRef().once('value').then(function(snap) {
-      const remoteNotes = snap.val();
-      const remoteCount = remoteNotes ? (Array.isArray(remoteNotes) ? remoteNotes.filter(Boolean).length : Object.keys(remoteNotes).length) : 0;
-      if (!localHasNotes && remoteCount > 0 && !_notesPulledThisSession) {
-        _lastPushedNotesHash = notesHash; // remember so we don't retry every tick
-        return undefined;
-      }
-      return Promise.all([
-        notesRef().set(JSON.parse(JSON.stringify(notesSnap.notes))),
-        noteTombstonesRef().set(JSON.parse(JSON.stringify(notesSnap.tombstones)))
-      ]).then(function() { _lastPushedNotesHash = notesHash; });
+      const remoteVal = snap.val();
+      const remoteNotes = remoteVal ? (Array.isArray(remoteVal) ? remoteVal.filter(Boolean) : Object.values(remoteVal).filter(Boolean)) : [];
+      const remoteCount = remoteNotes.length;
+      // Canonical compare (not raw JSON): the cloud's alphabetized key order
+      // never equaled local creation order, so the no-op short-circuit below
+      // never fired and every autosync tick rewrote the whole notes payload.
+      const remoteTombs = noteTombstonesRef().once('value');
+      return remoteTombs.then(function(tSnap) {
+        const remoteNoteTombstones = (tSnap.val() && typeof tSnap.val() === 'object') ? tSnap.val() : {};
+        if (notesSignature({ notes: notesSnap.notes, tombstones: notesSnap.tombstones }) === notesSignature({ notes: remoteNotes, tombstones: remoteNoteTombstones })) {
+          _lastPushedNotesHash = notesHash; // already matches the cloud — skip the write
+          return undefined;
+        }
+        if (!localHasNotes && remoteCount > 0 && !_notesPulledThisSession) {
+          _lastPushedNotesHash = notesHash; // remember so we don't retry every tick
+          return undefined;
+        }
+        return Promise.all([
+          notesRef().set(JSON.parse(JSON.stringify(notesSnap.notes))),
+          noteTombstonesRef().set(JSON.parse(JSON.stringify(notesSnap.tombstones)))
+        ]).then(function() { _lastPushedNotesHash = notesHash; });
+      });
     });
   }
 
@@ -11148,9 +11220,15 @@ if ('serviceWorker' in navigator) {
         window._pf.setArchive(extrasToApply.archive);
         window._pf.setTrash(extrasToApply.trash);
         if (extrasToApply.notes) {
+          // Keep-Remote is a deliberate cloud restore over a device the user
+          // chose to discard — adoptCloudNotes (wholesale) is correct here.
+          // Pin the baseline from the CANONICAL snapshot: the push side hashes
+          // the normalized in-memory shape, so pinning the raw RTDB payload
+          // (alphabetized keys, sparse shapes) never matched and made every
+          // autosync tick re-push the entire set.
           window._pf.adoptCloudNotes(extrasToApply.notes, extrasToApply.noteTombstones || {});
           _notesPulledThisSession = true;
-          _lastPushedNotesHash = JSON.stringify(extrasToApply.notes) + '|' + JSON.stringify(extrasToApply.noteTombstones || {});
+          _lastPushedNotesHash = JSON.stringify(pfSnapNotes()) + '|' + JSON.stringify(pfSnapTombs());
         }
       }
       window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
