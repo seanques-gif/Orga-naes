@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-LtxE5/iepy3ioS1h3hbI6LM0Naognhk5Tl4KYqtlLgQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-QPUUs1SGkpsZs5dwQcYsUEhgKKIyC09XlRgA5N7IHGM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9915,6 +9915,14 @@ if ('serviceWorker' in navigator) {
     const keysToClear = [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
      'pf-firebase-last-sync-time', ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY,
      REMINDERS_KEY, COLLAPSED_CAT_KEY,
+     // Completeness pass (2026-09-15): planner backlog tasks and the
+     // gamification records (streak/XP, milestones, freezes) describe the
+     // signed-in user's activity and previously survived sign-out; the
+     // error log can carry account-identifying diagnostics. All live only
+     // on this device — wiped with everything else. Keys duplicated from
+     // their owner modules (25, 33, 21) exactly like the notes keys above.
+     'project-flow-backlog', 'project-flow-streak', 'project-flow-milestones',
+     'project-flow-streak-freezes', 'project-flow-errors',
      // Notes join the cloud (Phase C follow-up): they must switch accounts
      // with everything else, or account B would silently inherit account A's
      // notes (both localStorage and the IndexedDB mirror are cleared below).
