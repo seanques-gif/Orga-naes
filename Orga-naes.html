@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-0byMmyxE2MALSaoEYNmV7DIaKqwuB7k4ID0Ep4H6xyA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-XHg71itZcM0i4Goq9hri7GIjboPe00oZd3doJH0bUmE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3103,7 +3103,13 @@
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
-      e.preventDefault(); const sw = document.getElementById('pf-search-wrap'); const si = document.getElementById('pf-search'); sw.classList.add('pf-search-open'); si.focus(); si.select();
+      e.preventDefault(); const sw = document.getElementById('pf-search-wrap'); const si = document.getElementById('pf-search'); sw.classList.add('pf-search-open');
+      // Focus AFTER the popover's open transition: focusing during the
+      // 0.18s visibility/pointer-events transition can leave the caret dead
+      // (keystrokes dropped) on some browsers. rAF + a timeout past the
+      // transition window makes typing work on the very first keypress.
+      const doFocus = () => { si.focus(); try { si.select(); } catch (err) {} };
+      requestAnimationFrame(() => { doFocus(); setTimeout(doFocus, 60); setTimeout(doFocus, 220); });
     }
     if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
       const ae = document.activeElement;
