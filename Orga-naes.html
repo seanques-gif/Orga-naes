@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-yq0DqvGsIQOUNag0dkdodNoYf1UiM66VO7DRIYXMCzQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-RjJXLQHXFtjMDixyXdDz2rTtiSFlt7nbBuwpbSAAjVI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3245,6 +3245,12 @@
   const _escDismissables = [
     { check: () => _pasteArmed, run: () => { _pasteArmed = false; root.classList.remove('pf-paste-armed'); showToast('Paste canceled'); } },
     { check: () => !!_saveModalEl, run: () => { if (_saveModalEl) { _saveModalEl.remove(); _saveModalEl = null; } } },
+    // Search beats the detail view: when both are open, Escape clears the
+    // search FIRST (it's the visually topmost transient), and only a second
+    // Escape closes the detail. Without this, the 'detail' tagged entry
+    // (tier 2) outranked the search's low-tier entry and the detail view
+    // closed while the search stayed live.
+    { check: () => (searchTerm || searchWrap.classList.contains('pf-search-open')) && root.classList.contains('pf-detail-open'), run: () => { _clearSearch(); _refreshView(); } },
     { check: () => !!_statusMenuEl, run: () => { closeStatusMenu(); } },
     { check: () => !!root.querySelector('.pf-ctx-menu'), run: () => { const m = root.querySelector('.pf-ctx-menu'); if (m) m.remove(); if (typeof _closeCtx === 'function') _closeCtx(); } },
     // Covers the emoji picker (and any other _ctxEl-tracked popover, e.g.
