@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DwUpGdZmLBoAeupcKCjcrvPNzNeLP0ymBCJwucAM8jE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-CtaAux9oYPXGsvDz2ZWAKRleCMMuSeY4pg4ZkniuJME='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8815,7 +8815,28 @@
   let notesUndoStack = [];
   let notesRedoStack = [];
   const NOTES_UNDO_MAX = 50;
+  const NOTES_HISTORY_KEY = 'pf-notes-history';
   function cloneNotes(arr) { return JSON.parse(JSON.stringify(arr)); }
+  // History survives an accidental refresh via sessionStorage (per-tab, dies
+  // with the tab — the right lifetime for undo). Writing is throttled to the
+  // same 350ms debounce family as saves; failures are non-fatal (private
+  // mode quota) and just mean a refresh clears history.
+  let histSaveTimer = null;
+  function persistNotesHistory() {
+    clearTimeout(histSaveTimer);
+    histSaveTimer = setTimeout(() => {
+      try { sessionStorage.setItem(NOTES_HISTORY_KEY, JSON.stringify({ u: notesUndoStack, r: notesRedoStack })); } catch (e) {}
+    }, 350);
+  }
+  function restoreNotesHistory() {
+    try {
+      const raw = sessionStorage.getItem(NOTES_HISTORY_KEY);
+      if (!raw) return;
+      const h = JSON.parse(raw);
+      if (Array.isArray(h.u)) notesUndoStack = h.u.filter(Array.isArray).slice(-NOTES_UNDO_MAX);
+      if (Array.isArray(h.r)) notesRedoStack = h.r.filter(Array.isArray).slice(-NOTES_UNDO_MAX);
+    } catch (e) { try { sessionStorage.removeItem(NOTES_HISTORY_KEY); } catch (e2) {} }
+  }
   function updateNotesHistoryButtons() {
     if (noteUndoBtn) noteUndoBtn.disabled = notesUndoStack.length === 0;
     if (noteRedoBtn) noteRedoBtn.disabled = notesRedoStack.length === 0;
@@ -8825,12 +8846,18 @@
     if (notesUndoStack.length > NOTES_UNDO_MAX) notesUndoStack.shift();
     notesRedoStack = [];
     updateNotesHistoryButtons();
+    persistNotesHistory();
   }
-  function notesHistoryReset() { notesUndoStack = []; notesRedoStack = []; updateNotesHistoryButtons(); }
+  function notesHistoryReset() {
+    notesUndoStack = []; notesRedoStack = [];
+    try { sessionStorage.removeItem(NOTES_HISTORY_KEY); } catch (e) {}
+    updateNotesHistoryButtons();
+  }
   function applyNotesSet(next) {
     notes = next;
     if (!noteById(activeNoteId)) activeNoteId = notes[0] ? notes[0].id : null;
     saveNotes(); renderNotesList(); renderNotesEditor();
+    persistNotesHistory();
     if (window._firebasePushNow) window._firebasePushNow();
   }
   // Concise human summary of what an undo/redo changed, for the activity log.
@@ -9514,6 +9541,7 @@
   // of racing the unresolved boot read (a pull issued right after open).
   window._pf.notesReady = (function eagerLoadNotes() {
     return loadNotes().then(() => {
+      restoreNotesHistory(); updateNotesHistoryButtons();
       notesLoadedEmpty = notes.length === 0;
       // Primary store yielded nothing at boot — try snapshot recovery before
       // declaring the notes truly gone. Runs regardless of project state.
