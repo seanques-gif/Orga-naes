@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-6vJrbZlyV0cGB1HIa7hsOo+r5yzkSnCoqW+sBbrpBKY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-XsJdMHzctDczZ5mAIft6HRNNPn8E34UXwP/8zC+iV1E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -5234,8 +5234,44 @@
     else { searchInput.value = ''; searchTerm = ''; searchWrap.classList.remove('pf-has-value'); if (listViewActive) { renderSplitList(); renderSplitDetail(); } else { autoArrangeProjects(true); } }
   });
   searchInput.addEventListener('blur', () => { if (!searchInput.value) searchWrap.classList.remove('pf-search-open'); });
-  searchInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') { searchInput.value = ''; searchTerm = ''; searchWrap.classList.remove('pf-has-value', 'pf-search-open'); searchInput.blur(); if (listViewActive) { renderSplitList(); renderSplitDetail(); } else { autoArrangeProjects(true); } } });
-  searchInput.addEventListener('input', (e) => { searchTerm = e.target.value.trim(); _searchAutoCollapseId = null; searchWrap.classList.toggle('pf-has-value', !!searchTerm); if (listViewActive) { renderSplitList(); renderSplitDetail(); } else { autoArrangeProjects(true); } });
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { searchInput.value = ''; searchTerm = ''; searchWrap.classList.remove('pf-has-value', 'pf-search-open'); searchInput.blur(); if (listViewActive) { renderSplitList(); renderSplitDetail(); } else { autoArrangeProjects(true); } return; }
+    // Enter / Shift+Enter: jump to the next / previous search match.
+    if (e.key === 'Enter' && searchTerm) { e.preventDefault(); jumpToSearchMatch(e.shiftKey ? -1 : 1); }
+  });
+
+  // ===== Enter-to-jump: cycle through projects matching the search term =====
+  // Matches are the visible search results in render order (category zones,
+  // then project order), so cycling follows what the user sees on screen.
+  // Canvas mode: auto-expands the matched project (its matching subtasks are
+  // highlighted by the existing <mark> rendering) and scrolls the node into
+  // view. List mode: delegates to _splitSelect, which opens the detail pane
+  // with the same highlighting.
+  let _searchMatchIdx = -1;
+  function searchMatches() { return projects.filter(p => matchesSearch(p)); }
+  function jumpToSearchMatch(dir) {
+    const matches = searchMatches();
+    if (!matches.length) { showToast('No matches for "' + searchTerm + '"', true); return; }
+    _searchMatchIdx = (_searchMatchIdx + dir + matches.length) % matches.length;
+    const p = matches[_searchMatchIdx];
+    // reset the cycle position when the term changes (input handler keeps
+    // _searchMatchIdx stale otherwise)
+    if (listViewActive) {
+      window._splitSelect(p.id, null);
+    } else {
+      p.expanded = true;
+      if (p.category) collapsedCategories[p.category] = false;
+      render();
+      autoArrangeProjects(true);
+      requestAnimationFrame(() => {
+        const el = canvas.querySelector('.pf-node[data-id="' + p.id + '"]');
+        if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+    const n = matches.length;
+    showToast('Match ' + (_searchMatchIdx + 1) + ' of ' + n + ': ' + p.title, false, false);
+  }
+  searchInput.addEventListener('input', (e) => { searchTerm = e.target.value.trim(); _searchAutoCollapseId = null; _searchMatchIdx = -1; searchWrap.classList.toggle('pf-has-value', !!searchTerm); if (listViewActive) { renderSplitList(); renderSplitDetail(); } else { autoArrangeProjects(true); } });
   document.getElementById('pf-search-clear').addEventListener('click', () => { searchInput.value = ''; searchTerm = ''; searchWrap.classList.remove('pf-has-value'); searchWrap.classList.remove('pf-search-open'); if (listViewActive) { renderSplitList(); renderSplitDetail(); } else { autoArrangeProjects(true); } });
   document.getElementById('pf-search-close').addEventListener('click', () => { searchInput.value = ''; searchTerm = ''; searchWrap.classList.remove('pf-has-value', 'pf-search-open'); searchInput.blur(); if (listViewActive) { renderSplitList(); renderSplitDetail(); } else { autoArrangeProjects(true); } });
   document.getElementById('pf-due-filter').addEventListener('change', (e) => { dueFilter = e.target.value; autoArrangeProjects(true); });
