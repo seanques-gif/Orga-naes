@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-rL9V3NDHt01/Uy5L8HwDiZ/fN/DJ/mPl46/JexT8XaY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-a0Sfbh7ArTlKyOy7pSUpNqoIyMEl3+WcA31qiS1b7Ds='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9243,6 +9243,10 @@
     } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       toggleCheckedLines();
+    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B' || e.key === 'i' || e.key === 'I' || e.key === 'u' || e.key === 'U')) {
+      // Browser-native Ctrl+B/I do nothing in a textarea; Ctrl+U opens view-source — all safe to take over.
+      e.preventDefault();
+      wrapNoteSelection(e.key.toLowerCase() === 'b' ? '**' : e.key.toLowerCase() === 'i' ? '*' : '__');
     }
   });
 
@@ -9325,6 +9329,7 @@
     }
     return true;
   }
+  window._pf.selectNoteForTest = selectNote; // test seam: bind editor to a note id
   window._pf.deleteNoteById = deleteNoteById;
   window._pf.fmtNoteDate = fmtNoteDate;
 
@@ -9549,6 +9554,36 @@
     noteBodyEl.focus();
   }
 
+  // Inline formatting: wrap the selection (or insert an empty pair and place
+  // the cursor inside) with the marker. Toggling off happens naturally by
+  // selecting the marked text and re-applying (the wrap removes an exact
+  // enclosing marker pair).
+  function wrapNoteSelection(marker) {
+    const ta = noteBodyEl;
+    const v = ta.value;
+    const s = ta.selectionStart, epos = ta.selectionEnd;
+    const before = v.slice(0, s), sel = v.slice(s, epos), after = v.slice(epos);
+    let next, cursorFrom, cursorTo;
+    const open = marker, close = marker;
+    if (sel.startsWith(open) && sel.endsWith(close) && sel.length >= open.length * 2) {
+      // selected text already fully wrapped — unwrap
+      next = before + sel.slice(open.length, sel.length - close.length) + after;
+      cursorFrom = s; cursorTo = s + sel.length - open.length - close.length;
+    } else if (before.endsWith(open) && after.startsWith(close)) {
+      // cursor/selection sits inside an existing pair — unwrap it
+      next = before.slice(0, before.length - open.length) + sel + after.slice(close.length);
+      cursorFrom = s - open.length; cursorTo = cursorFrom + sel.length;
+    } else {
+      next = before + open + sel + close + after;
+      cursorFrom = s + open.length; cursorTo = cursorFrom + sel.length;
+    }
+    ta.value = next;
+    ta.selectionStart = cursorFrom; ta.selectionEnd = cursorTo;
+    var inpEv = new Event('input', { bubbles: true });
+    if (typeof ta.dispatchEvent === 'function') ta.dispatchEvent(inpEv); else ta.dispatch('input', inpEv);
+    ta.focus();
+  }
+
   function toggleCheckedLines() {
     applyToSelectionLines((line) => {
       if (/^\s*\[ \]/.test(line)) return line.replace('[ ]', '[x]');
@@ -9573,6 +9608,13 @@
     if (!isView) return;
     // render lines: checkbox -> interactive; indentation -> padding; everything escaped
     const lines = (n.body || '').split('\n');
+    // Inline markdown -> HTML on the ESCAPED text (escape first, then swap
+    // markers, so no user content can ever become markup). Non-greedy pairs;
+    // unmatched markers render literally.
+    const fmt = (esc) => esc
+      .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<i>$2</i>')
+      .replace(/__([^_\n]+)__/g, '<u>$1</u>');
     pv.innerHTML = lines.map((line, idx) => {
       const esc = escapeHtml(line);
       const indent = line.match(/^\s*/)[0].length;
@@ -9580,10 +9622,10 @@
       if (m) {
         return '<div class="pf-note-line pf-note-checkline' + (m[1].toLowerCase() === 'x' ? ' pf-note-done' : '') + '" style="padding-left:' + (indent * 9) + 'px">' +
           '<span class="pf-note-cbox" role="checkbox" aria-checked="' + (m[1].toLowerCase() === 'x') + '" tabindex="0" data-line="' + idx + '" aria-label="' + escapeHtml(m[2] || 'item') + '"></span>' +
-          '<span class="pf-note-line-text">' + escapeHtml(m[2] || '') + '</span></div>';
+          '<span class="pf-note-line-text">' + fmt(escapeHtml(m[2] || '')) + '</span></div>';
       }
       if (!line.trim()) return '<div class="pf-note-line pf-note-blank">&nbsp;</div>';
-      return '<div class="pf-note-line" style="padding-left:' + (indent * 9) + 'px">' + esc + '</div>';
+      return '<div class="pf-note-line" style="padding-left:' + (indent * 9) + 'px">' + fmt(esc) + '</div>';
     }).join('');
   }
 
