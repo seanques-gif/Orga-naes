@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ezq6DdZzGzmRTNLa9rW9lShy/5nXITtDqozeMj1AjZU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-UdSY187D66+V+nzSFGzAfKOX/nXCs7NbpjtRCbeRtY0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2042,6 +2042,17 @@
     padding-right: 44px;
   }
   #pf-root .pf-notes-panel .pf-panel-close { top: 8px; right: 8px; }
+  #pf-root .pf-notes-resize-handle {
+    position: absolute; right: 0; bottom: 0; width: 18px; height: 18px;
+    cursor: nwse-resize; z-index: var(--z-sticky); touch-action: none;
+  }
+  #pf-root .pf-notes-resize-handle::after {
+    content: ''; position: absolute; right: 4px; bottom: 4px; width: 8px; height: 8px;
+    border-right: 2px solid var(--text-dim); border-bottom: 2px solid var(--text-dim);
+    border-bottom-right-radius: 3px; opacity: 0.55; transition: opacity 0.12s;
+  }
+  #pf-root .pf-notes-resize-handle:hover::after,
+  #pf-root .pf-notes-resize-handle.pf-dragging::after { opacity: 1; border-color: var(--accent); }
   #pf-root .pf-notes-title {
     font-weight: 700; font-size: calc(var(--font-size-base) + 2px); color: var(--text);
     display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
@@ -2580,6 +2591,7 @@
     </div>
   </div>
   <div class="pf-activity-panel pf-notes-panel" id="pf-notes-panel" style="display:none;">
+    <div class="pf-notes-resize-handle" id="pf-notes-resize" title="Drag to resize"></div>
     <div class="pf-notes-head">
       <span class="pf-notes-title" data-ic-before="file-text">Notes</span>
       <input type="text" class="pf-search pf-notes-search" id="pf-notes-search" placeholder="Search notes…" spellcheck="false">
@@ -9316,6 +9328,50 @@
       openModal(notesPanelEl, 'flex');
     });
   }
+
+  // Free resize: bottom-right corner handle. Size persists (device pref,
+  // deliberately OUTSIDE the sign-out wipe — same class as split width).
+  // Double-click resets to the CSS default.
+  (function notesResize() {
+    const handle = document.getElementById('pf-notes-resize');
+    const panel = notesPanelEl;
+    if (!handle || !panel) return;
+    const KEY = 'project-flow-notes-size';
+    let dragging = false, startW = 0, startH = 0, startX = 0, startY = 0;
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const cs = getComputedStyle(panel);
+      dragging = true; startX = e.clientX; startY = e.clientY;
+      startW = panel.offsetWidth - parseFloat(cs.borderLeftWidth || 0) - parseFloat(cs.borderRightWidth || 0);
+      startH = panel.offsetHeight - parseFloat(cs.borderTopWidth || 0) - parseFloat(cs.borderBottomWidth || 0);
+      handle.classList.add('pf-dragging');
+      handle.setPointerCapture(e.pointerId);
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const w = Math.min(window.innerWidth * 0.96, Math.max(480, startW + (e.clientX - startX)));
+      const h = Math.min(window.innerHeight * 0.92, Math.max(360, startH + (e.clientY - startY)));
+      panel.style.width = w + 'px';
+      panel.style.height = h + 'px';
+    });
+    const finish = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('pf-dragging');
+      try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+      safeSet(KEY, JSON.stringify({ w: panel.style.width, h: panel.style.height }), false);
+    };
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
+    handle.addEventListener('dblclick', () => {
+      panel.style.width = ''; panel.style.height = '';
+      safeSet(KEY, '', false);
+      showToast('↺ Notes size reset');
+    });
+    (async function loadNotesSize() {
+      try { const res = await safeGet(KEY, false); if (res && res.value) { const s = JSON.parse(res.value); if (s && s.w) panel.style.width = s.w; if (s && s.h) panel.style.height = s.h; } } catch (e) {}
+    })();
+  })();
 
   document.getElementById('pf-notes-btn').addEventListener('click', openNotesPanel);
   document.getElementById('pf-note-new').addEventListener('click', newNote);
