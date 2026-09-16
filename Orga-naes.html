@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-dyMV5+lo2r+ljrKeTuSN30ZY+Ow/urcgmFjR/Vx41dg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-r5sAJ3Z8otYpZdM+vlqmZntL/x2r6vDQcqFiL3Ilkus='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8018,7 +8018,7 @@
 
   function extractImportData(parsed) {
     let data = null, importedCategories = [], importedCollapsed = {};
-    let importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null, importedNoteTombstones = null;
+    let importedArchive = null, importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null, importedNoteTombstones = null;
     const rtdb = unwrapRtdbExport(parsed);
     if (rtdb) {
       parsed = rtdb; // import the console export exactly like a native backup
@@ -8030,7 +8030,7 @@
       else { for (const key of Object.keys(parsed)) { if (Array.isArray(parsed[key])) { data = parsed[key]; break; } } }
       if (Array.isArray(parsed.categories)) importedCategories = parsed.categories;
       if (parsed.collapsedCategories && typeof parsed.collapsedCategories === 'object') importedCollapsed = parsed.collapsedCategories;
-      if (Array.isArray(parsed.archive)) { archive = parsed.archive; saveArchive(); }
+      if (Array.isArray(parsed.archive)) importedArchive = parsed.archive;
       if (Array.isArray(parsed.trash)) importedTrash = parsed.trash;
       if (parsed.today && typeof parsed.today === 'object') importedToday = parsed.today;
       if (parsed.weeklyData && typeof parsed.weeklyData === 'object') importedWeekly = parsed.weeklyData;
@@ -8039,7 +8039,7 @@
       if (Array.isArray(parsed.notes)) importedNotes = parsed.notes;
       if (parsed.noteTombstones && typeof parsed.noteTombstones === 'object') importedNoteTombstones = parsed.noteTombstones;
     }
-    return { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones };
+    return { data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones };
   }
 
   // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
@@ -8063,8 +8063,13 @@
     return (Array.isArray(data) ? data : []).filter(p => p != null).map(p => sanitizeImportedNode(p, seenIds));
   }
 
-  function applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones) {
+  function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones) {
     snapshot();
+    let restoredExtras = 0;
+    // Archive replaces HERE (after snapshot), like every other extra — it used
+    // to be applied during extraction, BEFORE the undo snapshot ran, so a
+    // regretted import left Ctrl+Z unable to restore the pre-import archive.
+    if (Array.isArray(importedArchive)) { archive = importedArchive; saveArchive(); restoredExtras++; }
     projects = sanitizeImportedProjects(data);
     projects.forEach(p => { p.expanded = false; });
     const fromProjects = projects.map(p => p.category).filter(Boolean);
@@ -8072,7 +8077,6 @@
     categories = Array.from(new Set(categories.concat(safeImportedCategories, fromProjects)));
     collapsedCategories = Object.assign({}, collapsedCategories, importedCollapsed);
     saveCategories(); saveCollapsedCategories(); scheduleSave(); autoArrangeProjects(true);
-    let restoredExtras = 0;
     if (Array.isArray(importedTrash)) { trash = importedTrash; saveTrash(); renderTrashList(); restoredExtras++; }
     if (importedToday && Array.isArray(importedToday.tasks)) { todayTasks = importedToday.tasks; todayDate = typeof importedToday.date === 'string' ? importedToday.date : todayLocalStr(); saveToday(); renderTodayList(); restoredExtras++; }
     if (importedWeekly) { weeklyData = importedWeekly; saveWeekly(); renderWeeklyPanel(); restoredExtras++; }
@@ -8096,8 +8100,8 @@
       const { parsed, error } = parseImportJson(String(e.target.result || ''));
       if (error) { showToast(error, true); importInput.value = ''; return; }
       try {
-        const { data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones } = extractImportData(parsed);
-        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones); }
+        const { data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones } = extractImportData(parsed);
+        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
     };
