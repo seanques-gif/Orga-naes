@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-TVtTcfw234An3tXqO8AyxGMDcQXrrNqDpXxxtr6hVnY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-dyMV5+lo2r+ljrKeTuSN30ZY+Ow/urcgmFjR/Vx41dg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8079,13 +8079,11 @@
     if (Array.isArray(importedReminders)) { reminders = importedReminders; saveReminders(); restoredExtras++; }
     if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); restoredExtras++; }
     if (importedNotes) {
-      // Merge by id (imported wins on conflict), preserving any local notes.
-      const localNotes = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
-      const byId = {};
-      (localNotes ? localNotes.notes : []).forEach(n => { byId[n.id] = n; });
-      importedNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string').forEach(n => { byId[n.id] = n; });
-      const merged = Object.values(byId);
-      if (window._pf && typeof window._pf.replaceNotes === 'function') { window._pf.replaceNotes(merged, importedNoteTombstones); restoredExtras++; }
+      // File import REPLACES the note set (importNotes bridge): the backup is
+      // a snapshot of the other copy, so notes absent from it — including a
+      // notes: [] backup — must not survive locally. The old merge kept
+      // local-only notes, which made "load a backup without notes" a no-op.
+      if (window._pf && typeof window._pf.importNotes === 'function') { window._pf.importNotes(importedNotes, importedNoteTombstones); restoredExtras++; }
     }
     showToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders/notes from backup)' : ''));
   }
@@ -10118,6 +10116,33 @@
     notesLoadedEmpty = notes.length === 0;
     if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
     if (Array.isArray(notesSelection)) notesSelection = [];
+    saveTombstones();
+    saveNotes();
+    renderNotesList();
+    renderNotesEditor();
+  };
+
+  // Import bridge (32): file import REPLACES the note set when the backup
+  // carries a notes key — an EMPTY array included. Unlike replaceNotes (whose
+  // empty guard protects malformed imports) and mergeCloudNotes (pull keeps
+  // local-only notes), a deliberate file import is a snapshot restore: if the
+  // backup has notes: [], the other copy had zero notes and the local set must
+  // follow. Local-only notes are tombstoned (not just dropped) so the removal
+  // survives the next cloud push instead of riding back up as ghosts.
+  window._pf.importNotes = function(nextNotes, incomingTombstones) {
+    ++loadEpoch;
+    if (!Array.isArray(nextNotes)) return;
+    if (incomingTombstones && typeof incomingTombstones === 'object') {
+      Object.keys(incomingTombstones).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (incomingTombstones[k] || '')) noteTombstones[k] = incomingTombstones[k]; });
+    }
+    const clean = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string');
+    const visible = clean.filter(n => !isTombstoned(n.id));
+    const importedIds = new Set(visible.map(n => n.id));
+    notes.filter(n => !importedIds.has(n.id)).forEach(n => recordNoteTombstone(n.id));
+    notes = visible.map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
+    notesLoaded = true;
+    notesLoadedEmpty = notes.length === 0;
+    if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
     saveTombstones();
     saveNotes();
     renderNotesList();
