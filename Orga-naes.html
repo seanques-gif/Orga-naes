@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-oTXKh1b5fb/VY+DFchkaJlZj8r7CTGWAB+lcdcSZR5s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-qSTpSFpHhXIxKf4ZOif0s1CTSDJ1MZ4vPU5nl2NmtH4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4568,7 +4568,7 @@
     if (p.status === 'completed' && p.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(p.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = p.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); p.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); headerMeta.appendChild(doneLabel); } else { headerMeta.appendChild(buildDueChip(p, (val) => { snapshot(); p.dueAt = val; scheduleSave(); render(); }, false)); }
     headerMeta.appendChild(buildRecurChip(p, (val) => { snapshot(); p.recurrence = val || null; scheduleSave(); render(); }));
 
-    if (p.expanded && p.height) { div.style.height = p.height + 'px'; div.style.display = 'flex'; div.style.flexDirection = 'column'; div.querySelector('.pf-node-header').style.flexShrink = '0'; const descRow = div.querySelector('.pf-node-desc-row'); if (descRow) descRow.style.flexShrink = '0'; const sl = div.querySelector('.pf-sublist'); sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; }
+    if (p.expanded && p.height) { div.style.height = p.height + 'px'; div.style.display = 'flex'; div.style.flexDirection = 'column'; div.querySelector('.pf-node-header').style.flexShrink = '0'; const descRow = div.querySelector('.pf-node-desc-row'); if (descRow) descRow.style.flexShrink = '0'; const sl = div.querySelector('.pf-sublist'); if (sl) { sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; } }
     const sublist = div.querySelector('.pf-sublist'); if (p.expanded) { renderSubtaskRows(sublist, p, p.subtasks, 0); }
     sublist.__project = p; sublist.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); clearIndicators(); sublist.classList.add('pf-drop-root'); }); sublist.addEventListener('dragleave', (e) => { if (e.target === sublist) sublist.classList.remove('pf-drop-root'); }); sublist.addEventListener('drop', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); performMove(p, null, null); });
     const addBtn = document.createElement('button'); addBtn.className = 'pf-add-sub'; addBtn.textContent = '+ Add subtask'; addBtn.addEventListener('click', (e) => { e.stopPropagation(); addSubtask(p.id, null); }); sublist.appendChild(addBtn);
@@ -6592,7 +6592,10 @@
         if (!projectId) return;
         const p = projects.find(pr => pr.id === projectId);
         if (!p) return;
-        const taskTitle = el.querySelector('.pf-cal-task-title').textContent.trim();
+        // Guard: the title span only renders for some item shapes; a missing
+        // span must not throw and kill the click-through navigation.
+        const titleEl = el.querySelector('.pf-cal-task-title');
+        const taskTitle = (titleEl ? titleEl.textContent : p.title || '').trim();
         closeAllModals();
         _calendarReturnOnEsc = true;
         if (!root.classList.contains('pf-device-mobile') && !root.classList.contains('pf-device-tablet')) showToast('Press Esc to go back to Calendar');
@@ -11993,7 +11996,9 @@ if ('serviceWorker' in navigator) {
   }, 3000);
 
   // Version display
-  const APP_VERSION = document.querySelector('meta[name="version"]').content;
+  // Tolerate a missing version meta (hand-edited/copied HTML): the sync
+  // module must still boot — the version is advisory metadata.
+  const APP_VERSION = (function() { try { const m = document.querySelector('meta[name="version"]'); return m ? m.content : 'unknown'; } catch (e) { return 'unknown'; } })();
   if (_fbUser) db.ref('users/' + _fbUser.uid + '/appVersion').set(APP_VERSION);
   auth.onAuthStateChanged(function(u) { if (u) db.ref('users/' + u.uid + '/appVersion').set(APP_VERSION); });
 })();
