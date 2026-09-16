@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-r5sAJ3Z8otYpZdM+vlqmZntL/x2r6vDQcqFiL3Ilkus='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-PYKkfm3fmPCW33HJEgMw9GjUcQDNPoHZD3HBLTVY0Mo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3134,6 +3134,12 @@
       if (ae && ae.isContentEditable) return;
       e.preventDefault(); redo();
     }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+      const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      if (!subMultiSelect.length && !splitMultiSelect.length) return;
+      e.preventDefault();
+      cutSelection();
+    }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
       if (!subMultiSelect.length && !splitMultiSelect.length) return;
@@ -3148,6 +3154,15 @@
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      // A pending MOVE (cut) wins over a pending copy: after Ctrl+X, Ctrl+V
+      // arms the move so the click relocates the original nodes.
+      if (_moveClipboard && _moveClipboard.length) {
+        e.preventDefault();
+        _moveArmed = true;
+        root.classList.add('pf-move-armed');
+        showToast('Click a project to move as main task(s), or a task to nest under it (Esc to cancel)');
+        return;
+      }
       if (!_taskClipboard || !_taskClipboard.length) return;
       e.preventDefault();
       _pasteArmed = true;
@@ -3244,6 +3259,7 @@
   function _markOverlayOpen(key) { _overlayStamps[key] = ++_overlayCounter; }
   const _escDismissables = [
     { check: () => _pasteArmed, run: () => { _pasteArmed = false; root.classList.remove('pf-paste-armed'); showToast('Paste canceled'); } },
+    { check: () => _moveArmed, run: () => { _moveArmed = false; root.classList.remove('pf-move-armed'); showToast('Move canceled'); } },
     { check: () => !!_saveModalEl, run: () => { if (_saveModalEl) { _saveModalEl.remove(); _saveModalEl = null; } } },
     // Search beats the detail view: when both are open, Escape clears the
     // search FIRST (it's the visually topmost transient), and only a second
