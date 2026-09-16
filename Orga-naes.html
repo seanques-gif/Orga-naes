@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-qSTpSFpHhXIxKf4ZOif0s1CTSDJ1MZ4vPU5nl2NmtH4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-T3uMaozGFk+OCw7AfyWhlfEq6sw1iBQIsiBk5JVIRLo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3339,6 +3339,25 @@
       });
       if (uncovered.length) {
         console.warn('[Orga-naes] Escape-key audit: element(s) named like a modal/panel/popover aren\'t in ALL_MODALS and aren\'t a known exception — Escape may not close them. Add to ALL_MODALS, call window._pf.registerEscDismissable(), or add to KNOWN_EXCEPTIONS in auditEscCoverage() if handled elsewhere:', uncovered.map(function(el) { return '#' + el.id; }));
+      }
+    } catch (e) {}
+  })();
+  // Boot smoke check: every id the app's BOOT-TIME wiring reads via
+  // getElementById must exist, or that wiring silently no-ops (dead button)
+  // or throws (broken boot). Also checks the version meta (45 reads it).
+  // Dynamically-created ids (ctx backdrop, particles canvas, gfont link,
+  // notes selbar, sync diag) are excluded — the app creates those itself.
+  // Console-only, same contract as auditEscCoverage above.
+  (function auditBootDom() {
+    try {
+      var BOOT_IDS = ['pf-root','pf-canvas','pf-canvas-wrap','pf-export','pf-import-file','pf-search','pf-search-wrap','pf-search-toggle','pf-new-project','pf-undo','pf-redo','pf-arrange','pf-autofit-all','pf-collapse-cats','pf-toolbar-back','pf-stats','pf-toast','pf-modal-backdrop','pf-due-filter','pf-split-list','pf-split-detail','pf-options-panel','pf-shortcuts-panel','pf-activity-panel','pf-today-panel','pf-duelist-panel','pf-calendar-panel','pf-weekly-panel','pf-notes-panel','pf-archive-panel','pf-trash-panel','pf-snapshots-panel','pf-error-panel','pf-copy-modal','pf-color-modal','pf-confirm-modal','pf-conflict-modal','pf-comment-panel','pf-reminder-popover','pf-category-popover','pf-new-project-popover','pf-today-btn','pf-duelist-btn','pf-calendar-btn','pf-weekly-btn','pf-notes-btn','pf-activity-btn','pf-archive-btn','pf-trash-btn','pf-snapshots-btn','pf-trash-empty-btn','pf-options-btn','pf-options-btn-desktop','pf-shortcuts-btn','pf-shortcuts-hint','pf-theme-auto','pf-category-add-btn','pf-new-project-cat-add','pf-reminder-cancel','pf-reminder-save','pf-archive-count','pf-trash-count','pf-due-panel','pf-overdue-banner','pf-note-title','pf-note-body','pf-note-body-rich','pf-note-preview','pf-note-new','pf-note-del','pf-note-pin','pf-note-copy','pf-note-undo','pf-note-redo','pf-note-view','pf-note-count','pf-notes-search','pf-notes-list','pf-notes-editor','pf-notes-editor-empty','pf-notes-editor-main','pf-notes-fmt-bar','pf-import','pf-export'];
+      var missing = BOOT_IDS.filter(function(id) { return !document.getElementById(id); });
+      var hasVersionMeta = !!document.querySelector('meta[name="version"]');
+      var problems = [];
+      if (missing.length) problems.push('missing element id(s): ' + missing.map(function(id) { return '#' + id; }).join(', '));
+      if (!hasVersionMeta) problems.push('missing <meta name="version"> (cloud sync reads it)');
+      if (problems.length) {
+        console.warn('[Orga-naes] Boot DOM check: ' + problems.join('; ') + '. Boot wiring for these is dead — restore them from template.html.');
       }
     } catch (e) {}
   })();
