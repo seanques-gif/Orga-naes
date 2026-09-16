@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-RjJXLQHXFtjMDixyXdDz2rTtiSFlt7nbBuwpbSAAjVI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-NI+4+qClTEoFItChsu03V/ItoL5qj0JQEOOjQgdWmqU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9172,6 +9172,9 @@
   const noteCountEl = document.getElementById('pf-note-count');
   const notePinLabelEl = document.getElementById('pf-note-pin-label');
   const noteRichEl = document.getElementById('pf-note-body-rich');
+  // Which note's content the rich surface currently displays — the anti-stale
+  // guard above uses it to force a reload on note switches even while focused.
+  let richLoadedNoteId = null;
   const noteUndoBtn = document.getElementById('pf-note-undo');
   const noteRedoBtn = document.getElementById('pf-note-redo');
   const noteHistEl = document.getElementById('pf-note-hist');
@@ -9449,7 +9452,13 @@
     notesEditorMainEl.style.display = 'flex';
     if (noteTitleEl.value !== (n.title || '')) noteTitleEl.value = n.title || '';
     if (noteBodyEl.value !== (n.body || '')) noteBodyEl.value = n.body || '';
-    if (document.activeElement !== noteRichEl && noteBodyEl.value !== richSerialize()) richLoad(n.body || '');
+    // Reload the rich surface whenever it holds a DIFFERENT note (or is stale).
+    // The old blur-only guard let a focused editor keep the PREVIOUS note's
+    // content after switching notes — the next keystroke then serialized that
+    // stale content into the new note's body (title survives, body swaps or
+    // empties, and the wrong body rides the next cloud push).
+    if (richLoadedNoteId !== n.id || noteBodyEl.value !== richSerialize()) richLoad(n.body || '');
+    richLoadedNoteId = n.id;
     notePinLabelEl.textContent = n.pinned ? 'Unpin' : 'Pin';
     document.getElementById('pf-note-pin').title = n.pinned ? 'Unpin from top' : 'Pin to top';
     updateNoteCount();
@@ -9463,6 +9472,7 @@
   }
 
   function selectNote(id) {
+    if (id !== activeNoteId) commitNoteField(); // flush the outgoing note's unsaved edits to IT, not the incoming one
     activeNoteId = id;
     renderNotesList();
     renderNotesEditor();
