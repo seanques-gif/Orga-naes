@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-T3uMaozGFk+OCw7AfyWhlfEq6sw1iBQIsiBk5JVIRLo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-nb8jLymg/hGiCmOr7+611PnphpbSEE0JU85TGXcQyEQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8081,8 +8081,21 @@
 
   // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
   // damaged or hand-edited backup can't break rendering, sync, or the undo stack. Recurses into subtasks.
+  // Keys that must never survive an import: they can poison Object.prototype
+  // or smuggle constructor chains through the sanitizer's direct mutation.
+  var UNSAFE_KEYS = ['__proto__', 'constructor', 'prototype'];
+  function ownSafe(obj) {
+    // Fresh object with only own, safe, string-keyed properties.
+    var out = {};
+    Object.keys(obj).forEach(function(k) { if (UNSAFE_KEYS.indexOf(k) === -1) out[k] = obj[k]; });
+    return out;
+  }
   function sanitizeImportedNode(node, seenIds) {
-    if (!node || typeof node !== 'object') node = {};
+    // Rebuild as a PLAIN object from own properties only — never mutate the
+    // raw parsed input (a crafted backup could carry __proto__ as an own key
+    // or arrive via a producer that resolves it onto Object.prototype).
+    node = ownSafe(node && typeof node === 'object' ? node : {});
+    if (node.subtasks && typeof node.subtasks === 'object' && !Array.isArray(node.subtasks)) node.subtasks = [];
     if (typeof node.id !== 'string' || !node.id || seenIds.has(node.id)) node.id = uid();
     seenIds.add(node.id);
     if (typeof node.title !== 'string' || !node.title.trim()) node.title = 'Untitled';
@@ -10173,10 +10186,18 @@
   window._pf.importNotes = function(nextNotes, incomingTombstones) {
     ++loadEpoch;
     if (!Array.isArray(nextNotes)) return;
-    if (incomingTombstones && typeof incomingTombstones === 'object') {
-      Object.keys(incomingTombstones).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (incomingTombstones[k] || '')) noteTombstones[k] = incomingTombstones[k]; });
+    // Proto-pollution guard: drop dangerous keys and rebuild each note/tombstone
+    // as a plain own-property object (same contract as sanitizeImportedNode).
+    var UNSAFE_KEYS = ['__proto__', 'constructor', 'prototype'];
+    function ownSafe(obj) {
+      var out = {};
+      Object.keys(obj).forEach(function(k) { if (UNSAFE_KEYS.indexOf(k) === -1) out[k] = obj[k]; });
+      return out;
     }
-    const clean = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string');
+    if (incomingTombstones && typeof incomingTombstones === 'object') {
+      Object.keys(ownSafe(incomingTombstones)).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (incomingTombstones[k] || '')) noteTombstones[k] = incomingTombstones[k]; });
+    }
+    const clean = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string').map(ownSafe);
     const visible = clean.filter(n => !isTombstoned(n.id));
     const importedIds = new Set(visible.map(n => n.id));
     notes.filter(n => !importedIds.has(n.id)).forEach(n => recordNoteTombstone(n.id));
