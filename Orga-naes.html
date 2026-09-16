@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-nb8jLymg/hGiCmOr7+611PnphpbSEE0JU85TGXcQyEQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-EexUVl/HyzGh0H4fNKwTtCFqByha3mSag5iqVUoFoFM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4054,9 +4054,56 @@
   function scheduleSave() { autoUpdateStatuses(); invalidateSearchCache(); if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } syncWeeklyWithTasks(); saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const res = await safeSet(STORE_KEY, JSON.stringify(projects), false); if (res) { localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
   // SUBSECTION: Project CRUD, Archive & Trash
   function addProject(category) { snapshot(); const p = { id: uid(), title: 'New project', status: 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: null, completedAt: null, category: category || null, subtasks: [] }; projects.push(p); logActivity('Created project "New project"' + (category ? ' in ' + category : '')); scheduleSave(); autoArrangeProjects(true); if (listViewActive) { splitSelectedId = p.id; renderSplitList(); renderSplitDetail(); } focusEl('[data-title-id="' + p.id + '"]'); }
+  // Schema repair for archive/trash loads (Sept 14 audit HIGH residual): the
+  // stored arrays are user-data-shaped JSON that a partial write or hand edit
+  // could corrupt. Mirror validateAndRepair's contract — repair in place,
+  // drop unrecoverable entries, report the count. Rendering is escape-first
+  // and restores re-validate through the app, but a repaired STRUCTURE here
+  // keeps restore/purge logic from ever seeing malformed entries.
+  function repairDateString(v) {
+    if (v == null) return null;
+    if (typeof v !== 'string' || isNaN(Date.parse(v))) return null;
+    return v;
+  }
+  function repairArchiveEntry(a, seenIds) {
+    if (!a || typeof a !== 'object' || Array.isArray(a)) return null;
+    if (typeof a.id !== 'string' || !a.id || seenIds.has(a.id)) a.id = uid();
+    seenIds.add(a.id);
+    if (typeof a.title !== 'string' || !a.title.trim()) a.title = 'Untitled';
+    if (typeof a.status !== 'string' || !['planned','ongoing','completed'].includes(a.status)) a.status = 'planned';
+    if (!Array.isArray(a.subtasks)) a.subtasks = [];
+    a.archivedAt = repairDateString(a.archivedAt);
+    return a;
+  }
+  function repairTrashEntry(t, seenIds) {
+    if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
+    // kind tag: legacy pre-bin project entries have none — treated as 'project'.
+    if (t.kind !== 'project' && t.kind !== 'subtask' && t.kind !== 'note') t.kind = 'project';
+    if (typeof t.id !== 'string' || !t.id || seenIds.has(t.id)) t.id = uid();
+    seenIds.add(t.id);
+    if (typeof t.title !== 'string' || !t.title.trim()) t.title = 'Untitled';
+    if (t.kind !== 'project' && t.kind !== 'note') {
+      if (!t.projectId || typeof t.projectId !== 'string') t.projectId = null;
+      if (!Array.isArray(t.parentPath)) t.parentPath = [];
+      if (typeof t.index !== 'number') t.index = 0;
+    }
+    // Restorable payload must be an object for every kind.
+    if (!t.node || typeof t.node !== 'object' || Array.isArray(t.node)) {
+      // Reconstruct a minimal node from the entry itself so Restore still works.
+      t.node = { id: t.id, title: t.title, status: 'planned', subtasks: [] };
+    }
+    t.deletedAt = repairDateString(t.deletedAt) || new Date().toISOString();
+    return t;
+  }
   const ARCHIVE_KEY = 'project-flow-archive';
   let archive = [];
-  async function loadArchive() { try { const res = await safeGet(ARCHIVE_KEY, false); if (res && res.value) archive = JSON.parse(res.value); } catch (e) { archive = []; logError('Load archive', e); } }
+  async function loadArchive() {
+    try { const res = await safeGet(ARCHIVE_KEY, false); if (res && res.value) archive = JSON.parse(res.value); } catch (e) { archive = []; logError('Load archive', e); }
+    if (!Array.isArray(archive)) archive = [];
+    const seenIds = new Set(); let repaired = 0;
+    archive = archive.map(a => repairArchiveEntry(a, seenIds)).filter(a => { if (!a) { repaired++; return false; } return true; });
+    if (repaired > 0) { saveArchive(); showToast('🔧 Auto-repaired ' + repaired + ' archive issue' + (repaired > 1 ? 's' : '')); }
+  }
   function saveArchive() { safeSet(ARCHIVE_KEY, JSON.stringify(archive), false); }
   function archiveProject(p) { archive = archive.filter(a => a.id !== p.id); archive.push({ ...JSON.parse(JSON.stringify(p)), archivedAt: new Date().toISOString() }); saveArchive(); }
   function restoreFromArchive(id) { const idx = archive.findIndex(a => a.id === id); if (idx < 0) return; const item = archive.splice(idx, 1)[0]; delete item.archivedAt; projects.push(item); saveArchive(); scheduleSave(); render(); renderArchiveList(); showToast('"' + item.title + '" restored'); }
@@ -4079,7 +4126,14 @@
 
   const TRASH_KEY = 'project-flow-trash';
   let trash = [];
-  async function loadTrash() { try { const res = await safeGet(TRASH_KEY, false); if (res && res.value) trash = JSON.parse(res.value); } catch (e) { trash = []; logError('Load trash', e); } purgeOldTrash(); }
+  async function loadTrash() {
+    try { const res = await safeGet(TRASH_KEY, false); if (res && res.value) trash = JSON.parse(res.value); } catch (e) { trash = []; logError('Load trash', e); }
+    if (!Array.isArray(trash)) trash = [];
+    const seenIds = new Set(); let repaired = 0;
+    trash = trash.map(t => repairTrashEntry(t, seenIds)).filter(t => { if (!t) { repaired++; return false; } return true; });
+    purgeOldTrash();
+    if (repaired > 0) { saveTrash(); showToast('🔧 Auto-repaired ' + repaired + ' trash issue' + (repaired > 1 ? 's' : '')); }
+  }
   function saveTrash() { safeSet(TRASH_KEY, JSON.stringify(trash), false); }
   function purgeOldTrash() { const cutoff = Date.now() - TRASH_TTL_MS; const before = trash.length; trash = trash.filter(t => new Date(t.deletedAt).getTime() > cutoff); const purged = before - trash.length; if (purged > 0) { saveTrash(); showToast('🗑 ' + purged + ' item' + (purged > 1 ? 's' : '') + ' auto-removed from trash (older than 30 days)'); } }
   function trashProject(p) { trash.push({ ...JSON.parse(JSON.stringify(p)), kind: 'project', deletedAt: new Date().toISOString() }); saveTrash(); }
