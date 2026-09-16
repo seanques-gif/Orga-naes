@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Rz5o7i3J9dlehZNALmjB3GpuDfbTcXHi2WAiFuzHx1w='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-oTXKh1b5fb/VY+DFchkaJlZj8r7CTGWAB+lcdcSZR5s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -5405,8 +5405,8 @@
       '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (showCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Show completed projects">' + pfIcon(showCompletedProjects ? 'check-square' : 'square') + ' Completed</button>' +
       '<select id="pf-split-sort-sel" aria-label="Sort projects"><option value="manual">Manual</option><option value="name">Name</option><option value="status">Status</option><option value="due-cat">Due Date</option><option value="created">Newest</option></select>';
     splitList.appendChild(sortBar);
-    sortBar.querySelector('select').value = splitSortMode;
-    sortBar.querySelector('select').addEventListener('change', (e) => { splitSortMode = e.target.value; safeSet('project-flow-sort-mode', splitSortMode, false); renderSplitList(); });
+    const sortSel = sortBar.querySelector('select');
+    if (sortSel) { sortSel.value = splitSortMode; sortSel.addEventListener('change', (e) => { splitSortMode = e.target.value; safeSet('project-flow-sort-mode', splitSortMode, false); renderSplitList(); }); }
     sortBar.querySelector('#pf-split-hide-completed').addEventListener('click', () => { showCompletedProjects = !showCompletedProjects; safeSet('project-flow-hide-completed', String(showCompletedProjects), false); renderSplitList(); });
     const collapseBtn = sortBar.querySelector('#pf-split-collapse-all');
     const allCollapsed = categories.length > 0 && categories.every(c => splitCollapsedCats[c]);
