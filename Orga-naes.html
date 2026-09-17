@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-RpQvXGw0Mem1KnLESnIe5+8VPmRQ1gUdFJMpVXUwok8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-KoMB2wfwv4VgvC1SduPzuCXsGHL4LDmGxyRO2qUEmV4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6898,6 +6898,27 @@
     }
     renderWeeklyPanel();
   }
+  // Payload reads are never assumed safe. `e.dataTransfer` is absent on a
+  // synthetic drop, getData() can throw for a type the source never set, and a
+  // payload can come from anywhere — another tab, another window, another
+  // application, or a drag cancelled mid-flight and delivered truncated. A
+  // throw here aborts the drop handler after it has already cleared the drag
+  // styling, so the gesture dies silently and the error log grows. Nothing is
+  // assumed and nothing throws: an unusable payload means "nothing draggable
+  // here". A stale day needs no handling — the move helpers below treat an
+  // unknown source day as a no-op.
+  function readDragText(e, type) {
+    try { return (e.dataTransfer && e.dataTransfer.getData(type)) || ''; } catch (err) { return ''; }
+  }
+  function readDragPayload(e, type) {
+    const raw = readDragText(e, type);
+    if (!raw) return null;
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (err) { return null; }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    if (typeof parsed.id !== 'string' || !parsed.id) return null;
+    return parsed;
+  }
   // Moves (or reorders) a weekly task. targetTaskId + insertBefore describe
   // where within the destination day to place it — omit targetTaskId to
   // append at the end. Shared by the native HTML5 drag/drop handlers
@@ -7349,13 +7370,12 @@
           const before = row.style.borderTop !== '';
           row.style.borderTop = ''; row.style.borderBottom = '';
           if (ds < todayStr) { showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true); return; }
-          const backlogRaw = e.dataTransfer.getData('application/backlog-task');
-          if (backlogRaw) { const { id } = JSON.parse(backlogRaw); moveBacklogTaskToDay(id, ds); renderWeeklyPanel(); return; }
-          const raw = e.dataTransfer.getData('application/weekly-task');
-          if (!raw) return;
-          const { id, fromDay } = JSON.parse(raw);
-          if (id === t.id) return;
-          moveWeeklyTask(id, fromDay, ds, t.id, before);
+          const backlogDrop = readDragPayload(e, 'application/backlog-task');
+          if (backlogDrop) { moveBacklogTaskToDay(backlogDrop.id, ds); renderWeeklyPanel(); return; }
+          const weeklyDrop = readDragPayload(e, 'application/weekly-task');
+          if (!weeklyDrop) return;
+          if (weeklyDrop.id === t.id) return;
+          moveWeeklyTask(weeklyDrop.id, weeklyDrop.fromDay, ds, t.id, before);
         });
         col.appendChild(row);
         weeklyTouchDragSupport(row, t, ds);
@@ -7382,19 +7402,17 @@
         col.classList.remove('pf-week-col-dragover');
         col.classList.remove('pf-week-col-dragover-blocked');
         if (ds < todayStr) {
-          if (e.dataTransfer.getData('application/weekly-task') || e.dataTransfer.getData('application/backlog-task') || e.dataTransfer.getData('text/plain')) showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true);
+          if (readDragText(e, 'application/weekly-task') || readDragText(e, 'application/backlog-task') || readDragText(e, 'text/plain')) showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true);
           return;
         }
-        const backlogRaw = e.dataTransfer.getData('application/backlog-task');
-        if (backlogRaw) {
-          const { id } = JSON.parse(backlogRaw);
-          moveBacklogTaskToDay(id, ds);
+        const backlogDrop = readDragPayload(e, 'application/backlog-task');
+        if (backlogDrop) {
+          moveBacklogTaskToDay(backlogDrop.id, ds);
           renderWeeklyPanel();
           return;
         }
-        const raw = e.dataTransfer.getData('application/weekly-task');
-        if (raw) {
-          const { id, fromDay } = JSON.parse(raw);
+        const weeklyDrop = readDragPayload(e, 'application/weekly-task');
+        if (weeklyDrop) {
           // Dropped on the column background (not on a specific row) —
           // send it to the end of this day's list, whether that's this
           // same day (a reorder-to-last) or a different one (a move).
@@ -7402,11 +7420,11 @@
           // that's a true no-op and would otherwise trigger a pointless
           // saveWeekly()+renderWeeklyPanel() flicker mid-drag.
           const dayList = weeklyData[ds] || [];
-          const isAlreadyLastInSameDay = fromDay === ds && dayList.length && dayList[dayList.length - 1].id === id;
-          if (!isAlreadyLastInSameDay) moveWeeklyTask(id, fromDay, ds, null, false);
+          const isAlreadyLastInSameDay = weeklyDrop.fromDay === ds && dayList.length && dayList[dayList.length - 1].id === weeklyDrop.id;
+          if (!isAlreadyLastInSameDay) moveWeeklyTask(weeklyDrop.id, weeklyDrop.fromDay, ds, null, false);
           return;
         }
-        const projectId = e.dataTransfer.getData('text/plain');
+        const projectId = readDragText(e, 'text/plain');
         if (projectId) {
           const p = projects.find(pr => pr.id === projectId);
           if (p) { addToWeekDay(ds, p.title, p.id, 'project', null); renderWeeklyPanel(); }
@@ -7537,10 +7555,9 @@
   backlogList.addEventListener('drop', (e) => {
     e.preventDefault();
     backlogList.classList.remove('pf-week-col-dragover');
-    const raw = e.dataTransfer.getData('application/weekly-task');
-    if (!raw) return;
-    const { id, fromDay } = JSON.parse(raw);
-    moveWeeklyTaskToBacklog(id, fromDay);
+    const weeklyDrop = readDragPayload(e, 'application/weekly-task');
+    if (!weeklyDrop) return;
+    moveWeeklyTaskToBacklog(weeklyDrop.id, weeklyDrop.fromDay);
   });
   // Auto-arrange: spreads every backlog task across the remaining days of
   // the currently-viewed week (today onward if this is the current week,
