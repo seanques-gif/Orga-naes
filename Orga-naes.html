@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-9Bpfc0fMm78hoJpEJ0+9TXweOQ2RItskthIyMe5vMos='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Qj+LG5LPSeggbbBfXIa9OxSqpAx/RoOstRXJyDxE84Q='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2953,6 +2953,24 @@
   // Throttle utility — trailing-edge, skips if already pending
   function throttle(fn, ms) { let pending = false; return function() { if (pending) return; pending = true; setTimeout(() => { fn(); pending = false; }, ms); }; }
 
+  // Pointer capture is BEST-EFFORT, never assumed. Browsers throw
+  // NotFoundError ("No active pointer with the given id is found") whenever the
+  // pointer is no longer active — a fast tap that already released, a synthetic
+  // or foreign pointerId, an element detached mid-gesture — and Chrome does it
+  // in practice: it is one of the two error shapes this app has logged from the
+  // wild (2026-09-15). An uncaught throw aborts the rest of the pointerdown
+  // handler and surfaces an uncaught error for a gesture that actually works.
+  // Capture only buys drag tracking outside the window, so every site routes
+  // through this pair: a lost capture costs the capture, nothing else. No
+  // return value — callers must not branch on it (a gesture that behaves
+  // differently with/without capture is a bug of its own).
+  function safePointerCapture(el, pointerId) {
+    try { el.setPointerCapture(pointerId); } catch (err) { /* pointer already gone: carry on without capture */ }
+  }
+  function safeReleasePointerCapture(el, pointerId) {
+    try { el.releasePointerCapture(pointerId); } catch (err) { /* nothing captured (or already released) */ }
+  }
+
   const canvas = document.getElementById('pf-canvas');
   const canvasWrap = document.getElementById('pf-canvas-wrap');
   const root = document.getElementById('pf-root');
@@ -3383,7 +3401,7 @@
     panStartX = e.clientX; panStartY = e.clientY;
     scrollStartX = canvasWrap.scrollLeft; scrollStartY = canvasWrap.scrollTop;
     canvasWrap.style.cursor = 'grabbing';
-    canvasWrap.setPointerCapture(e.pointerId);
+    safePointerCapture(canvasWrap, e.pointerId);
   });
   canvasWrap.addEventListener('pointermove', (e) => {
     if (!panActive) return;
@@ -3394,7 +3412,7 @@
     if (!panActive) return;
     panActive = false;
     canvasWrap.style.cursor = '';
-    canvasWrap.releasePointerCapture(e.pointerId);
+    safeReleasePointerCapture(canvasWrap, e.pointerId);
   });
   canvasWrap.addEventListener('pointercancel', (e) => {
     if (!panActive) return;
@@ -3654,7 +3672,7 @@
   const SIZE_KEY = 'project-flow-size'; const resizeHandle = document.getElementById('pf-resize-handle');
   (function initResize() {
     let resizing = false, startX, startY, startW, startH;
-    resizeHandle.addEventListener('pointerdown', (e) => { e.preventDefault(); resizing = true; const rect = root.getBoundingClientRect(); startX = e.clientX; startY = e.clientY; startW = rect.width; startH = rect.height; root.classList.add('pf-resizing'); resizeHandle.setPointerCapture(e.pointerId); });
+    resizeHandle.addEventListener('pointerdown', (e) => { e.preventDefault(); resizing = true; const rect = root.getBoundingClientRect(); startX = e.clientX; startY = e.clientY; startW = rect.width; startH = rect.height; root.classList.add('pf-resizing'); safePointerCapture(resizeHandle, e.pointerId); });
     resizeHandle.addEventListener('pointermove', (e) => { if (!resizing) return; root.style.width = Math.max(340, startW + (e.clientX - startX)) + 'px'; root.style.height = Math.max(320, startH + (e.clientY - startY)) + 'px'; });
     function endResize() { if (!resizing) return; resizing = false; root.classList.remove('pf-resizing'); safeSet(SIZE_KEY, JSON.stringify({ w: root.offsetWidth, h: root.offsetHeight }), false); renderCategoryZones(); }
     resizeHandle.addEventListener('pointerup', endResize); resizeHandle.addEventListener('pointercancel', endResize);
@@ -3757,7 +3775,7 @@
       dragging = true; startX = e.clientX; startY = e.clientY;
       startW = panel.offsetWidth; startH = panel.offsetHeight;
       h.classList.add('pf-dragging');
-      h.setPointerCapture(e.pointerId);
+      safePointerCapture(h, e.pointerId);
     });
     h.addEventListener('pointermove', (e) => {
       if (!dragging) return;
@@ -3768,7 +3786,7 @@
       if (!dragging) return;
       dragging = false;
       h.classList.remove('pf-dragging');
-      try { h.releasePointerCapture(e.pointerId); } catch (err) {}
+      safeReleasePointerCapture(h, e.pointerId);
       safeSet(KEY, JSON.stringify({ w: panel.style.width, h: panel.style.height }), false);
     };
     h.addEventListener('pointerup', finish);
@@ -4943,7 +4961,7 @@
   canvasWrap.addEventListener('drop', () => { clearInterval(autoScrollInterval); autoScrollInterval = null; });
   document.addEventListener('dragend', () => { clearInterval(autoScrollInterval); autoScrollInterval = null; });
 
-  function makeResizable(el, p) { const MIN_W = 190, MIN_H = 140; const grip = el.querySelector('.pf-node-resize'); let resizing = false, moved = false, startX, startY, startW, startH; grip.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); resizing = true; moved = false; startX = e.clientX; startY = e.clientY; const z = typeof zoomLevel !== 'undefined' ? zoomLevel : 1; startW = el.offsetWidth; startH = el.offsetHeight; grip.setPointerCapture(e.pointerId); }); grip.addEventListener('pointermove', (e) => { if (!resizing) return; const z = typeof zoomLevel !== 'undefined' ? zoomLevel : 1; const dx = (e.clientX - startX) / z, dy = (e.clientY - startY) / z; if (!moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) { moved = true; snapshot(); el.style.maxWidth = 'none'; } if (!moved) return; const newW = Math.max(MIN_W, startW + dx); const newH = Math.max(MIN_H, startH + dy); p.width = newW; el.style.width = newW + 'px'; if (p.expanded) { p.height = newH; el.style.height = newH + 'px'; el.style.display = 'flex'; el.style.flexDirection = 'column'; const sl = el.querySelector('.pf-sublist'); if (sl) { sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; } } }); function end() { if (!resizing) return; resizing = false; if (moved) { scheduleSave(); autoArrangeProjects(true); } } grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end); grip.addEventListener('dblclick', (e) => { e.stopPropagation(); snapshot(); p.height = null; p.width = null; scheduleSave(); autoArrangeProjects(true); }); }
+  function makeResizable(el, p) { const MIN_W = 190, MIN_H = 140; const grip = el.querySelector('.pf-node-resize'); let resizing = false, moved = false, startX, startY, startW, startH; grip.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); resizing = true; moved = false; startX = e.clientX; startY = e.clientY; const z = typeof zoomLevel !== 'undefined' ? zoomLevel : 1; startW = el.offsetWidth; startH = el.offsetHeight; safePointerCapture(grip, e.pointerId); }); grip.addEventListener('pointermove', (e) => { if (!resizing) return; const z = typeof zoomLevel !== 'undefined' ? zoomLevel : 1; const dx = (e.clientX - startX) / z, dy = (e.clientY - startY) / z; if (!moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) { moved = true; snapshot(); el.style.maxWidth = 'none'; } if (!moved) return; const newW = Math.max(MIN_W, startW + dx); const newH = Math.max(MIN_H, startH + dy); p.width = newW; el.style.width = newW + 'px'; if (p.expanded) { p.height = newH; el.style.height = newH + 'px'; el.style.display = 'flex'; el.style.flexDirection = 'column'; const sl = el.querySelector('.pf-sublist'); if (sl) { sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; } } }); function end() { if (!resizing) return; resizing = false; if (moved) { scheduleSave(); autoArrangeProjects(true); } } grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end); grip.addEventListener('dblclick', (e) => { e.stopPropagation(); snapshot(); p.height = null; p.width = null; scheduleSave(); autoArrangeProjects(true); }); }
     // SUBSECTION: Auto-Arrange & Layout
   function autoArrangeProjects(skipSnapshot) {
     const GAP = 32, START_X = 24; let START_Y = 40;
@@ -6147,7 +6165,7 @@
     e.preventDefault();
     splitDragging = true;
     splitDivider.classList.add('pf-dragging');
-    splitDivider.setPointerCapture(e.pointerId);
+    safePointerCapture(splitDivider, e.pointerId);
   });
   splitDivider.addEventListener('pointermove', (e) => {
     if (!splitDragging) return;
@@ -6159,7 +6177,7 @@
     if (!splitDragging) return;
     splitDragging = false;
     splitDivider.classList.remove('pf-dragging');
-    splitDivider.releasePointerCapture(e.pointerId);
+    safeReleasePointerCapture(splitDivider, e.pointerId);
     safeSet('project-flow-split-width', splitList.style.width, false);
   });
   (async function loadSplitWidth() { try { const res = await safeGet('project-flow-split-width', false); if (res && res.value) splitList.style.width = res.value; } catch (e) {} })();
@@ -9784,7 +9802,7 @@
       startW = panel.offsetWidth - parseFloat(cs.borderLeftWidth || 0) - parseFloat(cs.borderRightWidth || 0);
       startH = panel.offsetHeight - parseFloat(cs.borderTopWidth || 0) - parseFloat(cs.borderBottomWidth || 0);
       handle.classList.add('pf-dragging');
-      handle.setPointerCapture(e.pointerId);
+      safePointerCapture(handle, e.pointerId);
     });
     handle.addEventListener('pointermove', (e) => {
       if (!dragging) return;
@@ -9794,7 +9812,7 @@
       if (!dragging) return;
       dragging = false;
       handle.classList.remove('pf-dragging');
-      try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+      safeReleasePointerCapture(handle, e.pointerId);
       safeSet(KEY, JSON.stringify({ w: panel.style.width, h: panel.style.height }), false);
     };
     handle.addEventListener('pointerup', finish);
