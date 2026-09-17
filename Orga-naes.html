@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-9/xaBeM7rcRnDlUrUhqaAZm+K2Z6dSUf9mGpp+oCyUc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-RpQvXGw0Mem1KnLESnIe5+8VPmRQ1gUdFJMpVXUwok8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -7657,6 +7657,7 @@
       const remindAt = new Date(rYear, rMonth - 1, rDay, h24, rMin).getTime();
       if (remindAt > Date.now()) {
         reminders.push({ id: uid(), sourceId: sourceId, title: title, sourceType: sourceType, remindAt: remindAt });
+        requestNotificationPermission();
         saveReminders(); showToast('⏰ Reminder set for ' + new Date(remindAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
       } else { showToast('Reminder must be in the future', true); }
       wrap.remove();
@@ -7664,20 +7665,36 @@
     root.appendChild(wrap);
     renderRemindDialog();
   }
+  // Notification permission is only ever asked for from a user gesture. A bare
+  // requestPermission() at load is ignored by modern Chrome/Edge (and rejects
+  // outright in older Safari and in cross-origin frames), so the app never
+  // actually got the permission it was asking for — every reminder quietly fell
+  // back to the in-app toast. The ask now rides the gesture that shows the user
+  // wants alerts: setting a reminder. Once the user has answered we never ask
+  // again (the browser would not prompt anyway), and both failure modes are
+  // swallowed — the synchronous throw, and the rejected promise older browsers
+  // return instead of invoking the callback.
+  function requestNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'default') return;
+    try {
+      const maybe = Notification.requestPermission(function () {});
+      if (maybe && typeof maybe.then === 'function') maybe.catch(function () { /* denied or blocked: the toast fallback still fires */ });
+    } catch (err) { /* blocked by policy or unsupported: the toast fallback still fires */ }
+  }
   function checkReminders() {
     const now = Date.now();
     const fired = [];
     reminders.forEach(r => {
       if (r.remindAt <= now) {
         fired.push(r);
-        if (Notification.permission === 'granted') { new Notification('⏰ Reminder: ' + r.title); }
+        if ('Notification' in window && Notification.permission === 'granted') { new Notification('⏰ Reminder: ' + r.title); }
         else { showToast('⏰ Reminder: ' + r.title); }
       }
     });
     if (fired.length) { reminders = reminders.filter(r => !fired.includes(r)); saveReminders(); }
   }
   loadReminders();
-  if ('Notification' in window && Notification.permission === 'default') { Notification.requestPermission(); }
   setInterval(checkReminders, 30000);
   setTimeout(checkReminders, 2000);
 
