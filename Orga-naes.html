@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DTTsIC8DzpcCBFyEefC8Tajcjx4ha+Psy4Dijb7+Pjc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-TbjHWpGX+rHNJ2/ilwj4DhFss31SdwhnOvTkXlM+Wj4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6821,6 +6821,18 @@
     // SUBSECTION: Today's Focus
   function autoPopulateToday() {
     const now = todayLocalStr();
+    let dateChanged = false;
+    if (todayDate !== now) {
+      // The day rolled over while the app was open. Boot handles the same case by
+      // starting fresh whenever the stored record is for another day, so do that
+      // here too — otherwise this render saves the new day's tasks under
+      // yesterday's date, a record the next boot discards, taking the user's
+      // manual adds with it.
+      todayDate = now;
+      todayTasks = [];
+      dateChanged = true;
+    }
+    const before = todayTasks.length;
     projects.forEach(p => {
       if (p.dueAt === now && p.status !== 'completed' && !todayTasks.find(t => t.sourceId === p.id)) {
         todayTasks.push({ id: uid(), title: p.title, sourceId: p.id, sourceType: 'project', done: false });
@@ -6836,7 +6848,7 @@
         })(p.subtasks);
       }
     });
-    saveToday();
+    if (dateChanged || todayTasks.length !== before) saveToday();   // nothing changed → nothing to persist
   }
   let todayLoaded = false;   // cross-tab merges wait for the load (05)
   async function loadToday() {
@@ -6961,6 +6973,17 @@
     set: function(tasks) { todayTasks = tasks; renderTodayList(); },
     persist: function() { saveToday(); }
   });
+  // A day can roll over while the app is open with no edit and no merge to
+  // trigger a render, so the check runs on a minute heartbeat and when the tab
+  // becomes visible again. A tick that finds the date unchanged does nothing —
+  // populate saves only when something changed, so a quiet tick writes nothing.
+  function todayDayRolloverCheck() {
+    if (!todayLoaded || todayLocalStr() === todayDate) return;
+    autoPopulateToday();
+    if (todayPanel && todayPanel.style.display !== 'none') renderTodayList();
+  }
+  setInterval(todayDayRolloverCheck, 60000);
+  document.addEventListener('visibilitychange', todayDayRolloverCheck);
     // SUBSECTION: Due List (Tasks by Due Date)
   function renderDueList() {
     const list = document.getElementById('pf-duelist-list');
@@ -9669,6 +9692,8 @@
     // Stores that joined cross-tab sync (05): read-only handles, so the sync can
     // be exercised and diagnosed without reaching into another closure.
     getTodayTasks: () => todayTasks,
+    getTodayDate: () => todayDate,
+    setTodayDate: (d) => { todayDate = d; },   // test/diagnostic: simulate an app open across midnight
     getWeeklyData: () => weeklyData,
     getBacklogData: () => backlogData,
     getReminders: () => reminders,
