@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-zduz4WIVATrsR7Z/ZUeHSy9DovaYN86MmXrwPmCSNks='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DTTsIC8DzpcCBFyEefC8Tajcjx4ha+Psy4Dijb7+Pjc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -7184,7 +7184,16 @@
     weeklyLoaded = true;
     _weeklyTabStore.recordBase();
   }
-  function saveWeekly() { const _json = JSON.stringify(weeklyData); _weeklyTabStore.recordBase(_json); safeSet(WEEKLY_KEY, _json, false); }
+  function saveWeekly() {
+    const _json = JSON.stringify(weeklyData);
+    _weeklyTabStore.recordBase(_json);
+    safeSet(WEEKLY_KEY, _json, false);
+    // Every local planner edit lands here (the "+ Add task" button, a drag, an
+    // auto-arrange), so this is the one place that catches them all — including a
+    // task typed straight onto a column whose day has already finished. The pass's
+    // own save is suppressed by the running guard in requestWeeklySync.
+    requestWeeklySync();
+  }
 
   // Backlog — a dedicated, unstructured holding area for unfinished/past-due
   // Weekly Planner tasks, manually arranged from here into day columns.
@@ -7478,6 +7487,7 @@
     });
 
     let changed = false;
+    let carriedCount = 0;   // accumulated by carryFinishedEntries()
 
     // 1. Relocate entries whose linked task's due date has changed since
     //    the entry was added — e.g. editing the due date directly on the
@@ -7551,25 +7561,31 @@
     //    Auto-arrange) rather than having today silently pile up. Dedupe by
     //    sourceId against what's already in the backlog so a repeated sync
     //    pass doesn't create duplicate chips for the same source task.
-    const todayStr = todayLocalStr();
-    let carriedCount = 0;
-    let backlogChanged = false;
-    const backlogSourceIds = new Set(backlogData.filter(t => t.sourceId).map(t => t.sourceId));
-    Object.keys(weeklyData).forEach(ds => {
-      if (ds >= todayStr) return;
-      const stale = weeklyData[ds];
-      if (!stale || !stale.length) { delete weeklyData[ds]; return; }
-      stale.forEach(t => {
-        if (t.sourceId && backlogSourceIds.has(t.sourceId)) return; // already backlogged
-        backlogData.push(t);
-        if (t.sourceId) backlogSourceIds.add(t.sourceId);
-        carriedCount++;
+    function carryFinishedEntries() {
+      const todayStr = todayLocalStr();
+      let carried = 0;
+      let backlogChanged = false;
+      const backlogSourceIds = new Set(backlogData.filter(t => t.sourceId).map(t => t.sourceId));
+      Object.keys(weeklyData).forEach(ds => {
+        if (ds >= todayStr) return;
+        const stale = weeklyData[ds];
+        if (!stale || !stale.length) { delete weeklyData[ds]; return; }
+        stale.forEach(t => {
+          if (t.sourceId && backlogSourceIds.has(t.sourceId)) return; // already backlogged
+          backlogData.push(t);
+          if (t.sourceId) backlogSourceIds.add(t.sourceId);
+          carried++;
+        });
+        delete weeklyData[ds];
+        changed = true;
+        backlogChanged = true;
       });
-      delete weeklyData[ds];
-      changed = true;
-      backlogChanged = true;
-    });
-    if (backlogChanged) saveBacklog();
+      carriedCount += carried;
+  if (backlogChanged) saveBacklog();
+    }
+
+    carryFinishedEntries();
+
 
     // 4. Add missing due-date entries. A source already sitting in the
     //    Backlog (moved there by step 3 above, or manually dragged there)
@@ -7590,12 +7606,53 @@
       addToWeekDay(dueAt, title, sourceId, sourceType, projectTitle); existingSourceIds.add(sourceId); changed = true;
     });
 
+    // Step 4 can add an entry for a day that has ALREADY finished (a task whose due
+    // date is in the past), and finished days are the backlog's business — so the
+    // carry runs once more now that step 4 has had its turn. One pass settles it
+    // instead of leaving the entry on a finished day until the next pass.
+    carryFinishedEntries();
+
     if (changed) {
       saveWeekly();
       if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel();
       if (carriedCount) showToast('📥 Moved ' + carriedCount + ' overdue planner task' + (carriedCount > 1 ? 's' : '') + ' to Backlog');
     }
   }
+  // The finished-day carry used to run only once, at boot, so an entry sitting on a
+  // finished day stayed in the planner until the next load — and once another tab
+  // could edit the planner, an entry merged in from a tab that is still open waited
+  // just as long. The pass is cheap and convergent (it only moves entries whose day
+  // has passed, and it dedupes against the backlog by sourceId, so running it twice
+  // changes nothing the second time), so it is requested at the moments the answer
+  // can have changed: a planner edit here, a planner change merged in from another
+  // tab, coming back to a tab that was hidden, and the local date rolling over while
+  // the app stays open.
+  let _weeklySyncTimer = null;
+  let _weeklySyncRunning = false;
+  let _weeklySyncLastDay = '';
+  function requestWeeklySync() {
+    // A pass adds entries itself (step 4), so it must not re-arm this from inside
+    // itself — the carry at the end of that same pass already covers what it added.
+    if (_weeklySyncRunning || _weeklySyncTimer !== null) return;
+    _weeklySyncTimer = setTimeout(function() { _weeklySyncTimer = null; runWeeklySync(); }, 250);
+  }
+  function runWeeklySync() {
+    if (_weeklySyncRunning || !weeklyLoaded) return;   // nothing loaded to reconcile
+    _weeklySyncRunning = true;
+    try { syncWeeklyWithTasks(); _weeklySyncLastDay = todayLocalStr(); }
+    catch (e) { logError('Planner sync pass', e); }
+    finally { _weeklySyncRunning = false; }
+  }
+  // The heartbeat: a day can finish with no edit and no merge involved at all.
+  function weeklyDayRolloverCheck() {
+    const now = todayLocalStr();
+    if (_weeklySyncLastDay === '') { _weeklySyncLastDay = now; return; }
+    if (now !== _weeklySyncLastDay) runWeeklySync();
+  }
+  setInterval(weeklyDayRolloverCheck, 60000);
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) runWeeklySync();   // back in the tab: reconcile now
+  });
   function addToWeekDay(dayStr, title, sourceId, sourceType, projectTitle) {
     if (!weeklyData[dayStr]) weeklyData[dayStr] = [];
     if (sourceId && weeklyData[dayStr].some(t => t.sourceId === sourceId)) return;
@@ -7977,7 +8034,9 @@
     mode: 'nested',
     get: function() { return weeklyData; },
     ready: function() { return weeklyLoaded; },
-    set: function(byDay) { weeklyData = byDay; if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel(); },
+    // A merge can deliver an entry for a day that has ALREADY passed, so reconcile
+    // right away rather than waiting for the next load.
+    set: function(byDay) { weeklyData = byDay; if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel(); requestWeeklySync(); },
     persist: function() { saveWeekly(); }
   });
   const _backlogTabStore = registerTabSync({
@@ -8943,8 +9002,10 @@
     // Weekly Planner data is now loaded (see loadWeekly() above) even
     // though the panel itself hasn't been opened — run one sync pass now
     // so overdue rollover/pruning/auto-add are already current by the
-    // time the user opens it, instead of waiting for the first edit.
-    syncWeeklyWithTasks();
+    // time the user opens it, instead of waiting for the first edit. It goes
+    // through the same guarded entry point the other triggers use, so the day
+    // bookkeeping starts out current and the first heartbeat is not a second pass.
+    runWeeklySync();
     // Start particles in card mode
     if (mode === 'card') startParticles();
   });
