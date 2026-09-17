@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-lxYXEBCLOE1bbnOy1NRAkNyKIOKd9u0mdZGMzgDwu/E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-zduz4WIVATrsR7Z/ZUeHSy9DovaYN86MmXrwPmCSNks='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4138,17 +4138,27 @@
     const store = {
       key: spec.key,
       label: spec.label,
-      mode: spec.mode === 'map' ? 'map' : 'items',
+      mode: spec.mode === 'map' ? 'map' : (spec.mode === 'nested' ? 'nested' : 'items'),
       get: spec.get,
       ready: spec.ready || function() { return true; },
       set: spec.set,                      // assign in memory + re-render (no write)
       persist: spec.persist,              // the owner's own save path
+      // A store whose storage value is not the mergeable payload itself unwraps
+      // and re-wraps it here: Today keeps its tasks inside { date, tasks }, and
+      // its unpick returns null for a day that is not ours — meaning "not
+      // comparable in this tab, ignore the write" rather than "merge it".
+      pick: spec.pick || function(payload) { return payload; },
+      unpick: spec.unpick || function(value) { return value; },
+      merge: spec.merge || null,          // a store with its own merge rule
       onDropped: spec.onDropped || null,  // ids THEY deleted, for tombstone stores
       onWipe: spec.onWipe || null,        // drop this store's own history too
       base: null,
+      // Everything that compares or writes a value goes through this, so pick()
+      // cannot be remembered in one path and forgotten in another.
+      serialize: function(payload) { return _serStore(store, store.pick(payload)); },
       recordBase: function(json) {
         if (typeof json === 'string') { store.base = json; return; }
-        try { store.base = _serStore(store, store.get()); } catch (e) { store.base = null; }
+        try { store.base = store.serialize(store.get()); } catch (e) { store.base = null; }
       }
     };
     _tabSyncStores.push(store);
@@ -4169,7 +4179,17 @@
     Object.keys(from).sort().forEach(function(k) { out[k] = from[k]; });
     return JSON.stringify(out);
   }
-  function _serStore(store, value) { return store.mode === 'map' ? _serMap(value) : _ser(value); }
+  function _serNested(byKey) {
+    const from = (byKey && typeof byKey === 'object') ? byKey : {};
+    const out = {};
+    Object.keys(from).sort().forEach(function(k) { if (Array.isArray(from[k]) && from[k].length) out[k] = from[k]; });
+    return JSON.stringify(out);
+  }
+  function _serStore(store, value) {
+    if (store.mode === 'map') return _serMap(value);
+    if (store.mode === 'nested') return _serNested(value);
+    return _ser(value);
+  }
 
   function _itemsById(list) {
     const m = new Map();
@@ -4226,6 +4246,25 @@
     return { merged: merged, added: added, updated: updated, dropped: 0, conflicts: 0, droppedIds: [] };
   }
 
+  // Nested: an object of id-keyed arrays (the weekly planner keeps one array per
+  // day). Each day merges with the same rules as any other array, so a task moved
+  // between days on one side and edited on the other still lands somewhere sane,
+  // and a day both sides emptied disappears instead of lingering as an empty one.
+  function mergeNestedFromTab(baseByKey, oursByKey, theirsByKey) {
+    const base = (baseByKey && typeof baseByKey === 'object') ? baseByKey : {};
+    const ours = (oursByKey && typeof oursByKey === 'object') ? oursByKey : {};
+    const theirs = (theirsByKey && typeof theirsByKey === 'object') ? theirsByKey : {};
+    const days = new Set(Object.keys(ours).concat(Object.keys(theirs)));
+    const merged = {};
+    let added = 0, updated = 0, dropped = 0, conflicts = 0;
+    days.forEach(function(day) {
+      const r = mergeItemsFromTab(base[day] || null, ours[day] || [], theirs[day] || []);
+      if (r.merged.length) merged[day] = r.merged;
+      added += r.added; updated += r.updated; dropped += r.dropped; conflicts += r.conflicts;
+    });
+    return { merged: merged, added: added, updated: updated, dropped: dropped, conflicts: conflicts, droppedIds: [] };
+  }
+
   function _describeTabSync(r) {
     const parts = [];
     if (r.added) parts.push(r.added + ' added');
@@ -4245,34 +4284,42 @@
     // The key was REMOVED: sign-out (or clear-data) in the other tab. Honour it
     // here, and never write this store back afterwards.
     if (raw === null || raw === '') {
-      const had = store.mode === 'map' ? Object.keys(store.get() || {}).length > 0 : (store.get() || []).length > 0;
+      const had = store.mode === 'items' ? (store.get() || []).length > 0 : Object.keys(store.get() || {}).length > 0;
       store.base = null;
-      store.set(store.mode === 'map' ? {} : []);
+      store.set(store.mode === 'items' ? [] : {});
       if (store.onWipe) store.onWipe();   // undo must not be a way back in
       if (had) showToast('⚠ Signed out in another tab — ' + store.label + ' cleared here too');
       return;
     }
-    if (raw === _serStore(store, store.get())) { store.recordBase(raw); return; }   // already identical
-    let incoming = null, base = null;
-    try { incoming = JSON.parse(raw); }
+    if (raw === store.serialize(store.get())) { store.recordBase(raw); return; }   // already identical
+    let value = null, baseValue = null;
+    try { value = JSON.parse(raw); }
     catch (err) { logError('Cross-tab sync (' + store.label + ': unreadable payload)', err); return; }
-    const shapeOk = store.mode === 'map'
-      ? (!!incoming && typeof incoming === 'object' && !Array.isArray(incoming))
-      : Array.isArray(incoming);
+    const incoming = store.unpick(value);
+    // null is the store saying "this write is not comparable in this tab" (a
+    // Today list for another day, say) — ignore it rather than merge.
+    if (incoming === null) return;
+    // Shape is checked on what the store HANDS BACK, not on the stored value: a
+    // wrapped store keeps its array inside an object.
+    const wantsArray = store.mode === 'items';
+    const shapeOk = wantsArray ? Array.isArray(incoming) : (!!incoming && typeof incoming === 'object' && !Array.isArray(incoming));
     if (!shapeOk) {
       logError('Cross-tab sync (' + store.label + ': unexpected payload shape)',
-        new Error(store.mode === 'map' ? 'expected an object' : 'expected an array'));
+        new Error(wantsArray ? 'expected an array' : 'expected an object'));
       return;
     }
-    try { base = store.base ? JSON.parse(store.base) : null; } catch (err) { base = null; }
-    const result = store.mode === 'map'
-      ? mergeMapFromTab(base, store.get(), incoming)
+    try { baseValue = store.base ? JSON.parse(store.base) : null; } catch (err) { baseValue = null; }
+    const base = baseValue === null ? null : store.unpick(baseValue);
+    const result = store.merge
+      ? store.merge(base, store.get(), incoming)
+      : store.mode === 'map' ? mergeMapFromTab(base, store.get(), incoming)
+      : store.mode === 'nested' ? mergeNestedFromTab(base, store.get(), incoming)
       : mergeItemsFromTab(base, store.get(), incoming);
-    const mergedJson = _serStore(store, result.merged);
-    const changed = mergedJson !== _serStore(store, store.get());
+    const mergedJson = store.serialize(result.merged);
+    const changed = mergedJson !== store.serialize(store.get());
     const what = _describeTabSync(result);
     const tellDropped = function() { if (result.droppedIds.length && store.onDropped) store.onDropped(result.droppedIds); };
-    if (mergedJson === _serStore(store, incoming)) {
+    if (mergedJson === store.serialize(incoming)) {
       // They already hold the merged result: adopt it and write nothing.
       store.recordBase(mergedJson);
       if (changed) store.set(result.merged);
@@ -6531,11 +6578,18 @@
   const activityLog = [];
   const ACTIVITY_KEY = 'project-flow-activity';
     // SUBSECTION: Activity Log
+  const ACTIVITY_MAX = 50;   // the log's cap, shared with the cross-tab merge
+  let activityLoaded = false;
+  function saveActivity() {
+    const _json = JSON.stringify(activityLog);
+    _activityTabStore.recordBase(_json);
+    safeSet(ACTIVITY_KEY, _json, false);
+  }
   function logActivity(msg) {
     const entry = { time: new Date().toISOString(), msg: msg };
     activityLog.unshift(entry);
-    if (activityLog.length > 50) activityLog.pop();
-    safeSet(ACTIVITY_KEY, JSON.stringify(activityLog), false);
+    if (activityLog.length > ACTIVITY_MAX) activityLog.pop();
+    saveActivity();
   }
   function renderActivityList() {
     const listEl = document.getElementById('pf-activity-list');
@@ -6608,10 +6662,43 @@
     closeAllModals(); renderSnapshotsList(); openModal(snapshotsPanel, 'flex');
   });
   document.getElementById('pf-trash-empty-btn').addEventListener('click', emptyTrash);
-  (async function loadActivity() { try { const res = await safeGet(ACTIVITY_KEY, false); if (res && res.value) { const parsed = JSON.parse(res.value); activityLog.push(...parsed); } } catch (e) { logError('Load activity log', e); } })();
+  (async function loadActivity() { try { const res = await safeGet(ACTIVITY_KEY, false); if (res && res.value) { const parsed = JSON.parse(res.value); activityLog.push(...parsed); } } catch (e) { logError('Load activity log', e); } activityLoaded = true; _activityTabStore.recordBase(); })();
   loadArchive();
   loadTrash();
 
+
+  // Cross-tab sync (05 owns the engine). The log is append-only and its entries
+  // carry no id, so the per-id rules do not apply: this store supplies its own
+  // merge — the union of both copies, newest first, de-duplicated by time+text,
+  // kept to the same cap. Appending can only ever ADD entries here, which is the
+  // one thing a log must not get wrong. activityLog is a const captured by
+  // reference, so the set has to replace its contents in place.
+  const _activityTabStore = registerTabSync({
+    key: ACTIVITY_KEY,
+    label: 'activity log',
+    get: function() { return activityLog; },
+    ready: function() { return activityLoaded; },
+    merge: function(base, ours, theirs) {
+      const seen = new Set();
+      const union = [];
+      (Array.isArray(ours) ? ours : []).concat(Array.isArray(theirs) ? theirs : []).forEach(function(entry) {
+        if (!entry || typeof entry !== 'object') return;
+        const k = String(entry.time) + '|' + String(entry.msg);
+        if (seen.has(k)) return;
+        seen.add(k);
+        union.push(entry);
+      });
+      union.sort(function(a, b) { return String(b.time).localeCompare(String(a.time)); });
+      const merged = union.slice(0, ACTIVITY_MAX);
+      return { merged: merged, added: Math.max(0, merged.length - (Array.isArray(ours) ? ours.length : 0)), updated: 0, dropped: 0, conflicts: 0, droppedIds: [] };
+    },
+    set: function(list) {
+      activityLog.length = 0;
+      list.forEach(function(entry) { activityLog.push(entry); });
+      renderActivityList();
+    },
+    persist: function() { saveActivity(); }
+  });
   // SUBSECTION: Error Log
   // Centralized silent-failure surfacing. Route meaningful catch blocks (sync/push/pull,
   // import/export, render failures, IndexedDB) through logError() so they show up here
@@ -6751,6 +6838,7 @@
     });
     saveToday();
   }
+  let todayLoaded = false;   // cross-tab merges wait for the load (05)
   async function loadToday() {
     try {
       const res = await safeGet(TODAY_KEY, false);
@@ -6762,6 +6850,8 @@
       } else { todayDate = todayLocalStr(); }
     } catch (e) { todayTasks = []; todayDate = todayLocalStr(); logError('Load today', e); }
     autoPopulateToday();
+    todayLoaded = true;
+    _todayTabStore.recordBase();   // both tabs agree on what we just read
   }
   function saveToday() {
     // Signed-out gate: clearLocalUserData() wipes this key, but every
@@ -6769,7 +6859,9 @@
     // re-creating the key forever on a signed-out device. While the gate
     // is set (sign-out until next sign-in) the save is a no-op.
     if (window._pf && window._pf._signedOutWipe) return;
-    safeSet(TODAY_KEY, JSON.stringify({ date: todayDate, tasks: todayTasks }), false);
+    const _json = JSON.stringify({ date: todayDate, tasks: todayTasks });
+    _todayTabStore.recordBase(_json);
+    safeSet(TODAY_KEY, _json, false);
   }
   function addToToday(title, sourceId, sourceType) {
     if (todayTasks.find(t => t.sourceId === sourceId)) { showToast('Already in Today'); return; }
@@ -6852,6 +6944,23 @@
   let _todayReturnOnEsc = false;
   let _calendarReturnOnEsc = false;
   let _weeklyReturnOnEsc = false;
+
+  // Cross-tab sync (05 owns the engine): the tasks are an id-keyed array, but the
+  // stored value wraps them with the day they belong to. A task list only means
+  // anything for its own day, so a write carrying ANOTHER day is ignored rather
+  // than merged — the same call the load above makes.
+  const _todayTabStore = registerTabSync({
+    key: TODAY_KEY,
+    label: 'Today list',
+    get: function() { return todayTasks; },
+    ready: function() { return todayLoaded; },
+    unpick: function(value) {
+      return (value && typeof value === 'object' && value.date === todayDate && Array.isArray(value.tasks)) ? value.tasks : null;
+    },
+    pick: function(tasks) { return { date: todayDate, tasks: tasks }; },
+    set: function(tasks) { todayTasks = tasks; renderTodayList(); },
+    persist: function() { saveToday(); }
+  });
     // SUBSECTION: Due List (Tasks by Due Date)
   function renderDueList() {
     const list = document.getElementById('pf-duelist-list');
@@ -7069,10 +7178,13 @@
   function todayLocalStr() { return localDateStr(new Date()); }
   function daysAgoLocalStr(n) { const d = new Date(); d.setDate(d.getDate() - n); return localDateStr(d); }
   function weekDateStr(d) { return localDateStr(d); }
+  let weeklyLoaded = false;   // cross-tab merges wait for the load (05)
   async function loadWeekly() {
     try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = JSON.parse(res.value); } catch (e) { weeklyData = {}; logError('Load weekly planner', e); }
+    weeklyLoaded = true;
+    _weeklyTabStore.recordBase();
   }
-  function saveWeekly() { safeSet(WEEKLY_KEY, JSON.stringify(weeklyData), false); }
+  function saveWeekly() { const _json = JSON.stringify(weeklyData); _weeklyTabStore.recordBase(_json); safeSet(WEEKLY_KEY, _json, false); }
 
   // Backlog — a dedicated, unstructured holding area for unfinished/past-due
   // Weekly Planner tasks, manually arranged from here into day columns.
@@ -7086,10 +7198,13 @@
   // avoids that entirely and keeps existing weekly-planner logic untouched.
   const BACKLOG_KEY = 'project-flow-backlog';
   let backlogData = [];
+  let backlogLoaded = false;
   async function loadBacklog() {
     try { const res = await safeGet(BACKLOG_KEY, false); if (res && res.value) backlogData = JSON.parse(res.value); } catch (e) { backlogData = []; logError('Load backlog', e); }
+    backlogLoaded = true;
+    _backlogTabStore.recordBase();
   }
-  function saveBacklog() { safeSet(BACKLOG_KEY, JSON.stringify(backlogData), false); }
+  function saveBacklog() { const _json = JSON.stringify(backlogData); _backlogTabStore.recordBase(_json); safeSet(BACKLOG_KEY, _json, false); }
 
   // Dismissal tracking — clicking '×' on a linked planner entry (one with a
   // sourceId) should behave like "I don't want to see this occurrence again"
@@ -7848,9 +7963,33 @@
 
   const REMINDERS_KEY = 'project-flow-reminders';
   let reminders = [];
-  async function loadReminders() { try { const res = await safeGet(REMINDERS_KEY, false); if (res && res.value) reminders = JSON.parse(res.value); } catch (e) { reminders = []; logError('Load reminders', e); } }
+  let remindersLoaded = false;
+  async function loadReminders() { try { const res = await safeGet(REMINDERS_KEY, false); if (res && res.value) reminders = JSON.parse(res.value); } catch (e) { reminders = []; logError('Load reminders', e); } remindersLoaded = true; _remindersTabStore.recordBase(); }
+
+  // Cross-tab sync (05 owns the engine).
+  // The weekly planner is one array of tasks PER DAY: mode 'nested' merges each
+  // day with the same item rules, so a task moved between days on one side and
+  // edited on the other still lands somewhere sane, and a day both sides emptied
+  // stops existing rather than lingering as an empty array.
+  const _weeklyTabStore = registerTabSync({
+    key: WEEKLY_KEY,
+    label: 'weekly planner',
+    mode: 'nested',
+    get: function() { return weeklyData; },
+    ready: function() { return weeklyLoaded; },
+    set: function(byDay) { weeklyData = byDay; if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel(); },
+    persist: function() { saveWeekly(); }
+  });
+  const _backlogTabStore = registerTabSync({
+    key: BACKLOG_KEY,
+    label: 'backlog',
+    get: function() { return backlogData; },
+    ready: function() { return backlogLoaded; },
+    set: function(list) { backlogData = list; if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel(); },
+    persist: function() { saveBacklog(); }
+  });
     // SUBSECTION: Reminders
-  function saveReminders() { safeSet(REMINDERS_KEY, JSON.stringify(reminders), false); }
+  function saveReminders() { const _json = JSON.stringify(reminders); _remindersTabStore.recordBase(_json); safeSet(REMINDERS_KEY, _json, false); }
   function promptReminder(sourceId, title, sourceType) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:var(--z-toast);padding:16px;border-radius:6px;border:1px solid var(--card-border);background:var(--card);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,0.5);display:flex;flex-direction:column;gap:10px;min-width:260px;';
@@ -7962,6 +8101,18 @@
   setTimeout(checkReminders, 2000);
 
   let commentTarget = null;
+
+  // Cross-tab sync (05 owns the engine): reminders are an id-keyed array. The
+  // owner's set only has to assign — the firing check runs on its own timer and
+  // reads the array it finds.
+  const _remindersTabStore = registerTabSync({
+    key: REMINDERS_KEY,
+    label: 'reminders',
+    get: function() { return reminders; },
+    ready: function() { return remindersLoaded; },
+    set: function(list) { reminders = list; },
+    persist: function() { saveReminders(); }
+  });
     // SUBSECTION: Comments
   function openCommentPanel(p, s) {
     commentTarget = { project: p, sub: s };
@@ -9454,6 +9605,13 @@
     snapshot: () => snapshot(),
     openIDB_KV: () => openIDB_KV(),
     getCategoryEmojis: () => categoryEmojis,
+    // Stores that joined cross-tab sync (05): read-only handles, so the sync can
+    // be exercised and diagnosed without reaching into another closure.
+    getTodayTasks: () => todayTasks,
+    getWeeklyData: () => weeklyData,
+    getBacklogData: () => backlogData,
+    getReminders: () => reminders,
+    getActivityLog: () => activityLog,
     setCategoryEmojis: (e) => { categoryEmojis = e; saveCatEmojis(); },
     stopAutoBackup: () => { if (_autoBackupTimer) { clearInterval(_autoBackupTimer); _autoBackupTimer = null; } },
     // Resets the account-scoped panels that clearLocalUserData() can't
