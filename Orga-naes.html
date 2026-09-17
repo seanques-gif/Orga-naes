@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Fe4TSBCVIzBi87D76zH6RTUiyCeRfZgUHFYak/w+vvU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-AgGaBbQj3MGoSP69dDZG80beWBH1egL3x3oN5Ryz4XU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -7829,14 +7829,41 @@
     const rows = collectReportRows();
     const header = 'Project,Task,Status,Due Date,Completed,Category,Comments\n';
     const csv = header + rows.map(r => [r.project, r.task, r.status, r.due, r.completed, r.category || '', r.comments].map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'project-flow-report.csv'; a.click(); URL.revokeObjectURL(url);
+    const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'project-flow-report.csv'; a.click();
+    // Revoked on a later tick, not in the same one as the click: releasing a
+    // blob URL before the browser has taken the download can cancel it.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     showToast('CSV exported.');
   });
   document.getElementById('pf-export-pdf').addEventListener('click', () => {
     _exitMultiSelectMode();
     const rows = collectReportRows();
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Organeas Report</title><style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}h1{font-size:18px;margin-bottom:10px;}table{width:100%;border-collapse:collapse;margin-top:10px;}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;}th{background:#f5f5f5;font-weight:600;}tr:nth-child(even){background:#fafafa;}.project-row{background:#eef;font-weight:600;}</style></head><body><h1>Project Flow Report</h1><p>Generated: ' + new Date().toLocaleString() + '</p><table><thead><tr><th>Project</th><th>Task</th><th>Status</th><th>Due Date</th><th>Completed</th><th>Comments</th></tr></thead><tbody>' + rows.map(r => '<tr class="' + (r.task === '' ? 'project-row' : '') + '"><td>' + escapeHtml(r.project) + '</td><td>' + '&nbsp;'.repeat(r.depth * 4) + escapeHtml(r.task) + '</td><td>' + escapeHtml(r.status) + '</td><td>' + escapeHtml(r.due) + '</td><td>' + escapeHtml(r.completed) + '</td><td>' + r.comments + '</td></tr>').join('') + '</tbody></table></body></html>';
-    const blob = new Blob([html], { type: 'text/html' }); const url = URL.createObjectURL(blob); const w = window.open(url, '_blank'); setTimeout(() => { if (w) w.print(); URL.revokeObjectURL(url); }, 500);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank');
+    if (!w) {
+      // Pop-up blocked: the report never appeared, so say why instead of
+      // failing silently, and release the URL we no longer hand to anyone.
+      URL.revokeObjectURL(url);
+      showToast('Report blocked — allow pop-ups for this site to export the PDF', true);
+      return;
+    }
+    // Print once the report has actually loaded, not on a fixed timer (a slow
+    // load printed an empty page), and release the blob URL after the print
+    // dialog has the document rather than while it is still loading it.
+    let printed = false;
+    const printOnce = () => {
+      if (printed) return;
+      printed = true;
+      try { w.focus(); w.print(); } catch (err) { /* the window was closed before it could print */ }
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    try {
+      w.addEventListener('load', printOnce);
+      if (w.document && w.document.readyState === 'complete') printOnce();
+    } catch (err) { /* not inspectable (should not happen for our own blob) */ }
+    setTimeout(printOnce, 1500);   // fallback if the load event never arrives
   });
   let zoomLevel = 1;
   const zoomLevelEl = document.getElementById('pf-zoom-level');
