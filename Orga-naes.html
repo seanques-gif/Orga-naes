@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Qj+LG5LPSeggbbBfXIa9OxSqpAx/RoOstRXJyDxE84Q='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-9/xaBeM7rcRnDlUrUhqaAZm+K2Z6dSUf9mGpp+oCyUc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9452,14 +9452,14 @@
       const sel = n.id === activeNoteId ? ' pf-notes-item-active' : '';
       const checked = notesSelection.indexOf(n.id) !== -1;
       const pin = n.pinned ? ' <svg class="pf-ic pf-notes-pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 3 2.7 5.9 6.3.7-4.7 4.3 1.3 6.1L12 17l-5.6 3 1.3-6.1L3 9.6l6.3-.7z"/></svg>' : '';
-      const preview = (n.body || '').replace(/\s+/g, ' ').trim().slice(0, 60) || 'Empty note';
+      const preview = notePreviewHtml(n.body, 60);
       return '<div class="pf-notes-item' + sel + (checked ? ' pf-notes-item-checked' : '') + '" data-note-id="' + n.id + '">' +
         '<span class="pf-notes-check" data-note-check="' + n.id + '" role="checkbox" aria-checked="' + checked + '" tabindex="0" title="Select" aria-label="Select note: ' + escapeHtml(n.title || 'Untitled') + '"></span>' +
         '<div class="pf-notes-item-main">' +
         '<div class="pf-notes-item-title">' + escapeHtml(n.title || 'Untitled') + pin +
           '<button class="pf-notes-item-del" data-note-del="' + n.id + '" title="Delete note" aria-label="Delete note: ' + escapeHtml(n.title || 'Untitled') + '">' + pfIcon('trash', 'pf-notes-del-ic') + '</button>' +
         '</div>' +
-        '<div class="pf-notes-item-preview">' + escapeHtml(preview) + '</div>' +
+        '<div class="pf-notes-item-preview">' + (preview || 'Empty note') + '</div>' +
         noteLinkChipsHtml(n) +
         '<div class="pf-notes-item-date">' + fmtNoteDate(n.updatedAt) + '</div>' +
         '</div>' +
@@ -10017,6 +10017,40 @@
       .replace(/__([^_\n]+)__/g, '<u>$1</u>')
       .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
       .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<i>$2</i>');
+  }
+
+  // Notes-list teaser: one flattened line of the body with its inline
+  // formatting intact. The body is markdown, so printing it raw showed the
+  // user their own ** __ markers next to an editor that renders them — the
+  // list is the one place the markdown is supposed to be invisible, and it has
+  // to go through the same mdToHtml the editor and the note view use, or the
+  // three surfaces would disagree about what is formatted.
+  // Truncation counts VISIBLE characters (markers and tags are free) and closes
+  // any tag the cut opened: an unclosed <b> would swallow the rest of the list
+  // item's markup, and a half-open marker pair would show as literal **.
+  function notePreviewHtml(body, limit) {
+    const flat = String(body == null ? '' : body).replace(/\s+/g, ' ').trim();
+    if (!flat) return '';
+    // A leading task checkbox is markdown too ([ ] / [x] — the note view
+    // renders it as a box), so the teaser shows a box rather than brackets.
+    const box = flat.match(/^\[( |x)\]\s+([\s\S]*)$/i);
+    const prefix = box ? (box[1].toLowerCase() === 'x' ? '\u2611 ' : '\u2610 ') : '';
+    const html = mdToHtml(escapeHtml(box ? box[2] : flat));
+    let out = '', visible = 0, open = [], i = 0, budgetHit = false;
+    while (i < html.length) {
+      if (html[i] === '<') {
+        const end = html.indexOf('>', i);
+        const tag = html.slice(i, end + 1);
+        if (tag[1] === '/') { if (open.length) open.pop(); } else { open.push(tag.slice(1, -1)); }
+        out += tag; i = end + 1; continue;
+      }
+      if (visible >= limit) { budgetHit = true; break; }
+      const ent = html[i] === '&' ? html.slice(i).match(/^&[a-z#0-9]+;/i) : null;
+      if (ent) { out += ent[0]; i += ent[0].length; visible++; continue; }
+      out += html[i]; i++; visible++;
+    }
+    while (open.length) out += '</' + open.pop() + '>';
+    return prefix + out.replace(/\s+$/, '') + (budgetHit ? '\u2026' : '');
   }
   function richLoad(body) {
     noteRichEl.innerHTML = (body || '').split('\n').map(function (line) {
