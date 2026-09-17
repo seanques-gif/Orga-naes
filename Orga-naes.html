@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-KoMB2wfwv4VgvC1SduPzuCXsGHL4LDmGxyRO2qUEmV4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Fe4TSBCVIzBi87D76zH6RTUiyCeRfZgUHFYak/w+vvU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2971,6 +2971,29 @@
     try { el.releasePointerCapture(pointerId); } catch (err) { /* nothing captured (or already released) */ }
   }
 
+  // HTML5 drag payloads are read defensively, never assumed. `e.dataTransfer`
+  // is absent on a synthetic drop, getData() can throw for a type the source
+  // never set, and a payload can arrive from anywhere — another tab, another
+  // window, another application (a project id dragged from the canvas lands in
+  // the same text/plain slot as a list item), or a drag cancelled mid-flight.
+  // A throw inside a drop handler aborts the gesture after it has already
+  // cleared its own drag styling, and anything read from here must never be
+  // used to index an array without a bounds check (see the Today list).
+  // readDragText never throws; readDragPayload returns null unless the payload
+  // is one of ours: an object with a non-empty string id.
+  function readDragText(e, type) {
+    try { return (e.dataTransfer && e.dataTransfer.getData(type)) || ''; } catch (err) { return ''; }
+  }
+  function readDragPayload(e, type) {
+    const raw = readDragText(e, type);
+    if (!raw) return null;
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (err) { return null; }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    if (typeof parsed.id !== 'string' || !parsed.id) return null;
+    return parsed;
+  }
+
   const canvas = document.getElementById('pf-canvas');
   const canvasWrap = document.getElementById('pf-canvas-wrap');
   const root = document.getElementById('pf-root');
@@ -5676,7 +5699,7 @@
       catLabel.addEventListener('dragleave', () => { catLabel.style.background = ''; catLabel.style.borderTop = ''; });
       catLabel.addEventListener('drop', (e) => {
         e.preventDefault(); catLabel.style.background = ''; catLabel.style.borderTop = '';
-        const draggedCat = e.dataTransfer.getData('text/x-category');
+        const draggedCat = readDragText(e, 'text/x-category');
         if (draggedCat && cat !== '__uncategorized__') {
           const fromIdx = categories.indexOf(draggedCat);
           const toIdx = categories.indexOf(cat);
@@ -5687,7 +5710,7 @@
           }
           return;
         }
-        const srcId = e.dataTransfer.getData('text/plain'); if (!srcId) return; const p = projects.find(pr => pr.id === srcId); if (!p) return; const newCat = cat === '__uncategorized__' ? null : cat; if (p.category === newCat) return; snapshot(); p.category = newCat; scheduleSave(); renderSplitList(); renderSplitDetail();
+        const srcId = readDragText(e, 'text/plain'); if (!srcId) return; const p = projects.find(pr => pr.id === srcId); if (!p) return; const newCat = cat === '__uncategorized__' ? null : cat; if (p.category === newCat) return; snapshot(); p.category = newCat; scheduleSave(); renderSplitList(); renderSplitDetail();
       });
       const _isCollapsed = !!splitCollapsedCats[cat];
       const txt = catLabel.textContent + (_isCollapsed ? ' ▸' : ' ▾'); catLabel.textContent = '';
@@ -5744,7 +5767,7 @@
         item.addEventListener('drop', (e) => {
           e.preventDefault();
           splitList.querySelectorAll('.pf-split-drop-indicator').forEach(el => el.remove());
-          const raw = e.dataTransfer.getData('text/plain'); if (!raw) return;
+          const raw = readDragText(e, 'text/plain'); if (!raw) return;
           const ids = raw.split(',').filter(id => id && id !== p.id);
           if (!ids.length) return;
           snapshot();
@@ -6579,7 +6602,22 @@
       item.addEventListener('dragend', () => { item.style.opacity = ''; });
       item.addEventListener('dragover', (e) => { e.preventDefault(); item.style.borderTop = '2px solid var(--accent)'; });
       item.addEventListener('dragleave', () => { item.style.borderTop = ''; });
-      item.addEventListener('drop', (e) => { e.preventDefault(); item.style.borderTop = ''; const srcId = e.dataTransfer.getData('text/plain'); if (srcId === item.dataset.todayId) return; const srcIdx = todayTasks.findIndex(t => t.id === srcId); const destIdx = todayTasks.findIndex(t => t.id === item.dataset.todayId); const src = todayTasks.splice(srcIdx, 1)[0]; todayTasks.splice(destIdx, 0, src); saveToday(); renderTodayList(); });
+      item.addEventListener('drop', (e) => {
+        e.preventDefault(); item.style.borderTop = '';
+        // Only a text/plain id that IS a Today task may reorder the list. A
+        // foreign drag (a project id from the canvas shares this slot, as does
+        // text dragged in from another app) used to reach the splice with an
+        // index of -1 — and splice(-1, 1) removes the LAST task, so the list
+        // was silently reordered by a drop that meant nothing.
+        const srcId = readDragText(e, 'text/plain');
+        if (!srcId || srcId === item.dataset.todayId) return;
+        const srcIdx = todayTasks.findIndex(t => t.id === srcId);
+        const destIdx = todayTasks.findIndex(t => t.id === item.dataset.todayId);
+        if (srcIdx < 0 || destIdx < 0) return;
+        const src = todayTasks.splice(srcIdx, 1)[0];
+        todayTasks.splice(destIdx, 0, src);
+        saveToday(); renderTodayList();
+      });
     });
   }
   document.getElementById('pf-today-btn').addEventListener('click', () => { closeAllModals(); renderTodayList(); openModal(todayPanel, 'flex'); });
@@ -6898,27 +6936,9 @@
     }
     renderWeeklyPanel();
   }
-  // Payload reads are never assumed safe. `e.dataTransfer` is absent on a
-  // synthetic drop, getData() can throw for a type the source never set, and a
-  // payload can come from anywhere — another tab, another window, another
-  // application, or a drag cancelled mid-flight and delivered truncated. A
-  // throw here aborts the drop handler after it has already cleared the drag
-  // styling, so the gesture dies silently and the error log grows. Nothing is
-  // assumed and nothing throws: an unusable payload means "nothing draggable
-  // here". A stale day needs no handling — the move helpers below treat an
-  // unknown source day as a no-op.
-  function readDragText(e, type) {
-    try { return (e.dataTransfer && e.dataTransfer.getData(type)) || ''; } catch (err) { return ''; }
-  }
-  function readDragPayload(e, type) {
-    const raw = readDragText(e, type);
-    if (!raw) return null;
-    let parsed;
-    try { parsed = JSON.parse(raw); } catch (err) { return null; }
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-    if (typeof parsed.id !== 'string' || !parsed.id) return null;
-    return parsed;
-  }
+  // Payload reads go through the shared guarded readers (01): an unusable
+  // payload means "nothing draggable here", and a stale day needs no handling
+  // because the move helpers below treat an unknown source day as a no-op.
   // Moves (or reorders) a weekly task. targetTaskId + insertBefore describe
   // where within the destination day to place it — omit targetTaskId to
   // append at the end. Shared by the native HTML5 drag/drop handlers
