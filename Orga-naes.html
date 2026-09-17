@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-rxgz7+bI6F+hBrjWZEMugKGHmyUw/Iz8/tiUmLtS3ew='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-9Bpfc0fMm78hoJpEJ0+9TXweOQ2RItskthIyMe5vMos='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2149,15 +2149,23 @@
   }
   #pf-root .pf-notes-rich u { text-underline-offset: 2px; }
   #pf-root .pf-notes-note-body::placeholder { color: var(--text-dim); opacity: 0.6; }
+  /* Footer + action row both WRAP. The action row is seven controls wide
+     (~370px) while the editor column can be narrower, and the panel clips its
+     overflow — so an unwrapped row silently cut off Pin / List / View /
+     Delete note (unreachable, not just ugly) at small panel sizes. Wrap here
+     is the structural guarantee: a wrapping flex container's min-content
+     width is its widest child, so it cannot overflow horizontally at ANY
+     width. scripts/desktop-probe.cjs measures zero overflow + every control
+     clickable in real Chrome; the functional suite guards these declarations. */
   #pf-root .pf-notes-editor-foot {
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    border-top: 1px solid var(--sub-border); padding-top: 8px; flex-shrink: 0;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 8px; border-top: 1px solid var(--sub-border); padding-top: 8px; flex-shrink: 0;
   }
   #pf-root .pf-notes-count {
     font-family: var(--font-mono); font-size: max(9px, calc(var(--font-size-base) - 4px));
     color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  #pf-root .pf-notes-foot-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }
+  #pf-root .pf-notes-foot-actions { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; align-items: center; }
   #pf-root .pf-notes-hist-ind {
     font-family: var(--font-mono); font-size: max(9px, calc(var(--font-size-base) - 4px));
     color: var(--text-dim); white-space: nowrap; min-width: 3ch; text-align: center;
@@ -9730,6 +9738,44 @@
     const panel = notesPanelEl;
     if (!handle || !panel) return;
     const KEY = 'project-flow-notes-size';
+    // Size policy — the panel is two columns, so the editor column is
+    // panelWidth minus the list, the column gap and the panel's own chrome.
+    // FOOT_ROOM_W is what that column needs for its footer row (measured
+    // ~370px for the seven controls; +50 of growth room for a larger display
+    // scale). A stored size below the floor used to strand the footer's
+    // right-hand controls off the panel's clipped edge; the CSS wrap above
+    // makes them reachable again, and this floor keeps the row from
+    // collapsing into one control per line.
+    // The stacked (<=700px) band gets its own bounds that MIRROR the
+    // stylesheet's vw/vh sizing, which also stops a desktop-sized saved
+    // width from overflowing a phone screen.
+    const LIST_COL_W = 240;      // .pf-notes-list
+    const PANEL_CHROME_W = 50;   // panel padding/borders + the column gap
+    const FOOT_ROOM_W = 420;     // editor column the footer row needs
+    const MIN_W_DESKTOP = LIST_COL_W + PANEL_CHROME_W + FOOT_ROOM_W;
+    const MIN_W_STACKED = 320;
+    const MIN_H_DESKTOP = 360;
+    const MIN_H_STACKED = 320;
+    const STACKED_MQ = '(max-width: 700px)';
+    function notesSizeBounds() {
+      const stacked = window.matchMedia(STACKED_MQ).matches;
+      return {
+        minW: stacked ? MIN_W_STACKED : MIN_W_DESKTOP,
+        minH: stacked ? MIN_H_STACKED : MIN_H_DESKTOP,
+        maxW: Math.floor(window.innerWidth * (stacked ? 0.94 : 0.96)),
+        maxH: Math.floor(window.innerHeight * (stacked ? 0.88 : 0.92))
+      };
+    }
+    // Clamp into [min, max], but never let the floor push past the viewport
+    // max (a 320px-wide window has no room for a 710px floor).
+    function clampNotesSize(v, min, max) {
+      return Math.round(Math.min(max, Math.max(Math.min(min, max), v)));
+    }
+    function applyNotesPanelSize(w, h) {
+      const b = notesSizeBounds();
+      if (w) panel.style.width = clampNotesSize(w, b.minW, b.maxW) + 'px';
+      if (h) panel.style.height = clampNotesSize(h, b.minH, b.maxH) + 'px';
+    }
     let dragging = false, startW = 0, startH = 0, startX = 0, startY = 0;
     handle.addEventListener('pointerdown', (e) => {
       e.preventDefault();
@@ -9742,10 +9788,7 @@
     });
     handle.addEventListener('pointermove', (e) => {
       if (!dragging) return;
-      const w = Math.min(window.innerWidth * 0.96, Math.max(480, startW + (e.clientX - startX)));
-      const h = Math.min(window.innerHeight * 0.92, Math.max(360, startH + (e.clientY - startY)));
-      panel.style.width = w + 'px';
-      panel.style.height = h + 'px';
+      applyNotesPanelSize(startW + (e.clientX - startX), startH + (e.clientY - startY));
     });
     const finish = (e) => {
       if (!dragging) return;
@@ -9762,7 +9805,15 @@
       showToast('↺ Notes size reset');
     });
     (async function loadNotesSize() {
-      try { const res = await safeGet(KEY, false); if (res && res.value) { const s = JSON.parse(res.value); if (s && s.w) panel.style.width = s.w; if (s && s.h) panel.style.height = s.h; } } catch (e) {}
+      try {
+        const res = await safeGet(KEY, false);
+        if (res && res.value) {
+          const s = JSON.parse(res.value);
+          // Stored as CSS strings ('480px'); parse, then re-apply through the
+          // policy so an undersized legacy value can't strand the footer.
+          if (s) applyNotesPanelSize(s.w ? parseFloat(s.w) : 0, s.h ? parseFloat(s.h) : 0);
+        }
+      } catch (e) {}
     })();
   })();
 
