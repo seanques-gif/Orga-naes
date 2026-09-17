@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-8AAjmXQc9SSRefqd5EpLIfAPKKVAZ7iNdtEOTeWxYTU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-lxYXEBCLOE1bbnOy1NRAkNyKIOKd9u0mdZGMzgDwu/E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4095,55 +4095,96 @@
     projects = result.projects;
     if (result.repaired > 0) { scheduleSave(); showToast('🔧 Auto-repaired ' + result.repaired + ' data issue' + (result.repaired > 1 ? 's' : '')); }
     projects.forEach(p => { p.expanded = false; }); render();
-    _recordBaseProjects();      // both tabs agree on what we just read
-    _crossTabReady = true;      // only now can an external write be merged
+    _crossTabReady = true;                       // only now can an external write be merged
+    _projectsTabStore.recordBase();              // both tabs agree on what we just read
     startIdbSnapshotBackup();
     loadToday();
   }
 
   // Persists current projects locally, then triggers optional debounced cloud sync via fsAutoSaveHook.
-  function scheduleSave() { autoUpdateStatuses(); invalidateSearchCache(); if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } syncWeeklyWithTasks(); saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const _graphJson = JSON.stringify(projects); const res = await safeSet(STORE_KEY, _graphJson, false); if (res) { _recordBaseProjects(_graphJson); localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
+  function scheduleSave() { autoUpdateStatuses(); invalidateSearchCache(); if (!hasStorage()) { saveEl.textContent = '⚠ No storage'; saveEl.className = 'pf-save pf-save-fail'; return; } syncWeeklyWithTasks(); saveEl.textContent = 'Saving…'; saveEl.className = 'pf-save'; clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const _graphJson = JSON.stringify(projects); const res = await safeSet(STORE_KEY, _graphJson, false); if (res) { _projectsTabStore.recordBase(_graphJson); localStorage.setItem('pf-last-save-time', Date.now().toString()); saveEl.textContent = '✓ Saved'; saveEl.className = 'pf-save pf-save-ok'; setTimeout(() => { if (saveEl.textContent === '✓ Saved') { saveEl.textContent = ''; saveEl.className = 'pf-save'; } }, 1500); if (typeof fsAutoSaveHook === 'function') fsAutoSaveHook(); } else { saveEl.textContent = '✗ Save failed'; saveEl.className = 'pf-save pf-save-fail'; } }, 350); }
 
   // ============================================================
-  // SUBSECTION: Cross-tab graph sync (storage events)
+  // SUBSECTION: Cross-tab store sync (storage events)
   // ============================================================
-  // Two tabs of this app share ONE localStorage slot for the whole projects
-  // graph, and a write from another tab was ignored outright — so the last tab
-  // to write took everything, and any interaction in a tab still holding its
-  // old array replaced the other tab's work wholesale. Every load and every
-  // successful save now records the graph both tabs agree on as the BASE, and a
-  // write from another tab is merged into ours project by project:
+  // Each store below lives in ONE localStorage slot shared by every tab of the
+  // app, and a write from another tab used to be ignored outright — so the last
+  // tab to write took everything: any interaction in a tab still holding its old
+  // copy replaced the other tab's work wholesale, with nothing to show it had
+  // happened. Every store now records the value both tabs agree on as the BASE
+  // (on load and on every successful save) and merges an incoming write against
+  // it:
   //   they changed it, we did not   -> take theirs
   //   we changed it, they did not   -> keep ours
   //   either side added something   -> both kept
   //   they deleted it, we did not   -> it stays deleted
-  //   both changed the same project -> keep ours and SAY SO (never guess)
-  // A merge equal to theirs is adopted without a write, because writing back
-  // the value they just sent would bounce an event straight at them; only a
-  // merge carrying our own changes is written out, and that tab then merges it
-  // the same way and stops — its own merged result equals what it received.
-  let _baseProjectsJson = null;   // the graph both tabs last agreed on
-  let _crossTabReady = false;     // events are ignored until the graph has loaded
+  //   both changed the same item    -> keep ours and SAY SO (never guess)
+  // A merge equal to theirs is adopted WITHOUT a write, because writing back the
+  // value they just sent would bounce an event straight at them; only a merge
+  // carrying our own changes is written out, and that tab then merges it the
+  // same way and stops (its own merged result equals what it received).
+  // A store merges only once it has LOADED (ready): before that its in-memory
+  // copy is empty, which would read as "they added everything, we deleted
+  // everything". An event inside that window is dropped — the load reads the
+  // current value anyway, so only a write landing in the few milliseconds
+  // between the load's read and its completion can be missed.
+  // A REMOVAL of a key is authoritative rather than ignored: that is what
+  // signing out (or clearing data) does in the other tab, and writing the store
+  // back from this tab's memory would undo the one thing that wipe exists to
+  // guarantee — that nothing is left on the device.
+  const _tabSyncStores = [];
 
-  function _recordBaseProjects(json) {
-    if (typeof json === 'string') { _baseProjectsJson = json; return; }
-    try { _baseProjectsJson = JSON.stringify(projects); } catch (e) { _baseProjectsJson = null; }
+  function registerTabSync(spec) {
+    const store = {
+      key: spec.key,
+      label: spec.label,
+      mode: spec.mode === 'map' ? 'map' : 'items',
+      get: spec.get,
+      ready: spec.ready || function() { return true; },
+      set: spec.set,                      // assign in memory + re-render (no write)
+      persist: spec.persist,              // the owner's own save path
+      onDropped: spec.onDropped || null,  // ids THEY deleted, for tombstone stores
+      onWipe: spec.onWipe || null,        // drop this store's own history too
+      base: null,
+      recordBase: function(json) {
+        if (typeof json === 'string') { store.base = json; return; }
+        try { store.base = _serStore(store, store.get()); } catch (e) { store.base = null; }
+      }
+    };
+    _tabSyncStores.push(store);
+    return store;
   }
-  function _projectsById(list) {
+  function _tabSyncStore(key) {
+    for (let i = 0; i < _tabSyncStores.length; i++) { if (_tabSyncStores[i].key === key) return _tabSyncStores[i]; }
+    return null;
+  }
+
+  function _ser(v) { try { return JSON.stringify(v); } catch (e) { return null; } }
+  // Maps (the note tombstones) are compared by CONTENT, not insertion order: the
+  // two tabs can hold the same tombstones with different key order, and raw JSON
+  // would look like a change and write back forever.
+  function _serMap(map) {
+    const from = (map && typeof map === 'object') ? map : {};
+    const out = {};
+    Object.keys(from).sort().forEach(function(k) { out[k] = from[k]; });
+    return JSON.stringify(out);
+  }
+  function _serStore(store, value) { return store.mode === 'map' ? _serMap(value) : _ser(value); }
+
+  function _itemsById(list) {
     const m = new Map();
     (Array.isArray(list) ? list : []).forEach(p => { if (p && typeof p.id === 'string' && p.id) m.set(p.id, p); });
     return m;
   }
-  function _ser(v) { try { return JSON.stringify(v); } catch (e) { return null; } }
 
   // Pure: no DOM, no writes, no state of its own — it cannot half-apply, and the
   // rules above can be read off it directly.
-  function mergeProjectsFromTab(baseArr, oursArr, theirsArr) {
-    const ancestor = _projectsById(baseArr), mine = _projectsById(oursArr), theirs = _projectsById(theirsArr);
+  function mergeItemsFromTab(baseArr, oursArr, theirsArr) {
+    const ancestor = _itemsById(baseArr), mine = _itemsById(oursArr), theirs = _itemsById(theirsArr);
     const order = [], seen = new Set();
     (Array.isArray(oursArr) ? oursArr : []).forEach(p => { if (p && p.id && !seen.has(p.id)) { seen.add(p.id); order.push(p.id); } });
     (Array.isArray(theirsArr) ? theirsArr : []).forEach(p => { if (p && p.id && !seen.has(p.id)) { seen.add(p.id); order.push(p.id); } });
-    const merged = [];
+    const merged = [], droppedIds = [];
     let added = 0, updated = 0, dropped = 0, conflicts = 0;
     order.forEach(id => {
       const o = mine.get(id), t = theirs.get(id), b = ancestor.get(id);
@@ -4155,17 +4196,34 @@
         conflicts++; merged.push(o); return;                                   // both changed it: never guess
       }
       if (o && !t) {
-        if (bJ !== null && oJ === bJ) { dropped++; return; }                   // they deleted it, untouched here
+        if (bJ !== null && oJ === bJ) { dropped++; droppedIds.push(id); return; }  // they deleted it, untouched here
         if (bJ !== null) conflicts++;                                          // they deleted what we edited
         merged.push(o); return;                                                // ours alone (a local addition)
       }
       if (!o && t) {
-        if (bJ !== null && tJ === bJ) { dropped++; return; }                   // we deleted it, untouched there
+        if (bJ !== null && tJ === bJ) { dropped++; droppedIds.push(id); return; }  // we deleted it, untouched there
         if (bJ !== null) { conflicts++; return; }                              // they edited what we deleted: stays deleted
         added++; merged.push(t); return;                                       // new to us
       }
     });
-    return { merged: merged, added: added, updated: updated, dropped: dropped, conflicts: conflicts };
+    return { merged: merged, added: added, updated: updated, dropped: dropped, conflicts: conflicts, droppedIds: droppedIds };
+  }
+
+  // Tombstones: a union, newest timestamp wins per id (ISO strings compare in
+  // order). Nothing is ever un-tombstoned, so a key can only be added or
+  // advance.
+  function mergeMapFromTab(baseMap, oursMap, theirsMap) {
+    const ours = oursMap || {}, theirs = theirsMap || {};
+    const merged = {};
+    let added = 0, updated = 0;
+    const keys = new Set(Object.keys(ours).concat(Object.keys(theirs)));
+    keys.forEach(k => {
+      const o = ours[k], t = theirs[k];
+      if (o && t) { if (String(t) > String(o)) { merged[k] = t; updated++; } else { merged[k] = o; } return; }
+      if (o) { merged[k] = o; return; }
+      merged[k] = t; added++;
+    });
+    return { merged: merged, added: added, updated: updated, dropped: 0, conflicts: 0, droppedIds: [] };
   }
 
   function _describeTabSync(r) {
@@ -4178,47 +4236,69 @@
   }
 
   function handleStorageWrite(e) {
-    if (!e || e.key !== STORE_KEY || !_crossTabReady) return;
+    if (!e || !e.key) return;
+    const store = _tabSyncStore(e.key);
+    if (!store) return;                                            // not a store we sync
     if (e.storageArea && e.storageArea !== localStorage) return;   // sessionStorage and friends
-    // The key was REMOVED. That is what signing out (or clearing data) does in
-    // the other tab, and writing our array back would undo the one thing that
-    // wipe exists to guarantee — that nothing is left on the device — so honour
-    // it here instead of resurrecting the graph from this tab's memory.
-    if (typeof e.newValue !== 'string' || e.newValue === '') {
-      const hadData = projects.length > 0;
-      projects = []; undoStack.length = 0; redoStack.length = 0;
-      _baseProjectsJson = null;
-      if (hadData) { updateHistoryButtons(); render(); }
-      showToast('⚠ Signed out in another tab — this tab was cleared too');
+    if (!store.ready()) return;                                    // see the header note
+    const raw = typeof e.newValue === 'string' ? e.newValue : null;
+    // The key was REMOVED: sign-out (or clear-data) in the other tab. Honour it
+    // here, and never write this store back afterwards.
+    if (raw === null || raw === '') {
+      const had = store.mode === 'map' ? Object.keys(store.get() || {}).length > 0 : (store.get() || []).length > 0;
+      store.base = null;
+      store.set(store.mode === 'map' ? {} : []);
+      if (store.onWipe) store.onWipe();   // undo must not be a way back in
+      if (had) showToast('⚠ Signed out in another tab — ' + store.label + ' cleared here too');
       return;
     }
-    if (e.newValue === _ser(projects)) { _recordBaseProjects(e.newValue); return; }   // already identical
-    let incoming = null, baseArr = null;
-    try { incoming = JSON.parse(e.newValue); }
-    catch (err) { logError('Cross-tab sync (unreadable projects payload)', err); return; }
-    if (!Array.isArray(incoming)) { logError('Cross-tab sync (projects payload is not a list)', new Error('expected an array')); return; }
-    try { baseArr = _baseProjectsJson ? JSON.parse(_baseProjectsJson) : null; } catch (err) { baseArr = null; }
-    const result = mergeProjectsFromTab(baseArr, projects, incoming);
-    const mergedJson = _ser(result.merged);
-    const changed = mergedJson !== _ser(projects);
+    if (raw === _serStore(store, store.get())) { store.recordBase(raw); return; }   // already identical
+    let incoming = null, base = null;
+    try { incoming = JSON.parse(raw); }
+    catch (err) { logError('Cross-tab sync (' + store.label + ': unreadable payload)', err); return; }
+    const shapeOk = store.mode === 'map'
+      ? (!!incoming && typeof incoming === 'object' && !Array.isArray(incoming))
+      : Array.isArray(incoming);
+    if (!shapeOk) {
+      logError('Cross-tab sync (' + store.label + ': unexpected payload shape)',
+        new Error(store.mode === 'map' ? 'expected an object' : 'expected an array'));
+      return;
+    }
+    try { base = store.base ? JSON.parse(store.base) : null; } catch (err) { base = null; }
+    const result = store.mode === 'map'
+      ? mergeMapFromTab(base, store.get(), incoming)
+      : mergeItemsFromTab(base, store.get(), incoming);
+    const mergedJson = _serStore(store, result.merged);
+    const changed = mergedJson !== _serStore(store, store.get());
     const what = _describeTabSync(result);
-    if (mergedJson === e.newValue) {
+    const tellDropped = function() { if (result.droppedIds.length && store.onDropped) store.onDropped(result.droppedIds); };
+    if (mergedJson === _serStore(store, incoming)) {
       // They already hold the merged result: adopt it and write nothing.
-      _recordBaseProjects(e.newValue);
-      if (changed) { invalidateSearchCache(); projects = result.merged; render(); }
-      if (what) showToast('⇄ Synced from another tab: ' + what);
+      store.recordBase(mergedJson);
+      if (changed) store.set(result.merged);
+      tellDropped();
+      if (what) showToast('⇄ Synced from another tab: ' + store.label + ' — ' + what);
       return;
     }
     // Our copy carries something theirs does not, so apply the merge and let the
-    // normal save path push it out — that write is also what advances the base.
-    projects = result.merged;
-    render();
-    scheduleSave();
-    showToast(what ? '⇄ Merged changes from another tab: ' + what : '⇄ Synced with another tab');
+    // owner's save path push it out — that write is also what advances the base.
+    store.set(result.merged);
+    tellDropped();
+    store.persist();
+    showToast(what ? '⇄ Merged changes from another tab: ' + store.label + ' — ' + what : '⇄ Synced with another tab: ' + store.label);
   }
 
-  // Storage events fire in the OTHER tabs of this origin, never in the writer,
-  // so this cannot react to our own saves.
+  // The projects graph. Storage events fire in the OTHER tabs of this origin,
+  // never in the writer, so this cannot react to our own saves.
+  const _projectsTabStore = registerTabSync({
+    key: STORE_KEY,
+    label: 'projects',
+    get: function() { return projects; },
+    ready: function() { return _crossTabReady; },
+    set: function(list) { projects = list; invalidateSearchCache(); render(); },
+    persist: function() { scheduleSave(); },
+    onWipe: function() { undoStack.length = 0; redoStack.length = 0; updateHistoryButtons(); }
+  });
   window.addEventListener('storage', handleStorageWrite);
 
   // SUBSECTION: Project CRUD, Archive & Trash
@@ -4266,14 +4346,17 @@
   }
   const ARCHIVE_KEY = 'project-flow-archive';
   let archive = [];
+  let archiveLoaded = false;   // cross-tab merges wait for the load (05)
   async function loadArchive() {
     try { const res = await safeGet(ARCHIVE_KEY, false); if (res && res.value) archive = JSON.parse(res.value); } catch (e) { archive = []; logError('Load archive', e); }
     if (!Array.isArray(archive)) archive = [];
     const seenIds = new Set(); let repaired = 0;
     archive = archive.map(a => repairArchiveEntry(a, seenIds)).filter(a => { if (!a) { repaired++; return false; } return true; });
     if (repaired > 0) { saveArchive(); showToast('🔧 Auto-repaired ' + repaired + ' archive issue' + (repaired > 1 ? 's' : '')); }
+    archiveLoaded = true;
+    _archiveTabStore.recordBase();   // both tabs agree on what we just read
   }
-  function saveArchive() { safeSet(ARCHIVE_KEY, JSON.stringify(archive), false); }
+  function saveArchive() { const _json = JSON.stringify(archive); _archiveTabStore.recordBase(_json); safeSet(ARCHIVE_KEY, _json, false); }
   function archiveProject(p) { archive = archive.filter(a => a.id !== p.id); archive.push({ ...JSON.parse(JSON.stringify(p)), archivedAt: new Date().toISOString() }); saveArchive(); }
   function restoreFromArchive(id) { const idx = archive.findIndex(a => a.id === id); if (idx < 0) return; const item = archive.splice(idx, 1)[0]; delete item.archivedAt; projects.push(item); saveArchive(); scheduleSave(); render(); renderArchiveList(); showToast('"' + item.title + '" restored'); }
   function renderArchiveList() {
@@ -4295,6 +4378,7 @@
 
   const TRASH_KEY = 'project-flow-trash';
   let trash = [];
+  let trashLoaded = false;     // cross-tab merges wait for the load (05)
   async function loadTrash() {
     try { const res = await safeGet(TRASH_KEY, false); if (res && res.value) trash = JSON.parse(res.value); } catch (e) { trash = []; logError('Load trash', e); }
     if (!Array.isArray(trash)) trash = [];
@@ -4302,8 +4386,30 @@
     trash = trash.map(t => repairTrashEntry(t, seenIds)).filter(t => { if (!t) { repaired++; return false; } return true; });
     purgeOldTrash();
     if (repaired > 0) { saveTrash(); showToast('🔧 Auto-repaired ' + repaired + ' trash issue' + (repaired > 1 ? 's' : '')); }
+    trashLoaded = true;
+    _trashTabStore.recordBase();
   }
-  function saveTrash() { safeSet(TRASH_KEY, JSON.stringify(trash), false); }
+  function saveTrash() { const _json = JSON.stringify(trash); _trashTabStore.recordBase(_json); safeSet(TRASH_KEY, _json, false); }
+
+  // Cross-tab sync (05 owns the engine and the listener). Both stores are
+  // ordinary id-keyed arrays — a whole project lands in archive/trash, so the
+  // merge unit is the project, exactly as in the graph.
+  const _archiveTabStore = registerTabSync({
+    key: ARCHIVE_KEY,
+    label: 'archive',
+    get: function() { return archive; },
+    ready: function() { return archiveLoaded; },
+    set: function(list) { archive = list; renderArchiveList(); },
+    persist: function() { saveArchive(); }
+  });
+  const _trashTabStore = registerTabSync({
+    key: TRASH_KEY,
+    label: 'trash',
+    get: function() { return trash; },
+    ready: function() { return trashLoaded; },
+    set: function(list) { trash = list; renderTrashList(); },
+    persist: function() { saveTrash(); }
+  });
   function purgeOldTrash() {
     const cutoff = Date.now() - TRASH_TTL_MS;
     const before = trash.length;
@@ -9608,23 +9714,30 @@
     try { const res2 = await safeGet(NOTES_TOMB_KEY, false); if (epoch !== loadEpoch) return; if (res2 && res2.value) noteTombstones = JSON.parse(res2.value) || {}; } catch (e) { noteTombstones = {}; }
     if (epoch !== loadEpoch) return; // an adoption happened while this read was in flight
     notesLoaded = true;
+    _notesTabStore.recordBase();        // both tabs agree on what we just read
+    _noteTombsTabStore.recordBase();
   }
-  function saveTombstones() { safeSet(NOTES_TOMB_KEY, JSON.stringify(noteTombstones), false); }
+  function saveTombstones() { const _json = JSON.stringify(noteTombstones); _noteTombsTabStore.recordBase(_json); safeSet(NOTES_TOMB_KEY, _json, false); }
+  const NOTES_TOMB_MAX = 200;
+  function pruneNoteTombstones() {
+    const ids = Object.keys(noteTombstones);
+    if (ids.length <= NOTES_TOMB_MAX) return;
+    ids.sort((a, b) => noteTombstones[a].localeCompare(noteTombstones[b]));
+    ids.slice(0, ids.length - NOTES_TOMB_MAX).forEach(k => delete noteTombstones[k]);
+  }
   function recordNoteTombstone(id) {
     if (!id) return;
     noteTombstones[id] = new Date().toISOString();
-    const ids = Object.keys(noteTombstones);
-    if (ids.length > 200) {
-      ids.sort((a, b) => noteTombstones[a].localeCompare(noteTombstones[b]));
-      ids.slice(0, ids.length - 200).forEach(k => delete noteTombstones[k]);
-    }
+    pruneNoteTombstones();
     saveTombstones();
   }
   function isTombstoned(id) { return Object.prototype.hasOwnProperty.call(noteTombstones, id); }
   function saveNotes() {
     clearTimeout(notesSaveTimer);
     notesSaveTimer = setTimeout(async () => {
-      const res = await safeSet(NOTES_KEY, JSON.stringify(notes), false);
+      const _json = JSON.stringify(notes);
+      const res = await safeSet(NOTES_KEY, _json, false);
+      if (res) _notesTabStore.recordBase(_json);
       if (!res) { showToast('⚠ Note save failed', true); logError('Save notes', new Error('safeSet failed')); }
       // Nudge the auto-snapshot so a fresh copy lands within seconds of an
       // edit, not at the next 5-minute tick.
@@ -10619,6 +10732,75 @@
     renderNotesList();
     renderNotesEditor();
   };
+
+  // ---- Cross-tab notes (05 owns the engine and the listener) --------------
+  // Notes are TWO stores, so a deletion needs both halves: the list is an
+  // ordinary id-keyed array merged against the base, and the tombstones are a
+  // map unioned newest-wins. A note that leaves the list because the other tab
+  // deleted it also records its tombstone HERE — without that, the next cloud
+  // pull would still find the note in the cloud and resurrect it.
+  function _normalizeExternalNote(n) {
+    return {
+      id: n.id,
+      title: String(n.title || '').slice(0, 120),
+      body: String(n.body || '').slice(0, 100000),
+      pinned: !!n.pinned,
+      createdAt: n.createdAt || new Date().toISOString(),
+      updatedAt: n.updatedAt || n.createdAt || new Date().toISOString()
+    };
+  }
+  function _applyExternalNotes(list) {
+    ++loadEpoch;   // same stale-boot-read protection as every other adoption
+    const seen = new Set();
+    const next = [];
+    (Array.isArray(list) ? list : []).forEach(function(n) {
+      if (!n || typeof n !== 'object' || typeof n.id !== 'string' || !n.id) return;
+      if (seen.has(n.id) || isTombstoned(n.id)) return;   // a tombstone always wins
+      seen.add(n.id);
+      next.push(_normalizeExternalNote(n));
+    });
+    notes = next;
+    notesLoaded = true;
+    notesLoadedEmpty = notes.length === 0;
+    if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
+    if (Array.isArray(notesSelection) && notesSelection.length) notesSelection = notesSelection.filter(function(id) { return !!noteById(id); });
+    renderNotesList();
+    renderNotesEditor();
+  }
+  const _notesTabStore = registerTabSync({
+    key: NOTES_KEY,
+    label: 'notes',
+    get: function() { return notes; },
+    // The panel loads notes lazily, so a merge before that would read our
+    // empty in-memory list as "the user deleted every note".
+    ready: function() { return notesLoaded; },
+    set: _applyExternalNotes,
+    persist: function() { saveNotes(); },
+    onWipe: function() { notesHistoryReset(); },   // same as the sign-out path
+    onDropped: function(ids) { ids.forEach(function(id) { recordNoteTombstone(id); }); }
+  });
+  const _noteTombsTabStore = registerTabSync({
+    key: NOTES_TOMB_KEY,
+    label: 'note deletions',
+    mode: 'map',
+    get: function() { return noteTombstones; },
+    ready: function() { return notesLoaded; },
+    set: function(map) {
+      noteTombstones = (map && typeof map === 'object' && !Array.isArray(map)) ? map : {};
+      pruneNoteTombstones();
+      // A tombstone arriving for a note we still hold is a deletion made in
+      // the other tab: drop it here too.
+      const before = notes.length;
+      notes = notes.filter(function(n) { return !isTombstoned(n.id); });
+      if (notes.length !== before) {
+        notesLoadedEmpty = notes.length === 0;
+        if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
+        renderNotesList();
+        renderNotesEditor();
+      }
+    },
+    persist: function() { saveTombstones(); }
+  });
     // SUBSECTION: Scroll Shadows
     function checkScroll() {
       const list = root.querySelector('.pf-split-list');
