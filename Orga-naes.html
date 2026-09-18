@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-TbjHWpGX+rHNJ2/ilwj4DhFss31SdwhnOvTkXlM+Wj4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-06loKYs4LtOANQKvstjWzt1kzr4Ml6NNqqeCTt9Llao='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4864,7 +4864,17 @@
   }
 
   function advanceDueDate(iso, interval) {
-    const d = iso ? new Date(iso + 'T00:00:00') : new Date();
+    // Advance from the LATER of the old due date and today. A recurring task
+    // completed after sitting overdue used to schedule its "next" occurrence
+    // N steps from the stale dueAt — still in the past, so it re-entered the
+    // overdue banner and calendar on its next render. The next occurrence of
+    // a recurrence is in the future by definition.
+    let base = iso;
+    if (base) {
+      const t = todayLocalStr();
+      if (base < t) base = t;
+    }
+    const d = base ? new Date(base + 'T00:00:00') : new Date();
     if (isNaN(d)) return todayLocalStr();
     switch (interval) {
       case 'daily': d.setDate(d.getDate() + 1); break;
@@ -7051,8 +7061,28 @@
     return map;
   }
   let calSelectedDate = null;
+  // The local day the calendar view month was last set on (load or a pager
+  // click). The re-aim in renderCalendar() uses it to tell "the app sat open
+  // across midnight and the view is stale" from "the user paged away on
+  // purpose today" — only the first is corrected.
+  let calViewSetOnDay = todayLocalStr();
     // SUBSECTION: Calendar View
   function renderCalendar() {
+    // The view month is captured at load (calMonth/calYear); if the app stays
+    // open across a month boundary the grid would keep showing last month and
+    // the Today highlight would land on a day the user cannot see — the same
+    // stale-date class the Today panel had. Re-aim the view at the current
+    // month whenever local today is not on screen. Paging (prev/next) then
+    // moves away deliberately, and the Today button still snaps back.
+    (function reaimMonth() {
+      if (calViewSetOnDay === todayLocalStr()) return;   // paged today on purpose — leave it
+      const now = new Date();
+      const curM = now.getMonth(), curY = now.getFullYear();
+      if (curM === calMonth && curY === calYear) { calViewSetOnDay = todayLocalStr(); return; }
+      // The view month was set on an earlier day and the day has since rolled
+      // over: the captured month is stale, not deliberate. Follow today.
+      calMonth = curM; calYear = curY; calViewSetOnDay = todayLocalStr();
+    })();
     const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const grid = document.getElementById('pf-cal-grid');
     const monthLabel = document.getElementById('pf-cal-month');
@@ -7133,9 +7163,9 @@
     });
   }
   document.getElementById('pf-calendar-btn').addEventListener('click', () => { closeAllModals(); renderCalendar(); openModal(calendarPanel, 'flex'); });
-  document.getElementById('pf-cal-prev').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); });
-  document.getElementById('pf-cal-next').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
-  document.getElementById('pf-cal-today-btn').addEventListener('click', () => { calMonth = new Date().getMonth(); calYear = new Date().getFullYear(); renderCalendar(); });
+  document.getElementById('pf-cal-prev').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } calViewSetOnDay = todayLocalStr(); renderCalendar(); });
+  document.getElementById('pf-cal-next').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } calViewSetOnDay = todayLocalStr(); renderCalendar(); });
+  document.getElementById('pf-cal-today-btn').addEventListener('click', () => { calMonth = new Date().getMonth(); calYear = new Date().getFullYear(); calViewSetOnDay = todayLocalStr(); renderCalendar(); });
   document.getElementById('pf-today-clear-btn').addEventListener('click', () => { if (!todayTasks.length) return; clearToday(); });
   document.getElementById('pf-today-carry-btn').addEventListener('click', carryOverToday);
   document.getElementById('pf-today-due-btn').addEventListener('click', function() {
@@ -9691,6 +9721,9 @@
     getCategoryEmojis: () => categoryEmojis,
     // Stores that joined cross-tab sync (05): read-only handles, so the sync can
     // be exercised and diagnosed without reaching into another closure.
+    // Recurrence advance (07): the completion timer's own path, exposed so the
+    // stale-date regression can drive production code instead of the 1200ms wait.
+    _advanceRecurrenceForTest: (node) => { handleRecurrence(node); return node.dueAt; },
     getTodayTasks: () => todayTasks,
     getTodayDate: () => todayDate,
     setTodayDate: (d) => { todayDate = d; },   // test/diagnostic: simulate an app open across midnight
