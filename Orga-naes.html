@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-VjV9bIng5vZRvYQae3CzC1LHPyJlXhA10mK/BYI5ejA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-pgrapYf+tDm7CTicwHMfhlh6/Z2j97IfclskOOosV1Y='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1622,6 +1622,13 @@
   #pf-root .pf-rem-badge:hover { background: color-mix(in srgb, var(--ongoing) 22%, transparent); border-color: color-mix(in srgb, var(--ongoing) 60%, transparent); }
   #pf-root .pf-rem-badge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #pf-root .pf-sub-dates .pf-rem-badge { margin-left: var(--space-xxs); height: 16px; }
+
+  /* Snooze presets in the reminder edit dialog: one-click shortcuts that
+     push the reminder back without re-entering a date. Quiet pills that
+     only light up on hover/focus, so they do not compete with Save. */
+  #pf-root .pf-rem-snooze { display: inline-flex; align-items: center; justify-content: center; padding: 3px 8px; font-size: calc(var(--font-size-base) - 3px); line-height: 1; border-radius: var(--radius-control); background: var(--sub-bg); border: 1px solid var(--sub-border); color: var(--text); cursor: pointer; font-family: inherit; transition: background var(--dur-state), border-color var(--dur-state); }
+  #pf-root .pf-rem-snooze:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  #pf-root .pf-rem-snooze:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   #pf-root .pf-category-popover {
     position: fixed;
@@ -8163,6 +8170,16 @@
       rYear = at.getFullYear(); rMonth = at.getMonth() + 1; rDay = at.getDate();
       rHour = at.getHours() % 12 || 12; rMin = at.getMinutes(); rAmpm = at.getHours() >= 12 ? 'PM' : 'AM';
     }
+    // One-click snooze presets, edit mode only: setting a new reminder has
+    // nothing to push back. Each acts on the reminder immediately.
+    const snoozeRow = editTarget ? (
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' +
+        '<span style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);">Snooze</span>' +
+        '<button type="button" class="pf-rem-snooze" data-snooze="min10">+10 min</button>' +
+        '<button type="button" class="pf-rem-snooze" data-snooze="hour1">+1 hour</button>' +
+        '<button type="button" class="pf-rem-snooze" data-snooze="tomorrow">Tomorrow</button>' +
+      '</div>'
+    ) : '';
     rHour = rHour % 12 || 12;
     function padZ(n) { return String(n).padStart(2, '0'); }
     function renderRemindDialog() {
@@ -8180,6 +8197,7 @@
           '<div class="pf-remind-scroll" data-field="min" style="text-align:center;"><div class="pf-remind-val" style="font-size: calc(var(--font-size-base) + 2px);font-weight:600;color:var(--text);padding:6px 8px;">' + padZ(rMin) + '</div><div style="font-size: calc(var(--font-size-base) - 5px);color:var(--text-dim);">Min</div></div>' +
           '<div class="pf-remind-scroll" data-field="ampm" style="text-align:center;"><div class="pf-remind-val" style="font-size:var(--font-size-base);font-weight:600;color:var(--accent);padding:6px 6px;">' + rAmpm + '</div><div style="font-size: calc(var(--font-size-base) - 5px);color:var(--text-dim);">AM/PM</div></div>' +
         '</div>' +
+        snoozeRow +
         '<div style="display:flex;gap:6px;"><button id="pf-remind-ok" class="pf-undo-btn" style="flex:1;padding:6px;">' + (editTarget ? 'Save' : 'Set') + '</button>' + (editTarget ? '<button id="pf-remind-remove" class="pf-undo-btn" style="flex:1;padding:6px;">Remove</button>' : '') + '<button id="pf-remind-cancel" class="pf-undo-btn" style="flex:1;padding:6px;">Cancel</button></div>';
       wrap.querySelectorAll('.pf-remind-scroll').forEach(el => {
         el.style.cursor = 'ns-resize';
@@ -8210,6 +8228,7 @@
           input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); commit(); } if (ev.key === 'Escape') renderRemindDialog(); });
         });
       });
+      wrap.querySelectorAll('.pf-rem-snooze').forEach(btn => btn.addEventListener('click', () => snoozeReminder(btn.dataset.snooze)));
       wrap.querySelector('#pf-remind-ok').addEventListener('click', confirmReminder);
       const removeBtn = editTarget ? wrap.querySelector('#pf-remind-remove') : null;
       if (removeBtn) removeBtn.addEventListener('click', removeReminder);
@@ -8234,6 +8253,21 @@
         saveReminders(); showToast((editTarget ? '⏰ Reminder updated for ' : '⏰ Reminder set for ') + new Date(remindAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
       } else { showToast('Reminder must be in the future', true); }
       wrap.remove();
+    }
+    // Snooze commits immediately rather than filling the picker: the whole
+    // point is to push the reminder back without re-entering a date.
+    function snoozeReminder(preset) {
+      if (!editTarget) return;
+      let remindAt;
+      if (preset === 'min10') remindAt = Date.now() + 10 * 60 * 1000;
+      else if (preset === 'hour1') remindAt = Date.now() + 60 * 60 * 1000;
+      else if (preset === 'tomorrow') { const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(9, 0, 0, 0); remindAt = t.getTime(); }
+      else return;
+      editTarget.remindAt = remindAt;
+      saveReminders();
+      wrap.remove();
+      render();
+      showToast('⏰ Reminder snoozed to ' + new Date(remindAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
     }
     function removeReminder() {
       if (!editTarget) return;
