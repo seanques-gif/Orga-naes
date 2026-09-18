@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-G2KzM7VpRNCS+pmQDjRHINSZJvMdhUw5bKKsp2ntV2E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ciorYIcvL2GRs8IKzCScbdVpTTjfBHfZYHJ2T4OfcKg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8361,23 +8361,30 @@
       .slice()
       .sort((a, b) => (a.remindAt || 0) - (b.remindAt || 0));
     const fired = activityLog.filter(e => e && e.kind === 'reminder').slice(0, REM_RECENT_MAX);
+    // Records behind each jumpable row, in render order: pending first, then
+    // fired. The row's data-rem-open index reads back into this array, so the
+    // click handler hands the real stored object to the jump — never markup.
+    const _remJumpRecords = [];
     let html = '<div class="pf-rem-section">Upcoming (' + pending.length + ')</div>';
     html += pending.length
-      ? pending.map(r =>
-          '<div class="pf-rem-item">' +
+      ? pending.map(r => {
+          const openIdx = r.sourceId ? _remJumpRecords.push(r) - 1 : -1;
+          return '<div class="pf-rem-item"' + (r.sourceId ? ' data-rem-open="' + openIdx + '" role="button" tabindex="0" title="Open the task it was set for"' : '') + '>' + (r.sourceId ? ' data-rem-open="' + (_remJumpRecords.length - 1) + '" role="button" tabindex="0" title="Open the task it was set for"' : '') + '>' +
             '<div class="pf-rem-main">' +
               '<div class="pf-rem-title">' + escapeHtml(r.title) + '</div>' +
               '<div class="pf-rem-when">' + escapeHtml(reminderWhenText(r.remindAt)) + '</div>' +
             '</div>' +
             '<div class="pf-rem-count">' + escapeHtml(reminderCountdown(r.remindAt)) + '</div>' +
             '<button class="pf-rem-cancel" data-rem-cancel="' + escapeHtml(String(r.id)) + '" title="Cancel this reminder">×</button>' +
-          '</div>').join('')
+          '</div>';
+        }).join('')
       : '<div class="pf-activity-empty">No reminders set.</div>';
     html += '<div class="pf-rem-section">Recently fired</div>';
     html += fired.length
       ? fired.map(e => {
           const firedAt = new Date(e.time).getTime();
-          return '<div class="pf-rem-item pf-rem-fired">' +
+          if (e.sourceId) _remJumpRecords.push(e);
+          return '<div class="pf-rem-item pf-rem-fired"' + (e.sourceId ? ' data-rem-open="' + (_remJumpRecords.length - 1) + '" role="button" tabindex="0" title="Open the task it was set for"' : '') + '>' +
             '<div class="pf-rem-main">' +
               '<div class="pf-rem-title">' + escapeHtml(e.title || 'Reminder') + '</div>' +
               '<div class="pf-rem-when">set for ' + escapeHtml(reminderWhenText(e.remindAt)) +
@@ -8397,6 +8404,20 @@
         saveReminders();
         renderRemindersList();
         showToast('Reminder removed');
+      });
+    });
+    // Jump wiring, per row for the same no-closest() reason as the cancel
+    // buttons. The record comes from _remJumpRecords by index — the pending
+    // reminder itself, or the durable fired record — and _pfJumpReminder is
+    // the same guarded openReminderSource the toast and notification run.
+    listEl.querySelectorAll('[data-rem-open]').forEach(el => {
+      const rec = _remJumpRecords[parseInt(el.getAttribute('data-rem-open'), 10)];
+      if (!rec) return;
+      const jump = () => { try { _pfJumpReminder(rec); } catch (err) { logError('Reminder jump', err); } };
+      el.addEventListener('click', jump);
+      el.addEventListener('keydown', ev => {
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        ev.preventDefault(); jump();
       });
     });
   }
