@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-CMvfuBV+KdaEGkyFAy4tLed4b1K8hTN+NQdnHVzdf38='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-unQ7YKYG3uhQLkSrwtb8abIy1QePoDo9xbBExcfkpkE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1603,6 +1603,17 @@
   #pf-root .pf-activity-item:hover { border-color: var(--hover-border); }
   #pf-root .pf-activity-time { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); margin-right: 6px; }
   #pf-root .pf-activity-empty { font-size: calc(var(--font-size-base) - 2px); color: var(--text-dim); text-align: center; padding: 30px 0; font-style: italic; }
+  #pf-root .pf-rem-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  #pf-root .pf-rem-section { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin: 4px 0 2px; }
+  #pf-root .pf-rem-item { display: flex; align-items: center; gap: 8px; font-size: calc(var(--font-size-base) - 2px); color: var(--text); padding: 8px 10px; border-radius: 6px; background: var(--sub-bg); border: 1px solid var(--sub-border); transition: border-color 0.15s; }
+  #pf-root .pf-rem-item:hover { border-color: var(--hover-border); }
+  #pf-root .pf-rem-main { flex: 1; min-width: 0; }
+  #pf-root .pf-rem-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pf-root .pf-rem-when { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); margin-top: 2px; }
+  #pf-root .pf-rem-count { font-size: calc(var(--font-size-base) - 3px); color: var(--accent); white-space: nowrap; }
+  #pf-root .pf-rem-fired .pf-rem-title { font-weight: 500; color: var(--text-dim); }
+  #pf-root .pf-rem-cancel { background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) + 2px); cursor: pointer; width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  #pf-root .pf-rem-cancel:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
 
   #pf-root .pf-category-popover {
     position: fixed;
@@ -2453,6 +2464,7 @@
         <button class="pf-undo-btn pf-opt-btn" id="pf-category-btn" title="Manage categories" ><span class="pf-opt-ico" data-ic="folder"></span> Categories</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" ><span class="pf-opt-ico" data-ic="bell"></span> Reminder</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-activity-btn" ><span class="pf-opt-ico" data-ic="clipboard"></span> Activity Log</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-reminders-btn" title="Pending and recently fired reminders" ><span class="pf-opt-ico" data-ic="bell"></span> Reminders</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-archive-btn" ><span class="pf-opt-ico" data-ic="archive"></span> Archive</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-trash-btn" ><span class="pf-opt-ico" data-ic="trash"></span> Recycle Bin</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-snapshots-btn" ><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
@@ -2568,6 +2580,10 @@
   <div class="pf-activity-panel" id="pf-activity-panel" style="display:none">
     <div class="pf-options-title">Activity Log</div>
     <div class="pf-activity-list" id="pf-activity-list"><div class="pf-activity-empty">No activity yet.</div></div>
+  </div>
+  <div class="pf-activity-panel" id="pf-reminders-panel" style="display:none">
+    <div class="pf-options-title">Reminders</div>
+    <div class="pf-rem-list" id="pf-reminders-list"></div>
   </div>
   <div class="pf-activity-panel" id="pf-calendar-panel" style="display:none;">
     <div class="pf-cal-layout">
@@ -3741,9 +3757,10 @@
   const colorModal = document.getElementById('pf-color-modal');
   const duelistPanel = document.getElementById('pf-duelist-panel');
   const snapshotsPanel = document.getElementById('pf-snapshots-panel');
+  const remindersPanel = document.getElementById('pf-reminders-panel');
   const copyModal = document.getElementById('pf-copy-modal');
   const errorPanel = document.getElementById('pf-error-panel');
-  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, notesPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, copyModal, errorPanel];
+  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, notesPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, remindersPanel, copyModal, errorPanel];
   window._pf._markOverlayOpen = _markOverlayOpen;
   function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
   function openModal(el, displayValue) {
@@ -6595,8 +6612,12 @@
     _activityTabStore.recordBase(_json);
     safeSet(ACTIVITY_KEY, _json, false);
   }
-  function logActivity(msg) {
-    const entry = { time: new Date().toISOString(), msg: msg };
+  function logActivity(msg, extra) {
+    // `extra` carries structured fields for events a panel reads back — the
+    // Reminders view needs the reminder's own time and source, not just the
+    // sentence. It is spread so the log stays a flat record, and the cross-tab
+    // merge keeps whole entries, so the fields survive a merge.
+    const entry = Object.assign({ time: new Date().toISOString(), msg: msg }, extra || {});
     activityLog.unshift(entry);
     if (activityLog.length > ACTIVITY_MAX) activityLog.pop();
     saveActivity();
@@ -8204,34 +8225,42 @@
     // possible — and r.remindAt on it would throw inside the interval, where
     // nothing catches it and every later reminder stops firing with it.
     const fired = reminders.filter(r => r && typeof r === 'object' && r.remindAt <= now);
-    if (!fired.length) return;
-    // With the permission granted each reminder earns its own browser
-    // notification. Without it, a single toast has to carry the batch: every
-    // fired reminder is dropped from the list, and showToast() REPLACES what is
-    // on screen, so firing one toast each meant a tab that returned with three
-    // overdue reminders showed only the last and silently lost the other two.
-    if ('Notification' in window && Notification.permission === 'granted') {
-      fired.forEach(r => { new Notification('⏰ Reminder: ' + r.title); });
-    } else if (fired.length === 1) {
-      showToast('⏰ Reminder: ' + fired[0].title);
-    } else {
-      const names = fired.map(r => r.title).filter(Boolean);
-      const extra = names.length > 3 ? ' +' + (names.length - 3) + ' more' : '';
-      showToast('⏰ ' + fired.length + ' reminders: ' + names.slice(0, 3).join(', ') + extra + ' — see Activity Log');
+    if (fired.length) {
+      // With the permission granted each reminder earns its own browser
+      // notification. Without it, a single toast has to carry the batch: every
+      // fired reminder is dropped from the list, and showToast() REPLACES what is
+      // on screen, so firing one toast each meant a tab that returned with three
+      // overdue reminders showed only the last and silently lost the other two.
+      if ('Notification' in window && Notification.permission === 'granted') {
+        fired.forEach(r => { new Notification('⏰ Reminder: ' + r.title); });
+      } else if (fired.length === 1) {
+        showToast('⏰ Reminder: ' + fired[0].title);
+      } else {
+        const names = fired.map(r => r.title).filter(Boolean);
+        const extra = names.length > 3 ? ' +' + (names.length - 3) + ' more' : '';
+        showToast('⏰ ' + fired.length + ' reminders: ' + names.slice(0, 3).join(', ') + extra + ' — see Activity Log');
+      }
+      // Durable home. The toast is gone in a couple of seconds and the reminder
+      // is dropped from the list in the same breath, so a reminder that fired
+      // while the tab was closed — or in a background tab, before the catch-up —
+      // left no trace once the toast faded. The Activity Log is the app's
+      // persistent, synced, timestamped event history, so each one is recorded
+      // there with the time it was set for, which is what makes a late one read
+      // as late. The structured fields are what the Reminders view reads back, so
+      // the panel can show the reminder's own time and source instead of
+      // re-parsing the sentence.
+      fired.forEach(r => {
+        if (!r.title) return;
+        logActivity('⏰ Reminder: ' + r.title + ' (set for ' + new Date(r.remindAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ')',
+          { kind: 'reminder', title: r.title, sourceType: r.sourceType, sourceId: r.sourceId, remindAt: r.remindAt });
+      });
+      reminders = reminders.filter(r => !fired.includes(r));
+      saveReminders();
     }
-    // Durable home. The toast is gone in a couple of seconds and the reminder is
-    // dropped from the list in the same breath, so a reminder that fired while
-    // the tab was closed — or in a background tab, before the catch-up — left no
-    // trace once the toast faded. The Activity Log is the app's persistent,
-    // synced, timestamped event history and the only place a fired reminder can
-    // still be found afterwards, so each one is recorded there with the time it
-    // was set for, which is what makes a late one read as late.
-    fired.forEach(r => {
-      if (!r.title) return;
-      logActivity('⏰ Reminder: ' + r.title + ' (set for ' + new Date(r.remindAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ')');
-    });
-    reminders = reminders.filter(r => !fired.includes(r));
-    saveReminders();
+    // The panel shows a live countdown, so refresh it whenever it is on screen —
+    // including a tick where nothing fired, which is what keeps "in 45 min" from
+    // sitting there long after it stopped being true.
+    if (remindersPanel && remindersPanel.style.display !== 'none') renderRemindersList();
   }
   loadReminders();
   setInterval(checkReminders, 30000);
@@ -8257,6 +8286,83 @@
     ready: function() { return remindersLoaded; },
     set: function(list) { reminders = list; },
     persist: function() { saveReminders(); }
+  });
+
+  // ---------------------------------------------------------------- Reminders
+  // A reminder used to exist only as a toast: set from a task's menu, fired, and
+  // gone. This is the first-class view — what is still pending, with a live
+  // countdown so "2 days away" is readable at a glance, and what fired recently.
+  // The fired half reads the structured reminder records the Activity Log already
+  // keeps (kind:'reminder') rather than holding a second store to keep in step,
+  // so there is one durable, synced copy of the event.
+  const REM_RECENT_MAX = 10;
+  function reminderWhenText(ts) {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return 'unknown time';
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  function reminderCountdown(ts) {
+    const ms = ts - Date.now();
+    if (isNaN(ms)) return '';
+    if (ms <= 0) return 'due now';
+    const mins = Math.round(ms / 60000);
+    if (mins < 1) return 'in under a minute';
+    if (mins < 60) return 'in ' + mins + ' min';
+    const hours = Math.floor(mins / 60), remM = mins % 60;
+    if (hours < 24) return 'in ' + hours + 'h' + (remM ? ' ' + remM + 'm' : '');
+    const days = Math.floor(hours / 24), remH = hours % 24;
+    return 'in ' + days + 'd' + (remH ? ' ' + remH + 'h' : '');
+  }
+  function renderRemindersList() {
+    const listEl = document.getElementById('pf-reminders-list');
+    if (!listEl) return;
+    const pending = reminders
+      .filter(r => r && typeof r === 'object' && r.title)
+      .slice()
+      .sort((a, b) => (a.remindAt || 0) - (b.remindAt || 0));
+    const fired = activityLog.filter(e => e && e.kind === 'reminder').slice(0, REM_RECENT_MAX);
+    let html = '<div class="pf-rem-section">Upcoming (' + pending.length + ')</div>';
+    html += pending.length
+      ? pending.map(r =>
+          '<div class="pf-rem-item">' +
+            '<div class="pf-rem-main">' +
+              '<div class="pf-rem-title">' + escapeHtml(r.title) + '</div>' +
+              '<div class="pf-rem-when">' + escapeHtml(reminderWhenText(r.remindAt)) + '</div>' +
+            '</div>' +
+            '<div class="pf-rem-count">' + escapeHtml(reminderCountdown(r.remindAt)) + '</div>' +
+            '<button class="pf-rem-cancel" data-rem-cancel="' + escapeHtml(String(r.id)) + '" title="Cancel this reminder">×</button>' +
+          '</div>').join('')
+      : '<div class="pf-activity-empty">No reminders set.</div>';
+    html += '<div class="pf-rem-section">Recently fired</div>';
+    html += fired.length
+      ? fired.map(e => {
+          const firedAt = new Date(e.time).getTime();
+          return '<div class="pf-rem-item pf-rem-fired">' +
+            '<div class="pf-rem-main">' +
+              '<div class="pf-rem-title">' + escapeHtml(e.title || 'Reminder') + '</div>' +
+              '<div class="pf-rem-when">set for ' + escapeHtml(reminderWhenText(e.remindAt)) +
+                (isNaN(firedAt) ? '' : ' · fired ' + escapeHtml(reminderWhenText(firedAt))) + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('')
+      : '<div class="pf-activity-empty">Nothing has fired yet.</div>';
+    listEl.innerHTML = html;
+    // Cancel wiring is per row: the stub DOM has no closest(), and a delegated
+    // handler would need one.
+    listEl.querySelectorAll('[data-rem-cancel]').forEach(btn => {
+      btn.addEventListener('click', function(ev) {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        const id = btn.getAttribute('data-rem-cancel');
+        reminders = reminders.filter(r => !(r && r.id === id));
+        saveReminders();
+        renderRemindersList();
+        showToast('Reminder removed');
+      });
+    });
+  }
+  document.getElementById('pf-reminders-btn').addEventListener('click', () => {
+    _exitMultiSelectMode();
+    closeAllModals(); renderRemindersList(); openModal(remindersPanel, 'flex');
   });
     // SUBSECTION: Comments
   function openCommentPanel(p, s) {
