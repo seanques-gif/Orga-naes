@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-G9Jb6GzouVYlugLigROVXMHN/Hh0zZ1MXfjkl7rCaQg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-fCCpg+oA3I2ynj8FS3quCv8OmLsk1K5baVP0QV3jlVM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8198,19 +8198,41 @@
   }
   function checkReminders() {
     const now = Date.now();
-    const fired = [];
-    reminders.forEach(r => {
-      if (r.remindAt <= now) {
-        fired.push(r);
-        if ('Notification' in window && Notification.permission === 'granted') { new Notification('⏰ Reminder: ' + r.title); }
-        else { showToast('⏰ Reminder: ' + r.title); }
-      }
-    });
-    if (fired.length) { reminders = reminders.filter(r => !fired.includes(r)); saveReminders(); }
+    // A malformed entry must not take the whole timer down. reminders are read
+    // straight from storage (loadReminders) and from a backup file (the import
+    // path) with no per-element validation, so a null or a bare string is
+    // possible — and r.remindAt on it would throw inside the interval, where
+    // nothing catches it and every later reminder stops firing with it.
+    const fired = reminders.filter(r => r && typeof r === 'object' && r.remindAt <= now);
+    if (!fired.length) return;
+    // With the permission granted each reminder earns its own browser
+    // notification. Without it, a single toast has to carry the batch: every
+    // fired reminder is dropped from the list, and showToast() REPLACES what is
+    // on screen, so firing one toast each meant a tab that returned with three
+    // overdue reminders showed only the last and silently lost the other two.
+    if ('Notification' in window && Notification.permission === 'granted') {
+      fired.forEach(r => { new Notification('⏰ Reminder: ' + r.title); });
+    } else if (fired.length === 1) {
+      showToast('⏰ Reminder: ' + fired[0].title);
+    } else {
+      const names = fired.map(r => r.title).filter(Boolean);
+      const extra = names.length > 3 ? ' +' + (names.length - 3) + ' more' : '';
+      showToast('⏰ ' + fired.length + ' reminders: ' + names.slice(0, 3).join(', ') + extra);
+    }
+    reminders = reminders.filter(r => !fired.includes(r));
+    saveReminders();
   }
   loadReminders();
   setInterval(checkReminders, 30000);
   setTimeout(checkReminders, 2000);
+  // A hidden tab's timers are throttled — Chrome drops a background interval to
+  // roughly one tick a minute and freezes it outright while the machine sleeps
+  // or the tab is discarded — so a reminder due during that time fires late.
+  // checkReminders() already catches up (it fires EVERY reminder whose time has
+  // passed, not just the next one), so simply re-running it on the way back
+  // turns "up to a minute late, sometimes hours" into "already there when you
+  // look". Only the hidden -> visible edge runs it; the interval owns the rest.
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) checkReminders(); });
 
   let commentTarget = null;
 
