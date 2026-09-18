@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-unQ7YKYG3uhQLkSrwtb8abIy1QePoDo9xbBExcfkpkE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Tr2DjOrr1Ams/FXgtHVccFZxR8CMBGFK1T+pNQ1vfNM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8232,7 +8232,23 @@
       // on screen, so firing one toast each meant a tab that returned with three
       // overdue reminders showed only the last and silently lost the other two.
       if ('Notification' in window && Notification.permission === 'granted') {
-        fired.forEach(r => { new Notification('⏰ Reminder: ' + r.title); });
+        fired.forEach(r => {
+          try {
+            const n = new Notification('⏰ Reminder: ' + r.title, {
+              body: 'Open the task it was set for',
+              tag: 'pf-reminder-' + (r.id || r.title),
+            });
+            // Clicking a notification focuses the tab in every browser; focusing
+            // explicitly is the belt to that braces. The jump itself is guarded,
+            // because a notification callback has no caller to catch a throw and
+            // the task may have been deleted since the reminder was set.
+            if (n) n.onclick = function() {
+              try { window.focus(); } catch (e) {}
+              try { openReminderSource(r); } catch (e) { logError('Reminder jump', e); }
+              try { if (n.close) n.close(); } catch (e) {}
+            };
+          } catch (e) { /* blocked or unsupported: the toast fallback still fires */ }
+        });
       } else if (fired.length === 1) {
         showToast('⏰ Reminder: ' + fired[0].title);
       } else {
@@ -8364,6 +8380,39 @@
     _exitMultiSelectMode();
     closeAllModals(); renderRemindersList(); openModal(remindersPanel, 'flex');
   });
+
+  // A reminder remembers what it was set about, so clicking its notification can
+  // land on that task. Same select-and-highlight shape as the planner's and
+  // Today's jump-to-source (25, 22) — including the canvas -> list switch — but
+  // deliberately with no return-on-Esc flag: the reminder panel is already
+  // closed, so Esc should do what it does from any project detail.
+  function reminderSourceProject(r) {
+    if (!r || !r.sourceId) return null;
+    if (r.sourceType === 'project') return projects.find(p => p.id === r.sourceId) || null;
+    // A subtask can sit at any depth, so find the project that owns it.
+    return projects.find(p => p.subtasks && findSubNode(p.subtasks, r.sourceId)) || null;
+  }
+  function openReminderSource(r) {
+    const project = reminderSourceProject(r);
+    if (!project) { showToast('That task is no longer there', true); return false; }
+    closeAllModals();
+    if (!listViewActive) { document.getElementById('pf-collapse-cats').click(); }
+    splitSelectedId = project.id; splitMultiSelect = [];
+    searchTerm = r.title || '';
+    _searchAutoCollapseId = null;
+    renderSplitList(); renderSplitDetail();
+    root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
+    if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) root.classList.add('pf-mobile-detail-open');
+    searchTerm = '';
+    // Reveal the subtask's own row now the detail has been rebuilt.
+    if (r.sourceType !== 'project' && r.sourceId) {
+      const row = root.querySelector('[data-sub-id="' + r.sourceId + '"]');
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: 'center' });
+    }
+    const active = splitList.querySelector('.pf-split-active');
+    if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
+    return true;
+  }
     // SUBSECTION: Comments
   function openCommentPanel(p, s) {
     commentTarget = { project: p, sub: s };
@@ -9899,6 +9948,9 @@
     // Gamification (33): the weekly freeze refill is re-decided on a heartbeat
     // now, so the regression drives that production path without moving the
     // local clock — set a stale week, call the check, read the result.
+    // The split view's current selection, so the reminder-jump regression can
+    // assert where a notification click landed.
+    getSplitSelectedId: () => splitSelectedId,
     getStreakFreezes: () => _streakFreezes,
     setStreakFreezes: (n) => { _streakFreezes = n; },
     setFreezeWeek: (w) => { _freezeWeek = w; },
