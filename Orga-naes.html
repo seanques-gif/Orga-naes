@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-06loKYs4LtOANQKvstjWzt1kzr4Ml6NNqqeCTt9Llao='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-G9Jb6GzouVYlugLigROVXMHN/Hh0zZ1MXfjkl7rCaQg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8850,6 +8850,24 @@
   const MILESTONES_KEY = 'project-flow-milestones';
   const STREAK_FREEZES_KEY = 'project-flow-streak-freezes';
   function getMonday(d) { const dt = new Date(d); const day = dt.getDay(); const diff = dt.getDate() - day + (day === 0 ? -6 : 1); dt.setDate(diff); return localDateStr(dt); }
+  // The weekly freeze reset was decided once, inside the boot IIFE below, so an
+  // app left open across a Monday boundary kept last week's depleted count and
+  // the "replenish weekly" badge never refilled until a reload — the same
+  // captured-date shape the Today panel and the calendar month had. The check
+  // has its own entry point now so it can run again whenever the answer can
+  // have changed: a task completion, the minute heartbeat, and returning to a
+  // hidden tab. It returns true only when it actually refilled, so a caller
+  // can refresh the badge without a needless repaint.
+  let _gamificationLoaded = false;
+  function refreshStreakFreezes() {
+    if (!_gamificationLoaded) return false;
+    const thisWeek = getMonday(new Date());
+    if (_freezeWeek === thisWeek) return false;
+    _streakFreezes = 2;
+    _freezeWeek = thisWeek;
+    saveGamification();
+    return true;
+  }
   // Was raw localStorage-only, so a completed streak/XP/milestone total
   // could silently fail to persist (and fail to restore) anywhere
   // localStorage isn't available. safeGet/safeSet fall back to IndexedDB
@@ -8859,8 +8877,8 @@
     try { const x = await safeGet(XP_KEY, false); if (x && x.value) _xp = parseInt(x.value, 10) || 0; } catch(e) {}
     try { const m = await safeGet(MILESTONES_KEY, false); if (m && m.value) _totalCompletions = parseInt(m.value, 10) || 0; } catch(e) {}
     try { const f = await safeGet(STREAK_FREEZES_KEY, false); if (f && f.value) { const parsed = JSON.parse(f.value); _streakFreezes = parsed.count; _freezeWeek = parsed.week; } } catch(e) {}
-    const thisWeek = getMonday(new Date());
-    if (_freezeWeek !== thisWeek) { _streakFreezes = 2; _freezeWeek = thisWeek; saveGamification(); }
+    _gamificationLoaded = true;
+    refreshStreakFreezes();
   })();
   function saveGamification() {
     safeSet(STREAK_KEY, JSON.stringify(_streak), false);
@@ -8869,6 +8887,7 @@
     safeSet(STREAK_FREEZES_KEY, JSON.stringify({ count: _streakFreezes, week: _freezeWeek }), false);
   }
   function onTaskCompleted(isProject) {
+    refreshStreakFreezes();
     const today = todayLocalStr();
     if (_streak.lastDate === today) { /* already counted */ }
     else if (_streak.lastDate === daysAgoLocalStr(1)) { _streak.count++; _streak.lastDate = today; }
@@ -8892,6 +8911,13 @@
     if (MILESTONES.includes(_totalCompletions)) { setTimeout(() => showToast('🏆 ' + _totalCompletions + ' tasks completed! Amazing work!'), 800); confetti(); }
     saveGamification(); renderStats();
   }
+  // The two triggers a boot-only check cannot cover: a week that rolls over
+  // while the tab sits open (the heartbeat re-decides each tick) and coming
+  // back to a backgrounded tab, so the refill is never up to a minute late.
+  setInterval(function() { if (refreshStreakFreezes()) renderStats(); }, 60000);
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && refreshStreakFreezes()) renderStats();
+  });
 
   // SUBSECTION: Motivational Quotes
   const QUOTES = [
@@ -9731,6 +9757,13 @@
     getBacklogData: () => backlogData,
     getReminders: () => reminders,
     getActivityLog: () => activityLog,
+    // Gamification (33): the weekly freeze refill is re-decided on a heartbeat
+    // now, so the regression drives that production path without moving the
+    // local clock — set a stale week, call the check, read the result.
+    getStreakFreezes: () => _streakFreezes,
+    setStreakFreezes: (n) => { _streakFreezes = n; },
+    setFreezeWeek: (w) => { _freezeWeek = w; },
+    refreshStreakFreezes: () => refreshStreakFreezes(),
     setCategoryEmojis: (e) => { categoryEmojis = e; saveCatEmojis(); },
     stopAutoBackup: () => { if (_autoBackupTimer) { clearInterval(_autoBackupTimer); _autoBackupTimer = null; } },
     // Resets the account-scoped panels that clearLocalUserData() can't
