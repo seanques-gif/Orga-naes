@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ftT2y1L1X69p7AMyRKnRCAG4xWoBqbqVLNPhJH99O68='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-G2KzM7VpRNCS+pmQDjRHINSZJvMdhUw5bKKsp2ntV2E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6625,7 +6625,25 @@
   function renderActivityList() {
     const listEl = document.getElementById('pf-activity-list');
     if (!activityLog.length) { listEl.innerHTML = '<div class="pf-activity-empty">No activity yet.</div>'; return; }
-    listEl.innerHTML = activityLog.map(e => '<div class="pf-activity-item"><span class="pf-activity-time">' + formatDateTime(e.time) + '</span>' + escapeHtml(e.msg) + '</div>').join('');
+    listEl.innerHTML = activityLog.map(e => {
+      // An entry that carries a source record (reminder events do) is a button
+      // as well as a sentence: clicking it jumps to the task it is about. The
+      // record is stashed on the element, not interpolated into markup.
+      const clickable = e && e.kind === 'reminder' && e.sourceId;
+      const open = clickable ? ' data-act-open="1" role="button" tabindex="0" title="Open the task it was set for"' : '';
+      return '<div class="pf-activity-item"' + open + ' data-act-idx="' + activityLog.indexOf(e) + '"><span class="pf-activity-time">' + formatDateTime(e.time) + '</span>' + escapeHtml(e.msg) + '</div>';
+    }).join('');
+    listEl.querySelectorAll('[data-act-open]').forEach(el => {
+      el.addEventListener('click', () => {
+        const e = activityLog[parseInt(el.getAttribute('data-act-idx'), 10)];
+        if (!e) return;
+        try { openReminderSource(e); } catch (err) { logError('Reminder jump', err); }
+      });
+      el.addEventListener('keydown', ev => {
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        ev.preventDefault(); el.click();
+      });
+    });
   }
   document.getElementById('pf-activity-btn').addEventListener('click', () => {
     _exitMultiSelectMode();
@@ -8398,6 +8416,19 @@
     // A subtask can sit at any depth, so find the project that owns it.
     return projects.find(p => p.subtasks && findSubNode(p.subtasks, r.sourceId)) || null;
   }
+  window._pfJumpReminder = function(r) {
+    try { return openReminderSource(r); } catch (e) { logError('Reminder jump', e); return false; }
+  };
+  window._pfReminderBySource = function(sourceId, remindAt) {
+    if (!sourceId) return null;
+    const hit = activityLog.filter(function(e) {
+      return e && e.kind === 'reminder' && e.sourceId === sourceId && (remindAt === undefined || e.remindAt === remindAt);
+    });
+    return hit.length ? hit[0] : null;
+  };
+  window._pfReminderRecords = function() {
+    return activityLog.filter(function(e) { return e && e.kind === 'reminder' && e.sourceId; });
+  };
   function openReminderSource(r) {
     const project = reminderSourceProject(r);
     if (!project) { showToast('That task is no longer there', true); return false; }
