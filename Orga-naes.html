@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ciorYIcvL2GRs8IKzCScbdVpTTjfBHfZYHJ2T4OfcKg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-5lHZKLLtB/rMFH15NOzL9E6UgsNMidF98+S7BG98zvk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1614,6 +1614,12 @@
   #pf-root .pf-rem-fired .pf-rem-title { font-weight: 500; color: var(--text-dim); }
   #pf-root .pf-rem-cancel { background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) + 2px); cursor: pointer; width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; line-height: 1; }
   #pf-root .pf-rem-cancel:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
+
+  /* Reminder badge on a task row (canvas node meta row, split-list row,
+     subtask dates row): a quiet ⏰ whose tooltip names the next fire time.
+     Sized to sit beside the existing chips without moving the row. */
+  #pf-root .pf-rem-badge { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: var(--space-xs); padding: 0 var(--space-xs); height: 18px; font-size: calc(var(--font-size-base) - 4px); line-height: 1; border-radius: var(--radius-pill); background: var(--ongoing-bg); border: 1px solid color-mix(in srgb, var(--ongoing) 35%, transparent); cursor: default; }
+  #pf-root .pf-sub-dates .pf-rem-badge { margin-left: var(--space-xxs); height: 16px; }
 
   #pf-root .pf-category-popover {
     position: fixed;
@@ -8302,6 +8308,43 @@
     // sitting there long after it stopped being true.
     if (remindersPanel && remindersPanel.style.display !== 'none') renderRemindersList();
   }
+  // A task with a pending reminder wears a small ⏰ on its row — on the canvas
+  // node header, the split-list row and the subtask row — so an upcoming
+  // reminder is visible without opening the panel. Decoration is idempotent
+  // (a re-render rebuilds the rows; a no-change call finds nothing to add) and
+  // runs after every render via the render wrapper module 40 already owns, the
+  // same mechanism as the overdue badge. The tooltip names the next fire time
+  // so it answers "what happens if I walk away now".
+  function decorateReminderBadges() {
+    document.querySelectorAll('.pf-rem-badge').forEach(b => { if (b.parentNode) b.parentNode.removeChild(b); });
+    if (!reminders.length) return;
+    const bySource = {};
+    reminders.forEach(r => { if (r && r.sourceId) { const t = r.remindAt || 0; if (!bySource[r.sourceId] || t < bySource[r.sourceId].remindAt) bySource[r.sourceId] = r; } });
+    Object.keys(bySource).forEach(sourceId => {
+      const r = bySource[sourceId];
+      // Every surface the task is on gets its own badge: the canvas node's
+      // header-meta chip row, the list row, and a subtask's dates row. A
+      // surface that is not rendered simply contributes no host.
+      const hosts = [];
+      if (r.sourceType === 'project') {
+        const row = document.querySelector('.pf-split-list-item[data-project-id="' + sourceId + '"]');
+        if (row) hosts.push(row);
+        const node = document.querySelector('.pf-node[data-id="' + sourceId + '"]');
+        if (node) hosts.push(node);
+      } else {
+        document.querySelectorAll('[data-sub-id="' + sourceId + '"]').forEach(el => hosts.push(el));
+      }
+      hosts.forEach(target => {
+        const badge = document.createElement('span');
+        badge.className = 'pf-rem-badge';
+        badge.textContent = '⏰';
+        badge.title = 'Reminder: ' + (r.title || 'Upcoming reminder') + ' · ' + reminderWhenText(r.remindAt);
+        const host = target.querySelector(r.sourceType === 'project' ? '.pf-header-meta' : '.pf-sub-dates');
+        (host || target).appendChild(badge);
+      });
+    });
+  }
+  window._pfDecorateReminders = decorateReminderBadges;
   loadReminders();
   setInterval(checkReminders, 30000);
   setTimeout(checkReminders, 2000);
@@ -9615,7 +9658,7 @@
   }
   const _origRender = render;
   let _renderRafId = null;
-  render = function() { if (_renderRafId) return; _renderRafId = requestAnimationFrame(() => { _renderRafId = null; _origRender(); (window.requestIdleCallback || setTimeout)(function() { updateOverdueBadge(); saveToday(); }, {timeout: 200}); }); };
+  render = function() { if (_renderRafId) return; _renderRafId = requestAnimationFrame(() => { _renderRafId = null; _origRender(); if (window._pfDecorateReminders) { try { window._pfDecorateReminders(); } catch (e) { logError('Reminder badge', e); } } (window.requestIdleCallback || setTimeout)(function() { updateOverdueBadge(); saveToday(); }, {timeout: 200}); }); };
   updateOverdueBadge();
 
   // Floating action button (expandable)
