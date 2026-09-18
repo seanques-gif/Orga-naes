@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-5lHZKLLtB/rMFH15NOzL9E6UgsNMidF98+S7BG98zvk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-VjV9bIng5vZRvYQae3CzC1LHPyJlXhA10mK/BYI5ejA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1618,7 +1618,9 @@
   /* Reminder badge on a task row (canvas node meta row, split-list row,
      subtask dates row): a quiet ⏰ whose tooltip names the next fire time.
      Sized to sit beside the existing chips without moving the row. */
-  #pf-root .pf-rem-badge { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: var(--space-xs); padding: 0 var(--space-xs); height: 18px; font-size: calc(var(--font-size-base) - 4px); line-height: 1; border-radius: var(--radius-pill); background: var(--ongoing-bg); border: 1px solid color-mix(in srgb, var(--ongoing) 35%, transparent); cursor: default; }
+  #pf-root .pf-rem-badge { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: var(--space-xs); padding: 0 var(--space-xs); height: 18px; font-size: calc(var(--font-size-base) - 4px); line-height: 1; border-radius: var(--radius-pill); background: var(--ongoing-bg); border: 1px solid color-mix(in srgb, var(--ongoing) 35%, transparent); cursor: pointer; font-family: inherit; color: inherit; transition: background var(--dur-state), border-color var(--dur-state); }
+  #pf-root .pf-rem-badge:hover { background: color-mix(in srgb, var(--ongoing) 22%, transparent); border-color: color-mix(in srgb, var(--ongoing) 60%, transparent); }
+  #pf-root .pf-rem-badge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #pf-root .pf-sub-dates .pf-rem-badge { margin-left: var(--space-xxs); height: 16px; }
 
   #pf-root .pf-category-popover {
@@ -8119,7 +8121,7 @@
   const REMINDERS_KEY = 'project-flow-reminders';
   let reminders = [];
   let remindersLoaded = false;
-  async function loadReminders() { try { const res = await safeGet(REMINDERS_KEY, false); if (res && res.value) reminders = JSON.parse(res.value); } catch (e) { reminders = []; logError('Load reminders', e); } remindersLoaded = true; _remindersTabStore.recordBase(); }
+  async function loadReminders() { try { const res = await safeGet(REMINDERS_KEY, false); if (res && res.value) reminders = JSON.parse(res.value); } catch (e) { reminders = []; logError('Load reminders', e); } remindersLoaded = true; _remindersTabStore.recordBase(); refreshReminderBadges(); }
 
   // Cross-tab sync (05 owns the engine).
   // The weekly planner is one array of tasks PER DAY: mode 'nested' merges each
@@ -8146,16 +8148,25 @@
     persist: function() { saveBacklog(); }
   });
     // SUBSECTION: Reminders
-  function saveReminders() { const _json = JSON.stringify(reminders); _remindersTabStore.recordBase(_json); safeSet(REMINDERS_KEY, _json, false); }
-  function promptReminder(sourceId, title, sourceType) {
+  function saveReminders() { const _json = JSON.stringify(reminders); _remindersTabStore.recordBase(_json); safeSet(REMINDERS_KEY, _json, false); refreshReminderBadges(); }
+  // editId switches the dialog into edit mode: it edits THAT reminder rather
+  // than adding one, which is what the ⏰ badge on a task row opens.
+  function promptReminder(sourceId, title, sourceType, editId) {
+    const editTarget = editId ? reminders.find(x => x && x.id === editId) : null;
     const wrap = document.createElement('div');
+    wrap.className = 'pf-remind-dialog';
     wrap.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:var(--z-toast);padding:16px;border-radius:6px;border:1px solid var(--card-border);background:var(--card);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,0.5);display:flex;flex-direction:column;gap:10px;min-width:260px;';
     const now = new Date(); now.setMinutes(now.getMinutes() + 30);
     let rYear = now.getFullYear(), rMonth = now.getMonth() + 1, rDay = now.getDate(), rHour = now.getHours(), rMin = now.getMinutes(), rAmpm = now.getHours() >= 12 ? 'PM' : 'AM';
+    if (editTarget) {
+      const at = new Date(editTarget.remindAt);
+      rYear = at.getFullYear(); rMonth = at.getMonth() + 1; rDay = at.getDate();
+      rHour = at.getHours() % 12 || 12; rMin = at.getMinutes(); rAmpm = at.getHours() >= 12 ? 'PM' : 'AM';
+    }
     rHour = rHour % 12 || 12;
     function padZ(n) { return String(n).padStart(2, '0'); }
     function renderRemindDialog() {
-      wrap.innerHTML = '<div style="font-size: calc(var(--font-size-base) - 1px);font-weight:600;">⏰ Set Reminder</div>' +
+      wrap.innerHTML = '<div style="font-size: calc(var(--font-size-base) - 1px);font-weight:600;">' + (editTarget ? '⏰ Edit Reminder' : '⏰ Set Reminder') + '</div>' +
         '<div style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(title) + '</div>' +
         '<div style="display:flex;gap:6px;align-items:center;justify-content:center;">' +
           '<div class="pf-remind-scroll" data-field="year" style="text-align:center;"><div class="pf-remind-val" style="font-size: calc(var(--font-size-base) + 2px);font-weight:600;color:var(--text);padding:6px 8px;">' + rYear + '</div><div style="font-size: calc(var(--font-size-base) - 5px);color:var(--text-dim);">Year</div></div>' +
@@ -8169,7 +8180,7 @@
           '<div class="pf-remind-scroll" data-field="min" style="text-align:center;"><div class="pf-remind-val" style="font-size: calc(var(--font-size-base) + 2px);font-weight:600;color:var(--text);padding:6px 8px;">' + padZ(rMin) + '</div><div style="font-size: calc(var(--font-size-base) - 5px);color:var(--text-dim);">Min</div></div>' +
           '<div class="pf-remind-scroll" data-field="ampm" style="text-align:center;"><div class="pf-remind-val" style="font-size:var(--font-size-base);font-weight:600;color:var(--accent);padding:6px 6px;">' + rAmpm + '</div><div style="font-size: calc(var(--font-size-base) - 5px);color:var(--text-dim);">AM/PM</div></div>' +
         '</div>' +
-        '<div style="display:flex;gap:6px;"><button id="pf-remind-ok" class="pf-undo-btn" style="flex:1;padding:6px;">Set</button><button id="pf-remind-cancel" class="pf-undo-btn" style="flex:1;padding:6px;">Cancel</button></div>';
+        '<div style="display:flex;gap:6px;"><button id="pf-remind-ok" class="pf-undo-btn" style="flex:1;padding:6px;">' + (editTarget ? 'Save' : 'Set') + '</button>' + (editTarget ? '<button id="pf-remind-remove" class="pf-undo-btn" style="flex:1;padding:6px;">Remove</button>' : '') + '<button id="pf-remind-cancel" class="pf-undo-btn" style="flex:1;padding:6px;">Cancel</button></div>';
       wrap.querySelectorAll('.pf-remind-scroll').forEach(el => {
         el.style.cursor = 'ns-resize';
         el.style.userSelect = 'none';
@@ -8200,6 +8211,8 @@
         });
       });
       wrap.querySelector('#pf-remind-ok').addEventListener('click', confirmReminder);
+      const removeBtn = editTarget ? wrap.querySelector('#pf-remind-remove') : null;
+      if (removeBtn) removeBtn.addEventListener('click', removeReminder);
       wrap.querySelector('#pf-remind-cancel').addEventListener('click', () => { wrap.remove(); });
     }
     function adjustField(field, dir) {
@@ -8215,12 +8228,24 @@
       let h24 = rHour % 12; if (rAmpm === 'PM') h24 += 12;
       const remindAt = new Date(rYear, rMonth - 1, rDay, h24, rMin).getTime();
       if (remindAt > Date.now()) {
-        reminders.push({ id: uid(), sourceId: sourceId, title: title, sourceType: sourceType, remindAt: remindAt });
+        if (editTarget) { editTarget.remindAt = remindAt; editTarget.title = title; }
+        else reminders.push({ id: uid(), sourceId: sourceId, title: title, sourceType: sourceType, remindAt: remindAt });
         requestNotificationPermission();
-        saveReminders(); showToast('⏰ Reminder set for ' + new Date(remindAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+        saveReminders(); showToast((editTarget ? '⏰ Reminder updated for ' : '⏰ Reminder set for ') + new Date(remindAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
       } else { showToast('Reminder must be in the future', true); }
       wrap.remove();
     }
+    function removeReminder() {
+      if (!editTarget) return;
+      const idx = reminders.findIndex(x => x && x.id === editTarget.id);
+      if (idx > -1) reminders.splice(idx, 1);
+      saveReminders(); wrap.remove(); render();
+      showToast('⏰ Reminder removed');
+    }
+    // One dialog at a time: the badge and the context menu can both open it,
+    // and a second open used to leave the first floating on top of the new
+    // one — the orphan class the Ctrl+S audit found elsewhere.
+    root.querySelectorAll('.pf-remind-dialog').forEach(el => el.remove());
     root.appendChild(wrap);
     renderRemindDialog();
   }
@@ -8335,16 +8360,35 @@
         document.querySelectorAll('[data-sub-id="' + sourceId + '"]').forEach(el => hosts.push(el));
       }
       hosts.forEach(target => {
-        const badge = document.createElement('span');
+        // A real button, so it is keyboard reachable without a tabindex story,
+        // and it acts on the REMINDER (its own dialog, pre-filled) rather than
+        // on the task — stopPropagation keeps the row's select/rename off the
+        // click.
+        const badge = document.createElement('button');
+        badge.type = 'button';
         badge.className = 'pf-rem-badge';
         badge.textContent = '⏰';
-        badge.title = 'Reminder: ' + (r.title || 'Upcoming reminder') + ' · ' + reminderWhenText(r.remindAt);
+        const whenText = reminderWhenText(r.remindAt);
+        badge.title = 'Reminder: ' + (r.title || 'Upcoming reminder') + ' · ' + whenText + ' — click to change or remove';
+        badge.setAttribute('aria-label', 'Reminder ' + whenText + ': change or remove');
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          try { promptReminder(r.sourceId, r.title, r.sourceType, r.id); } catch (err) { logError('Reminder edit', err); }
+        });
         const host = target.querySelector(r.sourceType === 'project' ? '.pf-header-meta' : '.pf-sub-dates');
         (host || target).appendChild(badge);
       });
     });
   }
-  window._pfDecorateReminders = decorateReminderBadges;
+  // The badge list is a mirror of `reminders`, so it refreshes on every path
+  // that changes them rather than on the next render — which may be a view
+  // away (a selection re-renders the list and detail directly, not through
+  // render), or may never come (the boot render happens before the async
+  // load lands).
+  function refreshReminderBadges() {
+    try { decorateReminderBadges(); } catch (e) { logError('Reminder badge', e); }
+  }
+  window._pfDecorateReminders = refreshReminderBadges;
   loadReminders();
   setInterval(checkReminders, 30000);
   setTimeout(checkReminders, 2000);
@@ -8367,7 +8411,7 @@
     label: 'reminders',
     get: function() { return reminders; },
     ready: function() { return remindersLoaded; },
-    set: function(list) { reminders = list; },
+    set: function(list) { reminders = list; refreshReminderBadges(); },
     persist: function() { saveReminders(); }
   });
 
@@ -9660,6 +9704,21 @@
   let _renderRafId = null;
   render = function() { if (_renderRafId) return; _renderRafId = requestAnimationFrame(() => { _renderRafId = null; _origRender(); if (window._pfDecorateReminders) { try { window._pfDecorateReminders(); } catch (e) { logError('Reminder badge', e); } } (window.requestIdleCallback || setTimeout)(function() { updateOverdueBadge(); saveToday(); }, {timeout: 200}); }); };
   updateOverdueBadge();
+
+  // The task rows are drawn by renderSplitList / renderSplitDetail, which the
+  // app calls DIRECTLY on a selection, a rename, a search keystroke and on the
+  // first paint after a cold load — never through render(). The reminder badge
+  // lives on those rows, and on a cold load the rows are painted after the
+  // reminders have loaded, so a hook on render() alone left the row bare until
+  // something else redrew the list. Decoration is idempotent, so it rides both.
+  (function hookRowRenderers() {
+    function decorateAfterRender() {
+      if (window._pfDecorateReminders) { try { window._pfDecorateReminders(); } catch (e) { logError('Reminder badge', e); } }
+    }
+    const _origSplitList = renderSplitList, _origSplitDetail = renderSplitDetail;
+    renderSplitList = function() { _origSplitList.apply(null, arguments); decorateAfterRender(); };
+    renderSplitDetail = function() { _origSplitDetail.apply(null, arguments); decorateAfterRender(); };
+  })();
 
   // Floating action button (expandable)
   (function() {
