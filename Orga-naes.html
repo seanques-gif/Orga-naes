@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-/fSJfzkvifrblld7dGxTw95aqIkBkZ+U5ifh83S6SCM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-46PdkZPkLNlbt3sNCUrIvGF5YmUCZQ71HOdtwUe2kC0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9065,7 +9065,10 @@
       today: { date: todayDate, tasks: todayTasks },
       weeklyData: weeklyData,
       reminders: reminders,
-      categoryEmojis: categoryEmojis
+      categoryEmojis: categoryEmojis,
+      // Device preferences that now ride the cloud, so a backup restores the
+      // user's own snooze intervals instead of the built-in three.
+      snoozePresets: (window._pf && typeof window._pf.getSnoozePresets === 'function') ? window._pf.getSnoozePresets() : null
     };
     // Notes are part of a full backup. getNotesSnapshot returns null before
     // the notes module loads (boot race) — omit rather than write [].
@@ -9235,13 +9238,14 @@
       archive: fromFirebaseShape(best.archive),
       categoryEmojis: fromFirebaseShape(best.categoryEmojis),
       notes: fromFirebaseShape(best.notes),
-      noteTombstones: fromFirebaseShape(best.noteTombstones)
+      noteTombstones: fromFirebaseShape(best.noteTombstones),
+      snoozePresets: fromFirebaseShape(best.snoozePresets)
     };
   }
 
   function extractImportData(parsed) {
     let data = null, importedCategories = [], importedCollapsed = {};
-    let importedArchive = null, importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null, importedNoteTombstones = null;
+    let importedArchive = null, importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null, importedNoteTombstones = null, importedSnoozePresets = null;
     const rtdb = unwrapRtdbExport(parsed);
     if (rtdb) {
       parsed = rtdb; // import the console export exactly like a native backup
@@ -9260,9 +9264,10 @@
       if (Array.isArray(parsed.reminders)) importedReminders = parsed.reminders;
       if (parsed.categoryEmojis && typeof parsed.categoryEmojis === 'object') importedEmojis = parsed.categoryEmojis;
       if (Array.isArray(parsed.notes)) importedNotes = parsed.notes;
+      if (Array.isArray(parsed.snoozePresets)) importedSnoozePresets = parsed.snoozePresets;
       if (parsed.noteTombstones && typeof parsed.noteTombstones === 'object') importedNoteTombstones = parsed.noteTombstones;
     }
-    return { data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones };
+    return { data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets };
   }
 
   // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
@@ -9299,7 +9304,7 @@
     return (Array.isArray(data) ? data : []).filter(p => p != null).map(p => sanitizeImportedNode(p, seenIds));
   }
 
-  function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones) {
+  function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets) {
     snapshot();
     let restoredExtras = 0;
     // Archive replaces HERE (after snapshot), like every other extra — it used
@@ -9318,6 +9323,9 @@
     if (importedWeekly) { weeklyData = importedWeekly; saveWeekly(); renderWeeklyPanel(); restoredExtras++; }
     if (Array.isArray(importedReminders)) { reminders = importedReminders; saveReminders(); restoredExtras++; }
     if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); restoredExtras++; }
+    // The preset set replaces wholesale; setSnoozePresets validates it, so a
+    // hand-edited backup cannot install a malformed set.
+    if (Array.isArray(importedSnoozePresets) && window._pf && typeof window._pf.setSnoozePresets === 'function') { window._pf.setSnoozePresets(importedSnoozePresets); restoredExtras++; }
     if (importedNotes) {
       // File import REPLACES the note set (importNotes bridge): the backup is
       // a snapshot of the other copy, so notes absent from it — including a
@@ -9336,8 +9344,8 @@
       const { parsed, error } = parseImportJson(String(e.target.result || ''));
       if (error) { showToast(error, true); importInput.value = ''; return; }
       try {
-        const { data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones } = extractImportData(parsed);
-        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones); }
+        const { data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets } = extractImportData(parsed);
+        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
     };
@@ -10290,6 +10298,11 @@
     getSplitSelectedId: () => splitSelectedId,
     getStreakFreezes: () => _streakFreezes,
     setStreakFreezes: (n) => { _streakFreezes = n; },
+    // Snooze presets live in module 26's closure. These bridges let the file
+    // export/import (31/32) and the cloud sync (45) read and replace the set
+    // without reaching into it, and they reuse the module's own validation.
+    getSnoozePresets: () => (typeof window._pfSnoozePresets === 'function' ? window._pfSnoozePresets() : null),
+    setSnoozePresets: (list) => { if (typeof window._pfSetSnoozePresets === 'function') window._pfSetSnoozePresets(list); },
     setFreezeWeek: (w) => { _freezeWeek = w; },
     refreshStreakFreezes: () => refreshStreakFreezes(),
     setCategoryEmojis: (e) => { categoryEmojis = e; saveCatEmojis(); },
@@ -10310,6 +10323,10 @@
       weeklyData = {};
       renderWeeklyPanel();
       reminders = [];
+      // The presets are account-scoped now (they ride the cloud), so a
+      // sign-out drops back to the defaults rather than leaking the previous
+      // account's intervals into the next one.
+      if (typeof window._pfSetSnoozePresets === 'function') window._pfSetSnoozePresets(null);
       collapsedCategories = {};
     },
     escapeHtml: (s) => escapeHtml(s),
@@ -11761,6 +11778,7 @@ if ('serviceWorker' in navigator) {
   function trashRef() { return db.ref('users/' + _fbUser.uid + '/trash'); }
   function notesRef() { return db.ref('users/' + _fbUser.uid + '/notes'); }
   function noteTombstonesRef() { return db.ref('users/' + _fbUser.uid + '/noteTombstones'); }
+  function snoozePresetsRef() { return db.ref('users/' + _fbUser.uid + '/snoozePresets'); }
 
   const LAST_UID_KEY = 'pf-firebase-last-uid';
 
@@ -12015,6 +12033,7 @@ if ('serviceWorker' in navigator) {
   const TODAY_KEY        = 'project-flow-today';
   const WEEKLY_KEY       = 'project-flow-weekly';
   const REMINDERS_KEY    = 'project-flow-reminders';
+  const SNOOZE_PRESETS_KEY = 'project-flow-snooze-presets';
   const COLLAPSED_CAT_KEY = 'project-flow-collapsed-categories';
   // Debounce constant used by the autosync push hook below
   const PUSH_DEBOUNCE_MS = 3000;
@@ -12029,7 +12048,7 @@ if ('serviceWorker' in navigator) {
     localStorage.setItem(NEEDS_PULL_KEY, '1');
     const keysToClear = [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
      'pf-firebase-last-sync-time', ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY,
-     REMINDERS_KEY, COLLAPSED_CAT_KEY,
+     REMINDERS_KEY, COLLAPSED_CAT_KEY, SNOOZE_PRESETS_KEY,
      // Completeness pass (2026-09-15): planner backlog tasks and the
      // gamification records (streak/XP, milestones, freezes) describe the
      // signed-in user's activity and previously survived sign-out; the
@@ -12087,7 +12106,7 @@ if ('serviceWorker' in navigator) {
     // in-memory sets are empty by construction at this point, so these are
     // not records — just the storage shapes those modules keep.
     setTimeout(function() {
-      [ARCHIVE_KEY, TRASH_KEY, TODAY_KEY, ACTIVITY_KEY, WEEKLY_KEY, REMINDERS_KEY].forEach(function(k) {
+      [ARCHIVE_KEY, TRASH_KEY, TODAY_KEY, ACTIVITY_KEY, WEEKLY_KEY, REMINDERS_KEY, SNOOZE_PRESETS_KEY].forEach(function(k) {
         try { localStorage.removeItem(k); } catch (e) {}
         try { window._pf.openIDB_KV().then(function(db) {
           if (!db) return;
@@ -12172,6 +12191,13 @@ if ('serviceWorker' in navigator) {
         const incomingNotes = notesVal ? (Array.isArray(notesVal) ? notesVal.filter(Boolean) : Object.values(notesVal).filter(Boolean)) : [];
         window._pf.adoptCloudNotes(incomingNotes, (tombVal && typeof tombVal === 'object') ? tombVal : {});
         _notesPulledThisSession = true;
+        // The snooze presets belong to the account too: adopt the incoming
+        // account's set, or fall back to the defaults when it has none — an
+        // empty cloud must not leave the PREVIOUS account's intervals in place.
+        Promise.race([snoozePresetsRef().once('value'), cloudReadTimeout()]).then(function(pSnap) {
+          const pv = pSnap.val();
+          window._pf.setSnoozePresets(pv ? (Array.isArray(pv) ? pv : Object.values(pv)) : null);
+        }).catch(function() {});
         // Pin from the canonical snapshot (see notesSignature): the raw cloud
         // payload's alphabetized keys never matched the snapshot hash, so the
         // next autosync tick re-pushed the freshly adopted set wholesale.
@@ -12414,6 +12440,12 @@ if ('serviceWorker' in navigator) {
       db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
         if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
       });
+      // Same best-effort adoption for the snooze presets on a manual pull: an
+      // account with none leaves the local set alone (the next push uploads it).
+      Promise.race([snoozePresetsRef().once('value'), cloudReadTimeout()]).then(function(pSnap) {
+        const pv = pSnap.val();
+        if (pv) window._pf.setSnoozePresets(Array.isArray(pv) ? pv : Object.values(pv));
+      }).catch(function() {});
 
       if (remoteStr === localStr && catsMatch && archMatch && trashMatch && notesMatch) {
         window._pf.showToast('✅ Local data already matches the cloud');
@@ -12736,6 +12768,7 @@ if ('serviceWorker' in navigator) {
       _lastPushedCatHash = catHash;
     }
     try { db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))); } catch(e) { logError('Firebase push (categoryEmojis)', e); }
+    try { snoozePresetsRef().set(JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || []))); } catch(e) { logError('Firebase push (snoozePresets)', e); }
 
     try { pushNotesIfNeeded().catch(function(e) { logError('Firebase push (notes)', e); }); } catch(e) { logError('Firebase push (notes)', e); }
 
@@ -12835,6 +12868,7 @@ if ('serviceWorker' in navigator) {
       userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects()))),
       catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories()))),
       db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))),
+      snoozePresetsRef().set(JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || []))),
       archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive()))),
       trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
       pushNotesIfNeeded().catch(function(e) { logError('Firebase push (notes)', e); }),
@@ -12860,6 +12894,7 @@ if ('serviceWorker' in navigator) {
         projects: JSON.parse(JSON.stringify(window._pf.getProjects())),
         categories: JSON.parse(JSON.stringify(window._pf.getCategories())),
         categoryEmojis: JSON.parse(JSON.stringify(window._pf.getCategoryEmojis())),
+        snoozePresets: JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || [])),
         archive: JSON.parse(JSON.stringify(window._pf.getArchive())),
         trash: JSON.parse(JSON.stringify(window._pf.getTrash())),
         updatedAt: Date.now()
