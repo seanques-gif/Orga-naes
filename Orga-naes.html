@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-pCupAH9fXGWMRYDE7KIoI+uJk3+NRkyaExWdAKMxeVU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-QDFLS2Yz1+BjiGBkS1ywTZnTnbsWcv5l69Ip1mbDSwU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9250,15 +9250,20 @@
   function extractImportData(parsed) {
     let data = null, importedCategories = [], importedCollapsed = {};
     let importedArchive = null, importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null, importedNoteTombstones = null, importedSnoozePresets = null;
+    // A backup that names its project list — even an empty one — is a full
+    // snapshot and REPLACES the graph. Only a backup with no project list at
+    // all takes the preference-only path.
+    let projectListFound = false;
     const rtdb = unwrapRtdbExport(parsed);
     if (rtdb) {
       parsed = rtdb; // import the console export exactly like a native backup
     }
     if (Array.isArray(parsed)) {
       data = parsed;
+      projectListFound = parsed.length > 0;
     } else if (typeof parsed === 'object' && parsed !== null) {
-      if (Array.isArray(parsed.projects)) { data = parsed.projects; }
-      else { for (const key of Object.keys(parsed)) { if (Array.isArray(parsed[key]) && EXTRA_ARRAY_KEYS.indexOf(key) === -1) { data = parsed[key]; break; } } }
+      if (Array.isArray(parsed.projects)) { data = parsed.projects; projectListFound = true; }
+      else { for (const key of Object.keys(parsed)) { if (Array.isArray(parsed[key]) && EXTRA_ARRAY_KEYS.indexOf(key) === -1) { if (parsed[key].length > 0) { data = parsed[key]; projectListFound = true; } break; } } }
       if (Array.isArray(parsed.categories)) importedCategories = parsed.categories;
       if (parsed.collapsedCategories && typeof parsed.collapsedCategories === 'object') importedCollapsed = parsed.collapsedCategories;
       if (Array.isArray(parsed.archive)) importedArchive = parsed.archive;
@@ -9271,7 +9276,7 @@
       if (Array.isArray(parsed.snoozePresets)) importedSnoozePresets = parsed.snoozePresets;
       if (parsed.noteTombstones && typeof parsed.noteTombstones === 'object') importedNoteTombstones = parsed.noteTombstones;
     }
-    return { data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets };
+    return { data, projectListFound, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets };
   }
 
   // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
@@ -9369,8 +9374,8 @@
       const { parsed, error } = parseImportJson(String(e.target.result || ''));
       if (error) { showToast(error, true); importInput.value = ''; return; }
       try {
-        const { data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets } = extractImportData(parsed);
-        if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets); }
+        const { data, projectListFound, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets } = extractImportData(parsed);
+        if (projectListFound) { applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets); }
         else if (importHasPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets)) { applyImportPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
