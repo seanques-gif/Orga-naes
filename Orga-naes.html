@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Nm+OXCmecmyIy455Nb9BtBnk1NuX8tWQOpfK6xzxOsU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-gdpJ9RLUqjTfiQLTr4V1kHt1GlbYFzNSOmav6OWLz20='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1997,6 +1997,18 @@
   #pf-root .pf-panel-head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); flex-shrink: 0; }
   #pf-root .pf-panel-head-icon { font-size: calc(var(--font-size-base) + 8px); }
   #pf-root .pf-panel-title-lg { font-family: var(--font-sans); font-weight: 700; font-size: calc(var(--font-size-base) + 2px); letter-spacing: -0.3px; }
+  #pf-root .pf-history-list { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; max-height: 220px; overflow-y: auto; }
+  #pf-root .pf-history-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 6px; border: 0; border-radius: 6px; background: none; text-align: left; cursor: pointer; font-size: calc(var(--font-size-base) - 2px); color: var(--text-dim); }
+  #pf-root .pf-history-row:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); }
+  #pf-root .pf-history-row-current { color: var(--text); font-weight: 600; cursor: default; }
+  #pf-root .pf-history-row-next { color: var(--accent); }
+  /* The rows are buttons, and '#pf-root button { outline: none }' out-specifies
+     the global :focus-visible ring, so it has to be restated here. Negative
+     offset keeps the ring inside the scroll container, which would clip it. */
+  #pf-root .pf-history-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  #pf-root .pf-history-step { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  #pf-root .pf-history-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pf-root .pf-history-tag { flex: 0 0 auto; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); }
   #pf-root .pf-panel-count { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); font-weight: 400; }
   #pf-root .pf-footer-actions { padding-top: 8px; border-top: 1px solid var(--card-border); margin-top: 8px; display: flex; gap: 6px; }
   #pf-root .pf-panel-note { flex: 1; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); align-self: center; text-align: right; }
@@ -2497,6 +2509,17 @@
         <button class="pf-undo-btn pf-opt-btn" id="pf-snapshots-btn" ><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
         <button class="pf-undo-btn pf-opt-btn pf-btn-rel" id="pf-error-btn" ><span class="pf-opt-ico" data-ic="alert"></span> Error Log<span class="pf-error-dot pf-error-dot-pos" id="pf-error-dot-btn"></span></button>
       </div>
+    </div>
+
+    <!-- 🕘 Recent steps -->
+    <div class="pf-options-section">
+      <div class="pf-opt-title" data-ic-before="clock">Recent Steps <span id="pf-history-count" class="pf-panel-count"></span></div>
+      <div class="pf-history-list" id="pf-history-list" role="listbox" aria-label="Recent steps, nothing to undo yet"><div class="pf-activity-empty" role="presentation">Nothing to undo yet.</div></div>
+      <div class="pf-history-live pf-sr-only" id="pf-history-live" aria-live="polite" aria-atomic="true"></div>
+      <div class="pf-options-row pf-mt-4">
+        <button class="pf-undo-btn" id="pf-history-clear" title="Forget the recorded steps">Clear</button>
+      </div>
+      <div class="pf-hint">The first row is what Ctrl+Z restores. Click a row — or move with &uarr;&darr; and press Enter — to go back or forward to that step.</div>
     </div>
 
     <!-- ⏰ Snooze presets -->
@@ -3080,10 +3103,17 @@
   let undoStack = [];
   let redoStack = [];
   let _lastProjectId = null; // tracks last-interacted project for per-project undo snapshots
+  let _historyJumpDepth = 0; // >0 while historyGo() walks several steps, so it toasts once
   const undoBtn = document.getElementById('pf-undo');
   const redoBtn = document.getElementById('pf-redo');
 
-  function updateHistoryButtons() { undoBtn.disabled = undoStack.length === 0; redoBtn.disabled = redoStack.length === 0; }
+  function updateHistoryButtons() {
+    undoBtn.disabled = undoStack.length === 0;
+    redoBtn.disabled = redoStack.length === 0;
+    // Every stack change funnels through here, so this is where the Recent
+    // Steps panel is kept in step with them.
+    if (typeof renderHistoryPanel === 'function') renderHistoryPanel();
+  }
   function cloneProjects(data) { if (typeof structuredClone === 'function') return structuredClone(data); return JSON.parse(JSON.stringify(data)); }
   // ---- Unified history -----------------------------------------------------
   // The stacks used to hold the project list and nothing else, so an undo
@@ -3168,15 +3198,42 @@
   // Structural changes (add/delete/reorder) still store the full array.
   // forceFull: a whole-state change (an import) must not be mis-attributed to
   // whichever project happened to be touched last.
-  function snapshot(forceFull) {
+  // A label describing the change an entry is about to reverse. Callers with a
+  // clear name for what they are doing pass one; everything else falls back to
+  // the project that was touched, then to the shape of the change.
+  function deriveHistoryLabel(forceFull, pid) {
+    if (!forceFull && pid) {
+      const p = projects.find(x => x.id === pid);
+      if (p && p.title) return 'Edited \u201c' + String(p.title).slice(0, 40) + '\u201d';
+    }
+    // An entry stores the state from BEFORE its change, so the change THIS
+    // entry will reverse is not visible yet — but the previous entry's change
+    // is: compare its stored pre-state with the state being snapshotted now.
+    // Name it there, on the previous entry, where pressing undo performs it.
+    const prev = undoStack[undoStack.length - 1];
+    if (prev && prev.placeholder && !prev._pp && Array.isArray(prev.data)) {
+      const delta = projects.length - prev.data.length;
+      if (delta > 0) { prev.label = delta === 1 ? 'Added a project' : 'Added ' + delta + ' projects'; prev.placeholder = false; }
+      else if (delta < 0) { prev.label = delta === -1 ? 'Removed a project' : 'Removed ' + (-delta) + ' projects'; prev.placeholder = false; }
+    }
+    return 'Changed projects';
+  }
+  function historyEntry(_pp, idx, id, data, aux, label, placeholder) {
+    return { _pp: _pp, idx: idx, id: id, data: data, aux: aux, label: label, placeholder: !!placeholder, at: Date.now() };
+  }
+  function snapshot(forceFull, label) {
     const pid = forceFull ? null : _lastProjectId;
+    const explicitName = (typeof label === 'string' && label) ? String(label).slice(0, 60) : null;
+    // Derive the name BEFORE clearing the id it needs — clearing first made the
+    // per-project branch unreachable, so every edit read as a generic change.
+    const name = explicitName || deriveHistoryLabel(forceFull, pid);
     _lastProjectId = null;
     const aux = captureAuxState();
     if (pid && projects.some(p => p.id === pid)) {
       const idx = projects.findIndex(p => p.id === pid);
-      undoStack.push({ _pp: true, idx: idx, id: pid, data: cloneProjects(projects[idx]), aux: aux });
+      undoStack.push(historyEntry(true, idx, pid, cloneProjects(projects[idx]), aux, name, !explicitName));
     } else {
-      undoStack.push({ _pp: false, data: cloneProjects(projects), aux: aux });
+      undoStack.push(historyEntry(false, 0, null, cloneProjects(projects), aux, name, !explicitName));
     }
     if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
     redoStack = [];
@@ -3184,17 +3241,58 @@
   }
   function undo() {
     if (!undoStack.length) return;
-    redoStack.push({ _pp: false, data: cloneProjects(projects), aux: captureAuxState() }); // full-array entry — redo() pops this shape
+    const entry = undoStack.pop();
+    // The redo entry holds the state the undo is about to leave, labelled with
+    // the change it would reapply — redo() pops this shape.
+    redoStack.push(historyEntry(false, 0, null, cloneProjects(projects), captureAuxState(), entry.label));
     if (redoStack.length > UNDO_STACK_MAX) redoStack.shift();
-    restoreHistoryEntry(undoStack.pop());
-    showToast('↩ Undo (' + undoStack.length + ' left)');
+    restoreHistoryEntry(entry);
+    if (!_historyJumpDepth) showToast('↩ Undo (' + undoStack.length + ' left)');
   }
   function redo() {
     if (!redoStack.length) return;
-    undoStack.push({ _pp: false, data: cloneProjects(projects), aux: captureAuxState() }); // full-array entry — undo() pops this shape
+    const entry = redoStack.pop();
+    undoStack.push(historyEntry(false, 0, null, cloneProjects(projects), captureAuxState(), entry.label));
     if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
-    restoreHistoryEntry(redoStack.pop());
-    showToast('↪ Redo (' + redoStack.length + ' left)');
+    restoreHistoryEntry(entry);
+    if (!_historyJumpDepth) showToast('↪ Redo (' + redoStack.length + ' left)');
+  }
+  // Newest first, each row naming the change it reverses. undo[0] is exactly
+  // what Ctrl+Z restores right now.
+  function historyModel() {
+    const undoRows = [];
+    for (let i = undoStack.length - 1; i >= 0; i--) {
+      const e = undoStack[i];
+      undoRows.push({ steps: undoStack.length - i, label: e.label || 'Change', at: e.at || null, next: i === undoStack.length - 1 });
+    }
+    const redoRows = [];
+    for (let i = redoStack.length - 1; i >= 0; i--) {
+      const e = redoStack[i];
+      redoRows.push({ steps: -(redoStack.length - i), label: e.label || 'Change', at: e.at || null });
+    }
+    return { undo: undoRows, redo: redoRows, canUndo: undoStack.length > 0, canRedo: redoStack.length > 0 };
+  }
+  // Jump to a step: positive steps walk back (undo), negative walk forward
+  // (redo). One toast for the whole jump instead of one per step.
+  function historyGo(steps) {
+    const n = Math.abs(steps | 0);
+    if (!n) return false;
+    _historyJumpDepth++;
+    let moved = 0;
+    try {
+      for (let i = 0; i < n; i++) {
+        if (steps > 0) { if (!undoStack.length) break; undo(); }
+        else { if (!redoStack.length) break; redo(); }
+        moved++;
+      }
+    } finally { _historyJumpDepth--; }
+    if (!moved) return false;
+    // Each step above already updated the buttons. A keyboard jump also puts
+    // focus back on the row it moved from — once, here, because every step
+    // rebuilt the rows and only the last rebuild's DOM survives.
+    if (typeof refocusHistoryAfterJump === 'function') refocusHistoryAfterJump();
+    showToast(steps > 0 ? ('↩ Went back ' + moved + ' step' + (moved === 1 ? '' : 's')) : ('↪ Went forward ' + moved + ' step' + (moved === 1 ? '' : 's')));
+    return true;
   }
 
   let _longPressTimer = null;
@@ -4464,7 +4562,7 @@
   window.addEventListener('storage', handleStorageWrite);
 
   // SUBSECTION: Project CRUD, Archive & Trash
-  function addProject(category) { snapshot(); const p = { id: uid(), title: 'New project', status: 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: null, completedAt: null, category: category || null, subtasks: [] }; projects.push(p); logActivity('Created project "New project"' + (category ? ' in ' + category : '')); scheduleSave(); autoArrangeProjects(true); if (listViewActive) { splitSelectedId = p.id; renderSplitList(); renderSplitDetail(); } focusEl('[data-title-id="' + p.id + '"]'); }
+  function addProject(category) { snapshot(false, 'Added a project'); const p = { id: uid(), title: 'New project', status: 'planned', x: 0, y: 0, expanded: true, createdAt: new Date().toISOString(), dueAt: null, completedAt: null, category: category || null, subtasks: [] }; projects.push(p); logActivity('Created project "New project"' + (category ? ' in ' + category : '')); scheduleSave(); autoArrangeProjects(true); if (listViewActive) { splitSelectedId = p.id; renderSplitList(); renderSplitDetail(); } focusEl('[data-title-id="' + p.id + '"]'); }
   // Schema repair for archive/trash loads (Sept 14 audit HIGH residual): the
   // stored arrays are user-data-shaped JSON that a partial write or hand edit
   // could corrupt. Mirror validateAndRepair's contract — repair in place,
@@ -4690,7 +4788,7 @@
     list.querySelectorAll('[data-trash-restore]').forEach(btn => { btn.addEventListener('click', () => restoreFromTrash(btn.dataset.trashRestore)); });
     list.querySelectorAll('[data-trash-del]').forEach(btn => { btn.addEventListener('click', () => { if (confirm('Permanently delete?')) permanentDeleteFromTrash(btn.dataset.trashDel); }); });
   }
-  function deleteProject(id) { const p = projects.find(p => p.id === id); if (!p) return; if (!confirm('Delete project "' + p.title + '"?')) return; snapshot(); logActivity('Trashed project "' + p.title + '"'); trashProject(p); projects = projects.filter(p => p.id !== id); if (splitSelectedId === id) splitSelectedId = null; scheduleSave(); render(); showToast('\"' + p.title + '\" moved to trash'); }
+  function deleteProject(id) { const p = projects.find(p => p.id === id); if (!p) return; if (!confirm('Delete project "' + p.title + '"?')) return; snapshot(false, 'Deleted a project'); logActivity('Trashed project "' + p.title + '"'); trashProject(p); projects = projects.filter(p => p.id !== id); if (splitSelectedId === id) splitSelectedId = null; scheduleSave(); render(); showToast('\"' + p.title + '\" moved to trash'); }
   function toggleExpand(id) { const p = projects.find(p => p.id === id); p.expanded = !p.expanded; render(); autoArrangeProjects(); }
   function animateProgressRing(projectId, isComplete) {
     setTimeout(() => {
@@ -4703,7 +4801,7 @@
     }, 50);
   }
   function _flashStatusTransition(selector) { requestAnimationFrame(() => { const el = document.querySelector(selector); if (el) { el.classList.remove('pf-status-transitioning'); void el.offsetWidth; el.classList.add('pf-status-transitioning'); el.addEventListener('animationend', () => el.classList.remove('pf-status-transitioning'), { once: true }); } }); }
-  function cycleProjectStatus(id, targetStatus) { snapshot(); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = targetStatus || STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; if (p.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); _flashStatusTransition('[data-id="' + id + '"]'); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
+  function cycleProjectStatus(id, targetStatus) { snapshot(false, 'Changed a project status'); const p = projects.find(p => p.id === id); const oldStatus = p.status; p.status = targetStatus || STATUSES[(STATUSES.indexOf(p.status) + 1) % STATUSES.length]; if (p.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + p.title + '" status: ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[p.status]); scheduleSave(); render(); _flashStatusTransition('[data-id="' + id + '"]'); if (p.status === 'completed') { if (p.subtasks && p.subtasks.length) confetti(); onTaskCompleted(true); setTimeout(() => { if (handleRecurrence(p)) { scheduleSave(); render(); showToast('🔁 "' + p.title + '" reset for next cycle'); } }, 1200); } }
   let _statusMenuEl = null;
   function _statusMenuEscHandler(e) { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); closeStatusMenu(); } }
   function closeStatusMenu() { if (_statusMenuEl) { _statusMenuEl.remove(); _statusMenuEl = null; document.removeEventListener('click', closeStatusMenu, true); document.removeEventListener('scroll', closeStatusMenu, true); window.removeEventListener('resize', closeStatusMenu); document.removeEventListener('keydown', _statusMenuEscHandler, true); } }
@@ -4839,7 +4937,7 @@
   }
   function countTree(list) { let done = 0, total = 0; list.forEach(s => { total++; if (s.status === 'completed') done++; if (s.subtasks && s.subtasks.length) { const c = countTree(s.subtasks); done += c.done; total += c.total; } }); return { done, total }; }
 
-  function addSubtask(projectId, parentSubId) { snapshot(); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
+  function addSubtask(projectId, parentSubId) { snapshot(false, 'Added a task'); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); autoArrangeProjects(true); focusEl('[data-sub-title-id="' + s.id + '"]'); }
   function toggleSubExpand(projectId, subId) { const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); s.expanded = !s.expanded; render(); autoArrangeProjects(); }
   function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked: complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }
   window._pf.deleteSubtask = deleteSubtask; // deletion chokepoint for subtasks (UI + tests)
@@ -4847,7 +4945,7 @@
     const p = projects.find(p => p.id === projectId);
     const s = findSubNode(p.subtasks, subId);
     if (!skipConfirm && !confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return;
-    snapshot();
+    snapshot(false, 'Deleted a task');
     const arr = findSubParentArray(p.subtasks, subId);
     // Recycle bin: record where it lived so restore can put it back.
     const indexPath = (function trace(list, path) { for (let i = 0; i < list.length; i++) { const item = list[i]; if (item.id === subId) return { path: path, index: i }; if (item.subtasks && item.subtasks.length) { const hit = trace(item.subtasks, path.concat(item.id)); if (hit) return hit; } } return null; })(p.subtasks, []);
@@ -5188,7 +5286,7 @@
       } else if (action === 'cycle') {
         openStatusMenu(btn, null, (st) => {
           try {
-            snapshot();
+            snapshot(false, 'Changed statuses in bulk');
             const touched = new Set();
             subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.status = st; s.completedAt = st === 'completed' ? new Date().toISOString() : null; touched.add(owner); } });
             scheduleSave(); render(); touched.forEach(pr => checkAllCompleted(pr));
@@ -5206,7 +5304,7 @@
         try { input.showPicker && input.showPicker(); } catch (err) {}
         function commit() {
           const val = input.value || null;
-          snapshot();
+          snapshot(false, 'Rescheduled tasks in bulk');
           const touched = new Set();
           subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.dueAt = val; touched.add(owner); } });
           clearSubSelect(); scheduleSave(); render();
@@ -5641,7 +5739,7 @@
   }
   function pasteClipboardAsMain(targetProject) {
     if (!_taskClipboard || !_taskClipboard.length) return;
-    snapshot();
+    snapshot(false, 'Pasted a task');
     const clones = _taskClipboard.map(deepCloneSubtree);
     if (!targetProject.subtasks) targetProject.subtasks = [];
     clones.forEach(c => targetProject.subtasks.push(c));
@@ -5889,7 +5987,7 @@
   };
   window._splitCycleSelected = function(targetStatus) {
     if (!splitMultiSelect.length) return;
-    snapshot();
+    snapshot(false, 'Changed a task status');
     splitMultiSelect.forEach(id => {
       const p = projects.find(pr => pr.id === id);
       if (!p) return;
@@ -7506,7 +7604,7 @@
         const node = srcProject.id === task.sourceId ? srcProject : findSubNode(srcProject.subtasks, task.sourceId);
         if (node) {
           if (_weeklyUndoDueAtReverts) _weeklyUndoDueAtReverts.push({ node, prevDueAt: node.dueAt });
-          snapshot(); node.dueAt = toDay; scheduleSave(); render();
+          snapshot(false, 'Moved a planner task'); node.dueAt = toDay; scheduleSave(); render();
         }
       }
     }
@@ -8146,7 +8244,7 @@
         const node = srcProject.id === task.sourceId ? srcProject : findSubNode(srcProject.subtasks, task.sourceId);
         if (node) {
           if (_weeklyUndoDueAtReverts) _weeklyUndoDueAtReverts.push({ node, prevDueAt: node.dueAt });
-          snapshot(); node.dueAt = toDay; scheduleSave(); render();
+          snapshot(false, 'Moved a planner task'); node.dueAt = toDay; scheduleSave(); render();
         }
       }
     }
@@ -9384,7 +9482,7 @@
   // Refusing the file outright used to lose the user's configured intervals
   // and emoji colors just because the other copy happened to hold no projects.
   function applyImportPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets) {
-    snapshot(true); // whole-state: an import replaces far more than the project list
+    snapshot(true, 'Imported preferences from a backup');
     let applied = 0;
     const safeImportedCategories = (Array.isArray(importedCategories) ? importedCategories : []).filter(c => typeof c === 'string');
     if (safeImportedCategories.length) { categories = Array.from(new Set(categories.concat(safeImportedCategories))); saveCategories(); applied++; }
@@ -9418,7 +9516,7 @@
   }
 
   function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets) {
-    snapshot(true); // whole-state: an import replaces far more than the project list
+    snapshot(true, 'Imported a backup');
     let restoredExtras = 0;
     // Archive replaces HERE (after snapshot), like every other extra — it used
     // to be applied during extraction, BEFORE the undo snapshot ran, so a
@@ -10422,6 +10520,206 @@
     });
   }
 
+  // ---- Recent Steps panel --------------------------------------------------
+  // The undo stacks, made visible: the first row is exactly what Ctrl+Z
+  // restores, and any row can be jumped to, so history reads like a document's
+  // step list instead of a blind keystroke. Fed by historyModel() in module 01.
+  // Keyboard: the list is ONE tab stop with a roving tabindex, so it does not
+  // add a stop per step. Arrow keys walk the rows (skipping the disabled
+  // "Current state" row), Home/End take the ends, and Enter (or Space) jumps
+  // the highlighted row through the same call a click makes, with the
+  // browser's own button activation suppressed so one press is one jump.
+  let _historyActiveIdx = 0;      // which row owns the tab stop
+  let _historyRefocusIdx = null;  // set by a keyboard jump, so the rebuilt list keeps focus
+  // Screen-reader semantics. The visual row reads "\u21a92 Edited \u201cX\u201d", which only
+  // means something once you know the arrows count steps; the accessible name
+  // spells the jump out, and the live region repeats it so the highlight moving
+  // is never silent.
+  function historyRowName(label, steps, tag) {
+    if (steps === null) return 'Current state, nothing to undo';
+    const n = Math.abs(steps);
+    return (steps > 0 ? 'Go back ' : 'Go forward ') + n + (n === 1 ? ' step' : ' steps') +
+      ': ' + label + (tag ? ', ' + tag : '');
+  }
+  // Only while the panel is on screen: a snapshot happens on every edit, so
+  // announcing from a closed panel would talk over whatever the user is doing.
+  // Ctrl+Z is already announced by the toast's own live region.
+  function historyPanelVisible() {
+    const panel = document.getElementById('pf-options-panel');
+    return !!(panel && panel.style && panel.style.display && panel.style.display !== 'none');
+  }
+  function announceHistory(text) {
+    try {
+      if (!text) return;
+      if (!historyPanelVisible()) return;
+      const live = document.getElementById('pf-history-live');
+      if (!live) return;
+      // Setting the same string again is not an announcement; skip the write so
+      // the region is not needlessly churned.
+      if (live.textContent === text) return;
+      live.textContent = text;
+    } catch (_) { /* announcing must never break the panel */ }
+  }
+  function setHistoryRowState(rows, i) {
+    rows.forEach(function (r, n) {
+      r.tabIndex = (n === i) ? 0 : -1;
+      r.setAttribute('aria-selected', (n === i) ? 'true' : 'false');
+    });
+  }
+  function historyRowEls() {
+    const list = document.getElementById('pf-history-list');
+    if (!list) return [];
+    return Array.prototype.filter.call(list.children, function (el) {
+      return el.classList && el.classList.contains('pf-history-row');
+    });
+  }
+  function focusHistoryRow(idx) {
+    const rows = historyRowEls();
+    if (!rows.length) return;
+    let i = Math.max(0, Math.min(rows.length - 1, idx));
+    let guard = 0;
+    while (rows[i].disabled && guard++ < rows.length) i = (i + 1) % rows.length;
+    _historyActiveIdx = i;
+    setHistoryRowState(rows, i);
+    rows[i].focus();
+    // The row's own accessible name IS the announcement, so what a screen
+    // reader says and what the row is called cannot drift apart.
+    announceHistory(rows[i].getAttribute('aria-label'));
+  }
+  function stepHistoryRow(dir) {
+    const rows = historyRowEls();
+    if (!rows.length) return _historyActiveIdx;
+    const len = rows.length;
+    for (let n = 1; n <= len; n++) {
+      const i = ((_historyActiveIdx + dir * n) % len + len) % len;
+      if (!rows[i].disabled) return i;
+    }
+    return _historyActiveIdx;
+  }
+  function syncHistoryTabStop() {
+    const rows = historyRowEls();
+    if (!rows.length) return;
+    let i = Math.min(_historyActiveIdx, rows.length - 1);
+    if (rows[i].disabled) { i = 0; while (i < rows.length && rows[i].disabled) i++; if (i >= rows.length) i = rows.length - 1; }
+    _historyActiveIdx = i;
+    setHistoryRowState(rows, i);
+  }
+  function historyRenderSig(model) {
+    const part = (rows) => rows.map(function (r) { return r.steps + ':' + r.label; }).join('|');
+    return model.undo.length + '/' + model.redo.length + '/' + part(model.undo) + '/' + part(model.redo);
+  }
+  function renderHistoryPanel() {
+    const list = document.getElementById('pf-history-list');
+    if (!list) return;
+    const model = (typeof historyModel === 'function') ? historyModel() : { undo: [], redo: [] };
+    const count = document.getElementById('pf-history-count');
+    if (count) count.textContent = model.undo.length ? String(model.undo.length) : '';
+    // Idempotent: updateHistoryButtons() runs on EVERY snapshot, and a rebuild
+    // destroys the rows — including one that was just focused by a keyboard
+    // jump, which would silently send focus back to the body. The signature is
+    // kept ON the list rather than in this closure, so it still holds if
+    // anything else renders that element.
+    const sig = historyRenderSig(model);
+    if (list.dataset.historySig === sig && list.children.length) { syncHistoryTabStop(); return; }
+    list.dataset.historySig = sig;
+    // Owned here rather than only in the markup, so the semantics hold however
+    // this element came to exist.
+    list.setAttribute('role', 'listbox');
+    list.innerHTML = '';
+    if (!model.undo.length && !model.redo.length) {
+      list.setAttribute('aria-label', 'Recent steps, nothing to undo yet');
+      const empty = document.createElement('div');
+      empty.className = 'pf-activity-empty';
+      // Decorative: the phrase is already in the listbox's own name, and a
+      // listbox may not contain a child that is not an option.
+      empty.setAttribute('role', 'presentation');
+      empty.textContent = 'Nothing to undo yet.';
+      list.appendChild(empty);
+      announceHistory('Nothing to undo yet');
+      return;
+    }
+    list.setAttribute('aria-label', 'Recent steps');
+    list.appendChild(historyRow('Current state', null, 'pf-history-row-current', ''));
+    model.undo.forEach(function(row, i) {
+      list.appendChild(historyRow(row.label, row.steps, i === 0 ? 'pf-history-row-next' : '', i === 0 ? 'Ctrl+Z' : ''));
+    });
+    model.redo.forEach(function(row) {
+      list.appendChild(historyRow(row.label, row.steps, '', 'redo'));
+    });
+    syncHistoryTabStop();
+    const n = model.undo.length;
+    announceHistory(n ? n + (n === 1 ? ' step' : ' steps') + ' to undo' : 'Nothing to undo yet');
+  }
+  // A keyboard jump rebuilds this list, which would drop focus to the body. The
+  // restore runs ONCE, after the whole jump (historyGo calls this), because a
+  // multi-step jump rebuilds once per step and a refocus inside the render
+  // would be destroyed by the very next one.
+  function refocusHistoryAfterJump() {
+    if (_historyRefocusIdx === null) return;
+    const i = _historyRefocusIdx;
+    _historyRefocusIdx = null;
+    focusHistoryRow(i);
+  }
+  function historyRow(label, steps, extraClass, tag) {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.tabIndex = -1;
+    el.className = 'pf-history-row' + (extraClass ? ' ' + extraClass : '');
+    const step = document.createElement('span');
+    step.className = 'pf-history-step';
+    step.textContent = (steps === null) ? '\u2022' : (steps > 0 ? '\u21a9' + steps : '\u21aa' + Math.abs(steps));
+    const text = document.createElement('span');
+    text.className = 'pf-history-label';
+    text.textContent = label;
+    el.appendChild(step);
+    el.appendChild(text);
+    if (tag) {
+      const t2 = document.createElement('span');
+      t2.className = 'pf-history-tag';
+      t2.textContent = tag;
+      el.appendChild(t2);
+    }
+    el.setAttribute('role', 'option');
+    el.setAttribute('aria-label', historyRowName(label, steps, tag));
+    el.setAttribute('aria-selected', 'false');
+    if (steps === null) {
+      el.disabled = true;
+      el.setAttribute('aria-disabled', 'true');
+    } else {
+      el.addEventListener('click', function () {
+        const i = historyRowEls().indexOf(el);
+        if (i >= 0) _historyActiveIdx = i;
+        historyGo(steps);
+      });
+      el.addEventListener('keydown', function (e) {
+        const key = e.key;
+        if (key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'Home' && key !== 'End' && key !== 'Enter' && key !== ' ') return;
+        e.preventDefault();
+        const rows = historyRowEls();
+        const i = rows.indexOf(el);
+        if (i >= 0) _historyActiveIdx = i;
+        if (key === 'ArrowDown') focusHistoryRow(stepHistoryRow(1));
+        else if (key === 'ArrowUp') focusHistoryRow(stepHistoryRow(-1));
+        else if (key === 'Home') focusHistoryRow(0);
+        else if (key === 'End') focusHistoryRow(rows.length - 1);
+        else { _historyRefocusIdx = _historyActiveIdx; el.click(); }
+      });
+    }
+    return el;
+  }
+  (function wireHistoryPanel() {
+    const clearBtn = document.getElementById('pf-history-clear');
+    if (clearBtn) clearBtn.addEventListener('click', function() {
+      undoStack.length = 0;
+      redoStack.length = 0;
+      updateHistoryButtons();
+      showToast('History cleared');
+      // The rebuild above announced the count; this is the more informative
+      // final word.
+      announceHistory('History cleared');
+    });
+  })();
+
   // Expose for Firebase sync (Object.assign preserves keys published by
   // earlier fragments, e.g. pfIcon from 00-svg-icons.js)
   window._pf = Object.assign(window._pf || {}, {
@@ -10436,11 +10734,14 @@
     setTrash: (t) => { trash = t; saveTrash(); },
     scheduleSave: () => scheduleSave(),
     confirmDialog: (title, message, okLabel, cancelLabel) => pfConfirmDialog(title, message, okLabel, cancelLabel),
+    historyModel: () => historyModel(),
+    historyGo: (steps) => historyGo(steps),
+    refreshHistoryPanel: () => renderHistoryPanel(),
     saveCategories: () => saveCategories(),
     render: () => render(),
     showToast: (msg, isError, undoable, actionCallback, actionLabel) => showToast(msg, isError, undoable, actionCallback, actionLabel),
     logError: (context, err) => logError(context, err),
-    snapshot: () => snapshot(),
+    snapshot: (forceFull, label) => snapshot(forceFull, label),
     openIDB_KV: () => openIDB_KV(),
     getCategoryEmojis: () => categoryEmojis,
     // Stores that joined cross-tab sync (05): read-only handles, so the sync can
