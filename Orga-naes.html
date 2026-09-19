@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-QDFLS2Yz1+BjiGBkS1ywTZnTnbsWcv5l69Ip1mbDSwU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-P1GgL1o0DHRjzyCxBaLpbJ7IAFGeC53iul4iidA4Qts='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9334,6 +9334,23 @@
       importedEmojis || Array.isArray(importedSnoozePresets));
   }
 
+  // What a replacing import will do: the counts in the file versus the counts
+  // it disposes on this device. Reads the live stores through the bridges.
+  function importReplaceSummary(data, importedNotes, importedReminders) {
+    const pf = window._pf || {};
+    const curProjects = (typeof pf.getProjects === 'function') ? pf.getProjects().length : 0;
+    const snap = (typeof pf.getNotesSnapshot === 'function') ? pf.getNotesSnapshot() : null;
+    const curNotes = (snap && Array.isArray(snap.notes)) ? snap.notes.length : 0;
+    const curReminders = (typeof pf.getReminders === 'function') ? pf.getReminders().length : 0;
+    const inProjects = Array.isArray(data) ? data.length : 0;
+    const inNotes = Array.isArray(importedNotes) ? importedNotes.length : curNotes;
+    const inReminders = Array.isArray(importedReminders) ? importedReminders.length : curReminders;
+    const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+    return 'This backup holds ' + plural(inProjects, 'project') + ', ' + plural(inNotes, 'note') + ' and ' + plural(inReminders, 'reminder') +
+      '. Importing replaces your ' + plural(curProjects, 'project') + ', ' + plural(curNotes, 'note') + ' and ' + plural(curReminders, 'reminder') +
+      ' on this device. Undo with Ctrl+Z restores them.';
+  }
+
   function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets) {
     snapshot();
     let restoredExtras = 0;
@@ -9370,12 +9387,21 @@
     const file = importInput.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const { parsed, error } = parseImportJson(String(e.target.result || ''));
       if (error) { showToast(error, true); importInput.value = ''; return; }
       try {
         const { data, projectListFound, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets } = extractImportData(parsed);
-        if (projectListFound) { applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets); }
+        if (projectListFound) {
+          // A replacing import is destructive — confirm first, naming what is at
+          // stake. Native confirm() is avoided (an "always allow dialogs" pref
+          // can suppress it into a silent Cancel); the shared modal cannot.
+          if (window._pf && typeof window._pf.confirmDialog === 'function') {
+            const proceed = await window._pf.confirmDialog('Replace local data?', importReplaceSummary(data, importedNotes, importedReminders), 'Import & replace');
+            if (!proceed) { showToast('Import cancelled.'); importInput.value = ''; return; }
+          }
+          applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets);
+        }
         else if (importHasPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets)) { applyImportPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
@@ -10289,6 +10315,47 @@
     if (exportBtn) exportBtn.addEventListener('click', function() { localStorage.setItem(LAST_EXPORT_KEY, Date.now().toString()); });
   })();
 
+  // Promise-based confirm dialog on the shared #pf-confirm-modal. It lives here
+  // (module 42 always runs) rather than in the Firebase IIFE, which returns
+  // early when firebase is absent — so every caller, including file import,
+  // gets the same styled modal. Native confirm() is deliberately not used: an
+  // "always allow dialogs" pref can suppress it into a silent Cancel.
+  let _pfConfirmResolve = null;
+  function pfConfirmDialog(title, message, okLabel, cancelLabel) {
+    return new Promise(function(resolve) {
+      // A dialog already open (double trigger) — treat as the user cancelling it.
+      if (_pfConfirmResolve) { _pfConfirmResolve(false); }
+      _pfConfirmResolve = resolve;
+      const t = document.getElementById('pf-confirm-title');
+      const m = document.getElementById('pf-confirm-message');
+      const okB = document.getElementById('pf-confirm-ok');
+      const cancelB = document.getElementById('pf-confirm-cancel');
+      const modal = document.getElementById('pf-confirm-modal');
+      if (t) t.textContent = title;
+      if (m) m.textContent = message;
+      if (okB) okB.textContent = okLabel || 'OK';
+      if (cancelB) cancelB.textContent = cancelLabel || 'Cancel';
+      if (modal) modal.classList.add('pf-conflict-open');
+    });
+  }
+  function settleConfirmDialog(result) {
+    const modal = document.getElementById('pf-confirm-modal');
+    if (modal) modal.classList.remove('pf-conflict-open');
+    const r = _pfConfirmResolve; _pfConfirmResolve = null;
+    if (r) r(result);
+  }
+  const _pfConfirmOkBtn = document.getElementById('pf-confirm-ok');
+  if (_pfConfirmOkBtn) _pfConfirmOkBtn.addEventListener('click', function() { settleConfirmDialog(true); });
+  const _pfConfirmCancelBtn = document.getElementById('pf-confirm-cancel');
+  if (_pfConfirmCancelBtn) _pfConfirmCancelBtn.addEventListener('click', function() { settleConfirmDialog(false); });
+  if (window._pf && window._pf.registerEscDismissable) {
+    window._pf.registerEscDismissable({
+      key: 'confirm-dialog',
+      check: function() { const m = document.getElementById('pf-confirm-modal'); return !!(m && m.classList.contains('pf-conflict-open')); },
+      run: function() { settleConfirmDialog(false); }
+    });
+  }
+
   // Expose for Firebase sync (Object.assign preserves keys published by
   // earlier fragments, e.g. pfIcon from 00-svg-icons.js)
   window._pf = Object.assign(window._pf || {}, {
@@ -10302,6 +10369,7 @@
     getTrash: () => trash,
     setTrash: (t) => { trash = t; saveTrash(); },
     scheduleSave: () => scheduleSave(),
+    confirmDialog: (title, message, okLabel, cancelLabel) => pfConfirmDialog(title, message, okLabel, cancelLabel),
     saveCategories: () => saveCategories(),
     render: () => render(),
     showToast: (msg, isError, undoable, actionCallback, actionLabel) => showToast(msg, isError, undoable, actionCallback, actionLabel),
@@ -13190,33 +13258,14 @@ if ('serviceWorker' in navigator) {
   // with zero UI — the app then just does nothing, which looks exactly like a
   // broken push button. This promise-based dialog is a real DOM element, so it
   // can't be suppressed, and it matches the app's console styling.
-  let _confirmResolve = null;
+  // The confirm dialog UI, its buttons and its Escape entry live in module 42
+  // (window._pf.confirmDialog), which always runs — so the same modal serves
+  // the Firebase flows and file import. This wrapper keeps the call sites here.
   function pfConfirm(title, message, okLabel) {
-    return new Promise(function(resolve) {
-      // A dialog already open (double-click) — treat as the user cancelling it.
-      if (_confirmResolve) { _confirmResolve(false); }
-      _confirmResolve = resolve;
-      document.getElementById('pf-confirm-title').textContent = title;
-      document.getElementById('pf-confirm-message').textContent = message;
-      document.getElementById('pf-confirm-ok').textContent = okLabel || 'OK';
-      document.getElementById('pf-confirm-modal').classList.add('pf-conflict-open');
-    });
-  }
-  function settleConfirm(result) {
-    document.getElementById('pf-confirm-modal').classList.remove('pf-conflict-open');
-    const r = _confirmResolve; _confirmResolve = null;
-    if (r) r(result);
-  }
-  document.getElementById('pf-confirm-ok').addEventListener('click', function() { settleConfirm(true); });
-  document.getElementById('pf-confirm-cancel').addEventListener('click', function() { settleConfirm(false); });
-  if (window._pf && window._pf.registerEscDismissable) {
-    window._pf.registerEscDismissable({
-      key: 'confirm-dialog',
-      // Registered after the 'conflict' entry, so with both dialogs open Escape
-      // dismisses THIS one first (top of the unshift-based stack).
-      check: function() { return document.getElementById('pf-confirm-modal').classList.contains('pf-conflict-open'); },
-      run: function() { settleConfirm(false); }
-    });
+    if (window._pf && typeof window._pf.confirmDialog === 'function') {
+      return window._pf.confirmDialog(title, message, okLabel);
+    }
+    return Promise.resolve(false);
   }
 
   let _pendingPullExtras = null;
