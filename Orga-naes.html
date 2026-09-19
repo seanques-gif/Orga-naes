@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-MPfClao8F/Gv9JEE3UZ8+XSTnxQO2R3nvoZuFidMnLo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-7rNKoNDbftLZm8v4tSoWU3NwTJGjhfiOfKgb7PaiOnQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9488,11 +9488,40 @@
 
   const importInput = document.getElementById('pf-import-file');
   document.getElementById('pf-import').addEventListener('click', () => { _exitMultiSelectMode(); closeAllModals(); importInput.click(); });
+  // AUD-01 (MASTER-AUDIT-2026-09-19): an oversized file used to reach
+  // JSON.parse unchecked — a multi-hundred-MB input could freeze or crash
+  // the tab before any validation ran. Cap the raw text at 25 MB (a real
+  // backup of this app is a few hundred KB at worst) and refuse BEFORE
+  // parsing; nothing has been touched at that point, so the message says so.
+  const IMPORT_MAX_BYTES = 25 * 1024 * 1024;
+  const IMPORT_MAX_NODES = 20000;
   function parseImportJson(raw) {
+    const byteLen = raw.length; // UTF-16 units ≥ bytes: a safe over-estimate
     raw = raw.replace(/^\uFEFF/, '').trim();
     if (!raw) return { error: 'That file is empty.' };
+    if (byteLen > IMPORT_MAX_BYTES) return { error: 'That backup is too large to import safely (over ' + Math.round(IMPORT_MAX_BYTES / 1048576) + ' MB). Nothing was changed.' };
     try { return { parsed: JSON.parse(raw) }; }
     catch (e) { logError('Import JSON parse', e); return { error: 'Failed to parse JSON: ' + e.message }; }
+  }
+
+  // Depth/breadth-bounded census of scalar slots in the parsed payload.
+  // Walks at most 64 levels deep and 200 keys/elements per node, so the
+  // guard itself cannot be turned into a hang by a hostile file. Returns
+  // the count when it exceeds IMPORT_MAX_NODES, else 0.
+  function importTooLarge(parsed) {
+    if (!parsed || typeof parsed !== 'object') return 0;
+    let n = 0;
+    const walk = function (node, depth) {
+      if (n > IMPORT_MAX_NODES || depth > 64) return;
+      if (Array.isArray(node)) { n += node.length; node.slice(0, 200).forEach(function (x) { walk(x, depth + 1); }); return; }
+      if (node && typeof node === 'object') {
+        const ks = Object.keys(node);
+        n += ks.length;
+        ks.slice(0, 200).forEach(function (k) { walk(node[k], depth + 1); });
+      }
+    };
+    walk(parsed, 0);
+    return n > IMPORT_MAX_NODES ? n : 0;
   }
 
   // RTDB console exports wrap account data in a users.<uid> shell, and the
@@ -9691,10 +9720,17 @@
   importInput.addEventListener('change', () => {
     const file = importInput.files[0];
     if (!file) return;
+    // AUD-01: refuse before the FileReader even runs — a real File carries
+    // its size, so the multi-hundred-MB case never enters memory at all.
+    if (file.size && file.size > 25 * 1024 * 1024) { showToast('That backup is too large to import safely (over 25 MB). Nothing was changed.', true); importInput.value = ''; return; }
     const reader = new FileReader();
     reader.onload = async (e) => {
       const { parsed, error } = parseImportJson(String(e.target.result || ''));
       if (error) { showToast(error, true); importInput.value = ''; return; }
+      // AUD-01: structural cap — a small file can still DECLARE millions of
+      // nodes. The census is bounded, so this costs microseconds on sane files.
+      const tooManyNodes = importTooLarge(parsed);
+      if (tooManyNodes) { showToast('That backup declares too much data to import safely. Nothing was changed.', true); logError('Import size cap', new Error('node census ' + tooManyNodes)); importInput.value = ''; return; }
       try {
         const { data, projectListFound, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets } = extractImportData(parsed);
         if (projectListFound) {
@@ -12889,6 +12925,14 @@ if ('serviceWorker' in navigator) {
      // their owner modules (25, 33, 21) exactly like the notes keys above.
      'project-flow-backlog', 'project-flow-streak', 'project-flow-milestones',
      'project-flow-streak-freezes', 'project-flow-errors',
+     // AUD-02 (MASTER-AUDIT-2026-09-19): three keys that describe the
+     // signed-in account previously survived the wipe. XP is the same
+     // gamification family as streak/milestones above (only it was
+     // missed); reminder-days is the account's default reminder lead;
+     // dismissed-weekly is the planner-dismissal history. None carries
+     // project/note content, but all describe the account, not the device.
+     'project-flow-xp', 'project-flow-reminder-days',
+     'project-flow-dismissed-weekly',
      // Notes join the cloud (Phase C follow-up): they must switch accounts
      // with everything else, or account B would silently inherit account A's
      // notes (both localStorage and the IndexedDB mirror are cleared below).
