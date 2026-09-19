@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-MZNhM/Bl0TTO4kxlcCQw9guA8CfjZiO037ZP1h2jQKg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-MPfClao8F/Gv9JEE3UZ8+XSTnxQO2R3nvoZuFidMnLo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2793,6 +2793,7 @@
       <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+S</span><span>Save / Export</span></div>
       <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+Z</span><span>Undo</span></div>
       <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+Y</span><span>Redo</span></div>
+      <div class="pf-shortcut-row"><span class="pf-shortcut-key">Ctrl+Shift+H</span><span>Jump to the newest history step that can restore a single project or note</span></div>
       <div class="pf-shortcut-row"><span class="pf-shortcut-key">N</span><span>New project</span></div>
       <div class="pf-shortcut-row"><span class="pf-shortcut-key">←→</span><span>Navigate left/right (Card View)</span></div>
       <div class="pf-shortcut-row"><span class="pf-shortcut-key">↑↓</span><span>Navigate projects (Focus list)</span></div>
@@ -3527,6 +3528,13 @@
       }
       if (ae && ae.isContentEditable) return;
       e.preventDefault(); redo();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'h') {
+      const ae = document.activeElement;
+      if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      e.preventDefault();
+      if (typeof historyJumpToRestorable === 'function' && historyJumpToRestorable()) return;
+      showToast('No step can restore a single project or note', true);
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
       const ae = document.activeElement; if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
@@ -10664,6 +10672,7 @@
   // browser's own button activation suppressed so one press is one jump.
   let _historyActiveIdx = 0;      // which row owns the tab stop
   let _historyFilter = '';        // lower-cased query; hides non-matching rows
+  let _historyShortcutIdx = null; // the row Ctrl+Shift+H last landed on
   let _historyRefocusIdx = null;  // set by a keyboard jump, so the rebuilt list keeps focus
   // Screen-reader semantics. The visual row reads "\u21a92 Edited \u201cX\u201d", which only
   // means something once you know the arrows count steps; the accessible name
@@ -10818,6 +10827,60 @@
     const n = (ns && Array.isArray(ns.notes)) ? (ns.notes.length + '~' + Object.keys(ns.tombstones || {}).length) : 'x';
     return p + '||' + n;
   }
+  // The Options panel has to be on screen for any of this to be visible; use
+  // the app's own open path so backdrop/active-tint state stays consistent.
+  function ensureHistoryPanelOpen() {
+    const panel = document.getElementById('pf-options-panel');
+    if (!panel) return false;
+    if (panel.style.display === 'flex') return true;
+    if (typeof openModal === 'function') { openModal(panel, 'flex'); return panel.style.display === 'flex'; }
+    const btn = document.getElementById('pf-options-btn');
+    if (btn) btn.click();
+    return panel.style.display === 'flex';
+  }
+  // Indices of the rows that can restore a single item, in the list's own order
+  // — which is already newest-first, so index 0 is the most recent step.
+  function historyRestorableRowIndices() {
+    const rows = historyRowEls();
+    const out = [];
+    rows.forEach(function(r, i) {
+      if (r.disabled) return;
+      const raw = r.getAttribute('data-steps');
+      if (raw === null || raw === '') return;
+      const s = parseInt(raw, 10);
+      if (isNaN(s)) return;
+      if (restoreMarksFor(s).length) out.push(i);
+    });
+    return out;
+  }
+  function historyJumpToRestorable() {
+    if (!ensureHistoryPanelOpen()) return false;
+    // A filter can hide the step we want; clear it rather than reporting none.
+    if (_historyFilter) {
+      const input = document.getElementById('pf-history-filter');
+      if (input) input.value = '';
+      setHistoryFilter('');
+    }
+    const candidates = historyRestorableRowIndices();
+    if (!candidates.length) return false;
+    // First press lands on the most recent restorable step; a press while the
+    // highlight is where this shortcut left it moves to the next, so repeated
+    // presses walk them all without ever skipping the newest on the first try.
+    const cycling = (_historyShortcutIdx !== null && _historyShortcutIdx === _historyActiveIdx);
+    const at = cycling ? candidates.indexOf(_historyActiveIdx) : -1;
+    const idx = (at === -1) ? candidates[0] : candidates[(at + 1) % candidates.length];
+    _historyShortcutIdx = idx;
+    const rows = historyRowEls();
+    focusHistoryRow(idx);
+    try { rows[idx].scrollIntoView({ block: 'nearest' }); } catch (err) { /* layout-less DOM */ }
+    // Focus the ACTION, not just the row: Enter then restores instead of
+    // jumping the history, which is the whole point of the shortcut.
+    const box = document.getElementById('pf-history-restore');
+    const btn = box && box.children[0];
+    if (btn && btn.focus) btn.focus();
+    showToast(btn ? btn.textContent : 'Restorable step selected');
+    return true;
+  }
   function historyRenderSig(model) {
     const part = (rows) => rows.map(function (r) { return r.steps + ':' + r.label; }).join('|');
     return _historyFilter + '#' + model.undo.length + '/' + model.redo.length + '/' + part(model.undo) + '/' + part(model.redo) + '@' + restoreStateSig();
@@ -10843,6 +10906,7 @@
     // this element came to exist.
     list.setAttribute('role', 'listbox');
     list.innerHTML = '';
+    _historyShortcutIdx = null;
     const emptyAll = !model.undo.length && !model.redo.length;
     const noMatch = !emptyAll && !undoRows.length && !redoRows.length;
     if (emptyAll || noMatch) {
@@ -11012,6 +11076,7 @@
     historyModel: () => historyModel(),
     historyGo: (steps) => historyGo(steps),
     historyRestoreTargets: (steps) => historyRestoreTargets(steps),
+    historyJumpToRestorable: () => historyJumpToRestorable(),
     historyRestoreProject: (steps) => historyRestoreProject(steps),
     historyRestoreNote: (steps) => historyRestoreNote(steps),
     refreshHistoryPanel: () => renderHistoryPanel(),
