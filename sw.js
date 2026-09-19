@@ -13,6 +13,25 @@ const ASSETS = [
   './icon-512.png'
 ];
 
+// Runtime cache-fill allowlist (AUD-10): only these paths may be written to
+// Cache Storage at fetch time — exactly what ASSETS precaches. The pathname
+// is compared, so a navigation to the app HTML under any query/hash stays
+// fillable, while anything else (a stray same-origin path, a cross-origin
+// script outside the firebase/googleapis bypass) still gets its normal
+// network response — it just no longer accumulates in Cache Storage forever.
+//
+// ORDER MATTERS: this derives from ASSETS, so it must stay BELOW that
+// declaration. Referencing it above makes the worker throw at startup
+// (temporal dead zone), which leaves the app with no service worker at all
+// — no offline boot and no update path — while every text-level check of
+// the guard still passes. The suite now evaluates this file to catch that.
+const FILLABLE = new Set(
+  ASSETS.map((a) => new URL(a, self.registration.scope).pathname)
+);
+const fillable = (url) => {
+  try { return FILLABLE.has(new URL(url).pathname); } catch { return false; }
+};
+
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((c) =>
@@ -60,7 +79,7 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(e.request)
         .then((resp) => {
-          if (resp && resp.ok) {
+          if (resp && resp.ok && fillable(e.request.url)) {
             const clone = resp.clone();
             caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
           }
@@ -76,7 +95,7 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(
     fetch(e.request)
       .then((resp) => {
-        if (resp && resp.ok) {
+        if (resp && resp.ok && fillable(e.request.url)) {
           const clone = resp.clone();
           caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
         }
