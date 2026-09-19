@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-46PdkZPkLNlbt3sNCUrIvGF5YmUCZQ71HOdtwUe2kC0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-pCupAH9fXGWMRYDE7KIoI+uJk3+NRkyaExWdAKMxeVU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9243,6 +9243,10 @@
     };
   }
 
+  // A top-level array key that is one of the recognised extras is never the
+  // project list; without this a preference-only backup (snoozePresets but no
+  // projects) had its preset array imported AS projects.
+  var EXTRA_ARRAY_KEYS = ['categories', 'archive', 'trash', 'reminders', 'notes', 'snoozePresets'];
   function extractImportData(parsed) {
     let data = null, importedCategories = [], importedCollapsed = {};
     let importedArchive = null, importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedNotes = null, importedNoteTombstones = null, importedSnoozePresets = null;
@@ -9254,7 +9258,7 @@
       data = parsed;
     } else if (typeof parsed === 'object' && parsed !== null) {
       if (Array.isArray(parsed.projects)) { data = parsed.projects; }
-      else { for (const key of Object.keys(parsed)) { if (Array.isArray(parsed[key])) { data = parsed[key]; break; } } }
+      else { for (const key of Object.keys(parsed)) { if (Array.isArray(parsed[key]) && EXTRA_ARRAY_KEYS.indexOf(key) === -1) { data = parsed[key]; break; } } }
       if (Array.isArray(parsed.categories)) importedCategories = parsed.categories;
       if (parsed.collapsedCategories && typeof parsed.collapsedCategories === 'object') importedCollapsed = parsed.collapsedCategories;
       if (Array.isArray(parsed.archive)) importedArchive = parsed.archive;
@@ -9304,6 +9308,27 @@
     return (Array.isArray(data) ? data : []).filter(p => p != null).map(p => sanitizeImportedNode(p, seenIds));
   }
 
+  // A backup with no projects to import but with preference extras: apply the
+  // preferences and leave the project graph (and every data store) untouched.
+  // Refusing the file outright used to lose the user's configured intervals
+  // and emoji colors just because the other copy happened to hold no projects.
+  function applyImportPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets) {
+    snapshot();
+    let applied = 0;
+    const safeImportedCategories = (Array.isArray(importedCategories) ? importedCategories : []).filter(c => typeof c === 'string');
+    if (safeImportedCategories.length) { categories = Array.from(new Set(categories.concat(safeImportedCategories))); saveCategories(); applied++; }
+    if (importedCollapsed && Object.keys(importedCollapsed).length) { collapsedCategories = Object.assign({}, collapsedCategories, importedCollapsed); saveCollapsedCategories(); applied++; }
+    if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); applied++; }
+    if (Array.isArray(importedSnoozePresets) && window._pf && typeof window._pf.setSnoozePresets === 'function') { window._pf.setSnoozePresets(importedSnoozePresets); applied++; }
+    showToast('Imported ' + applied + ' preference' + (applied === 1 ? '' : 's') + ' from backup — projects left untouched.');
+    render();
+  }
+  function importHasPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets) {
+    return !!((Array.isArray(importedCategories) && importedCategories.length) ||
+      (importedCollapsed && Object.keys(importedCollapsed).length) ||
+      importedEmojis || Array.isArray(importedSnoozePresets));
+  }
+
   function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets) {
     snapshot();
     let restoredExtras = 0;
@@ -9346,6 +9371,7 @@
       try {
         const { data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets } = extractImportData(parsed);
         if (data && data.length > 0) { applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets); }
+        else if (importHasPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets)) { applyImportPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets); }
         else { showToast('No valid project arrays found in JSON.', true); }
       } catch (err) { showToast('Import failed: ' + err.message, true); logError('Import', err); }
     };
