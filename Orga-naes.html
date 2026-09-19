@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-mWfsoOxq9TY2ieWOc3lY7F06Ce5fkPbPWVG19feHYZ4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-pCydUEULFUbiYvMqWlTZxLe7PrGmWVAc2FBjh9NGif4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3820,6 +3820,174 @@
     toastTimer = setTimeout(() => { toastEl.classList.remove('pf-toast-show'); }, undoable ? 5000 : (actionCallback ? 8000 : 2600));
   }
   function hasStorage() { try { localStorage.setItem('__test__', '1'); localStorage.removeItem('__test__'); return true; } catch (e) { return false; } }
+
+  // ============================================================
+  // SHARED STORAGE-KEY REGISTRY (AUD-05, MASTER-AUDIT-2026-09-19)
+  // The sign-out wipe used a hand-maintained list in module 45 that
+  // already needed two completeness patches — a new store could
+  // silently escape it. This registry is the single source of truth:
+  //   - STATIC_KEYS names every persistent key by kind (the surface that
+  //     can pre-exist in storage without being written this session);
+  //   - safeSet + a raw-setItem wrapper auto-register what actually gets
+  //     written, so the registry tracks the real write surface;
+  //   - the wipe (module 45) derives its list from the registry AND
+  //     sweeps both stores, so a key named nowhere is still removed
+  //     (unknown => DATA, the safe direction);
+  //   - the suite fails if a new *_KEY constant is not registered here, so
+  //     the table cannot rot while the app grows.
+  // DEVICE keys deliberately survive sign-out: they describe this
+  // device's operator preferences (theme, fonts, panel geometry), not
+  // the account. See SECURITY.md "sign-out data handling".
+  // ============================================================
+  const PF_KEYS = (window._pf = window._pf || {}, window._pf.PF_KEYS = window._pf.PF_KEYS || (function() {
+    const _data = new Set();
+    const _device = new Set();
+    const _seen = new Set();
+    const _notes = {};
+    // Keys that name the DEVICE, not the account. Matched by prefix so the
+    // per-device suffixed families (font-size-*, panel-size-*, etc.) land
+    // here automatically. Anything else registered or written defaults to
+    // DATA — the safe direction: an unclassified key gets wiped.
+    const DEVICE_RE = /^(pf-firebase-(autosync|autobackup)|project-flow-(theme|size|sort-mode|hide-completed|split-width|view-mode|font-size-|font-family-|font-custom-|display-scale-|panel-size-|notes-size)|pf-(last-save-time|last-export-time))/;
+    function classify(key, kind) {
+      if (kind === 'device') return 'device';
+      if (kind === 'data') return 'data';
+      // Unclassified (seen at write time, not in STATIC_KEYS): the device
+      // pattern decides, anything else is DATA so it is wiped rather than
+      // surviving sign-out.
+      return DEVICE_RE.test(key) ? 'device' : 'data';
+    }
+    function registerKey(key, kind, note) {
+      if (!key || typeof key !== 'string') return;
+      const k = classify(key, kind);
+      if (k === 'data') _data.add(key); else _device.add(key);
+      if (_seen.has(key) && _notes[key] && note && _notes[key].kind !== k) {
+        // Same key registered twice with conflicting kinds — developer error.
+        if (typeof logError === 'function') logError('PF_KEYS kind conflict', new Error(key + ': ' + _notes[key].kind + ' vs ' + k));
+        return;
+      }
+      if (!_seen.has(key)) _notes[key] = { kind: k, note: note || '' };
+      _seen.add(key);
+    }
+    function registerDynamic(key) {
+      // A write escaped the static table (safeSet and the raw setItem
+      // wrapper both funnel here). classify() decides its kind: a known
+      // device family survives, anything else is DATA.
+      if (!key || typeof key !== 'string' || key === '__test__') return;
+      if (_seen.has(key)) return;
+      registerKey(key, undefined, 'seen at write time');
+    }
+    // ---- Layer 1: the static table --------------------------------------
+    // Keys that can be sitting in storage WITHOUT having been written this
+    // session: a profile from an older release, a hand-edited or restored
+    // backup, another tab's write, a browser that evicted localStorage but
+    // left IndexedDB behind. registerDynamic cannot see those, so they are
+    // named here by kind. Layer 2 is registerDynamic (writes self-register);
+    // layer 3 is the wipe's sweep of what is actually in storage, which
+    // defaults anything unknown to DATA. The suite's drift check fails if a
+    // *_KEY constant the app writes is missing here and not a device family.
+    const STATIC_KEYS = [
+      // ---- DATA: removed on sign-out / account switch --------------------
+      ['project-flow-graph-v2', 'data', 'projects graph (module 01)'],
+      ['project-flow-graph', 'data', 'legacy flat graph read once at load (module 05)'],
+      ['project-flow-categories', 'data', 'categories'],
+      ['project-flow-cat-emojis', 'data', 'per-category emojis'],
+      ['project-flow-collapsed-categories', 'data', 'collapsed category zones'],
+      ['project-flow-archive', 'data', 'archived projects'],
+      ['project-flow-trash', 'data', 'trash'],
+      ['project-flow-activity', 'data', 'activity log'],
+      ['project-flow-errors', 'data', 'error log'],
+      ['project-flow-today', 'data', "Today's Focus"],
+      ['project-flow-weekly', 'data', 'weekly planner'],
+      ['project-flow-backlog', 'data', 'backlog'],
+      ['project-flow-reminders', 'data', 'reminders'],
+      ['project-flow-snooze-presets', 'data', 'reminder snooze presets'],
+      ['project-flow-reminder-days', 'data', 'reminder lead time'],
+      ['project-flow-notes', 'data', 'notes'],
+      ['project-flow-notes-tombstones', 'data', 'note tombstones'],
+      ['project-flow-xp', 'data', 'XP'],
+      ['project-flow-streak', 'data', 'streak'],
+      ['project-flow-streak-freezes', 'data', 'streak freezes'],
+      ['project-flow-milestones', 'data', 'milestones'],
+      ['project-flow-dismissed-weekly', 'data', 'dismissed weekly prompts'],
+      ['project-flow-autobackup', 'data', 'auto-backup interval'],
+      ['project-flow-autobackup-last', 'data', 'last auto-backup stamp'],
+      ['pf-firebase-last-uid', 'data', 'last signed-in uid'],
+      ['pf-firebase-last-sync-time', 'data', 'last cloud sync stamp'],
+      ['pf-firebase-last-backup', 'data', 'last cloud backup stamp'],
+      ['pf-firebase-needs-pull', 'data', 'pull marker; re-set by the wipe itself'],
+      ['pf-notes-history', 'data', 'notes undo history (sessionStorage)'],
+      // ---- DEVICE: deliberately survives sign-out ------------------------
+      // These describe this device's operator preferences, not the account.
+      // The per-device families (font-size-*, font-family-*, font-custom-*,
+      // display-scale-*, panel-size-*) are covered by DEVICE_RE, so only the
+      // exact keys that carry no suffix are named here.
+      ['project-flow-theme', 'device', 'colour theme'],
+      ['project-flow-theme-preset', 'device', 'chosen theme preset'],
+      ['project-flow-size', 'device', 'canvas zoom/size'],
+      ['project-flow-sort-mode', 'device', 'split-list sort mode'],
+      ['project-flow-hide-completed', 'device', 'hide-completed toggle'],
+      ['project-flow-split-width', 'device', 'split-list width'],
+      ['project-flow-view-mode', 'device', 'list vs canvas view'],
+      ['project-flow-notes-size', 'device', 'notes panel size'],
+      ['pf-last-save-time', 'device', 'last save stamp'],
+      ['pf-last-export-time', 'device', 'last export stamp'],
+      ['pf-firebase-autosync', 'device', 'cloud autosync toggle'],
+      ['pf-firebase-autobackup', 'device', 'cloud autobackup toggle'],
+    ];
+    STATIC_KEYS.forEach(function(row) { registerKey(row[0], row[1], row[2]); });
+
+    // The device predicate the wipe uses. It must be a real function in this
+    // scope: wipeDataKeys previously called a bare matchesDevice() that
+    // only existed as an API property, so the extraKeys sweep threw a
+    // ReferenceError on the first unregistered key and aborted the wipe
+    // (2026-09-19 — reminder-days survived sign-out on a real device).
+    function _isDeviceKey(key) {
+      return typeof key === 'string' && (_device.has(key) || DEVICE_RE.test(key));
+    }
+    return {
+      registerKey: registerKey,
+      registerDynamic: registerDynamic,
+      dataKeys: function() { return Array.from(_data); },
+      deviceKeys: function() { return Array.from(_device); },
+      // True when a key names the DEVICE: registered in STATIC_KEYS, seen
+      // and classified at write time, or matching a device family. This is
+      // the exact predicate the wipe uses, so the API and the wipe cannot
+      // disagree about what survives sign-out.
+      isDeviceKey: _isDeviceKey,
+      matchesDevice: _isDeviceKey,
+      // The wipe primitive. remove(key) is called synchronously for every
+      // DATA key this session has seen, plus every key in extraKeys
+      // (defaulting to DATA — the safe direction) that is not a device key.
+      // extraKeys covers keys present in storage but never written this
+      // session: a profile created by an older release, a pre-seeded test
+      // profile, anything the registry could not have seen.
+      wipeDataKeys: function(remove, extraKeys) {
+        _seen.forEach(function(key) {
+          if (_isDeviceKey(key)) return;
+          try { remove(key); } catch (e) {}
+        });
+        if (extraKeys) extraKeys.forEach(function(key) {
+          if (_seen.has(key)) return;           // already handled above
+          if (_isDeviceKey(key)) return;        // device keys survive
+          try { remove(key); } catch (e) {}
+        });
+      },
+      describe: function() { return JSON.parse(JSON.stringify(_notes)); }
+    };
+  })());
+  const PF_KEYS_REF = window._pf.PF_KEYS;
+
+  // Raw setItem wrapper: any write that bypasses safeSet still lands in the
+  // registry (as DATA unless the DEVICE_RE claims it). Idempotent wrap.
+  if (!localStorage.setItem.__pfWrapped) {
+    const _rawSetItem = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = function(key, value) {
+      try { PF_KEYS_REF.registerDynamic(key); } catch (e) {}
+      return _rawSetItem(key, value);
+    };
+    try { Object.defineProperty(localStorage.setItem, '__pfWrapped', { value: true }); } catch (e) {}
+  }
   let _idbKV = null;
   function openIDB_KV() {
     return new Promise(resolve => {
@@ -3845,6 +4013,9 @@
     } catch (e) {}
   }
   async function safeSet(key, value, shared) {
+    // Every safeSet write self-registers (AUD-05): the registry cannot drift
+    // from the real write surface, because writing IS registering.
+    try { PF_KEYS_REF.registerDynamic(key); } catch (e) {}
     let lsOk = false;
     let lsQuotaErr = false;
     if (hasStorage()) {
@@ -12987,32 +13158,32 @@ if ('serviceWorker' in navigator) {
     // today key on every render, which would resurrect a wiped key.
     if (window._pf) window._pf._signedOutWipe = true;
     localStorage.setItem(NEEDS_PULL_KEY, '1');
-    const keysToClear = [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
+    // AUD-05 (shared key registry): the key list is no longer hand-written
+    // here. Module 03's PF_KEYS registry is the single source of truth —
+    // every persistent key self-registers when written (safeSet and the
+    // raw setItem wrapper both register), so the wipe can never drift from
+    // the real write surface. A DATA-kind key that exists in storage but
+    // was never written this session is covered by the module-load
+    // registrations; an unknown key defaults to DATA (the safe direction).
+    // NEEDS_PULL_KEY must survive the wipe, so it is re-set below.
+    const _pfKeys = (window._pf && window._pf.PF_KEYS) || null;
+    function _wipeKey(k) { try { localStorage.removeItem(k); } catch (e) {} }
+    if (_pfKeys) {
+      const _liveKeys = [];
+      try { for (let i = 0; i < localStorage.length; i++) _liveKeys.push(localStorage.key(i)); } catch (e) {}
+      _pfKeys.wipeDataKeys(_wipeKey, _liveKeys);
+    }
+    // Fallback: if the registry is somehow missing (partial load), wipe the
+    // previous hand-maintained set so the old behaviour is preserved rather
+    // than silently skipping the wipe.
+    if (!_pfKeys) [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
      'pf-firebase-last-sync-time', ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY,
      REMINDERS_KEY, COLLAPSED_CAT_KEY, SNOOZE_PRESETS_KEY,
-     // Completeness pass (2026-09-15): planner backlog tasks and the
-     // gamification records (streak/XP, milestones, freezes) describe the
-     // signed-in user's activity and previously survived sign-out; the
-     // error log can carry account-identifying diagnostics. All live only
-     // on this device — wiped with everything else. Keys duplicated from
-     // their owner modules (25, 33, 21) exactly like the notes keys above.
      'project-flow-backlog', 'project-flow-streak', 'project-flow-milestones',
      'project-flow-streak-freezes', 'project-flow-errors',
-     // AUD-02 (MASTER-AUDIT-2026-09-19): three keys that describe the
-     // signed-in account previously survived the wipe. XP is the same
-     // gamification family as streak/milestones above (only it was
-     // missed); reminder-days is the account's default reminder lead;
-     // dismissed-weekly is the planner-dismissal history. None carries
-     // project/note content, but all describe the account, not the device.
-     'project-flow-xp', 'project-flow-reminder-days',
-     'project-flow-dismissed-weekly',
-     // Notes join the cloud (Phase C follow-up): they must switch accounts
-     // with everything else, or account B would silently inherit account A's
-     // notes (both localStorage and the IndexedDB mirror are cleared below).
-     NOTES_LOCAL_KEY, NOTES_TOMB_LOCAL_KEY];
-    keysToClear.forEach(function(k) {
-      try { localStorage.removeItem(k); } catch (e) {}
-    });
+     'project-flow-xp', 'project-flow-reminder-days', 'project-flow-dismissed-weekly',
+     NOTES_LOCAL_KEY, NOTES_TOMB_LOCAL_KEY].forEach(_wipeKey);
+    localStorage.setItem(NEEDS_PULL_KEY, '1'); // must survive the wipe (re-set)
     // safeSet() mirrors every write into the IndexedDB fallback store, and
     // safeGet() falls back to reading from it whenever the localStorage key
     // is missing. Clearing only localStorage above isn't enough — without
@@ -13028,7 +13199,33 @@ if ('serviceWorker' in navigator) {
         try {
           const tx = db.transaction('kv', 'readwrite');
           const store = tx.objectStore('kv');
-          keysToClear.forEach(function(k) { try { store.delete(k); } catch (e) {} });
+          const _delIdb = function(k) { try { store.delete(k); } catch (e) {} };
+          if (_pfKeys) {
+            // Layer 2: everything registered or seen this session.
+            _pfKeys.wipeDataKeys(_delIdb);
+            // Layer 3 for this store: enumerate it. A key that only ever
+            // reached IndexedDB — the browser evicted localStorage under
+            // quota pressure, another tab wrote it, an older release
+            // mirrored it — is not in localStorage and cannot be swept
+            // from there, so without this it survives sign-out and
+            // safeGet() would later resurrect it.
+            // NOTE: guard on the method, never on a pre-existing
+            // onsuccess handler — a fresh IDBRequest has onsuccess === null,
+            // so testing it would silently skip the sweep.
+            try {
+              if (typeof store.getAllKeys === 'function') {
+                const _keysReq = store.getAllKeys();
+                _keysReq.onsuccess = function(ev) {
+                  const keys = (ev && ev.target && ev.target.result) || [];
+                  keys.forEach(function(k) { if (!_pfKeys.isDeviceKey(k)) _delIdb(k); });
+                };
+              }
+            } catch (e) {}
+          } else {
+            [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
+             ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY, REMINDERS_KEY,
+             NOTES_LOCAL_KEY, NOTES_TOMB_LOCAL_KEY].forEach(function(k) { try { store.delete(k); } catch (e) {} });
+          }
         } catch (e) {}
       }).catch(function(e) {});
     } catch (e) {}
@@ -13055,6 +13252,7 @@ if ('serviceWorker' in navigator) {
     // in-memory sets are empty by construction at this point, so these are
     // not records — just the storage shapes those modules keep.
     setTimeout(function() {
+      // (These are all registered DATA keys — see PF_KEYS in module 03.)
       [ARCHIVE_KEY, TRASH_KEY, TODAY_KEY, ACTIVITY_KEY, WEEKLY_KEY, REMINDERS_KEY, SNOOZE_PRESETS_KEY].forEach(function(k) {
         try { localStorage.removeItem(k); } catch (e) {}
         try { window._pf.openIDB_KV().then(function(db) {
