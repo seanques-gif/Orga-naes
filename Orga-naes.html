@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-gdpJ9RLUqjTfiQLTr4V1kHt1GlbYFzNSOmav6OWLz20='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-MZNhM/Bl0TTO4kxlcCQw9guA8CfjZiO037ZP1h2jQKg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2009,6 +2009,15 @@
   #pf-root .pf-history-step { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
   #pf-root .pf-history-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #pf-root .pf-history-tag { flex: 0 0 auto; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); }
+  #pf-root .pf-history-filter-row { display: flex; align-items: center; gap: 6px; }
+  #pf-root .pf-history-filter { flex: 1 1 auto; min-width: 0; font-family: var(--font-sans); font-size: calc(var(--font-size-base) - 2px); padding: 4px 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); outline: none; box-sizing: border-box; }
+  #pf-root .pf-history-filter:focus { border-color: var(--accent); }
+  #pf-root .pf-history-filter-row .pf-undo-btn { flex: 0 0 auto; }
+  #pf-root .pf-history-restore { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  #pf-root .pf-history-restore[hidden] { display: none; }
+  #pf-root .pf-history-restore-btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pf-root .pf-history-restore-mark { flex: 0 0 auto; color: var(--accent); font-size: calc(var(--font-size-base) - 1px); padding: 0 3px; border-radius: 4px; cursor: pointer; }
+  #pf-root .pf-history-restore-mark:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
   #pf-root .pf-panel-count { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); font-weight: 400; }
   #pf-root .pf-footer-actions { padding-top: 8px; border-top: 1px solid var(--card-border); margin-top: 8px; display: flex; gap: 6px; }
   #pf-root .pf-panel-note { flex: 1; font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); align-self: center; text-align: right; }
@@ -2514,8 +2523,13 @@
     <!-- 🕘 Recent steps -->
     <div class="pf-options-section">
       <div class="pf-opt-title" data-ic-before="clock">Recent Steps <span id="pf-history-count" class="pf-panel-count"></span></div>
+      <div class="pf-options-row pf-history-filter-row">
+        <input type="text" class="pf-history-filter" id="pf-history-filter" placeholder="Filter steps (a project or a change)…" spellcheck="false" autocomplete="off" aria-label="Filter recent steps">
+        <button class="pf-undo-btn" id="pf-history-filter-clear" title="Clear the filter">×</button>
+      </div>
       <div class="pf-history-list" id="pf-history-list" role="listbox" aria-label="Recent steps, nothing to undo yet"><div class="pf-activity-empty" role="presentation">Nothing to undo yet.</div></div>
       <div class="pf-history-live pf-sr-only" id="pf-history-live" aria-live="polite" aria-atomic="true"></div>
+      <div class="pf-history-restore" id="pf-history-restore" hidden></div>
       <div class="pf-options-row pf-mt-4">
         <button class="pf-undo-btn" id="pf-history-clear" title="Forget the recorded steps">Clear</button>
       </div>
@@ -3292,6 +3306,125 @@
     // rebuilt the rows and only the last rebuild's DOM survives.
     if (typeof refocusHistoryAfterJump === 'function') refocusHistoryAfterJump();
     showToast(steps > 0 ? ('↩ Went back ' + moved + ' step' + (moved === 1 ? '' : 's')) : ('↪ Went forward ' + moved + ' step' + (moved === 1 ? '' : 's')));
+    return true;
+  }
+
+  // ---- Selective restore ---------------------------------------------------
+  // An entry stores the state from BEFORE its change, so the item a step touched
+  // can be put back on its own, without rolling the whole app back to that step.
+  // Offered ONLY when the step touched exactly one item: a bulk or structural
+  // change has no single thing to name, and guessing would be worse than
+  // offering nothing.
+  function historyEntryAt(steps) {
+    const n = steps | 0;
+    if (n > 0) return undoStack[undoStack.length - n] || null;
+    if (n < 0) return redoStack[redoStack.length + n] || null;
+    return null;
+  }
+  // Ids whose item differs between two snapshots (added, removed or changed).
+  // Stops at two: callers only ever ask "is it exactly one?", and the early
+  // exit keeps this cheap on every highlight move.
+  function changedIds(before, now) {
+    const b = new Map();
+    (before || []).forEach(x => { if (x && x.id) b.set(x.id, x); });
+    const c = new Map();
+    (now || []).forEach(x => { if (x && x.id) c.set(x.id, x); });
+    const ids = new Set(Array.from(b.keys()).concat(Array.from(c.keys())));
+    const out = [];
+    ids.forEach(id => {
+      if (out.length > 1) return;
+      const x = b.get(id), y = c.get(id);
+      if (!x || !y || JSON.stringify(x) !== JSON.stringify(y)) out.push(id);
+    });
+    return out;
+  }
+  function noteSnapshotFromAux(json) {
+    if (!json) return null;
+    try {
+      const a = JSON.parse(json);
+      return Array.isArray(a.notes) ? { notes: a.notes, tombstones: a.noteTombstones || {} } : null;
+    } catch (e) { return null; }
+  }
+  function currentNotesSnapshot() {
+    const ns = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    return (ns && Array.isArray(ns.notes)) ? ns : { notes: [], tombstones: {} };
+  }
+  // What, if anything, can be restored on its own at this step.
+  function historyRestoreTargets(steps) {
+    const out = { project: null, note: null };
+    const entry = historyEntryAt(steps);
+    if (!entry) return out;
+    const beforeProjects = entry._pp ? [entry.data] : (Array.isArray(entry.data) ? entry.data : []);
+    const pids = entry._pp ? (entry.data ? [entry.id] : []) : changedIds(beforeProjects, projects);
+    if (pids.length === 1) {
+      const id = pids[0];
+      const bp = beforeProjects.find(p => p.id === id);
+      const np = projects.find(p => p.id === id);
+      if (bp || np) out.project = { id: id, title: (bp || np).title || 'project', was: !!bp, is: !!np };
+    }
+    const beforeNotes = noteSnapshotFromAux(entry.aux);
+    if (beforeNotes) {
+      const now = currentNotesSnapshot();
+      const nids = changedIds(beforeNotes.notes, now.notes);
+      if (nids.length === 1) {
+        const id = nids[0];
+        const bn = beforeNotes.notes.find(n => n.id === id);
+        const nn = now.notes.find(n => n.id === id);
+        if (bn || nn) out.note = { id: id, title: (bn || nn).title || 'note', was: !!bn, is: !!nn };
+      }
+    }
+    return out;
+  }
+  function restoreLabelFor(kind, item) {
+    const t = item && item.title ? '\u201c' + String(item.title).slice(0, 40) + '\u201d' : kind;
+    return 'Restored ' + (kind === 'note' ? 'note ' : '') + t + ' from history';
+  }
+  function afterSelectiveRestore() {
+    _completedCollapseId = null;
+    updateHistoryButtons(); scheduleSave(); render();
+    if (listViewActive) { renderSplitList(); renderSplitDetail(); }
+    if (window._firebasePushNow) window._firebasePushNow();
+  }
+  function historyRestoreProject(steps) {
+    const target = historyRestoreTargets(steps).project;
+    if (!target) return false;
+    const entry = historyEntryAt(steps);
+    const beforeProjects = entry._pp ? [entry.data] : (Array.isArray(entry.data) ? entry.data : []);
+    const src = beforeProjects.find(p => p.id === target.id) || null;
+    // Resolve everything against the OLD stacks before snapshotting: the new
+    // entry shifts every step index by one.
+    const curIdx = projects.findIndex(p => p.id === target.id);
+    const at = entry._pp ? entry.idx : beforeProjects.findIndex(p => p.id === target.id);
+    snapshot(true, restoreLabelFor('project', target));
+    if (src && curIdx === -1) projects.splice(Math.min(Math.max(0, at), projects.length), 0, cloneProjects(src));
+    else if (!src && curIdx > -1) projects.splice(curIdx, 1);
+    else if (src && curIdx > -1) projects[curIdx] = cloneProjects(src);
+    afterSelectiveRestore();
+    showToast('\u21ba Restored just ' + (target.title ? '\u201c' + target.title + '\u201d' : 'that project'));
+    return true;
+  }
+  function historyRestoreNote(steps) {
+    if (!window._pf || typeof window._pf.replaceNotesSnapshot !== 'function') return false;
+    const target = historyRestoreTargets(steps).note;
+    if (!target) return false;
+    const entry = historyEntryAt(steps);
+    const beforeNotes = noteSnapshotFromAux(entry.aux);
+    const src = (beforeNotes && beforeNotes.notes.find(n => n.id === target.id)) || null;
+    const now = currentNotesSnapshot();
+    const nextNotes = now.notes.slice();
+    const nextTombs = Object.assign({}, now.tombstones);
+    const idx = nextNotes.findIndex(n => n.id === target.id);
+    snapshot(true, restoreLabelFor('note', target));
+    if (src && idx === -1) {
+      nextNotes.push(JSON.parse(JSON.stringify(src)));
+      // The change deleted it, so its tombstone has to go or the very next
+      // boot would re-delete what was just restored.
+      delete nextTombs[target.id];
+    } else if (!src && idx > -1) nextNotes.splice(idx, 1);
+    else if (src && idx > -1) nextNotes[idx] = JSON.parse(JSON.stringify(src));
+    window._pf.replaceNotesSnapshot(nextNotes, nextTombs);
+    afterSelectiveRestore();
+    showToast('\u21ba Restored just note ' + (target.title ? '\u201c' + target.title + '\u201d' : ''));
     return true;
   }
 
@@ -10530,16 +10663,29 @@
   // the highlighted row through the same call a click makes, with the
   // browser's own button activation suppressed so one press is one jump.
   let _historyActiveIdx = 0;      // which row owns the tab stop
+  let _historyFilter = '';        // lower-cased query; hides non-matching rows
   let _historyRefocusIdx = null;  // set by a keyboard jump, so the rebuilt list keeps focus
   // Screen-reader semantics. The visual row reads "\u21a92 Edited \u201cX\u201d", which only
   // means something once you know the arrows count steps; the accessible name
   // spells the jump out, and the live region repeats it so the highlight moving
   // is never silent.
-  function historyRowName(label, steps, tag) {
-    if (steps === null) return 'Current state, nothing to undo';
+  function restoreMarksFor(steps) {
+    let t = { project: null, note: null };
+    if (steps !== null && typeof historyRestoreTargets === 'function') t = historyRestoreTargets(steps);
+    const out = [];
+    if (t.project) out.push({ kind: 'project', title: t.project.title });
+    if (t.note) out.push({ kind: 'note', title: t.note.title });
+    return out;
+  }
+  function restoreMarkText(marks) {
+    return marks.map(function(m) { return (m.kind === 'note' ? 'note ' : '') + '\u201c' + m.title + '\u201d'; }).join(' and ');
+  }
+  function historyRowName(label, steps, tag, marks) {
+    const can = (marks && marks.length) ? ', can restore ' + restoreMarkText(marks) : '';
+    if (steps === null) return 'Current state, nothing to undo' + can;
     const n = Math.abs(steps);
     return (steps > 0 ? 'Go back ' : 'Go forward ') + n + (n === 1 ? ' step' : ' steps') +
-      ': ' + label + (tag ? ', ' + tag : '');
+      ': ' + label + (tag ? ', ' + tag : '') + can;
   }
   // Only while the panel is on screen: a snapshot happens on every edit, so
   // announcing from a closed panel would talk over whatever the user is doing.
@@ -10573,6 +10719,48 @@
       return el.classList && el.classList.contains('pf-history-row');
     });
   }
+  function historyActiveStep() {
+    const rows = historyRowEls();
+    const r = rows[_historyActiveIdx];
+    if (!r) return null;
+    const raw = r.getAttribute('data-steps');
+    if (raw === null || raw === '') return null;
+    const n = parseInt(raw, 10);
+    return isNaN(n) ? null : n;
+  }
+  // Offer the single-item restores for the highlighted row. A step that changed
+  // exactly one project (or one note) is the only case with something to name;
+  // everything else shows no button rather than a guess. The buttons live
+  // OUTSIDE the list so the listbox stays a listbox.
+  function updateHistoryRestoreActions() {
+    const box = document.getElementById('pf-history-restore');
+    if (!box) return;
+    let targets = { project: null, note: null };
+    const steps = historyActiveStep();
+    if (steps !== null && typeof historyRestoreTargets === 'function') targets = historyRestoreTargets(steps);
+    const wanted = [];
+    if (targets.project) wanted.push({ kind: 'project', item: targets.project });
+    if (targets.note) wanted.push({ kind: 'note', item: targets.note });
+    const sig = wanted.map(function(w) { return w.kind + ':' + w.item.id + ':' + w.item.title; }).join('|');
+    if (box.dataset.restoreSig === sig && box.children.length) return;
+    box.dataset.restoreSig = sig;
+    box.innerHTML = '';
+    if (!wanted.length) { box.hidden = true; return; }
+    box.hidden = false;
+    wanted.forEach(function(w) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pf-undo-btn pf-history-restore-btn';
+      b.textContent = '\u21ba Restore only ' + (w.kind === 'note' ? 'note ' : '') + '\u201c' + w.item.title + '\u201d';
+      b.title = 'Put just this ' + w.kind + ' back to how it was at this step';
+      b.addEventListener('click', function() {
+        const s = historyActiveStep();
+        if (s === null) return;
+        if (w.kind === 'project') historyRestoreProject(s); else historyRestoreNote(s);
+      });
+      box.appendChild(b);
+    });
+  }
   function focusHistoryRow(idx) {
     const rows = historyRowEls();
     if (!rows.length) return;
@@ -10585,6 +10773,7 @@
     // The row's own accessible name IS the announcement, so what a screen
     // reader says and what the row is called cannot drift apart.
     announceHistory(rows[i].getAttribute('aria-label'));
+    updateHistoryRestoreActions();
   }
   function stepHistoryRow(dir) {
     const rows = historyRowEls();
@@ -10603,17 +10792,45 @@
     if (rows[i].disabled) { i = 0; while (i < rows.length && rows[i].disabled) i++; if (i >= rows.length) i = rows.length - 1; }
     _historyActiveIdx = i;
     setHistoryRowState(rows, i);
+    updateHistoryRestoreActions();
+  }
+  // Search/filter: narrows the list to steps whose label contains the query.
+  // The step COUNT on a row is never touched — a filtered row still jumps the
+  // same distance, because the filter hides rows rather than renumbering them.
+  // Matching the label covers both kinds of change ("Added a project") and the
+  // project a change touched (an "Edited \u201cAlpha\u201d" label).
+  function historyFilterMatch(label) {
+    if (!_historyFilter) return true;
+    return String(label || '').toLowerCase().indexOf(_historyFilter) !== -1;
+  }
+  function setHistoryFilter(value) {
+    const next = String(value || '').trim().toLowerCase();
+    if (next === _historyFilter) return;
+    _historyFilter = next;
+    _historyActiveIdx = 0;
+    renderHistoryPanel();
+  }
+  // What the markers are derived from: a rename, an add, or a delete has to
+  // re-render the list, or a stale marker would point at the wrong thing.
+  function restoreStateSig() {
+    const p = (Array.isArray(projects) ? projects : []).map(function (x) { return x.id + '~' + (x.title || ''); }).join('|');
+    const ns = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    const n = (ns && Array.isArray(ns.notes)) ? (ns.notes.length + '~' + Object.keys(ns.tombstones || {}).length) : 'x';
+    return p + '||' + n;
   }
   function historyRenderSig(model) {
     const part = (rows) => rows.map(function (r) { return r.steps + ':' + r.label; }).join('|');
-    return model.undo.length + '/' + model.redo.length + '/' + part(model.undo) + '/' + part(model.redo);
+    return _historyFilter + '#' + model.undo.length + '/' + model.redo.length + '/' + part(model.undo) + '/' + part(model.redo) + '@' + restoreStateSig();
   }
   function renderHistoryPanel() {
     const list = document.getElementById('pf-history-list');
     if (!list) return;
     const model = (typeof historyModel === 'function') ? historyModel() : { undo: [], redo: [] };
+    const undoRows = model.undo.filter(function (r) { return historyFilterMatch(r.label); });
+    const redoRows = model.redo.filter(function (r) { return historyFilterMatch(r.label); });
+    const filtering = !!_historyFilter;
     const count = document.getElementById('pf-history-count');
-    if (count) count.textContent = model.undo.length ? String(model.undo.length) : '';
+    if (count) count.textContent = undoRows.length ? String(undoRows.length) : '';
     // Idempotent: updateHistoryButtons() runs on EVERY snapshot, and a rebuild
     // destroys the rows — including one that was just focused by a keyboard
     // jump, which would silently send focus back to the body. The signature is
@@ -10626,29 +10843,46 @@
     // this element came to exist.
     list.setAttribute('role', 'listbox');
     list.innerHTML = '';
-    if (!model.undo.length && !model.redo.length) {
-      list.setAttribute('aria-label', 'Recent steps, nothing to undo yet');
+    const emptyAll = !model.undo.length && !model.redo.length;
+    const noMatch = !emptyAll && !undoRows.length && !redoRows.length;
+    if (emptyAll || noMatch) {
+      list.setAttribute('aria-label', emptyAll
+        ? 'Recent steps, nothing to undo yet'
+        : 'Recent steps, no matches for ' + _historyFilter);
       const empty = document.createElement('div');
       empty.className = 'pf-activity-empty';
       // Decorative: the phrase is already in the listbox's own name, and a
       // listbox may not contain a child that is not an option.
       empty.setAttribute('role', 'presentation');
-      empty.textContent = 'Nothing to undo yet.';
+      empty.textContent = emptyAll ? 'Nothing to undo yet.' : 'No steps match \u201c' + _historyFilter + '\u201d.';
       list.appendChild(empty);
-      announceHistory('Nothing to undo yet');
+      announceHistory(emptyAll ? 'Nothing to undo yet' : 'No steps match');
+      updateHistoryRestoreActions();
       return;
     }
-    list.setAttribute('aria-label', 'Recent steps');
-    list.appendChild(historyRow('Current state', null, 'pf-history-row-current', ''));
-    model.undo.forEach(function(row, i) {
-      list.appendChild(historyRow(row.label, row.steps, i === 0 ? 'pf-history-row-next' : '', i === 0 ? 'Ctrl+Z' : ''));
+    list.setAttribute('aria-label', filtering
+      ? 'Recent steps, filtered by ' + _historyFilter
+      : 'Recent steps');
+    // The Current state anchor only makes sense with the filter off: a filtered
+    // list is about the matching steps, not where the stack currently sits.
+    if (!filtering) list.appendChild(historyRow('Current state', null, 'pf-history-row-current', ''));
+    undoRows.forEach(function(row) {
+      // The Ctrl+Z tag claims the row is what Ctrl+Z restores. Filtering does
+      // not change which step that is, and the tag only ever lands on index 0
+      // (undoRows preserve order), so it stays honest either way.
+      const isNext = !!row.next;
+      list.appendChild(historyRow(row.label, row.steps, isNext ? 'pf-history-row-next' : '', isNext ? 'Ctrl+Z' : '', restoreMarksFor(row.steps)));
     });
-    model.redo.forEach(function(row) {
-      list.appendChild(historyRow(row.label, row.steps, '', 'redo'));
+    redoRows.forEach(function(row) {
+      list.appendChild(historyRow(row.label, row.steps, '', 'redo', restoreMarksFor(row.steps)));
     });
     syncHistoryTabStop();
-    const n = model.undo.length;
-    announceHistory(n ? n + (n === 1 ? ' step' : ' steps') + ' to undo' : 'Nothing to undo yet');
+    const n = undoRows.length;
+    const shown = n + redoRows.length;
+    announceHistory(filtering
+      ? (shown + (shown === 1 ? ' step matches ' : ' steps match ') + _historyFilter)
+      : (n ? n + (n === 1 ? ' step' : ' steps') + ' to undo' : 'Nothing to undo yet'));
+    updateHistoryRestoreActions();
   }
   // A keyboard jump rebuilds this list, which would drop focus to the body. The
   // restore runs ONCE, after the whole jump (historyGo calls this), because a
@@ -10660,7 +10894,7 @@
     _historyRefocusIdx = null;
     focusHistoryRow(i);
   }
-  function historyRow(label, steps, extraClass, tag) {
+  function historyRow(label, steps, extraClass, tag, marks) {
     const el = document.createElement('button');
     el.type = 'button';
     el.tabIndex = -1;
@@ -10679,9 +10913,28 @@
       t2.textContent = tag;
       el.appendChild(t2);
     }
+    // One marker per restorable item, so a click is never ambiguous. A SPAN,
+    // not a button: an option must stay an option, so it carries no role and no
+    // tab stop — the under-list button is the keyboard path.
+    (marks || []).forEach(function(mk) {
+      const mark = document.createElement('span');
+      mark.className = 'pf-history-restore-mark';
+      mark.textContent = '\u21ba';
+      mark.setAttribute('aria-hidden', 'true');
+      mark.setAttribute('title', 'Restore only ' + (mk.kind === 'note' ? 'note ' : '') + '\u201c' + mk.title + '\u201d');
+      mark.addEventListener('click', function(e) {
+        // Without this the row's own click would also fire, and the step would
+        // jump as well as restore.
+        e.stopPropagation();
+        e.preventDefault();
+        if (mk.kind === 'project') historyRestoreProject(steps); else historyRestoreNote(steps);
+      });
+      el.appendChild(mark);
+    });
     el.setAttribute('role', 'option');
-    el.setAttribute('aria-label', historyRowName(label, steps, tag));
+    el.setAttribute('aria-label', historyRowName(label, steps, tag, marks));
     el.setAttribute('aria-selected', 'false');
+    el.dataset.steps = (steps === null) ? '' : String(steps);
     if (steps === null) {
       el.disabled = true;
       el.setAttribute('aria-disabled', 'true');
@@ -10708,6 +10961,28 @@
     return el;
   }
   (function wireHistoryPanel() {
+    const filterInput = document.getElementById('pf-history-filter');
+    if (filterInput) {
+      filterInput.value = _historyFilter;
+      filterInput.setAttribute('aria-label', 'Filter recent steps');
+      filterInput.addEventListener('input', function() { setHistoryFilter(filterInput.value); });
+      filterInput.addEventListener('keydown', function(e) {
+        // A non-empty query is cleared first; an empty one falls through so
+        // Escape still closes the panel as usual.
+        if (e.key === 'Escape' && filterInput.value) {
+          e.preventDefault();
+          e.stopPropagation();
+          filterInput.value = '';
+          setHistoryFilter('');
+        }
+      });
+    }
+    const filterClear = document.getElementById('pf-history-filter-clear');
+    if (filterClear) filterClear.addEventListener('click', function() {
+      if (filterInput) filterInput.value = '';
+      setHistoryFilter('');
+      if (filterInput) filterInput.focus();
+    });
     const clearBtn = document.getElementById('pf-history-clear');
     if (clearBtn) clearBtn.addEventListener('click', function() {
       undoStack.length = 0;
@@ -10736,6 +11011,9 @@
     confirmDialog: (title, message, okLabel, cancelLabel) => pfConfirmDialog(title, message, okLabel, cancelLabel),
     historyModel: () => historyModel(),
     historyGo: (steps) => historyGo(steps),
+    historyRestoreTargets: (steps) => historyRestoreTargets(steps),
+    historyRestoreProject: (steps) => historyRestoreProject(steps),
+    historyRestoreNote: (steps) => historyRestoreNote(steps),
     refreshHistoryPanel: () => renderHistoryPanel(),
     saveCategories: () => saveCategories(),
     render: () => render(),
