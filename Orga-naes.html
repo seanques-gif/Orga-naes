@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-vJfON9898UVQSogmZc8frbKbwbj/0qW91LP1oRNxVpg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Nm+OXCmecmyIy455Nb9BtBnk1NuX8tWQOpfK6xzxOsU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3085,26 +3085,72 @@
 
   function updateHistoryButtons() { undoBtn.disabled = undoStack.length === 0; redoBtn.disabled = redoStack.length === 0; }
   function cloneProjects(data) { if (typeof structuredClone === 'function') return structuredClone(data); return JSON.parse(JSON.stringify(data)); }
-  // Per-project undo: store only the touched project when possible (saves ~90% memory)
-  // Structural changes (add/delete/reorder) still store the full array.
-  function snapshot() {
-    const pid = _lastProjectId;
-    _lastProjectId = null;
-    if (pid && projects.some(p => p.id === pid)) {
-      const idx = projects.findIndex(p => p.id === pid);
-      undoStack.push({ _pp: true, idx: idx, id: pid, data: cloneProjects(projects[idx]) });
-    } else {
-      undoStack.push({ _pp: false, data: cloneProjects(projects) });
+  // ---- Unified history -----------------------------------------------------
+  // The stacks used to hold the project list and nothing else, so an undo
+  // restored the canvas and quietly left notes, reminders, archive, trash,
+  // Today, Weekly, emoji colors and snooze presets exactly as the change had
+  // left them. Every entry now carries those stores too, captured as one
+  // interned JSON string: a snapshot that did not touch them (a drag, a
+  // rename, a status cycle) reuses the previous string, so the extra coverage
+  // costs one copy per distinct state rather than one per entry.
+  let _auxJson = null;
+  function captureAuxState() {
+    let aux;
+    try {
+      aux = {
+        categories: categories, collapsedCategories: collapsedCategories,
+        archive: archive, trash: trash,
+        todayTasks: todayTasks, todayDate: todayDate,
+        weeklyData: weeklyData, reminders: reminders,
+        categoryEmojis: categoryEmojis, snoozePresets: snoozePresets,
+        // Notes live in a nested scope (module 46), so they come through the
+        // bridge; getNotesSnapshot returns null until notes have loaded.
+        notes: null, noteTombstones: null
+      };
+    } catch (e) {
+      // Loud on purpose: a silent null here means undo stops restoring
+      // everything except the canvas, and that is exactly how the first
+      // version of this shipped.
+      logError('History capture', e);
+      return null;
     }
-    if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
-    redoStack = [];
-    updateHistoryButtons();
+    const ns = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    if (ns) { aux.notes = ns.notes; aux.noteTombstones = ns.tombstones || {}; }
+    let json;
+    try { json = JSON.stringify(aux); } catch (e) { logError('History capture (stringify)', e); return null; }
+    if (json === _auxJson) return _auxJson; // unchanged → share the previous string
+    _auxJson = json;
+    return json;
   }
-  function undo() {
-    if (!undoStack.length) return;
-    redoStack.push({ _pp: false, data: cloneProjects(projects) }); // full-array entry — redo() pops this shape
-    if (redoStack.length > UNDO_STACK_MAX) redoStack.shift();
-    const entry = undoStack.pop();
+  function applyAuxState(json) {
+    if (!json) return;
+    let aux;
+    try { aux = JSON.parse(json); } catch (e) { return; }
+    try {
+      categories = Array.isArray(aux.categories) ? aux.categories : [];
+      collapsedCategories = aux.collapsedCategories || {};
+      archive = Array.isArray(aux.archive) ? aux.archive : [];
+      trash = Array.isArray(aux.trash) ? aux.trash : [];
+      todayTasks = Array.isArray(aux.todayTasks) ? aux.todayTasks : [];
+      todayDate = aux.todayDate || todayDate;
+      weeklyData = (aux.weeklyData && typeof aux.weeklyData === 'object') ? aux.weeklyData : {};
+      reminders = Array.isArray(aux.reminders) ? aux.reminders : [];
+      categoryEmojis = (aux.categoryEmojis && typeof aux.categoryEmojis === 'object') ? aux.categoryEmojis : {};
+      if (Array.isArray(aux.snoozePresets)) snoozePresets = aux.snoozePresets;
+      // Persist exactly what was restored, then refresh every surface that reads it.
+      saveCategories(); saveCollapsedCategories(); saveArchive(); saveTrash();
+      saveToday(); saveWeekly(); saveReminders(); saveCatEmojis(); saveSnoozePresets();
+      renderTrashList(); renderTodayList(); renderWeeklyPanel(); renderSnoozePresetsEditor();
+      // Notes are a nested scope: replaceNotesSnapshot is a WHOLESALE replace
+      // (importNotes/replaceNotes can only add tombstones, which would drop the
+      // very notes being restored) and it re-renders the notes surfaces itself.
+      if (Array.isArray(aux.notes) && window._pf && typeof window._pf.replaceNotesSnapshot === 'function') {
+        window._pf.replaceNotesSnapshot(aux.notes, aux.noteTombstones || {});
+      }
+    } catch (e) { logError('History restore', e); }
+  }
+  function restoreHistoryEntry(entry) {
+    if (!entry) return;
     if (entry._pp) {
       const curIdx = projects.findIndex(p => p.id === entry.id);
       if (curIdx > -1) projects[curIdx] = entry.data;
@@ -3112,28 +3158,42 @@
     } else {
       projects = entry.data;
     }
+    applyAuxState(entry.aux);
     _completedCollapseId = null;
     updateHistoryButtons(); scheduleSave(); render();
     if (listViewActive) { renderSplitList(); renderSplitDetail(); }
     if (window._firebasePushNow) window._firebasePushNow();
+  }
+  // Per-project undo: store only the touched project when possible (saves ~90% memory)
+  // Structural changes (add/delete/reorder) still store the full array.
+  // forceFull: a whole-state change (an import) must not be mis-attributed to
+  // whichever project happened to be touched last.
+  function snapshot(forceFull) {
+    const pid = forceFull ? null : _lastProjectId;
+    _lastProjectId = null;
+    const aux = captureAuxState();
+    if (pid && projects.some(p => p.id === pid)) {
+      const idx = projects.findIndex(p => p.id === pid);
+      undoStack.push({ _pp: true, idx: idx, id: pid, data: cloneProjects(projects[idx]), aux: aux });
+    } else {
+      undoStack.push({ _pp: false, data: cloneProjects(projects), aux: aux });
+    }
+    if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
+    redoStack = [];
+    updateHistoryButtons();
+  }
+  function undo() {
+    if (!undoStack.length) return;
+    redoStack.push({ _pp: false, data: cloneProjects(projects), aux: captureAuxState() }); // full-array entry — redo() pops this shape
+    if (redoStack.length > UNDO_STACK_MAX) redoStack.shift();
+    restoreHistoryEntry(undoStack.pop());
     showToast('↩ Undo (' + undoStack.length + ' left)');
   }
   function redo() {
     if (!redoStack.length) return;
-    undoStack.push({ _pp: false, data: cloneProjects(projects) }); // full-array entry — undo() pops this shape
+    undoStack.push({ _pp: false, data: cloneProjects(projects), aux: captureAuxState() }); // full-array entry — undo() pops this shape
     if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
-    const entry = redoStack.pop();
-    if (entry._pp) {
-      const curIdx = projects.findIndex(p => p.id === entry.id);
-      if (curIdx > -1) projects[curIdx] = entry.data;
-      else projects.splice(Math.min(entry.idx, projects.length), 0, entry.data);
-    } else {
-      projects = entry.data;
-    }
-    _completedCollapseId = null;
-    updateHistoryButtons(); scheduleSave(); render();
-    if (listViewActive) { renderSplitList(); renderSplitDetail(); }
-    if (window._firebasePushNow) window._firebasePushNow();
+    restoreHistoryEntry(redoStack.pop());
     showToast('↪ Redo (' + redoStack.length + ' left)');
   }
 
@@ -9313,62 +9373,10 @@
     return (Array.isArray(data) ? data : []).filter(p => p != null).map(p => sanitizeImportedNode(p, seenIds));
   }
 
-  // Everything a replacing import touches, deep-copied before it is replaced.
-  // The global undo stack keeps only the project list (that is what Ctrl+Z
-  // restores), so the import keeps its own fuller snapshot for the toast Undo.
-  function captureImportUndo() {
-    const pf = window._pf || {};
-    const cp = (v) => JSON.parse(JSON.stringify(v === undefined ? null : v));
-    const out = {
-      projects: cp(pf.getProjects ? pf.getProjects() : []),
-      categories: cp(pf.getCategories ? pf.getCategories() : []),
-      collapsedCategories: cp(collapsedCategories),
-      archive: cp(archive),
-      trash: cp(trash),
-      todayTasks: cp(pf.getTodayTasks ? pf.getTodayTasks() : []),
-      todayDate: (pf.getTodayDate ? pf.getTodayDate() : null),
-      weeklyData: cp(pf.getWeeklyData ? pf.getWeeklyData() : null),
-      reminders: cp(pf.getReminders ? pf.getReminders() : []),
-      categoryEmojis: cp(pf.getCategoryEmojis ? pf.getCategoryEmojis() : {}),
-      snoozePresets: (pf.getSnoozePresets ? cp(pf.getSnoozePresets()) : null),
-      notes: null,
-      noteTombstones: null
-    };
-    const ns = (pf.getNotesSnapshot ? pf.getNotesSnapshot() : null);
-    if (ns) { out.notes = cp(ns.notes); out.noteTombstones = cp(ns.tombstones || {}); }
-    return out;
-  }
-  function restoreImportUndo(s) {
-    const pf = window._pf || {};
-    if (!s) return false;
-    try {
-      if (pf.setProjects) pf.setProjects(s.projects);
-      if (pf.setCategories) pf.setCategories(s.categories);
-      if (pf.setCollapsedCategories) pf.setCollapsedCategories(s.collapsedCategories);
-      if (pf.setArchive) pf.setArchive(s.archive);
-      if (pf.setTrash) pf.setTrash(s.trash);
-      if (pf.setTodayTasks) pf.setTodayTasks(s.todayTasks);
-      if (s.todayDate && pf.setTodayDate) pf.setTodayDate(s.todayDate);
-      if (pf.setWeeklyData) pf.setWeeklyData(s.weeklyData);
-      if (pf.setReminders) pf.setReminders(s.reminders);
-      if (pf.setCategoryEmojis) pf.setCategoryEmojis(s.categoryEmojis);
-      if (s.snoozePresets && pf.setSnoozePresets) pf.setSnoozePresets(s.snoozePresets);
-      // Wholesale replace, not restoreNotesSnapshot: that bridge refuses while
-      // live notes exist (it is one-way boot recovery), and the import has just
-      // tombstoned the notes we are putting back.
-      if (s.notes && pf.replaceNotesSnapshot) pf.replaceNotesSnapshot(s.notes, s.noteTombstones);
-      else if (s.notes && pf.restoreNotesSnapshot) pf.restoreNotesSnapshot(s.notes, s.noteTombstones);
-      if (pf.scheduleSave) pf.scheduleSave();
-      if (pf.render) pf.render();
-      return true;
-    } catch (e) { logError('Import undo', e); return false; }
-  }
-  // The toast's one-click undo — the same restore Ctrl+Z cannot fully do,
-  // labelled 'Undo' so it reads like the other undo affordances.
-  function importUndoToast(message, state) {
-    showToast(message, false, false, function() {
-      if (restoreImportUndo(state)) showToast('Import undone — previous data restored.');
-    }, 'Undo');
+  // The toast's one-click undo. The history now carries the whole state, so
+  // this is the same undo Ctrl+Z runs — no import-specific snapshot needed.
+  function importUndoToast(message) {
+    showToast(message, false, false, function() { undo(); }, 'Undo');
   }
 
   // A backup with no projects to import but with preference extras: apply the
@@ -9376,15 +9384,14 @@
   // Refusing the file outright used to lose the user's configured intervals
   // and emoji colors just because the other copy happened to hold no projects.
   function applyImportPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets) {
-    const undoState = captureImportUndo();
-    snapshot();
+    snapshot(true); // whole-state: an import replaces far more than the project list
     let applied = 0;
     const safeImportedCategories = (Array.isArray(importedCategories) ? importedCategories : []).filter(c => typeof c === 'string');
     if (safeImportedCategories.length) { categories = Array.from(new Set(categories.concat(safeImportedCategories))); saveCategories(); applied++; }
     if (importedCollapsed && Object.keys(importedCollapsed).length) { collapsedCategories = Object.assign({}, collapsedCategories, importedCollapsed); saveCollapsedCategories(); applied++; }
     if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); applied++; }
     if (Array.isArray(importedSnoozePresets) && window._pf && typeof window._pf.setSnoozePresets === 'function') { window._pf.setSnoozePresets(importedSnoozePresets); applied++; }
-    importUndoToast('Imported ' + applied + ' preference' + (applied === 1 ? '' : 's') + ' from backup — projects left untouched.', undoState);
+    importUndoToast('Imported ' + applied + ' preference' + (applied === 1 ? '' : 's') + ' from backup — projects left untouched.');
     render();
   }
   function importHasPreferences(importedCategories, importedCollapsed, importedEmojis, importedSnoozePresets) {
@@ -9407,12 +9414,11 @@
     const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
     return 'This backup holds ' + plural(inProjects, 'project') + ', ' + plural(inNotes, 'note') + ' and ' + plural(inReminders, 'reminder') +
       '. Importing replaces your ' + plural(curProjects, 'project') + ', ' + plural(curNotes, 'note') + ' and ' + plural(curReminders, 'reminder') +
-      ' on this device. Undo the whole import from the toast afterwards (Ctrl+Z restores only the project list).';
+      ' on this device. Undo it from the toast afterwards, or with Ctrl+Z.';
   }
 
   function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedNotes, importedNoteTombstones, importedSnoozePresets) {
-    const undoState = captureImportUndo();
-    snapshot();
+    snapshot(true); // whole-state: an import replaces far more than the project list
     let restoredExtras = 0;
     // Archive replaces HERE (after snapshot), like every other extra — it used
     // to be applied during extraction, BEFORE the undo snapshot ran, so a
@@ -9440,7 +9446,7 @@
       // local-only notes, which made "load a backup without notes" a no-op.
       if (window._pf && typeof window._pf.importNotes === 'function') { window._pf.importNotes(importedNotes, importedNoteTombstones); restoredExtras++; }
     }
-    importUndoToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders/notes from backup)' : ''), undoState);
+    importUndoToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders/notes from backup)' : ''));
   }
 
   importInput.addEventListener('change', () => {
@@ -10423,7 +10429,6 @@
     setProjects: (p) => { projects = p; },
     getCategories: () => categories,
     setCategories: (c) => { categories = c; },
-    setCollapsedCategories: (c) => { collapsedCategories = c; saveCollapsedCategories(); },
     renderSplitList: () => renderSplitList(),
     getArchive: () => archive,
     setArchive: (a) => { archive = a; saveArchive(); },
@@ -10444,16 +10449,11 @@
     // stale-date regression can drive production code instead of the 1200ms wait.
     _advanceRecurrenceForTest: (node) => { handleRecurrence(node); return node.dueAt; },
     getTodayTasks: () => todayTasks,
-    // Setters used by the import's own undo (the global undo stack only keeps
-    // the project list, so the toast restore needs a way back for the rest).
-    setTodayTasks: (t) => { todayTasks = t; saveToday(); },
     getTodayDate: () => todayDate,
     setTodayDate: (d) => { todayDate = d; },   // test/diagnostic: simulate an app open across midnight
     getWeeklyData: () => weeklyData,
-    setWeeklyData: (w) => { weeklyData = w; saveWeekly(); },
     getBacklogData: () => backlogData,
     getReminders: () => reminders,
-    setReminders: (r) => { reminders = r; saveReminders(); },
     getActivityLog: () => activityLog,
     // Gamification (33): the weekly freeze refill is re-decided on a heartbeat
     // now, so the regression drives that production path without moving the
