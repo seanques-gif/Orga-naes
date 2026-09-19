@@ -1,4 +1,10 @@
-const CACHE_VERSION = '2026-09-14-0001';
+// CACHE_VERSION is BUILD-OWNED (build.mjs): it is the first 16 hex chars of
+// the artifact's sha256, so any change to the app changes this string and a
+// new worker installs (with a fresh precache) on the next update check. It
+// used to be hand-written and went stale for five days. Do not hand-edit:
+// `npm run build` writes it, and the determinism gate + test suite both fail
+// when it does not match the artifact.
+const CACHE_VERSION = 'ee1618308c008740';
 const CACHE_NAME = 'orga-naes-' + CACHE_VERSION;
 const ASSETS = [
   './Orga-naes.html',
