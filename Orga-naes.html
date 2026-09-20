@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Wx667owv/pXNq3WN2DIhzLjpfz0hpOR8arBKgeBu3wI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Ard8ExfEsZjzIyeOSctG5KDiN1vsOB9pRH7U3NjKLAw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -11394,6 +11394,36 @@
     });
   })();
 
+  // ---- Audit register ------------------------------------------------------
+  // The master audit's report is a LOCAL-ONLY document (PUBLISHING.md: dev docs
+  // never travel), so the dispositions it records would otherwise have no home
+  // in the released bytes at all — which is exactly the gap AUD-11's close-out
+  // exposed. This register is that home: one entry per finding, carrying the
+  // status the report gives it plus the evidence that keeps the status honest.
+  // The prose report stays the source of truth locally, and it is NAMED here so
+  // the shipped build can say where its record lives: `source` below. The suite
+  // reads that name, opens that file and fails if the two ever disagree or if a
+  // finding is missing from either side, so the register cannot drift from the
+  // record it summarises. Read it live as `window._pf.auditRegister()`.
+  const PF_AUDIT_REGISTER = Object.freeze({
+    source: 'MASTER-AUDIT-2026-09-19.md',
+    findings: Object.freeze([
+      { id: 'AUD-01', status: 'remediated', evidence: 'c291fed', note: 'Imports capped at three stages (25 MB of raw text, file.size before the read, a bounded 20,000-node census), each refusing before any state changes' },
+      { id: 'AUD-02', status: 'remediated', evidence: 'c291fed', note: 'The sign-out wipe covers the last three account-scoped keys (xp, reminder-days, dismissed-weekly)' },
+      { id: 'AUD-03', status: 'remediated', evidence: '533372b', note: 'sw.js CACHE_VERSION is the artifact own sha256 prefix, so it cannot go stale' },
+      { id: 'AUD-04', status: 'remediated', evidence: 'aaa5279', note: 'Exports carry a schemaVersion and a documented migration reader keeps older files importable' },
+      { id: 'AUD-05', status: 'remediated', evidence: 'f02b6a0', note: 'The wipe derives from a key registry (static table + write-time registration + a sweep of both stores)' },
+      { id: 'AUD-06', status: 'remediated', evidence: 'a0d159f', note: 'uid() draws 16 bytes from crypto.getRandomValues, with a documented no-CSPRNG fallback' },
+      { id: 'AUD-07', status: 'remediated', evidence: 'd95d6a5', note: 'The triplicated prototype-pollution guard is one shared definition (the ~35 helpers did not reproduce)' },
+      { id: 'AUD-08', status: 'remediated', evidence: '6997f69', note: 'Fonts regenerate from local sources — 396.7 KB to 121.4 KB of payload — and a build-time size budget guards growth' },
+      { id: 'AUD-09', status: 'remediated', evidence: 'b8a5622', note: 'One guarded entry function: a repeat evaluation cannot reach a fragment, and a duplicate boot is reported rather than absorbed' },
+      { id: 'AUD-10', status: 'remediated', evidence: '681cbe5', note: 'The service worker cache-fill branch is bounded by a FILLABLE allowlist derived from ASSETS' },
+      { id: 'AUD-11', status: 'reviewed', evidence: '5dbfbbe', note: 'One unreachable guard deleted (the setItem idempotent wrap) and four reachable readiness gates kept with their justification' },
+      { id: 'AUD-12', status: 'confirmed', evidence: 'owner-side', note: 'Device-bound checks (PWA install, touch, on-device notification click-through) are not reachable from here' },
+      { id: 'AUD-13', status: 'confirmed', evidence: 'build budget', note: '1,086 KB single file, parse cost accepted by design; growth is now gated per area by the build' },
+      { id: 'AUD-14', status: 'confirmed', evidence: 'no analytics', note: 'Error and activity logs hold user text locally; no third-party analytics anywhere' }
+    ].map(Object.freeze))
+  });
   // Expose for Firebase sync (Object.assign preserves keys published by
   // earlier fragments, e.g. pfIcon from 00-svg-icons.js)
   window._pf = Object.assign(window._pf || {}, {
@@ -11424,6 +11454,9 @@
     // assertion reports any duplicate through logError above, and this handle
     // is what a live console or the suite reads to confirm it.
     bootCount: () => window.__pfBootCount || 0,
+    // The master audit's register: the dispositions that ship with this build,
+    // with the local report they summarise named in `source` (AUD-11 close-out).
+    auditRegister: () => PF_AUDIT_REGISTER,
     snapshot: (forceFull, label) => snapshot(forceFull, label),
     openIDB_KV: () => openIDB_KV(),
     getCategoryEmojis: () => categoryEmojis,

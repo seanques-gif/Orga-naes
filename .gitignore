@@ -24,6 +24,16 @@ DESIGN-v1-night-workshop.md
 REDESIGN-PLAN.md
 AUDIT-CANONICAL.md
 
+# Audit records: local-only (same decision, restated 2026-09-20 — AUD-11
+# close-out). The published repo carries runtime files only, so the master
+# audit's DISPOSITIONS travel inside the app instead: read them from the built
+# artifact with `window._pf.auditRegister()`. The prose report stays here, is
+# named by that register's `source`, and is what the suite cross-checks the
+# shipped register against — so the record cannot drift from what shipped.
+MASTER-AUDIT-*.md
+PWA-AUDIT-REPORT-*.md
+/docs/audits/
+
 # AI skills doc (previously only in local .git/info/exclude, which doesn't travel)
 .github/skills/
 

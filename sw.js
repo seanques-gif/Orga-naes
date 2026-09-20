@@ -4,7 +4,7 @@
 // used to be hand-written and went stale for five days. Do not hand-edit:
 // `npm run build` writes it, and the determinism gate + test suite both fail
 // when it does not match the artifact.
-const CACHE_VERSION = 'a9db6e5156006ed4';
+const CACHE_VERSION = '459e6dd490d43220';
 const CACHE_NAME = 'orga-naes-' + CACHE_VERSION;
 const ASSETS = [
   './Orga-naes.html',
