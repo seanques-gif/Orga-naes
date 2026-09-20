@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-X+vbuUlpAN7UoNw/cfproQrtmERzuBCjm79Gs2Nsri8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Jndgp+5uh6H0myhs11hAuw9XbAmVJ83JCFvJhBAI7lc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1482,6 +1482,11 @@
   #pf-root .pf-reminder-input { width: 52px; background: var(--bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 4px 6px; font-size: calc(var(--font-size-base) - 2px); margin: 0 4px; }
   #pf-root .pf-reminder-actions { display: flex; gap: 8px; margin-top: 12px; }
 
+  /* Options is a HUB, not a form: a fixed head carrying the title — and the
+     close button the app injects into it — over ONE scrolling body of groups.
+     The head is what keeps the × reachable: it used to be absolutely
+     positioned inside the scroll container, so from the bottom of a 1,800px
+     panel there was no visible way out. */
   #pf-root .pf-options-panel {
     position: fixed;
     top: 50%;
@@ -1489,17 +1494,16 @@
     transform: translate(-50%, -50%);
     width: min(420px, 90vw);
     max-height: min(80vh, 700px);
-    overflow-x: hidden;
     z-index: var(--z-float);
-    padding: 18px;
+    padding: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     font-size: calc(var(--font-size-base) + 1px);
-    overflow-y: auto;
   }
-  #pf-root .pf-options-title { font-family: var(--font-sans); font-weight: 700; font-size: calc(var(--font-size-base) + 2px); margin-bottom: 14px; letter-spacing: -0.3px; }
-  #pf-root .pf-options-section { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--card-border); }
-  #pf-root .pf-options-section .pf-undo-btn { width: 100%; text-align: left; justify-content: flex-start; }
+  #pf-root .pf-opt-head { flex-shrink: 0; padding: 16px 18px 12px; border-bottom: 1px solid var(--card-border); }
+  #pf-root .pf-options-title { font-family: var(--font-sans); font-weight: 700; font-size: calc(var(--font-size-base) + 2px); letter-spacing: -0.3px; }
+  #pf-root .pf-opt-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 2px 18px 14px; }
   #pf-root .pf-options-row .pf-undo-btn { width: auto; flex-shrink: 0; padding: 6px 8px; font-size: calc(var(--font-size-base) - 1px); }
   #pf-root .pf-options-row { display: flex; align-items: center; gap: 10px; }
   #pf-root .pf-options-label { font-size: var(--font-size-base); color: var(--text); }
@@ -1877,13 +1881,33 @@
   #pf-root .pf-bottom-nav-btn .pf-ic { width: calc(var(--font-size-base) + 2px); height: calc(var(--font-size-base) + 2px); vertical-align: middle; }
   #pf-root .pf-ic-title { width: max(12px, calc(var(--font-size-base) - 1px)); height: max(12px, calc(var(--font-size-base) - 1px)); vertical-align: -0.15em; margin-right: 4px; opacity: 0.85; }
   #pf-root .pf-recur-ic { margin-right: 3px; opacity: 0.9; }
+  /* Two label levels, used where each carries information: the GROUP heading
+     leads (full text colour, one step up in size, icon on the same line), the
+     block label inside it stays the app's small uppercase marker. Space sits
+     above a heading and not below it, so the panel reads in groups instead of
+     ten equal hairlines. */
+  #pf-root .pf-opt-group { display: flex; flex-direction: column; gap: 8px; padding: 14px 0 12px; }
+  #pf-root .pf-opt-group + .pf-opt-group { border-top: 1px solid var(--card-border); }
+  #pf-root .pf-opt-group:first-child { padding-top: 8px; }
+  #pf-root .pf-opt-group-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-sans);
+    font-size: calc(var(--font-size-base) + 1px);
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  #pf-root .pf-opt-group-title .pf-ic { width: max(12px, calc(var(--font-size-base) + 1px)); height: max(12px, calc(var(--font-size-base) + 1px)); color: var(--text-dim); }
+  #pf-root .pf-opt-block { display: flex; flex-direction: column; gap: 6px; }
   #pf-root .pf-opt-title {
     font-size: calc(var(--font-size-base) - 3px);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     color: var(--text-dim);
-    margin-bottom: 8px;
+    margin-bottom: 0;
   }
   #pf-root .pf-theme-btn { padding: 5px 12px; font-size: calc(var(--font-size-base) - 3px); }
   #pf-root .pf-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -1892,7 +1916,13 @@
      Values are copied verbatim from the removed style="" attributes. display:none
      boot-hiding intentionally stays inline wherever JS reveals via style.display=''. */
   /* generic utilities */
-  #pf-root .pf-opt-btn { justify-content: flex-start; }
+  /* Full-width option buttons live in a group or a block, NOT in every button a
+     section happens to contain. The old rule targeted them via the section, so
+     anything else in there was stretched too — that is what flattened the theme
+     presets from a chip row into five stacked bars, and what the snooze delete
+     button had to be scoped around. */
+  #pf-root .pf-opt-btn { width: 100%; text-align: left; justify-content: flex-start; }
+  #pf-root .pf-check-row .pf-opt-btn { width: auto; }
   /* Signed-out sync buttons: clickable (so the tap can explain itself via
      toast) but visually dimmed so they still read as unavailable. */
   #pf-root .pf-opt-btn.pf-opt-off { opacity: 0.45; }
@@ -1937,11 +1967,13 @@
   #pf-root .pf-snooze-row .pf-snooze-del { flex: 0 0 26px; width: 26px; height: 26px; padding: 0; text-align: center; display: inline-flex; align-items: center; justify-content: center; color: var(--text-dim); }
   #pf-root .pf-snooze-row .pf-snooze-del:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
   #pf-root .pf-autobackup-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* options panel: theme section + footer */
-  #pf-root .pf-theme-divider { margin-top: 10px; margin-bottom: 8px; }
-  #pf-root .pf-theme-sec-label { font-size: calc(var(--font-size-base) - 4px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 6px; margin-top: 12px; }
+  /* options panel: theme row. The presets are chips (the row wraps) and the
+     active one carries a class rather than an inline outline, so the selected
+     state is the same shape in every preset. */
   #pf-root .pf-theme-btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
-  #pf-root .pf-section-divider { border-top: 1px solid var(--card-border); padding-top: 12px; margin-top: 8px; }
+  #pf-root .pf-theme-btn-on { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-weight: 600; }
+  #pf-root .pf-history-actions { display: flex; flex-direction: column; gap: 8px; }
+  #pf-root .pf-history-actions[data-empty="true"] { display: none; }
   /* shared panel chrome (geometry lives on the id rules below) */
   #pf-root .pf-panel-head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); flex-shrink: 0; }
   #pf-root .pf-panel-head-icon { font-size: calc(var(--font-size-base) + 8px); }
@@ -2443,153 +2475,162 @@
     </div>
   </div>
   <div class="pf-options-panel" id="pf-options-panel" style="display:none">
-    <div class="pf-options-title">Options</div>
-
-    <!-- 📁 Data -->
-    <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="folder">Data</div>
-      <div class="pf-opt-grid">
-        <button class="pf-undo-btn pf-opt-btn" id="pf-export" title="Save (Ctrl+S)" ><span class="pf-opt-ico" data-ic="save"></span> Save JSON</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-import" title="Import" ><span class="pf-opt-ico" data-ic="open"></span> Import</button>
-      </div>
+    <div class="pf-opt-head">
+      <div class="pf-options-title">Options</div>
     </div>
+    <div class="pf-opt-body">
 
-    <!-- 📁 Manage -->
-    <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="folder">Manage</div>
-      <div class="pf-opt-grid">
-        <button class="pf-undo-btn pf-opt-btn" id="pf-category-btn" title="Manage categories" ><span class="pf-opt-ico" data-ic="folder"></span> Categories</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-reminder-btn" title="Set due-date reminder threshold" ><span class="pf-opt-ico" data-ic="bell"></span> Reminder</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-activity-btn" ><span class="pf-opt-ico" data-ic="clipboard"></span> Activity Log</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-reminders-btn" title="Pending and recently fired reminders" ><span class="pf-opt-ico" data-ic="bell"></span> Reminders</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-archive-btn" ><span class="pf-opt-ico" data-ic="archive"></span> Archive</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-trash-btn" ><span class="pf-opt-ico" data-ic="trash"></span> Recycle Bin</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-snapshots-btn" ><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
-        <button class="pf-undo-btn pf-opt-btn pf-btn-rel" id="pf-error-btn" ><span class="pf-opt-ico" data-ic="alert"></span> Error Log<span class="pf-error-dot pf-error-dot-pos" id="pf-error-dot-btn"></span></button>
-      </div>
-    </div>
+      <!-- 1 · Your data — keep it, move it, export it -->
+      <div class="pf-opt-group">
+        <div class="pf-opt-group-title" data-ic-before="save">Your data</div>
 
-    <!-- 🕘 Recent steps -->
-    <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="clock">Recent Steps <span id="pf-history-count" class="pf-panel-count"></span></div>
-      <div class="pf-options-row pf-history-filter-row">
-        <input type="text" class="pf-history-filter" id="pf-history-filter" placeholder="Filter steps (a project or a change)…" spellcheck="false" autocomplete="off" aria-label="Filter recent steps">
-        <button class="pf-undo-btn" id="pf-history-filter-clear" title="Clear the filter">×</button>
-      </div>
-      <div class="pf-history-list" id="pf-history-list" role="listbox" aria-label="Recent steps, nothing to undo yet"><div class="pf-activity-empty" role="presentation">Nothing to undo yet.</div></div>
-      <div class="pf-history-live pf-sr-only" id="pf-history-live" aria-live="polite" aria-atomic="true"></div>
-      <div class="pf-history-restore" id="pf-history-restore" hidden></div>
-      <div class="pf-options-row pf-mt-4">
-        <button class="pf-undo-btn" id="pf-history-clear" title="Forget the recorded steps">Clear</button>
-      </div>
-      <div class="pf-hint">The first row is what Ctrl+Z restores. Click a row — or move with &uarr;&darr; and press Enter — to go back or forward to that step.</div>
-    </div>
-
-    <!-- ⏰ Snooze presets -->
-    <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="bell">Snooze Presets</div>
-      <div class="pf-snooze-editor" id="pf-snooze-editor"></div>
-      <div class="pf-options-row pf-mt-4">
-        <button class="pf-undo-btn" id="pf-snooze-add" title="Add a preset (up to 6)"><span class="pf-opt-ico" data-ic="plus"></span> Add preset</button>
-        <button class="pf-undo-btn" id="pf-snooze-reset" title="Restore the default three">Reset</button>
-      </div>
-      <div class="pf-hint">One-click buttons shown when editing a reminder.</div>
-    </div>
-
-    <!-- 📤 Export -->
-    <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="upload">Export</div>
-      <div class="pf-opt-grid">
-        <button class="pf-undo-btn pf-opt-btn" id="pf-export-csv" ><span class="pf-opt-ico" data-ic="file"></span> CSV</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-export-pdf" ><span class="pf-opt-ico" data-ic="file-text"></span> PDF</button>
-      </div>
-    </div>
-
-    <!-- ☁️ Cloud Sync — Firebase -->
-    <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="cloud">Cloud Sync (Firebase)</div>
-      <div class="pf-firebase-section" id="pf-firebase-section">
-        <div class="pf-firebase-status" id="pf-firebase-status">Not signed in</div>
-        <div class="pf-firebase-last-sync" id="pf-firebase-last-sync" style="display:none;"></div>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signin" ><span class="pf-opt-ico" data-ic="key"></span> Sign in with Google</button>
-        <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signout"  style="display:none"><span class="pf-opt-ico" data-ic="exit"></span> Sign Out</button>
-        <div class="pf-opt-grid">
-          <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-push"  disabled><span class="pf-opt-ico" data-ic="upload"></span> Push</button>
-          <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-pull"  disabled><span class="pf-opt-ico" data-ic="download"></span> Pull</button>
+        <div class="pf-opt-block">
+          <div class="pf-opt-title">Backup file</div>
+          <div class="pf-opt-grid">
+            <button class="pf-undo-btn pf-opt-btn" id="pf-export" title="Save (Ctrl+S)" ><span class="pf-opt-ico" data-ic="save"></span> Save JSON</button>
+            <button class="pf-undo-btn pf-opt-btn" id="pf-import" title="Import" ><span class="pf-opt-ico" data-ic="open"></span> Import</button>
+          </div>
         </div>
-        <label class="pf-check-row pf-mt-4">
-          <input type="checkbox" id="pf-firebase-autosync"> Auto-sync on changes
-        </label>
-        <label class="pf-check-row">
-          <input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
-        </label>
-        <button class="pf-undo-btn pf-opt-btn pf-mt-4" id="pf-firebase-backups-btn"  disabled><span class="pf-opt-ico" data-ic="planner"></span> Restore from Backup</button>
-        <div class="pf-firebase-backups-list" id="pf-firebase-backups-list" style="display:none;"></div>
-        <p class="pf-firebase-note">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
-      </div>
-    </div>
 
-    <!-- 🔄 Auto-Backup -->
-    <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="refresh">Auto-Backup</div>
-      <label class="pf-check-row pf-check-row-lg">
-        Every
-        <input type="number" id="pf-autobackup-min" min="0" max="120" value="0" class="pf-input-num">
-        min <span class="pf-hint">(0 = off)</span>
-      </label>
-      <div class="pf-check-row pf-mt-6 pf-overflow-hidden">
-        <button class="pf-undo-btn pf-opt-btn pf-shrink-0" id="pf-autobackup-dir" ><span class="pf-opt-ico" data-ic="folder"></span> Choose folder</button>
-        <span class="pf-hint pf-autobackup-path" id="pf-autobackup-path"></span>
-      </div>
-    </div>
+        <div class="pf-opt-block">
+          <div class="pf-opt-title">Export</div>
+          <div class="pf-opt-grid">
+            <button class="pf-undo-btn pf-opt-btn" id="pf-export-csv" ><span class="pf-opt-ico" data-ic="file"></span> CSV</button>
+            <button class="pf-undo-btn pf-opt-btn" id="pf-export-pdf" ><span class="pf-opt-ico" data-ic="file-text"></span> PDF</button>
+          </div>
+        </div>
 
-    <!-- 🎨 Appearance -->
-    <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="palette">Appearance</div>
-      <label class="pf-options-label">Display Scale</label>
-      <div class="pf-options-row">
-        <input type="range" id="pf-display-scale" class="pf-range-input" min="60" max="140" step="5" value="100">
-        <span id="pf-display-scale-val" class="pf-options-val">100%</span>
-        <button class="pf-undo-btn" id="pf-display-scale-reset" title="Reset to default">Default</button>
-      </div>
-      <input type="range" id="pf-font-size" class="pf-range-input" style="display:none;" min="10" max="20" step="1" value="15">
-      <span id="pf-font-size-val" style="display:none;">15px</span>
-      <label class="pf-options-label" for="pf-font-family">Font</label>
-      <div class="pf-options-row">
-        <select id="pf-font-family" class="pf-due-filter pf-font-family-select" title="Interface font">
-          <option value="">Inter (default, iOS-like)</option>
-          <option value="plex">Console classic (IBM Plex)</option>
-          <option value="system">System (Segoe UI / SF Pro / Roboto)</option>
-          <option value="custom">Custom Google Font...</option>
-        </select>
-      </div>
-      <input type="text" id="pf-font-custom" class="pf-due-filter pf-font-custom-input" style="display:none;" placeholder="Family name, e.g. Nunito, Lora" title="Any family from fonts.google.com" maxlength="60" autocomplete="off" spellcheck="false">
-      <div class="pf-theme-divider">
-        <button class="pf-undo-btn pf-theme-btn" id="pf-theme-auto">Auto (System)</button>
-      </div>
-      <div class="pf-theme-sec-label">Console Themes</div>
-      <div class="pf-theme-btn-row">
-        <button class="pf-undo-btn pf-theme-btn" id="pf-theme-midnight-cyan">Midnight Cyan</button>
-        <button class="pf-undo-btn pf-theme-btn" id="pf-theme-amber-crt">Amber CRT</button>
-        <button class="pf-undo-btn pf-theme-btn" id="pf-theme-phosphor-green">Phosphor Green</button>
-        <button class="pf-undo-btn pf-theme-btn" id="pf-theme-monochrome">Monochrome</button>
-        <button class="pf-undo-btn pf-theme-btn" id="pf-theme-daylight">Daylight</button>
-      </div>
-    </div>
+        <div class="pf-opt-block">
+          <div class="pf-opt-title">Cloud sync (Firebase)</div>
+          <div class="pf-firebase-section" id="pf-firebase-section">
+            <div class="pf-firebase-status" id="pf-firebase-status">Not signed in</div>
+            <div class="pf-firebase-last-sync" id="pf-firebase-last-sync" style="display:none;"></div>
+            <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signin" ><span class="pf-opt-ico" data-ic="key"></span> Sign in with Google</button>
+            <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signout"  style="display:none"><span class="pf-opt-ico" data-ic="exit"></span> Sign Out</button>
+            <div class="pf-opt-grid">
+              <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-push"  disabled><span class="pf-opt-ico" data-ic="upload"></span> Push</button>
+              <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-pull"  disabled><span class="pf-opt-ico" data-ic="download"></span> Pull</button>
+            </div>
+            <label class="pf-check-row pf-mt-4">
+              <input type="checkbox" id="pf-firebase-autosync"> Auto-sync on changes
+            </label>
+            <label class="pf-check-row">
+              <input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
+            </label>
+            <button class="pf-undo-btn pf-opt-btn pf-mt-4" id="pf-firebase-backups-btn"  disabled><span class="pf-opt-ico" data-ic="planner"></span> Restore from Backup</button>
+            <div class="pf-firebase-backups-list" id="pf-firebase-backups-list" style="display:none;"></div>
+            <p class="pf-firebase-note">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
+          </div>
+        </div>
 
-    <!-- ⌨️ Shortcuts -->
-    <div class="pf-options-section">
-      <div class="pf-opt-title" data-ic-before="keyboard">Shortcuts</div>
-      <button class="pf-undo-btn pf-opt-btn" id="pf-shortcuts-btn" ><span class="pf-opt-ico" data-ic="keyboard"></span> Keyboard Shortcuts</button>
-    </div>
+        <div class="pf-opt-block">
+          <div class="pf-opt-title">Auto-backup</div>
+          <label class="pf-check-row pf-check-row-lg">
+            Every
+            <input type="number" id="pf-autobackup-min" min="0" max="120" value="0" class="pf-input-num">
+            min <span class="pf-hint">(0 = off)</span>
+          </label>
+          <div class="pf-check-row pf-mt-6 pf-overflow-hidden">
+            <button class="pf-undo-btn pf-opt-btn pf-shrink-0" id="pf-autobackup-dir" ><span class="pf-opt-ico" data-ic="folder"></span> Choose folder</button>
+            <span class="pf-hint pf-autobackup-path" id="pf-autobackup-path"></span>
+          </div>
+        </div>
+      </div>
 
-    <!-- ℹ️ About -->
-    <div class="pf-options-section pf-section-divider">
-      <div class="pf-opt-title" data-ic-before="info">About</div>
-      <div class="pf-firebase-about">
-        <strong>Orga-naes</strong> v1.0.0<br>
-        A lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views, all stored locally in your browser.<br><br>
-        Created by <strong>Sean Ques</strong>
+      <!-- 2 · Panels — every view this hub opens -->
+      <div class="pf-opt-group">
+        <div class="pf-opt-group-title" data-ic-before="list">Panels</div>
+        <div class="pf-opt-grid">
+          <button class="pf-undo-btn pf-opt-btn" id="pf-category-btn" title="Manage categories" ><span class="pf-opt-ico" data-ic="folder"></span> Categories</button>
+          <button class="pf-undo-btn pf-opt-btn" id="pf-activity-btn" ><span class="pf-opt-ico" data-ic="clipboard"></span> Activity Log</button>
+          <button class="pf-undo-btn pf-opt-btn" id="pf-archive-btn" ><span class="pf-opt-ico" data-ic="archive"></span> Archive</button>
+          <button class="pf-undo-btn pf-opt-btn" id="pf-trash-btn" ><span class="pf-opt-ico" data-ic="trash"></span> Recycle Bin</button>
+          <button class="pf-undo-btn pf-opt-btn" id="pf-snapshots-btn" ><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
+          <button class="pf-undo-btn pf-opt-btn pf-btn-rel" id="pf-error-btn" ><span class="pf-opt-ico" data-ic="alert"></span> Error Log<span class="pf-error-dot pf-error-dot-pos" id="pf-error-dot-btn"></span></button>
+        </div>
+      </div>
+
+      <!-- 3 · Reminders — the panel, the lead time, the snooze presets -->
+      <div class="pf-opt-group">
+        <div class="pf-opt-group-title" data-ic-before="bell">Reminders</div>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-reminders-btn" title="Pending and recently fired reminders"><span class="pf-opt-ico" data-ic="bell"></span> Open Reminders</button>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-reminder-btn" title="Set due-date reminder threshold"><span class="pf-opt-ico" data-ic="clock"></span> Reminder lead time</button>
+        <div class="pf-opt-block">
+          <div class="pf-opt-title">Snooze presets</div>
+          <div class="pf-snooze-editor" id="pf-snooze-editor"></div>
+          <div class="pf-options-row">
+            <button class="pf-undo-btn" id="pf-snooze-add" title="Add a preset (up to 6)"><span class="pf-opt-ico" data-ic="plus"></span> Add preset</button>
+            <button class="pf-undo-btn" id="pf-snooze-reset" title="Restore the default three">Reset</button>
+          </div>
+          <div class="pf-hint">One-click buttons shown when editing a reminder.</div>
+        </div>
+      </div>
+
+      <!-- 4 · History — the undo stack -->
+      <div class="pf-opt-group">
+        <div class="pf-opt-group-title" data-ic-before="undo">History <span id="pf-history-count" class="pf-panel-count"></span></div>
+        <div class="pf-options-row pf-history-filter-row">
+          <input type="text" class="pf-history-filter" id="pf-history-filter" placeholder="Filter steps (a project or a change)…" spellcheck="false" autocomplete="off" aria-label="Filter recent steps">
+          <button class="pf-undo-btn" id="pf-history-filter-clear" title="Clear the filter">×</button>
+        </div>
+        <div class="pf-history-list" id="pf-history-list" role="listbox" aria-label="Recent steps, nothing to undo yet"><div class="pf-activity-empty" role="presentation">Nothing to undo yet.</div></div>
+        <div class="pf-history-live pf-sr-only" id="pf-history-live" aria-live="polite" aria-atomic="true"></div>
+        <div class="pf-history-restore" id="pf-history-restore" hidden></div>
+        <div class="pf-history-actions" id="pf-history-actions" data-empty="true">
+          <div class="pf-options-row">
+            <button class="pf-undo-btn" id="pf-history-clear" title="Forget the recorded steps">Clear</button>
+          </div>
+          <div class="pf-hint">The first row is what Ctrl+Z restores. Click a row — or move with &uarr;&darr; and press Enter — to go back or forward to that step.</div>
+        </div>
+      </div>
+
+      <!-- 5 · Appearance -->
+      <div class="pf-opt-group">
+        <div class="pf-opt-group-title" data-ic-before="palette">Appearance</div>
+        <div class="pf-opt-block">
+          <div class="pf-opt-title">Theme</div>
+          <div class="pf-theme-btn-row">
+            <button class="pf-undo-btn pf-theme-btn" id="pf-theme-auto">Auto (System)</button>
+            <button class="pf-undo-btn pf-theme-btn" id="pf-theme-midnight-cyan">Midnight Cyan</button>
+            <button class="pf-undo-btn pf-theme-btn" id="pf-theme-amber-crt">Amber CRT</button>
+            <button class="pf-undo-btn pf-theme-btn" id="pf-theme-phosphor-green">Phosphor Green</button>
+            <button class="pf-undo-btn pf-theme-btn" id="pf-theme-monochrome">Monochrome</button>
+            <button class="pf-undo-btn pf-theme-btn" id="pf-theme-daylight">Daylight</button>
+          </div>
+        </div>
+        <div class="pf-opt-block">
+          <div class="pf-opt-title">Display scale</div>
+          <div class="pf-options-row">
+            <input type="range" id="pf-display-scale" class="pf-range-input" min="60" max="140" step="5" value="100">
+            <span id="pf-display-scale-val" class="pf-options-val">100%</span>
+            <button class="pf-undo-btn" id="pf-display-scale-reset" title="Reset to default">Default</button>
+          </div>
+          <input type="range" id="pf-font-size" class="pf-range-input" style="display:none;" min="10" max="20" step="1" value="15">
+          <span id="pf-font-size-val" style="display:none;">15px</span>
+        </div>
+        <div class="pf-opt-block">
+          <div class="pf-opt-title">Font</div>
+          <div class="pf-options-row">
+            <select id="pf-font-family" class="pf-due-filter pf-font-family-select" title="Interface font">
+              <option value="">Inter (default, iOS-like)</option>
+              <option value="plex">Console classic (IBM Plex)</option>
+              <option value="system">System (Segoe UI / SF Pro / Roboto)</option>
+              <option value="custom">Custom Google Font...</option>
+            </select>
+          </div>
+          <input type="text" id="pf-font-custom" class="pf-due-filter pf-font-custom-input" style="display:none;" placeholder="Family name, e.g. Nunito, Lora" title="Any family from fonts.google.com" maxlength="60" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+
+      <!-- 6 · About -->
+      <div class="pf-opt-group">
+        <div class="pf-opt-group-title" data-ic-before="info">About</div>
+        <div class="pf-firebase-about">
+          <strong>Orga-naes</strong> v1.0.0<br>
+          A lightweight, single-file project manager designed for quick task tracking, nested subtasks, due dates, reminders, and multiple views, all stored locally in your browser.<br><br>
+          Created by <strong>Sean Ques</strong>
+        </div>
+        <button class="pf-undo-btn pf-opt-btn" id="pf-shortcuts-btn" ><span class="pf-opt-ico" data-ic="keyboard"></span> Keyboard Shortcuts</button>
       </div>
     </div>
   </div>
@@ -7135,14 +7176,20 @@
     renderSplitDetail();
   }
 
+  // Options is a hub of live content (the undo history in particular), so it
+  // refreshes as it opens: whatever changed while it was closed is shown.
+  function refreshOptionsContent() {
+    const r = window._pf && window._pf.refreshHistoryPanel;
+    if (typeof r === 'function') r();
+  }
   document.getElementById('pf-options-btn').addEventListener('click', () => {
     const showing = optionsPanel.style.display !== 'none';
-    if (showing) { closeAllModals(); } else { openModal(optionsPanel, 'flex'); }
+    if (showing) { closeAllModals(); } else { refreshOptionsContent(); openModal(optionsPanel, 'flex'); }
   });
   document.getElementById('pf-toolbar-back').addEventListener('click', () => { _goBackToProjects(); });
   document.getElementById('pf-options-btn-desktop').addEventListener('click', () => {
     const showing = optionsPanel.style.display !== 'none';
-    if (showing) { closeAllModals(); } else { openModal(optionsPanel, 'flex'); }
+    if (showing) { closeAllModals(); } else { refreshOptionsContent(); openModal(optionsPanel, 'flex'); }
   });
   document.getElementById('pf-shortcuts-btn').addEventListener('click', () => {
     closeAllModals(); openModal(shortcutsPanel, 'flex');
@@ -10187,7 +10234,7 @@
       const el = document.getElementById(id);
       if (el) {
         const active = (id === 'pf-theme-' + name);
-        el.style.outline = active ? '2px solid var(--accent)' : '';
+        el.classList.toggle('pf-theme-btn-on', active);
         el.setAttribute('aria-pressed', active ? 'true' : 'false');
       }
     });
@@ -11229,6 +11276,13 @@
     const filtering = !!_historyFilter;
     const count = document.getElementById('pf-history-count');
     if (count) count.textContent = undoRows.length ? String(undoRows.length) : '';
+    // An action with no object reads as a dead control, and the panel is long
+    // enough without a paragraph explaining an empty list: the Clear button and
+    // its hint appear only once something is recorded. (The action stays
+    // VISIBLE through a filter that matches nothing, because then it still has
+    // an object — the steps are there, they are just not on screen.)
+    const actions = document.getElementById('pf-history-actions');
+    if (actions) actions.dataset.empty = (model.undo.length || model.redo.length) ? 'false' : 'true';
     // Idempotent: updateHistoryButtons() runs on EVERY snapshot, and a rebuild
     // destroys the rows — including one that was just focused by a keyboard
     // jump, which would silently send focus back to the body. The signature is
