@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-E/7fyK0+p2jNsp5e0lzcX+coh1gCLXJmRIMUpX5efMU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Z2PYztfqBZXUMQq97sTekrJDMs33LS03kuChVmVuRo0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3044,6 +3044,24 @@
 
   // Throttle utility — trailing-edge, skips if already pending
   function throttle(fn, ms) { let pending = false; return function() { if (pending) return; pending = true; setTimeout(() => { fn(); pending = false; }, ms); }; }
+
+  // ---- Shared prototype-pollution guard (AUD-07) ---------------------------
+  // This had been copy-pasted into three closures: the file importer's
+  // sanitizeImportedNode and two notes bridges. A fix to the guard therefore
+  // only ever landed in one of them, and the copies could drift apart
+  // silently. It is declared once here and shared by every consumer.
+  //   ownSafe(obj) -> a fresh PLAIN object carrying only own, safe,
+  //   string-keyed properties. The input is never mutated: a crafted payload
+  //   can carry __proto__ as an OWN key (JSON.parse produces one).
+  var UNSAFE_KEYS = ['__proto__', 'constructor', 'prototype'];
+  function ownSafe(obj) {
+    var out = {};
+    Object.keys(obj).forEach(function(k) { if (UNSAFE_KEYS.indexOf(k) === -1) out[k] = obj[k]; });
+    return out;
+  }
+  // Dev/test bridge (same shape as _pf.uid): this guard is closure-local and
+  // the suite boots the bundle in a vm, so it can only reach what _pf exposes.
+  _pf.ownSafe = ownSafe;
 
   // Pointer capture is BEST-EFFORT, never assumed. Browsers throw
   // NotFoundError ("No active pointer with the given id is found") whenever the
@@ -9874,15 +9892,9 @@
 
   // Fills in safe defaults for missing/malformed fields on an imported project or subtask so a
   // damaged or hand-edited backup can't break rendering, sync, or the undo stack. Recurses into subtasks.
-  // Keys that must never survive an import: they can poison Object.prototype
-  // or smuggle constructor chains through the sanitizer's direct mutation.
-  var UNSAFE_KEYS = ['__proto__', 'constructor', 'prototype'];
-  function ownSafe(obj) {
-    // Fresh object with only own, safe, string-keyed properties.
-    var out = {};
-    Object.keys(obj).forEach(function(k) { if (UNSAFE_KEYS.indexOf(k) === -1) out[k] = obj[k]; });
-    return out;
-  }
+  // UNSAFE_KEYS + ownSafe are declared once in the shared core (module 01) —
+  // AUD-07. Keys that must never survive an import: they can poison
+  // Object.prototype or smuggle constructor chains through the sanitizer.
   function sanitizeImportedNode(node, seenIds) {
     // Rebuild as a PLAIN object from own properties only — never mutate the
     // raw parsed input (a crafted backup could carry __proto__ as an own key
@@ -12659,14 +12671,9 @@
   window._pf.importNotes = function(nextNotes, incomingTombstones) {
     ++loadEpoch;
     if (!Array.isArray(nextNotes)) return;
-    // Proto-pollution guard: drop dangerous keys and rebuild each note/tombstone
-    // as a plain own-property object (same contract as sanitizeImportedNode).
-    var UNSAFE_KEYS = ['__proto__', 'constructor', 'prototype'];
-    function ownSafe(obj) {
-      var out = {};
-      Object.keys(obj).forEach(function(k) { if (UNSAFE_KEYS.indexOf(k) === -1) out[k] = obj[k]; });
-      return out;
-    }
+    // Proto-pollution guard: ownSafe/UNSAFE_KEYS come from the shared core
+    // (module 01) — AUD-07: this bridge and the importer used to each carry a
+    // private copy of the same guard.
     if (incomingTombstones && typeof incomingTombstones === 'object') {
       Object.keys(ownSafe(incomingTombstones)).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (incomingTombstones[k] || '')) noteTombstones[k] = incomingTombstones[k]; });
     }
@@ -12717,8 +12724,7 @@
   window._pf.replaceNotesSnapshot = function(nextNotes, nextTombstones) {
     ++loadEpoch;
     if (!Array.isArray(nextNotes)) return;
-    var UNSAFE_KEYS = ['__proto__', 'constructor', 'prototype'];
-    function ownSafe(obj) { var out = {}; Object.keys(obj).forEach(function(k) { if (UNSAFE_KEYS.indexOf(k) === -1) out[k] = obj[k]; }); return out; }
+    // ownSafe is shared from module 01 (AUD-07); this bridge used a local copy.
     notes = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string')
       .map(ownSafe)
       .map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
