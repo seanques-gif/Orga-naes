@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-jFtazOepA9sbpYjOWJJKVWSfQSPYagRfM9mrLeYj3dk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ekJThV7/GDc8wu2H7wjlCRuzPwep5KjNIRTV10Mlowc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3052,6 +3052,40 @@
     'arrow-up': '<path d="M12 19V5m-6 6 6-6 6 6"/>',
     'arrow-down': '<path d="M12 5v14m-6-6 6-6 6 6"/>'
   };
+  // ---- Lookups whose absence is survivable ---------------------------------
+  // The template defines every element the app reaches for, and most lookups are
+  // wiring on markup that is guaranteed to be present. These are the exceptions:
+  // reads reached from a render path or a click, where a miss must not take the
+  // caller down. The alternative is in the app's own error log —
+  // "Cannot read properties of null (reading 'style')", logged with no stack to
+  // attribute it, because the throw happened inside a handler nobody had
+  // wrapped. A miss here answers null and names itself ONCE per target: a render
+  // path would otherwise log on every frame it ran, and that dedupe is what
+  // keeps the report readable.
+  const _missingLookups = new Set();
+  function optEl(target, sel) {
+    const el = sel === undefined
+      ? document.getElementById(target)
+      : (target ? target.querySelector(sel) : null);
+    if (el) return el;
+    const label = sel === undefined ? '#' + target : sel;
+    if (!_missingLookups.has(label)) {
+      _missingLookups.add(label);
+      // Report through the bridge: logError is declared one scope deeper than
+      // this fragment, so a bare call here threw a ReferenceError the catch
+      // below swallowed — the miss answered null and named nothing. _pf.logError
+      // is the route this file already uses for its duplicate-boot report; the
+      // console fallback covers the window before module 42 publishes it.
+      try {
+        if (window._pf && typeof window._pf.logError === 'function') {
+          window._pf.logError('Missing element', new Error(label + ' is not in the document'));
+        } else if (window.console && window.console.warn) {
+          window.console.warn('[Orga-naes] Missing element: ' + label + ' is not in the document');
+        }
+      } catch (e) { /* the reporter must never break the caller */ }
+    }
+    return null;
+  }
   function pfIcon(name, cls) {
     const body = PF_ICONS[name] || PF_ICONS['info'];
     return '<svg class="pf-ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" aria-hidden="true"' +
@@ -3060,6 +3094,7 @@
   }
   window._pf = window._pf || {};
   window._pf.pfIcon = pfIcon;
+  window._pf.optEl = optEl;
 
   // Hydrate static chrome: any [data-ic] span gets its SVG; [data-ic-before]
   // section titles get the icon prepended. Runs immediately (this fragment is
@@ -5638,6 +5673,10 @@
     const treeCount = countTree(p.subtasks); const countLabel = treeCount.total ? (treeCount.done + '/' + treeCount.total + ' done') : 'No subtasks yet';
     div.innerHTML = '<div class="pf-node-header"><span class="pf-drag-handle" title="Drag to move">&#8942;&#8942;</span><button class="pf-chevron" title="Show subtasks"><svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M3 1.5L7.5 5L3 8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="pf-node-title" contenteditable="false" spellcheck="false" data-title-id="' + p.id + '">' + escapeHtml(p.title) + '</div><span class="pf-header-meta"></span><span class="pf-badge" style="background:var(--' + p.status + '-bg); color:var(--' + p.status + ')">' + STATUS_LABEL[p.status] + '</span><button class="pf-node-del" title="Delete project">×</button></div><div class="pf-node-desc-row"><div class="pf-node-desc" contenteditable="true" spellcheck="false" data-desc-id="' + p.id + '">' + escapeHtml(p.description || '') + '</div><span class="pf-count">' + countLabel + '</span></div><div class="pf-sublist"></div><div class="pf-node-resize" title="Drag to resize • double-click to auto-fit"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M9.5 1.5L1.5 9.5M9.5 5.5L5.5 9.5M9.5 9.5L9.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>';
     if (p.color) { div.style.borderColor = p.color; div.style.boxShadow = '0 0 0 1px ' + p.color + '22, 0 2px 10px rgba(0,0,0,0.25)'; }
+    // The header is looked up ONCE and guarded: reading .style off a missing one
+    // threw out of the render loop (that is the error log entry this closes), and
+    // the drag wiring further down hangs off the same element.
+    const nodeHeader = optEl(div, '.pf-node-header');
     const descRow = div.querySelector('.pf-node-desc-row');
     const colorBtn = document.createElement('button'); colorBtn.className = 'pf-color-btn'; colorBtn.title = 'Card color'; colorBtn.style.background = p.color || 'transparent'; colorBtn.style.borderColor = p.color || 'var(--card-border)';
     colorBtn.addEventListener('click', (e) => { e.stopPropagation(); openColorModal(p); });
@@ -5647,31 +5686,32 @@
     if (p.status === 'completed' && p.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(p.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = p.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); p.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); headerMeta.appendChild(doneLabel); } else { headerMeta.appendChild(buildDueChip(p, (val) => { snapshot(); p.dueAt = val; scheduleSave(); render(); }, false)); }
     headerMeta.appendChild(buildRecurChip(p, (val) => { snapshot(); p.recurrence = val || null; scheduleSave(); render(); }));
 
-    if (p.expanded && p.height) { div.style.height = p.height + 'px'; div.style.display = 'flex'; div.style.flexDirection = 'column'; div.querySelector('.pf-node-header').style.flexShrink = '0'; const descRow = div.querySelector('.pf-node-desc-row'); if (descRow) descRow.style.flexShrink = '0'; const sl = div.querySelector('.pf-sublist'); if (sl) { sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; } }
+    if (p.expanded && p.height) { div.style.height = p.height + 'px'; div.style.display = 'flex'; div.style.flexDirection = 'column'; if (nodeHeader) nodeHeader.style.flexShrink = '0'; const descRow = div.querySelector('.pf-node-desc-row'); if (descRow) descRow.style.flexShrink = '0'; const sl = div.querySelector('.pf-sublist'); if (sl) { sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; } }
     const sublist = div.querySelector('.pf-sublist'); if (p.expanded) { renderSubtaskRows(sublist, p, p.subtasks, 0); }
     sublist.__project = p; sublist.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); clearIndicators(); sublist.classList.add('pf-drop-root'); }); sublist.addEventListener('dragleave', (e) => { if (e.target === sublist) sublist.classList.remove('pf-drop-root'); }); sublist.addEventListener('drop', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); performMove(p, null, null); });
     const addBtn = document.createElement('button'); addBtn.className = 'pf-add-sub'; addBtn.textContent = '+ Add subtask'; addBtn.addEventListener('click', (e) => { e.stopPropagation(); addSubtask(p.id, null); }); sublist.appendChild(addBtn);
     div.querySelector('.pf-chevron').addEventListener('click', (e) => { e.stopPropagation(); if (listViewActive) { const allExpanded = (function check(list) { return list.every(s => (!s.subtasks || !s.subtasks.length || (s.expanded && check(s.subtasks)))); })(p.subtasks); (function setAll(list, val) { list.forEach(s => { s.expanded = val; if (s.subtasks && s.subtasks.length) setAll(s.subtasks, val); }); })(p.subtasks, !allExpanded); render(); } else { toggleExpand(p.id); } }); div.querySelector('.pf-node-del').addEventListener('click', (e) => { e.stopPropagation(); deleteProject(p.id); }); div.querySelector('.pf-badge').addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); openStatusMenu(e.currentTarget, p.status, (st) => cycleProjectStatus(p.id, st)); });
-    div.querySelector('.pf-node-header').addEventListener('pointerdown', (e) => { if (e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; const titleEl2 = e.target.closest('.pf-node-title'); if (titleEl2 && titleEl2.contentEditable === 'true') return; dragHandleArmedProject = true; });
-    const nodeHeaderEl = div.querySelector('.pf-node-header');
-    nodeHeaderEl.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId === p.id) return; e.preventDefault(); e.stopPropagation(); nodeHeaderEl.classList.add('pf-drop-copy-target'); });
-    nodeHeaderEl.addEventListener('dragleave', (e) => { if (e.target === nodeHeaderEl) nodeHeaderEl.classList.remove('pf-drop-copy-target'); });
-    nodeHeaderEl.addEventListener('drop', (e) => {
-      if (!draggingSubId || draggingProjectId === p.id) return;
-      e.preventDefault(); e.stopPropagation();
-      nodeHeaderEl.classList.remove('pf-drop-copy-target');
-      const sourceProject = projects.find(pr => pr.id === draggingProjectId);
-      const ids = _draggingSubIds.length ? _draggingSubIds.slice() : [draggingSubId];
-      draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; clearIndicators();
-      if (sourceProject) { copySubtasksToProject(sourceProject, ids, p.id); clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); }
-    });
+    if (nodeHeader) nodeHeader.addEventListener('pointerdown', (e) => { if (e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; const titleEl2 = e.target.closest('.pf-node-title'); if (titleEl2 && titleEl2.contentEditable === 'true') return; dragHandleArmedProject = true; });
+    if (nodeHeader) {
+      nodeHeader.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId === p.id) return; e.preventDefault(); e.stopPropagation(); nodeHeader.classList.add('pf-drop-copy-target'); });
+      nodeHeader.addEventListener('dragleave', (e) => { if (e.target === nodeHeader) nodeHeader.classList.remove('pf-drop-copy-target'); });
+      nodeHeader.addEventListener('drop', (e) => {
+        if (!draggingSubId || draggingProjectId === p.id) return;
+        e.preventDefault(); e.stopPropagation();
+        nodeHeader.classList.remove('pf-drop-copy-target');
+        const sourceProject = projects.find(pr => pr.id === draggingProjectId);
+        const ids = _draggingSubIds.length ? _draggingSubIds.slice() : [draggingSubId];
+        draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; clearIndicators();
+        if (sourceProject) { copySubtasksToProject(sourceProject, ids, p.id); clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); }
+      });
+    }
     const titleEl = div.querySelector('.pf-node-title'); let titleClickCount = 0; let titleClickTimer = null; let _titleTapCount = 0; let _titleTapTimer = null;
     titleEl.addEventListener('pointerdown', (e) => { if (titleEl.contentEditable === 'true') e.stopPropagation(); });
     titleEl.addEventListener('click', (e) => { e.stopPropagation(); if (titleEl.contentEditable === 'true') return; titleClickCount++; if (titleClickCount === 1) { titleClickTimer = setTimeout(() => { titleClickCount = 0; if (!listViewActive) toggleExpand(p.id); }, 200); } else if (titleClickCount === 2) { clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } });
     titleEl.addEventListener('touchend', (e) => { if (titleEl.contentEditable === 'true') return; _titleTapCount++; if (_titleTapCount === 2) { clearTimeout(_titleTapTimer); _titleTapCount = 0; e.preventDefault(); clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } else { clearTimeout(_titleTapTimer); _titleTapTimer = setTimeout(() => { _titleTapCount = 0; }, 350); } });
     titleEl.addEventListener('blur', () => { titleEl.contentEditable = 'false'; const val = titleEl.textContent.trim() || 'Untitled'; if (val !== p.title) { _lastProjectId = p.id; snapshot(); p.title = val; scheduleSave(); if (listViewActive) renderSplitList(); } }); titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
     const descEl = div.querySelector('.pf-node-desc'); descEl.addEventListener('pointerdown', (e) => e.stopPropagation()); descEl.addEventListener('click', (e) => e.stopPropagation()); descEl.addEventListener('blur', () => { const val = descEl.textContent.trim(); if (val !== (p.description || '')) { _lastProjectId = p.id; snapshot(); p.description = val || ''; scheduleSave(); } }); descEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); descEl.blur(); } });
-    div.querySelector('.pf-node-header').addEventListener('click', (e) => { if (_moveArmed && _moveClipboard && _moveClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); moveClipboardAsMain(p); return; } if (_pasteArmed && _taskClipboard && _taskClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; } if (e.target.closest('.pf-node-title') || e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; toggleExpand(p.id); }, true);
+    if (nodeHeader) nodeHeader.addEventListener('click', (e) => { if (_moveArmed && _moveClipboard && _moveClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); moveClipboardAsMain(p); return; } if (_pasteArmed && _taskClipboard && _taskClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; } if (e.target.closest('.pf-node-title') || e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; toggleExpand(p.id); }, true);
     makeDraggable(div, p); makeResizable(div, p); return div;
   }
 
@@ -6424,7 +6464,7 @@
       renderSplitList(); renderSplitDetail();
       root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
       if (window.innerWidth <= 1024 && 'ontouchstart' in window) root.classList.add('pf-mobile-detail-open');
-      if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = '';
+      if (root.classList.contains('pf-device-mobile')) { const tb = optEl('pf-toolbar-back'); if (tb) tb.style.display = ''; }
     }, 200);
   };
   window._splitCycleSelected = function(targetStatus) {
@@ -7044,7 +7084,7 @@
     root.classList.remove('pf-mobile-detail-open');
     splitSelectedId = null;
     renderSplitList(); renderSplitDetail();
-    document.getElementById('pf-toolbar-back').style.display = 'none';
+    const tb = optEl('pf-toolbar-back'); if (tb) tb.style.display = 'none';
   }
 
   let _searchAutoCollapseId = null;
@@ -7220,7 +7260,7 @@
     // body to its tallest group, and both need the panel to be laid out.
     if (showing) { closeAllModals(); } else { openModal(optionsPanel, 'flex'); refreshOptionsContent(); }
   });
-  document.getElementById('pf-toolbar-back').addEventListener('click', () => { _goBackToProjects(); });
+  { const backBtn = optEl('pf-toolbar-back'); if (backBtn) backBtn.addEventListener('click', () => { _goBackToProjects(); }); }
   document.getElementById('pf-options-btn-desktop').addEventListener('click', () => {
     const showing = optionsPanel.style.display !== 'none';
     if (showing) { closeAllModals(); } else { openModal(optionsPanel, 'flex'); refreshOptionsContent(); }
@@ -7623,7 +7663,7 @@
         _searchAutoCollapseId = null;
         renderSplitList(); renderSplitDetail();
         root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
-        if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
+        if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) { const tb = optEl('pf-toolbar-back'); if (tb) tb.style.display = ''; } }
         searchTerm = '';
         const el = splitList.querySelector('.pf-split-active'); if (el) el.scrollIntoView({ block: 'nearest' });
       });
@@ -7724,7 +7764,7 @@
           _searchAutoCollapseId = null;
           renderSplitList(); renderSplitDetail();
           root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
-          if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
+          if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) { const tb = optEl('pf-toolbar-back'); if (tb) tb.style.display = ''; } }
           searchTerm = '';
         } else {
           autoArrangeProjects(true);
@@ -7845,7 +7885,7 @@
         _searchAutoCollapseId = null;
         renderSplitList(); renderSplitDetail();
         root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
-        if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
+        if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) { const tb = optEl('pf-toolbar-back'); if (tb) tb.style.display = ''; } }
         searchTerm = '';
         const active = splitList.querySelector('.pf-split-active'); if (active) active.scrollIntoView({ block: 'nearest' });
       });
@@ -8413,7 +8453,7 @@
     _searchAutoCollapseId = null;
     renderSplitList(); renderSplitDetail();
     root.classList.add('pf-detail-open'); _markOverlayOpen('detail');
-    if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) document.getElementById('pf-toolbar-back').style.display = ''; }
+    if (root.classList.contains('pf-device-mobile') || root.classList.contains('pf-device-tablet')) { root.classList.add('pf-mobile-detail-open'); if (root.classList.contains('pf-device-mobile')) { const tb = optEl('pf-toolbar-back'); if (tb) tb.style.display = ''; } }
     searchTerm = '';
     const active = splitList.querySelector('.pf-split-active'); if (active) active.scrollIntoView({ block: 'nearest' });
   }

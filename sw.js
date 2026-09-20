@@ -4,7 +4,7 @@
 // used to be hand-written and went stale for five days. Do not hand-edit:
 // `npm run build` writes it, and the determinism gate + test suite both fail
 // when it does not match the artifact.
-const CACHE_VERSION = '3fae5cb6d744cc95';
+const CACHE_VERSION = 'e0a1726afa41236c';
 // RELEASE_MANIFEST is BUILD-OWNED like CACHE_VERSION: the full sha256 of the
 // artifact this worker was built beside, and the revision that built it. It
 // lives here because the artifact cannot contain its own hash, and sw.js is
@@ -15,7 +15,7 @@ const CACHE_VERSION = '3fae5cb6d744cc95';
 // stops being an ancestor of the current HEAD. JSON on one line so the app
 // parses it with JSON.parse. Check mode refuses a manifest whose artifact
 // does not match the build, or whose head this repository cannot vouch for.
-const RELEASE_MANIFEST = {"artifact":"3fae5cb6d744cc95023e1128f1f496c019bbc1e94447bdc88b9a1a2a74fa9ebe","head":"ec006743f13e1f792099db74af2e0a949f147fb1"};
+const RELEASE_MANIFEST = {"artifact":"e0a1726afa41236cf316e855efada38a89f5f1348919e2ec2995d8627c2db736","head":"ec006743f13e1f792099db74af2e0a949f147fb1"};
 const CACHE_NAME = 'orga-naes-' + CACHE_VERSION;
 const ASSETS = [
   './Orga-naes.html',
