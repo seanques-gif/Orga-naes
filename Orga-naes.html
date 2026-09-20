@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Jndgp+5uh6H0myhs11hAuw9XbAmVJ83JCFvJhBAI7lc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-isyngnn4ZSkelLzUSGutiofRMGPNgA4sAaPMPq3yVSk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1967,6 +1967,23 @@
   #pf-root .pf-snooze-row .pf-snooze-del { flex: 0 0 26px; width: 26px; height: 26px; padding: 0; text-align: center; display: inline-flex; align-items: center; justify-content: center; color: var(--text-dim); }
   #pf-root .pf-snooze-row .pf-snooze-del:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
   #pf-root .pf-autobackup-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* options panel: group switcher. The hub is one screen per section (the
+     tallest group is 444px against a ~650px body) instead of a single 2.3
+     screen scroll. Chips, like the theme row, so the console world has one
+     way of saying "a small set of choices, one of them current". */
+  #pf-root .pf-opt-tabs { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 9px; }
+  #pf-root .pf-opt-tab {
+    padding: 3px 6px; font-family: var(--font-sans); font-size: calc(var(--font-size-base) - 3px);
+    color: var(--text-dim); background: transparent; border: 1px solid var(--card-border);
+    border-radius: var(--radius-pill); cursor: pointer; transition: background var(--dur-state) var(--ease-console), color var(--dur-state) var(--ease-console);
+  }
+  #pf-root .pf-opt-tab:hover { color: var(--text); background: var(--card-hover); }
+  #pf-root .pf-opt-tab-on { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); font-weight: 600; }
+  #pf-root .pf-opt-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  /* Author display beats the UA [hidden] rule, so restate it (same idiom as
+     .pf-history-restore): an inactive panel must never keep its layout. */
+  #pf-root .pf-opt-group[hidden] { display: none; }
+
   /* options panel: theme row. The presets are chips (the row wraps) and the
      active one carries a class rather than an inline outline, so the selected
      state is the same shape in every preset. */
@@ -2477,11 +2494,21 @@
   <div class="pf-options-panel" id="pf-options-panel" style="display:none">
     <div class="pf-opt-head">
       <div class="pf-options-title">Options</div>
+      <!-- One group on screen at a time. The first tab is the no-JS state, so
+           a failure to wire still leaves the hub usable. -->
+      <div class="pf-opt-tabs" id="pf-opt-tabs" role="tablist" aria-label="Options sections">
+        <button class="pf-opt-tab pf-opt-tab-on" id="pf-opt-tab-data" role="tab" aria-selected="true" aria-controls="pf-opt-group-data" tabindex="0">Your data</button>
+        <button class="pf-opt-tab" id="pf-opt-tab-panels" role="tab" aria-selected="false" aria-controls="pf-opt-group-panels" tabindex="-1">Panels</button>
+        <button class="pf-opt-tab" id="pf-opt-tab-reminders" role="tab" aria-selected="false" aria-controls="pf-opt-group-reminders" tabindex="-1">Reminders</button>
+        <button class="pf-opt-tab" id="pf-opt-tab-history" role="tab" aria-selected="false" aria-controls="pf-opt-group-history" tabindex="-1">History</button>
+        <button class="pf-opt-tab" id="pf-opt-tab-appearance" role="tab" aria-selected="false" aria-controls="pf-opt-group-appearance" tabindex="-1">Appearance</button>
+        <button class="pf-opt-tab" id="pf-opt-tab-about" role="tab" aria-selected="false" aria-controls="pf-opt-group-about" tabindex="-1">About</button>
+      </div>
     </div>
-    <div class="pf-opt-body">
+    <div class="pf-opt-body" id="pf-opt-body">
 
       <!-- 1 · Your data — keep it, move it, export it -->
-      <div class="pf-opt-group">
+      <div class="pf-opt-group" id="pf-opt-group-data" role="tabpanel" aria-labelledby="pf-opt-tab-data">
         <div class="pf-opt-group-title" data-ic-before="save">Your data</div>
 
         <div class="pf-opt-block">
@@ -2538,7 +2565,7 @@
       </div>
 
       <!-- 2 · Panels — every view this hub opens -->
-      <div class="pf-opt-group">
+      <div class="pf-opt-group" id="pf-opt-group-panels" role="tabpanel" aria-labelledby="pf-opt-tab-panels" hidden>
         <div class="pf-opt-group-title" data-ic-before="list">Panels</div>
         <div class="pf-opt-grid">
           <button class="pf-undo-btn pf-opt-btn" id="pf-category-btn" title="Manage categories" ><span class="pf-opt-ico" data-ic="folder"></span> Categories</button>
@@ -2551,7 +2578,7 @@
       </div>
 
       <!-- 3 · Reminders — the panel, the lead time, the snooze presets -->
-      <div class="pf-opt-group">
+      <div class="pf-opt-group" id="pf-opt-group-reminders" role="tabpanel" aria-labelledby="pf-opt-tab-reminders" hidden>
         <div class="pf-opt-group-title" data-ic-before="bell">Reminders</div>
         <button class="pf-undo-btn pf-opt-btn" id="pf-reminders-btn" title="Pending and recently fired reminders"><span class="pf-opt-ico" data-ic="bell"></span> Open Reminders</button>
         <button class="pf-undo-btn pf-opt-btn" id="pf-reminder-btn" title="Set due-date reminder threshold"><span class="pf-opt-ico" data-ic="clock"></span> Reminder lead time</button>
@@ -2567,7 +2594,7 @@
       </div>
 
       <!-- 4 · History — the undo stack -->
-      <div class="pf-opt-group">
+      <div class="pf-opt-group" id="pf-opt-group-history" role="tabpanel" aria-labelledby="pf-opt-tab-history" hidden>
         <div class="pf-opt-group-title" data-ic-before="undo">History <span id="pf-history-count" class="pf-panel-count"></span></div>
         <div class="pf-options-row pf-history-filter-row">
           <input type="text" class="pf-history-filter" id="pf-history-filter" placeholder="Filter steps (a project or a change)…" spellcheck="false" autocomplete="off" aria-label="Filter recent steps">
@@ -2585,7 +2612,7 @@
       </div>
 
       <!-- 5 · Appearance -->
-      <div class="pf-opt-group">
+      <div class="pf-opt-group" id="pf-opt-group-appearance" role="tabpanel" aria-labelledby="pf-opt-tab-appearance" hidden>
         <div class="pf-opt-group-title" data-ic-before="palette">Appearance</div>
         <div class="pf-opt-block">
           <div class="pf-opt-title">Theme</div>
@@ -2623,7 +2650,7 @@
       </div>
 
       <!-- 6 · About -->
-      <div class="pf-opt-group">
+      <div class="pf-opt-group" id="pf-opt-group-about" role="tabpanel" aria-labelledby="pf-opt-tab-about" hidden>
         <div class="pf-opt-group-title" data-ic-before="info">About</div>
         <div class="pf-firebase-about">
           <strong>Orga-naes</strong> v1.0.0<br>
@@ -3818,7 +3845,7 @@
   // Console-only, same contract as auditEscCoverage above.
   (function auditBootDom() {
     try {
-      var BOOT_IDS = ['pf-root','pf-canvas','pf-canvas-wrap','pf-export','pf-import-file','pf-search','pf-search-wrap','pf-search-toggle','pf-new-project','pf-undo','pf-redo','pf-arrange','pf-autofit-all','pf-collapse-cats','pf-toolbar-back','pf-stats','pf-toast','pf-modal-backdrop','pf-due-filter','pf-split-list','pf-split-detail','pf-options-panel','pf-shortcuts-panel','pf-activity-panel','pf-today-panel','pf-duelist-panel','pf-calendar-panel','pf-weekly-panel','pf-notes-panel','pf-archive-panel','pf-trash-panel','pf-snapshots-panel','pf-error-panel','pf-copy-modal','pf-color-modal','pf-confirm-modal','pf-conflict-modal','pf-comment-panel','pf-reminder-popover','pf-category-popover','pf-new-project-popover','pf-today-btn','pf-duelist-btn','pf-calendar-btn','pf-weekly-btn','pf-notes-btn','pf-activity-btn','pf-archive-btn','pf-trash-btn','pf-snapshots-btn','pf-trash-empty-btn','pf-options-btn','pf-options-btn-desktop','pf-shortcuts-btn','pf-shortcuts-hint','pf-theme-auto','pf-category-add-btn','pf-new-project-cat-add','pf-reminder-cancel','pf-reminder-save','pf-archive-count','pf-trash-count','pf-due-panel','pf-overdue-banner','pf-note-title','pf-note-body','pf-note-body-rich','pf-note-preview','pf-note-new','pf-note-del','pf-note-pin','pf-note-copy','pf-note-undo','pf-note-redo','pf-note-view','pf-note-count','pf-notes-search','pf-notes-list','pf-notes-editor','pf-notes-editor-empty','pf-notes-editor-main','pf-notes-fmt-bar','pf-import','pf-export'];
+      var BOOT_IDS = ['pf-root','pf-canvas','pf-canvas-wrap','pf-export','pf-import-file','pf-search','pf-search-wrap','pf-search-toggle','pf-new-project','pf-undo','pf-redo','pf-arrange','pf-autofit-all','pf-collapse-cats','pf-toolbar-back','pf-stats','pf-toast','pf-modal-backdrop','pf-due-filter','pf-split-list','pf-split-detail','pf-options-panel','pf-shortcuts-panel','pf-activity-panel','pf-today-panel','pf-duelist-panel','pf-calendar-panel','pf-weekly-panel','pf-notes-panel','pf-archive-panel','pf-trash-panel','pf-snapshots-panel','pf-error-panel','pf-copy-modal','pf-color-modal','pf-confirm-modal','pf-conflict-modal','pf-comment-panel','pf-reminder-popover','pf-category-popover','pf-new-project-popover','pf-today-btn','pf-duelist-btn','pf-calendar-btn','pf-weekly-btn','pf-notes-btn','pf-activity-btn','pf-archive-btn','pf-trash-btn','pf-snapshots-btn','pf-trash-empty-btn','pf-options-btn','pf-options-btn-desktop','pf-opt-tabs','pf-shortcuts-btn','pf-shortcuts-hint','pf-theme-auto','pf-category-add-btn','pf-new-project-cat-add','pf-reminder-cancel','pf-reminder-save','pf-archive-count','pf-trash-count','pf-due-panel','pf-overdue-banner','pf-note-title','pf-note-body','pf-note-body-rich','pf-note-preview','pf-note-new','pf-note-del','pf-note-pin','pf-note-copy','pf-note-undo','pf-note-redo','pf-note-view','pf-note-count','pf-notes-search','pf-notes-list','pf-notes-editor','pf-notes-editor-empty','pf-notes-editor-main','pf-notes-fmt-bar','pf-import','pf-export'];
       var missing = BOOT_IDS.filter(function(id) { return !document.getElementById(id); });
       var hasVersionMeta = !!document.querySelector('meta[name="version"]');
       var problems = [];
@@ -3995,6 +4022,7 @@
       ['project-flow-hide-completed', 'device', 'hide-completed toggle'],
       ['project-flow-split-width', 'device', 'split-list width'],
       ['project-flow-view-mode', 'device', 'list vs canvas view'],
+      ['project-flow-options-tab', 'device', 'last used Options group'],
       ['project-flow-notes-size', 'device', 'notes panel size'],
       ['pf-last-save-time', 'device', 'last save stamp'],
       ['pf-last-export-time', 'device', 'last export stamp'],
@@ -7181,15 +7209,21 @@
   function refreshOptionsContent() {
     const r = window._pf && window._pf.refreshHistoryPanel;
     if (typeof r === 'function') r();
+    // Land where the operator left off, and never on a group that no longer
+    // exists: optionsShowGroup falls back to the first tab for an unknown id.
+    const g = window._pf && window._pf.optionsRestoreGroup;
+    if (typeof g === 'function') g();
   }
   document.getElementById('pf-options-btn').addEventListener('click', () => {
     const showing = optionsPanel.style.display !== 'none';
-    if (showing) { closeAllModals(); } else { refreshOptionsContent(); openModal(optionsPanel, 'flex'); }
+    // Open BEFORE the refresh: the refresh restores the last group and sizes the
+    // body to its tallest group, and both need the panel to be laid out.
+    if (showing) { closeAllModals(); } else { openModal(optionsPanel, 'flex'); refreshOptionsContent(); }
   });
   document.getElementById('pf-toolbar-back').addEventListener('click', () => { _goBackToProjects(); });
   document.getElementById('pf-options-btn-desktop').addEventListener('click', () => {
     const showing = optionsPanel.style.display !== 'none';
-    if (showing) { closeAllModals(); } else { refreshOptionsContent(); openModal(optionsPanel, 'flex'); }
+    if (showing) { closeAllModals(); } else { openModal(optionsPanel, 'flex'); refreshOptionsContent(); }
   });
   document.getElementById('pf-shortcuts-btn').addEventListener('click', () => {
     closeAllModals(); openModal(shortcutsPanel, 'flex');
@@ -11214,10 +11248,18 @@
   function ensureHistoryPanelOpen() {
     const panel = document.getElementById('pf-options-panel');
     if (!panel) return false;
-    if (panel.style.display === 'flex') return true;
-    if (typeof openModal === 'function') { openModal(panel, 'flex'); return panel.style.display === 'flex'; }
+    // The steps live in the History GROUP, and only one group is on screen —
+    // so a jump must land its own group first, or it would walk rows nobody
+    // can see. The operator's remembered group is left alone (remember: false).
+    function showHistoryGroup() {
+      if (typeof optionsShowGroup === 'function') optionsShowGroup('pf-opt-group-history', { remember: false });
+      if (typeof optionsFitBody === 'function') optionsFitBody();
+    }
+    if (panel.style.display === 'flex') { showHistoryGroup(); return true; }
+    if (typeof openModal === 'function') { openModal(panel, 'flex'); showHistoryGroup(); return panel.style.display === 'flex'; }
     const btn = document.getElementById('pf-options-btn');
     if (btn) btn.click();
+    showHistoryGroup();
     return panel.style.display === 'flex';
   }
   // Indices of the rows that can restore a single item, in the list's own order
@@ -11522,6 +11564,119 @@
   }
   // Expose for Firebase sync (Object.assign preserves keys published by
   // earlier fragments, e.g. pfIcon from 00-svg-icons.js)
+  // SUBSECTION: Options group switcher. The hub used to be one 2.3-screen
+  // scroll; the six group headings are now a tab set and one panel is on screen
+  // at a time, each fitting its own screen. The list is DERIVED from the tabs
+  // themselves rather than hand-written, so a tab without a panel (or a panel
+  // without a tab) is asserted away by the suite instead of drifting.
+  const OPTIONS_TAB_KEY = 'project-flow-options-tab';
+  function optionsTabs() {
+    const list = document.getElementById('pf-opt-tabs');
+    return list ? Array.prototype.slice.call(list.querySelectorAll('[role="tab"]')) : [];
+  }
+  function optionsGroupIds() {
+    return optionsTabs().map(function(t) { return t.getAttribute('aria-controls'); });
+  }
+  // Switching is the ONLY way a group becomes visible, and every entry point
+  // goes through here — click, arrow key, and the restore that runs when the
+  // panel opens — so the tab state and the panel state cannot disagree.
+  function optionsShowGroup(id, opts) {
+    const tabs = optionsTabs();
+    if (!tabs.length) return false;
+    const ids = optionsGroupIds();
+    let target = ids.indexOf(id) === -1 ? ids[0] : id; // a stored id is never trusted
+    const remember = !(opts && opts.remember === false);
+    tabs.forEach(function(t) {
+      const on = t.getAttribute('aria-controls') === target;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      t.classList.toggle('pf-opt-tab-on', on);
+      const panel = document.getElementById(t.getAttribute('aria-controls'));
+      if (panel) panel.hidden = !on;
+    });
+    if (remember) { try { localStorage.setItem(OPTIONS_TAB_KEY, target); } catch (e) {} }
+    return true;
+  }
+  function optionsRestoreGroup() {
+    let stored = null;
+    try { stored = localStorage.getItem(OPTIONS_TAB_KEY); } catch (e) {}
+    optionsFitBody();
+    return optionsShowGroup(stored, { remember: false });
+  }
+  // A resize re-wraps the strip and the blocks, so a measured height can go
+  // stale. Re-fit while the hub is on screen; the fit preserves which group is
+  // showing, so nothing needs re-applying.
+  let _optionsFitTimer = 0;
+  window.addEventListener('resize', function () {
+    const panel = document.getElementById('pf-options-panel');
+    if (!panel || panel.style.display === 'none') return;
+    clearTimeout(_optionsFitTimer);
+    _optionsFitTimer = setTimeout(function () { optionsFitBody(); }, 150);
+  });
+  // Size the scrolling body to its TALLEST group, so a switch never resizes the
+  // panel (it is centred, so a height change re-centres it and moves the strip
+  // under the pointer) and no group needs scrolling at any width where its own
+  // content fits. Measured live, not hardcoded: a hardcoded height would go
+  // stale the first time a control is added, which is the AUD-03 lesson.
+  function optionsFitBody() {
+    const body = document.getElementById('pf-opt-body');
+    const tabs = optionsTabs();
+    if (!body || !tabs.length) return false;
+    const panels = tabs.map(function(t) { return document.getElementById(t.getAttribute('aria-controls')); }).filter(Boolean);
+    if (!panels.length) return false;
+    const wasHidden = panels.map(function(p) { return p.hidden; });
+    const hadMin = body.style.minHeight;
+    body.style.minHeight = ''; // a stale value would inflate every measurement
+    let tallest = 0;
+    panels.forEach(function(p, i) {
+      panels.forEach(function(o, j) { o.hidden = (i !== j); });
+      p.hidden = false;
+      // What the BODY needs for this group: its own padding included, so the
+      // panel is the same height on every tab. 0 in the stub DOM — no layout —
+      // which simply skips the sizing there.
+      const h = body.scrollHeight || 0;
+      if (h > tallest) tallest = h;
+    });
+    if (!tallest) body.style.minHeight = hadMin;
+    panels.forEach(function(p, i) { p.hidden = wasHidden[i]; });
+    if (tallest > 0) body.style.minHeight = tallest + 'px';
+    return tallest > 0;
+  }
+  (function wireOptionsTabs() {
+    const list = document.getElementById('pf-opt-tabs');
+    if (!list) return;
+    list.addEventListener('click', function (e) {
+      // Walk up rather than closest(): the marker may be a text node in the
+      // target's place, and closest() is not available in every consumer.
+      let t = e.target;
+      while (t && t !== list && !(t.getAttribute && t.getAttribute('role') === 'tab')) t = t.parentNode;
+      if (!t || t === list) return;
+      optionsShowGroup(t.getAttribute('aria-controls'));
+    });
+    // Boot state: apply the remembered group once at wiring time, so the state a
+    // page carries before the first click is the state the operator left — not
+    // whatever the markup happened to ship (and the harness model of the DOM,
+    // which has no template attributes, reads exactly this).
+    optionsRestoreGroup();
+    // APG tabs: arrows walk the strip with automatic activation, Home/End jump
+    // to the ends, and one tab is the only tab stop (roving tabindex).
+    list.addEventListener('keydown', function (e) {
+      const tabs = optionsTabs();
+      const i = tabs.indexOf(e.target);
+      if (i < 0) return;
+      let next = -1;
+      if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = tabs.length - 1;
+      if (next < 0) return;
+      if (e.preventDefault) e.preventDefault();
+      const t = tabs[next];
+      optionsShowGroup(t.getAttribute('aria-controls'));
+      if (typeof t.focus === 'function') t.focus();
+    });
+  })();
+
   window._pf = Object.assign(window._pf || {}, {
     getProjects: () => projects,
     setProjects: (p) => { projects = p; },
@@ -11534,6 +11689,9 @@
     setTrash: (t) => { trash = t; saveTrash(); },
     scheduleSave: () => scheduleSave(),
     confirmDialog: (title, message, okLabel, cancelLabel) => pfConfirmDialog(title, message, okLabel, cancelLabel),
+    optionsShowGroup: (id) => optionsShowGroup(id),
+    optionsRestoreGroup: () => optionsRestoreGroup(),
+    optionsGroups: () => optionsGroupIds(),
     historyModel: () => historyModel(),
     historyGo: (steps) => historyGo(steps),
     historyRestoreTargets: (steps) => historyRestoreTargets(steps),
