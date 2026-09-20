@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-RE1ljAZZ3xl6jBVkRTbylrJA0sU1pukxPonhVHBiTTI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-P6Frn2dP9wGF7D6+W8LTD02d9jyCYVxQIgGReieq1ig='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2895,33 +2895,29 @@
 </style>
 
 <script>
-  // ---- Boot counter + single-boot assertion (AUD-09 follow-through) --------
-  // The bundle boots once per document: each region guards its own work on a
-  // window flag (see the full note in 01). Those guards keep a repeat boot from
-  // registering anything, which also makes it SILENT — and a repeat boot is
-  // worth hearing about, because it means something re-evaluated the revision
-  // (a cached copy, a loader, a swap), the exact situation the guards exist to
-  // absorb. Absorbing it quietly is the wrong default: the guards would then
-  // hide a double-boot bug instead of letting anyone find it.
+(function () {
+  // ---- One boot per document: the entry guard (AUD-09) ---------------------
+  // The build wraps every fragment in a single function (see build.mjs), so
+  // this is the first executable statement of the whole bundle and the `return`
+  // below leaves that function — no fragment runs a second time. That is what
+  // makes a repeat evaluation impossible instead of merely absorbed: it cannot
+  // declare anything into script scope, and it cannot register a second
+  // listener, timer or handler. The per-region boot flags this replaced are
+  // gone, because the wrapper is the one thing standing in the way now.
   //
-  // This module is the only place that can see it. It is the first fragment, so
-  // it runs before every region guard; the other three regions sit behind the
-  // core guard, so a repeat evaluation returns inside 01 and never reaches
-  // them. The count lives on `window` for the same reason the guards do: a
-  // re-evaluation rebuilds this module scope, so a closure-local counter would
+  // A refused second boot is still worth hearing about: it means something
+  // re-ran the revision (a cached copy, a loader, a swap), and a guard that
+  // only absorbs it is a guard that hides it. So it is counted, and reported
+  // through the app's own error log — persisted, badged, announced to assistive
+  // tech — with a console fallback and no way for the reporter to break a boot.
+  // The count lives on `window` for the same reason the wrapper exists: a
+  // re-evaluation rebuilds the module scope, so a closure-local counter would
   // reset on the very event it is counting.
   window.__pfBootCount = (window.__pfBootCount || 0) + 1;
-  function assertSingleBoot() {
-    // Holds no state of its own — the count is on the window — so a repeat
-    // evaluation redefining it changes nothing. It reports through the handle
-    // the first boot published (`_pf.logError`), because a duplicate boot's
-    // own error log and storage helpers are still initialising.
-    var n = window.__pfBootCount;
-    if (!n || n <= 1) return false;               // the normal case: one boot
-    var detail = 'the bundle was evaluated ' + n + ' times in one document. ' +
-      'A repeat boot is intentional only in the test suite; in a browser it means ' +
-      'something re-ran the revision (a cached copy, a loader, a swap), and every ' +
-      'listener registered at boot scope fires once per evaluation.';
+  if (window.__pfBootCount > 1) {
+    const detail = 'the bundle was evaluated ' + window.__pfBootCount + ' times in one document. ' +
+      'The extra run was refused by the entry guard, so nothing was registered, but something ' +
+      're-ran the revision: a cached copy, a loader, a swap.';
     try {
       if (window._pf && typeof window._pf.logError === 'function') {
         window._pf.logError('Duplicate boot', new Error(detail));
@@ -2932,10 +2928,8 @@
       // The reporter must never be the thing that breaks a boot.
       console.warn('[Orga-naes] Duplicate boot: ' + detail);
     }
-    return true;
+    return;   // leaves the build's entry function: nothing else runs
   }
-  assertSingleBoot();
-
   // SUBSECTION: SVG Icon System (D10 — SVG chrome, emoji stays for user content)
   // Chrome icons are inline SVG (crisp at any scale, recolor via currentColor).
   // Emoji is kept wherever the USER author content: task titles, categories,
@@ -3010,18 +3004,11 @@
       el.dataset.icHydrated = '1';
     });
   }
-  // One boot per document (AUD-09) — see the full note in 01, and the counter
-  // at the top of this module, which reports a duplicate instead of absorbing
-  // it. The declarations
-  // above are referenced by every other module, so they stay in scope; what is
-  // guarded is this boot work. Hydration itself is idempotent (its
-  // `data-icHydrated` guard), but the registration below is not, and it is the
-  // one listener in the bundle that lands before any other region's guard has
-  // run — a real browser boots this script while readyState is still 'loading',
-  // so the fallback does fire. Measured at 'loading': with the other three
-  // regions already guarded, a second boot still took the listener count 42 -> 43.
-  if (!window.__pfBootedIcons) {
-  window.__pfBootedIcons = true;
+  // This boot work needs no guard of its own any more: the entry guard at the
+  // top of this module returns from the build's wrapper before this runs a
+  // second time, so the one listener in the bundle that lands while
+  // readyState is still 'loading' cannot be registered twice. (Hydration is
+  // idempotent regardless — its `data-icHydrated` guard.)
   hydrateIcons(document);
 
   // Re-hydrate after DOMContentLoaded in case the script runs before the shell
@@ -3029,33 +3016,26 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() { hydrateIcons(document); });
   }
-  }
   // ============================================================
   // SECTION: CORE STATE & LOCAL PERSISTENCE
   // ============================================================
 (function() {
   // ---- One boot per document (AUD-09) ---------------------------------------
-  // The bundle does its global work at boot scope: 42 listeners across window
-  // and document, ~148 handlers on the shell's own elements, and five intervals.
-  // That is correct while a document boots the bundle once, and nothing enforced
-  // it. Re-running the modules in one document doubles every one of them, so a
-  // single cross-tab write merges twice, a single visibilitychange runs the day
-  // rollover, the reminder catch-up and the streak refill twice, and a single
-  // unload flushes twice. Nothing protects this by accident either: a second
-  // evaluation currently dies at instantiation only because a top-level `const`
-  // in module 00 clashes, so a routine cleanup of that would take the only thing
-  // standing in the way with it.
+  // Why it matters: the bundle does its global work at boot scope — 42
+  // listeners across window and document, ~148 handlers on the shell's own
+  // elements, five intervals. Running the modules twice in one document doubles
+  // every one of them, so a single cross-tab write merges twice, a single
+  // visibilitychange runs the day rollover, the reminder catch-up and the streak
+  // refill twice, and a single unload flushes twice.
   //
-  // The bundle is four top-level regions and each guards its own boot work —
-  // module 00 an `if` around its hydration (its declarations have to stay in
-  // scope), 44 an `if` around the service-worker block, and the two IIFEs (01
-  // and 45) an early return. The flags live on the window rather than in a
-  // closure, so a re-initialised closure still sees them.
-  //
-  // This region is the core state: a second boot would rebuild every store,
-  // re-arm the autosave timer and re-register its listeners.
-  if (window.__pfBootedCore) return;
-  window.__pfBootedCore = true;
+  // What enforces it now: ONE entry guard, in module 00 — the build wraps every
+  // fragment in a single function (build.mjs) and that guard returns from it, so
+  // a second evaluation cannot declare anything into script scope and cannot
+  // reach this line. This region used to carry its own boot flag (`__pfBootedCore`),
+  // as modules 00, 44 and 45 did; those four flags are gone, because the wrapper
+  // makes the second run impossible rather than merely absorbed, and the suite
+  // asserts they do not come back. Nothing here is guarded any more, and nothing
+  // needs to be.
 
 
   const STATUSES = ['planned', 'ongoing', 'waiting', 'completed'];
@@ -12872,12 +12852,11 @@
 // ============================================================
 // SECTION: PWA REGISTRATION
 // ============================================================
-// One boot per document (AUD-09) — see the full note in 01. This region is
-// plain top-level statements, so it guards with a condition rather than a
-// return; the guard is set before the block so a browser without service
-// worker support still counts as booted.
-if (!window.__pfBootedPwa) {
-window.__pfBootedPwa = true;
+// One boot per document is enforced by the entry guard in module 00 (AUD-09):
+// the build wraps the whole bundle in one function, so this region cannot run
+// twice. The conditional that used to wrap this block is gone with the other
+// per-region flags, which also removes the case a browser without
+// service-worker support had to be counted for.
 if ('serviceWorker' in navigator) {
   const _pfUpdatePill = document.getElementById('pf-update-pill');
   let _pfPendingWorker = null;
@@ -12925,17 +12904,15 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 }
-}
 
 // ============================================================
 // SECTION: FIREBASE CLOUD SYNC
 // ============================================================
 (function() {
-  // One boot per document (AUD-09) — see the full note in 01. This region
-  // registers the online/offline listeners and the sync timers, so a second
-  // boot would double every push and pull it schedules.
-  if (window.__pfBootedCloud) return;
-  window.__pfBootedCloud = true;
+  // One boot per document is enforced by the entry guard in module 00 (AUD-09):
+  // the build wraps the whole bundle in one function, so this region cannot run
+  // twice and double the online/offline listeners or the sync timers it
+  // schedules.
 
   const firebaseConfig = {
     apiKey: "AIzaSyBiDGWVjs8Djoez_saNA5cpOY3aO2cgVVc",
@@ -14691,5 +14668,7 @@ if ('serviceWorker' in navigator) {
   const APP_VERSION = (function() { try { const m = document.querySelector('meta[name="version"]'); return m ? m.content : 'unknown'; } catch (e) { return 'unknown'; } })();
   if (_fbUser) db.ref('users/' + _fbUser.uid + '/appVersion').set(APP_VERSION);
   auth.onAuthStateChanged(function(u) { if (u) db.ref('users/' + u.uid + '/appVersion').set(APP_VERSION); });
+})();
+
 })();
 </script>
