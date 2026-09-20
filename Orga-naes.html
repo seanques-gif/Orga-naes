@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-K2cX4aindI8SMm5lVri1JEnJry/++/VhGvg+11Vqet8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-jFtazOepA9sbpYjOWJJKVWSfQSPYagRfM9mrLeYj3dk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4565,8 +4565,8 @@
     if (!categories.length) { categoryListEl.innerHTML = '<div class="pf-category-empty">No categories yet. Add one below.</div>'; return; }
     categoryListEl.innerHTML = categories.map((c, i) =>
       '<div class="pf-category-row" data-cat-idx="' + i + '">' +
-      '<button class="pf-category-move" data-cat-up="' + i + '" title="Move up" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size: calc(var(--font-size-base) - 3px);padding:0 2px;"' + (i === 0 ? ' disabled style="opacity:0.3;background:transparent;border:none;font-size: calc(var(--font-size-base) - 3px);padding:0 2px;"' : '') + '>▲</button>' +
-      '<button class="pf-category-move" data-cat-down="' + i + '" title="Move down" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size: calc(var(--font-size-base) - 3px);padding:0 2px;"' + (i === categories.length - 1 ? ' disabled style="opacity:0.3;background:transparent;border:none;font-size: calc(var(--font-size-base) - 3px);padding:0 2px;"' : '') + '>▼</button>' +
+      '<button class="pf-category-move" data-cat-up="' + i + '" title="Move up" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size: calc(var(--font-size-base) - 3px);padding:0 2px;' + (i === 0 ? 'opacity:0.3;' : '') + '"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+      '<button class="pf-category-move" data-cat-down="' + i + '" title="Move down" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size: calc(var(--font-size-base) - 3px);padding:0 2px;' + (i === categories.length - 1 ? 'opacity:0.3;' : '') + '"' + (i === categories.length - 1 ? ' disabled' : '') + '>▼</button>' +
       '<span class="pf-category-swatch" style="background:' + categoryColor(c) + '"></span>' +
       '<span class="pf-category-name">' + escapeHtml(c) + '</span>' +
       '<button class="pf-category-del" data-cat-del="' + escapeHtml(c) + '" title="Delete category">\u00d7</button></div>'
