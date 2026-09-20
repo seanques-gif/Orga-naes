@@ -58,6 +58,9 @@ tests/baselines/current/
 /package.json
 /.github/
 /database.rules.json
+# Local source for the faces embedded into the artifact (AUD-08): the .woff2
+# files plus fonts.json, read by scripts/gen-embedded-fonts.mjs at build time.
+/fonts/
 /Orga-naes.html.sha256
 /HANDOFF.md
 /NEXT-PLAN.md
