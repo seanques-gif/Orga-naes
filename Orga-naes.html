@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Ard8ExfEsZjzIyeOSctG5KDiN1vsOB9pRH7U3NjKLAw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-X+vbuUlpAN7UoNw/cfproQrtmERzuBCjm79Gs2Nsri8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -11424,6 +11424,48 @@
       { id: 'AUD-14', status: 'confirmed', evidence: 'no analytics', note: 'Error and activity logs hold user text locally; no third-party analytics anywhere' }
     ].map(Object.freeze))
   });
+  // ---- Release identity (2026-09-20) ----
+  // sw.js carries the build-owned RELEASE_MANIFEST (the full sha256 of the
+  // artifact it was built beside + the revision that built it), because the
+  // artifact cannot contain its own hash: any byte added to hold it would
+  // change the hash it names. sw.js is served beside the app, so the live
+  // page settles its identity the only way that is not circular — hash its
+  // own bytes and compare. The census is DERIVED here rather than written
+  // by the build, so it cannot drift from the register it counts (AUD-05).
+  const PF_RELEASE_SW_FILE = 'sw.js';
+  function releaseCensus() {
+    const c = { count: 0, confirmed: 0, remediated: 0, reviewed: 0 };
+    for (const f of PF_AUDIT_REGISTER.findings) { c.count++; if (c[f.status] !== undefined) c[f.status]++; }
+    return Object.freeze(c);
+  }
+  async function releaseVerify() {
+    try {
+      if (typeof fetch !== 'function') return Object.freeze({ ok: false, reason: 'fetch is unavailable' });
+      if (!(window.crypto && crypto.subtle && crypto.subtle.digest)) return Object.freeze({ ok: false, reason: 'crypto.subtle is unavailable (insecure context?)' });
+      const loc = (typeof location !== 'undefined' && location && location.origin) ? location : null;
+      if (!loc) return Object.freeze({ ok: false, reason: 'no location to verify against' });
+      const [pageRes, swRes] = await Promise.all([fetch(loc.origin + loc.pathname), fetch(PF_RELEASE_SW_FILE)]);
+      if (!pageRes.ok || !swRes.ok) return Object.freeze({ ok: false, reason: 'fetch failed (page ' + pageRes.status + ', sw ' + swRes.status + ')' });
+      const buf = await pageRes.arrayBuffer();
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', buf));
+      let hex = ''; for (const b of digest) hex += b.toString(16).padStart(2, '0');
+      const swText = await swRes.text();
+      const m = swText.match(/const RELEASE_MANIFEST = (\{[^\n]*\});/);
+      const manifest = m ? JSON.parse(m[1]) : null;
+      if (!manifest || !manifest.artifact) return Object.freeze({ ok: false, reason: 'sw.js carries no readable RELEASE_MANIFEST' });
+      const swv = swText.match(/const CACHE_VERSION = '([0-9a-f]{16})';/);
+      return Object.freeze({
+        ok: hex === manifest.artifact,
+        bytes: hex,
+        declared: String(manifest.artifact),
+        bytesAgree: hex === manifest.artifact,
+        head: String(manifest.head || ''),
+        swVersion: swv ? swv[1] : '',
+        derivedVersion: hex.slice(0, 16),
+        versionAgrees: !!swv && swv[1] === hex.slice(0, 16),
+      });
+    } catch (err) { return Object.freeze({ ok: false, reason: (err && err.message) || String(err) }); }
+  }
   // Expose for Firebase sync (Object.assign preserves keys published by
   // earlier fragments, e.g. pfIcon from 00-svg-icons.js)
   window._pf = Object.assign(window._pf || {}, {
@@ -11457,6 +11499,10 @@
     // The master audit's register: the dispositions that ship with this build,
     // with the local report they summarise named in `source` (AUD-11 close-out).
     auditRegister: () => PF_AUDIT_REGISTER,
+    // Release identity: the census is derived from the register above, and
+    // releaseVerify hashes this document's own bytes against sw.js's manifest.
+    releaseCensus: () => releaseCensus(),
+    releaseVerify: () => releaseVerify(),
     snapshot: (forceFull, label) => snapshot(forceFull, label),
     openIDB_KV: () => openIDB_KV(),
     getCategoryEmojis: () => categoryEmojis,
