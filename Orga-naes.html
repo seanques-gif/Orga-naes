@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-P6Frn2dP9wGF7D6+W8LTD02d9jyCYVxQIgGReieq1ig='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Wx667owv/pXNq3WN2DIhzLjpfz0hpOR8arBKgeBu3wI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4004,14 +4004,21 @@
   const PF_KEYS_REF = window._pf.PF_KEYS;
 
   // Raw setItem wrapper: any write that bypasses safeSet still lands in the
-  // registry (as DATA unless the DEVICE_RE claims it). Idempotent wrap.
-  if (!localStorage.setItem.__pfWrapped) {
-    const _rawSetItem = localStorage.setItem.bind(localStorage);
-    localStorage.setItem = function(key, value) {
-      try { PF_KEYS_REF.registerDynamic(key); } catch (e) {}
-      return _rawSetItem(key, value);
-    };
-    try { Object.defineProperty(localStorage.setItem, '__pfWrapped', { value: true }); } catch (e) {}
+  // registry (as DATA unless the DEVICE_RE claims it). Unconditional: it used
+  // to sit behind an `Idempotent wrap` check on this very function, and that
+  // check was one of the belt-and-braces guards the audit filed as AUD-11 —
+  // pointless rather than merely defensive, because the build wraps the whole
+  // bundle in one entry function whose first statement returns on a second
+  // evaluation (AUD-09), so module 03 runs exactly once per document and the
+  // guard could never fire. An unreachable guard is worse than none: its
+  // mutation legs pass while proving nothing. A Storage object belongs to one
+  // document, so there is no second boot here to collide with; the test
+  // harness, which does share a storage mock across simulated documents,
+  // simply re-wraps, and registration is a Set, so that is inert.
+  const _rawSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value) {
+    try { PF_KEYS_REF.registerDynamic(key); } catch (e) {}
+    return _rawSetItem(key, value);
   }
   let _idbKV = null;
   function openIDB_KV() {
