@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Z2PYztfqBZXUMQq97sTekrJDMs33LS03kuChVmVuRo0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Muvc/nHGdPviV7PeXxlU7nEAQpk3nrt1KYAzflz7pjs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2969,6 +2969,16 @@
       el.dataset.icHydrated = '1';
     });
   }
+  // One boot per document (AUD-09) — see the full note in 01. The declarations
+  // above are referenced by every other module, so they stay in scope; what is
+  // guarded is this boot work. Hydration itself is idempotent (its
+  // `data-icHydrated` guard), but the registration below is not, and it is the
+  // one listener in the bundle that lands before any other region's guard has
+  // run — a real browser boots this script while readyState is still 'loading',
+  // so the fallback does fire. Measured at 'loading': with the other three
+  // regions already guarded, a second boot still took the listener count 42 -> 43.
+  if (!window.__pfBootedIcons) {
+  window.__pfBootedIcons = true;
   hydrateIcons(document);
 
   // Re-hydrate after DOMContentLoaded in case the script runs before the shell
@@ -2976,10 +2986,35 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() { hydrateIcons(document); });
   }
+  }
   // ============================================================
   // SECTION: CORE STATE & LOCAL PERSISTENCE
   // ============================================================
 (function() {
+  // ---- One boot per document (AUD-09) ---------------------------------------
+  // The bundle does its global work at boot scope: 42 listeners across window
+  // and document, ~148 handlers on the shell's own elements, and five intervals.
+  // That is correct while a document boots the bundle once, and nothing enforced
+  // it. Re-running the modules in one document doubles every one of them, so a
+  // single cross-tab write merges twice, a single visibilitychange runs the day
+  // rollover, the reminder catch-up and the streak refill twice, and a single
+  // unload flushes twice. Nothing protects this by accident either: a second
+  // evaluation currently dies at instantiation only because a top-level `const`
+  // in module 00 clashes, so a routine cleanup of that would take the only thing
+  // standing in the way with it.
+  //
+  // The bundle is four top-level regions and each guards its own boot work —
+  // module 00 an `if` around its hydration (its declarations have to stay in
+  // scope), 44 an `if` around the service-worker block, and the two IIFEs (01
+  // and 45) an early return. The flags live on the window rather than in a
+  // closure, so a re-initialised closure still sees them.
+  //
+  // This region is the core state: a second boot would rebuild every store,
+  // re-arm the autosave timer and re-register its listeners.
+  if (window.__pfBootedCore) return;
+  window.__pfBootedCore = true;
+
+
   const STATUSES = ['planned', 'ongoing', 'waiting', 'completed'];
   const STATUS_LABEL = { planned: 'Planned', ongoing: 'Ongoing', waiting: 'Waiting', completed: 'Completed' };
   const STORE_KEY = 'project-flow-graph-v2';
@@ -12789,6 +12824,12 @@
 // ============================================================
 // SECTION: PWA REGISTRATION
 // ============================================================
+// One boot per document (AUD-09) — see the full note in 01. This region is
+// plain top-level statements, so it guards with a condition rather than a
+// return; the guard is set before the block so a browser without service
+// worker support still counts as booted.
+if (!window.__pfBootedPwa) {
+window.__pfBootedPwa = true;
 if ('serviceWorker' in navigator) {
   const _pfUpdatePill = document.getElementById('pf-update-pill');
   let _pfPendingWorker = null;
@@ -12836,11 +12877,18 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 }
+}
 
 // ============================================================
 // SECTION: FIREBASE CLOUD SYNC
 // ============================================================
 (function() {
+  // One boot per document (AUD-09) — see the full note in 01. This region
+  // registers the online/offline listeners and the sync timers, so a second
+  // boot would double every push and pull it schedules.
+  if (window.__pfBootedCloud) return;
+  window.__pfBootedCloud = true;
+
   const firebaseConfig = {
     apiKey: "AIzaSyBiDGWVjs8Djoez_saNA5cpOY3aO2cgVVc",
     authDomain: "orga-naes.firebaseapp.com",
