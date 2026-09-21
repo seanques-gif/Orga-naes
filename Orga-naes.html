@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Bl8PPcYKr7Q1PaThLY9aO3u+P9I64i/qO27W+Plhi5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-jGIRRMUX6ejlakgA+HM/WaPdXLqkUM1rJGvX1vgTNW4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1064,38 +1064,13 @@
     
     #pf-root .pf-node:hover { border-color: var(--hover-border); box-shadow: 0 8px 24px rgba(0,0,0,0.35); transform: translateY(-1px); }
   }
-  #pf-root .pf-node-resize {
-    position: absolute; right: 1px; bottom: 1px; width: 14px; height: 14px;
-    cursor: nwse-resize; z-index: var(--z-sticky); display: flex; align-items: flex-end;
-    justify-content: flex-end; padding: 2px; color: var(--text-dim); opacity: 0; transition: opacity 0.15s, color 0.15s;
-  }
-  #pf-root .pf-node:hover .pf-node-resize { opacity: 0.5; }
-  #pf-root .pf-node-resize:hover { opacity: 1 !important; color: var(--accent); }
-  #pf-root .pf-node-resize svg { display: block; }
-  #pf-root .pf-node.pf-dragging { opacity: 0.4; cursor: grabbing; box-shadow: 0 10px 28px rgba(0,0,0,0.45); z-index: calc(var(--z-sticky) + 1); }
-  #pf-root .pf-node-header.pf-drop-copy-target { outline: 2px dashed var(--completed); outline-offset: -2px; border-radius: var(--radius-container) var(--radius-container) 0 0; background: color-mix(in srgb, var(--completed) 8%, transparent); }
   #pf-root.pf-paste-armed .pf-node-header, #pf-root.pf-paste-armed .pf-subrow { cursor: copy; }
   #pf-root.pf-paste-armed .pf-node-header:hover { outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: var(--radius-container) var(--radius-container) 0 0; }
   #pf-root.pf-paste-armed .pf-subrow:hover { outline: 2px dashed var(--accent); outline-offset: -2px; }
   #pf-root.pf-move-armed .pf-node-header, #pf-root.pf-move-armed .pf-subrow { cursor: move; }
   #pf-root.pf-move-armed .pf-node-header:hover, #pf-root.pf-move-armed .pf-subrow:hover { outline: 2px dashed var(--warning, #e8a33d); outline-offset: -2px; }
-  #pf-root .pf-node.pf-node-drop-before { box-shadow: -4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
-  #pf-root .pf-node.pf-node-drop-after { box-shadow: 4px 0 0 0 var(--accent), 0 2px 10px rgba(0,0,0,0.25); }
-  #pf-root .pf-node.pf-drop-target::before, #pf-root .pf-node.pf-drop-target::after {
-    content: ''; position: absolute; top: 0; bottom: 0; width: 4px; border-radius: 6px; background: var(--accent); opacity: 0; pointer-events: none;
-  }
-  #pf-root .pf-node.pf-drop-target::before { left: -14px; }
-  #pf-root .pf-node.pf-drop-target::after { right: -14px; opacity: 0.3; }
-  #pf-root .pf-node.pf-node-drop-before::before { opacity: 1; width: 5px; }
-  #pf-root .pf-node.pf-node-drop-after::after { opacity: 1; width: 5px; }
 
   #pf-root .pf-node-header { display: flex; align-items: center; gap: clamp(4px, 1vw, 8px); padding: clamp(6px, 1.5vw, 12px) clamp(8px, 1.5vw, 14px); cursor: pointer; flex-wrap: nowrap; }
-  #pf-root .pf-drag-handle {
-    display: none;
-  }
-  #pf-root .pf-node:hover .pf-drag-handle { opacity: 0.6; }
-  #pf-root .pf-drag-handle:hover { opacity: 1; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
-  #pf-root .pf-drag-handle:active { cursor: grabbing; }
   #pf-root .pf-chevron {
     background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); font-size: max(9px, calc(var(--font-size-base) - 5px));
     width: clamp(16px, 2.5vw, 22px); height: clamp(16px, 2.5vw, 22px); border-radius: var(--radius-control); display: flex; align-items: center;
@@ -1278,9 +1253,43 @@
     pointer-events: none; animation: pf-drop-indicator-pulse 0.6s var(--ease-out-strong) infinite alternate;
   }
   @keyframes pf-drop-indicator-pulse { from { opacity: 0.6; transform: scaleX(0.95); } to { opacity: 1; transform: scaleX(1); } }
+  
+  #pf-root .pf-split-list-item.pf-sub-drop-target, #pf-root .pf-carry-chip.pf-sub-drop-target { outline: 2px dashed var(--accent); outline-offset: -2px; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  #pf-root .pf-split-list-item.pf-sub-drop-copy, #pf-root .pf-carry-chip.pf-sub-drop-copy { outline: 2px dashed var(--completed); outline-offset: -2px; background: color-mix(in srgb, var(--completed) 8%, transparent); }
   #pf-root .pf-split-list-item.pf-dragging { opacity: 0.3; transform: scale(0.96); transition: opacity 0.2s, transform 0.2s; }
     #pf-root .pf-split-list-item.pf-drop-settling { animation: pf-drop-settle var(--dur-surface) var(--ease-console); }
   @keyframes pf-drop-settle { from { opacity: 0; transform: translateY(-8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  
+  #pf-root .pf-carry-bar {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: var(--space-lg);
+    z-index: var(--z-transient); display: flex; align-items: center; gap: var(--space-xs);
+    max-width: min(560px, calc(100vw - 24px)); padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--card-border); border-radius: var(--radius-overlay);
+    background: var(--sub-bg); box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  }
+  #pf-root.pf-device-mobile .pf-carry-bar { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  #pf-root .pf-carry-label { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); white-space: nowrap; }
+  #pf-root .pf-carry-strip { display: flex; gap: var(--space-xxs); overflow-x: auto; max-width: 46vw; }
+  #pf-root .pf-carry-chip {
+    display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; padding: 6px 10px;
+    border: 1px solid var(--card-border); border-radius: var(--radius-pill);
+    background: var(--card); color: var(--text); font-size: calc(var(--font-size-base) - 2px);
+    cursor: pointer; white-space: nowrap;
+  }
+  #pf-root .pf-carry-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  #pf-root .pf-carry-toggle {
+    padding: 6px 10px; border: 1px solid var(--card-border); border-radius: var(--radius-control);
+    background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); cursor: pointer;
+  }
+  #pf-root .pf-carry-toggle-on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  #pf-root .pf-carry-cancel { background: transparent; border: none; color: var(--text-dim); font-size: var(--font-size-base); cursor: pointer; padding: 4px 8px; }
+  #pf-root .pf-carry-ghost {
+    position: fixed; z-index: var(--z-transient); pointer-events: none; transform: translate(14px, -50%);
+    padding: 6px 10px; border: 1px solid var(--accent); border-radius: var(--radius-pill);
+    background: var(--sub-bg); color: var(--text); font-size: calc(var(--font-size-base) - 2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #pf-root .pf-subrow.pf-sub-carrying { opacity: 0.45; }
   #pf-root .pf-dep-chip {
     background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text-dim); font-size: calc(var(--font-size-base) - 3px); font-weight: 500;
     padding: 4px 9px; border-radius: 100px; border: 1px solid var(--card-border); cursor: pointer;
@@ -2733,6 +2742,7 @@
     #pf-root .pf-add-sub, #pf-root .pf-sub-add, #pf-root .pf-sub-del,
     #pf-root .pf-sub-edit, #pf-root .pf-node-del, #pf-root .pf-sub-handle,
     #pf-root .pf-dep-chip, #pf-root .pf-recur-chip, #pf-root .pf-sub-comment,
+    #pf-root .pf-carry-bar, #pf-root .pf-carry-ghost,
     #pf-root button { display: none !important; }
     #pf-root .pf-split-view { display: block !important; overflow: visible !important; }
     #pf-root .pf-split-detail { display: block !important; overflow: visible !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
@@ -3550,6 +3560,7 @@
     { check: () => searchTerm || searchWrap.classList.contains('pf-search-open'), run: () => { _clearSearch(); _refreshView(); } },
     { check: () => _pasteArmed, run: () => { _pasteArmed = false; root.classList.remove('pf-paste-armed'); showToast('Paste canceled'); } },
     { check: () => _moveArmed, run: () => { _moveArmed = false; root.classList.remove('pf-move-armed'); showToast('Move canceled'); } },
+    { check: () => !!_touchCarry, run: () => { endTouchCarry(); showToast('Carry canceled'); } },
     { check: () => !!_saveModalEl, run: () => { if (_saveModalEl) { _saveModalEl.remove(); _saveModalEl = null; } } },
     { check: () => !!_statusMenuEl, run: () => { closeStatusMenu(); } },
     { check: () => !!root.querySelector('.pf-ctx-menu'), run: () => { const m = root.querySelector('.pf-ctx-menu'); if (m) m.remove(); if (typeof _closeCtx === 'function') _closeCtx(); } },
@@ -5165,6 +5176,38 @@
     scheduleSave(); render();
     showToast((nodes.length > 1 ? nodes.length + ' tasks' : '"' + nodes[0].title + '"') + ' copied to "' + targetProject.title + '"', false, true);
   }
+
+  function moveSubtasksToProject(sourceProject, subtaskIds, targetProjectId) {
+    const targetProject = projects.find(pr => pr.id === targetProjectId);
+    if (!targetProject || !sourceProject || targetProjectId === sourceProject.id) return;
+    let nodes = subtaskIds.map(id => findSubNode(sourceProject.subtasks, id)).filter(Boolean);
+    
+    const idSet = new Set(subtaskIds);
+    nodes = nodes.filter(n => !nodes.some(other => other !== n && idSet.has(other.id) && isDescendant(other, n.id)));
+    if (!nodes.length) return;
+    snapshot(false, 'Moved ' + (nodes.length > 1 ? nodes.length + ' tasks' : 'a task') + ' to another project');
+    
+    
+    
+    const travelling = new Set();
+    (function collect(list) { list.forEach(n => { travelling.add(n.id); if (n.subtasks && n.subtasks.length) collect(n.subtasks); }); })(nodes);
+    nodes.forEach(n => { const arr = findSubParentArray(sourceProject.subtasks, n.id); if (arr) { const i = arr.indexOf(n); if (i > -1) arr.splice(i, 1); } });
+    (function trimInner(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(id => travelling.has(id)); if (t.subtasks && t.subtasks.length) trimInner(t.subtasks); }); })(nodes);
+    
+    
+    
+    
+    (function cleanLeft(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(id => !travelling.has(id)); if (t.subtasks && t.subtasks.length) cleanLeft(t.subtasks); }); })(sourceProject.subtasks);
+    if (!targetProject.subtasks) targetProject.subtasks = [];
+    nodes.forEach(n => targetProject.subtasks.push(n));
+    targetProject.expanded = true;
+    if (targetProject._manualStatus) { delete targetProject._manualStatus; }
+    if (sourceProject._manualStatus) { delete sourceProject._manualStatus; }
+    checkAllCompleted(targetProject); checkAllCompleted(sourceProject);
+    logActivity((nodes.length > 1 ? nodes.length + ' tasks' : '"' + nodes[0].title + '"') + ' moved from "' + sourceProject.title + '" to "' + targetProject.title + '"');
+    scheduleSave(); render();
+    showToast((nodes.length > 1 ? nodes.length + ' tasks' : '"' + nodes[0].title + '"') + ' moved to "' + targetProject.title + '"', false, true);
+  }
   function countTree(list) { let done = 0, total = 0; list.forEach(s => { total++; if (s.status === 'completed') done++; if (s.subtasks && s.subtasks.length) { const c = countTree(s.subtasks); done += c.done; total += c.total; } }); return { done, total }; }
 
   function addSubtask(projectId, parentSubId) { snapshot(false, 'Added a task'); const p = projects.find(p => p.id === projectId); let targetArr; if (!parentSubId) { p.expanded = true; targetArr = p.subtasks; } else { const parentNode = findSubNode(p.subtasks, parentSubId); parentNode.expanded = true; if (!parentNode.subtasks) parentNode.subtasks = []; targetArr = parentNode.subtasks; } const s = { id: uid(), title: 'New subtask', status: 'planned', expanded: false, subtasks: [], createdAt: new Date().toISOString(), dueAt: null, completedAt: null }; targetArr.push(s); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); render(); focusEl('[data-sub-title-id="' + s.id + '"]'); }
@@ -5422,9 +5465,9 @@
  statsEl.innerHTML = STATUSES.map(s => '<span class="pf-stat' + (statusFilter === s ? ' pf-stat-active' : '') + '" data-status-filter="' + s + '" style="--stat-c:var(--' + s + ');--stat-bg:var(--' + s + '-bg)" title="Filter by ' + STATUS_LABEL[s] + '"><span class="pf-swatch" style="background:var(--' + s + ')"></span><b>' + counts[s] + '</b><span>' + STATUS_LABEL[s] + '</span></span>').join('') + streakHtml + freezeHtml + xpHtml; statsEl.querySelectorAll('[data-status-filter]').forEach(el => { el.addEventListener('click', () => { const clicked = el.dataset.statusFilter; statusFilter = statusFilter === clicked ? '' : clicked; render(); }); }); }
 
   function projectEl(p) {
-    const div = document.createElement('div'); div.className = 'pf-node' + (p.expanded ? ' pf-expanded' : ''); div.style.width = p.width ? (p.width + 'px') : ''; div.style.maxWidth = p.width ? 'none' : ''; div.dataset.id = p.id; if (p.createdAt) div.title = 'Created ' + formatDateTime(p.createdAt);
+    const div = document.createElement('div'); div.className = 'pf-node' + (p.expanded ? ' pf-expanded' : ''); div.dataset.id = p.id; if (p.createdAt) div.title = 'Created ' + formatDateTime(p.createdAt);
     const treeCount = countTree(p.subtasks); const countLabel = treeCount.total ? (treeCount.done + '/' + treeCount.total + ' done') : 'No subtasks yet';
-    div.innerHTML = '<div class="pf-node-header"><span class="pf-drag-handle" title="Drag to move">&#8942;&#8942;</span><button class="pf-chevron" title="Show subtasks"><svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M3 1.5L7.5 5L3 8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="pf-node-title" contenteditable="false" spellcheck="false" data-title-id="' + p.id + '">' + escapeHtml(p.title) + '</div><span class="pf-header-meta"></span><span class="pf-badge" style="background:var(--' + p.status + '-bg); color:var(--' + p.status + ')">' + STATUS_LABEL[p.status] + '</span><button class="pf-node-del" title="Delete project">×</button></div><div class="pf-node-desc-row"><div class="pf-node-desc" contenteditable="true" spellcheck="false" data-desc-id="' + p.id + '">' + escapeHtml(p.description || '') + '</div><span class="pf-count">' + countLabel + '</span></div><div class="pf-sublist"></div><div class="pf-node-resize" title="Drag to resize • double-click to auto-fit"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M9.5 1.5L1.5 9.5M9.5 5.5L5.5 9.5M9.5 9.5L9.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>';
+    div.innerHTML = '<div class="pf-node-header"><button class="pf-chevron" title="Show subtasks"><svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M3 1.5L7.5 5L3 8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="pf-node-title" contenteditable="false" spellcheck="false" data-title-id="' + p.id + '">' + escapeHtml(p.title) + '</div><span class="pf-header-meta"></span><span class="pf-badge" style="background:var(--' + p.status + '-bg); color:var(--' + p.status + ')">' + STATUS_LABEL[p.status] + '</span><button class="pf-node-del" title="Delete project">×</button></div><div class="pf-node-desc-row"><div class="pf-node-desc" contenteditable="true" spellcheck="false" data-desc-id="' + p.id + '">' + escapeHtml(p.description || '') + '</div><span class="pf-count">' + countLabel + '</span></div><div class="pf-sublist"></div>';
     if (p.color) { div.style.borderColor = p.color; div.style.boxShadow = '0 0 0 1px ' + p.color + '22, 0 2px 10px rgba(0,0,0,0.25)'; }
     
     
@@ -5439,25 +5482,10 @@
     if (p.status === 'completed' && p.completedAt) { const doneLabel = document.createElement('span'); doneLabel.className = 'pf-completed-date'; doneLabel.style.cursor = 'pointer'; doneLabel.title = 'Click to change completed date'; doneLabel.textContent = formatDateShort(p.completedAt.slice(0, 10)); doneLabel.addEventListener('click', (e) => { e.stopPropagation(); const input = document.createElement('input'); input.type = 'date'; input.className = 'pf-due-input'; input.value = p.completedAt.slice(0, 10); doneLabel.replaceWith(input); input.focus(); input.addEventListener('change', () => { snapshot(); p.completedAt = input.value ? input.value + 'T00:00:00.000Z' : new Date().toISOString(); scheduleSave(); render(); }); input.addEventListener('blur', () => { render(); }); }); headerMeta.appendChild(doneLabel); } else { headerMeta.appendChild(buildDueChip(p, (val) => { snapshot(); p.dueAt = val; scheduleSave(); render(); }, false)); }
     headerMeta.appendChild(buildRecurChip(p, (val) => { snapshot(); p.recurrence = val || null; scheduleSave(); render(); }));
 
-    if (p.expanded && p.height) { div.style.height = p.height + 'px'; div.style.display = 'flex'; div.style.flexDirection = 'column'; if (nodeHeader) nodeHeader.style.flexShrink = '0'; const descRow = div.querySelector('.pf-node-desc-row'); if (descRow) descRow.style.flexShrink = '0'; const sl = div.querySelector('.pf-sublist'); if (sl) { sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; } }
     const sublist = div.querySelector('.pf-sublist'); if (p.expanded) { renderSubtaskRows(sublist, p, p.subtasks, 0); }
     sublist.__project = p; sublist.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); clearIndicators(); sublist.classList.add('pf-drop-root'); }); sublist.addEventListener('dragleave', (e) => { if (e.target === sublist) sublist.classList.remove('pf-drop-root'); }); sublist.addEventListener('drop', (e) => { if (!draggingSubId || draggingProjectId !== p.id) return; e.preventDefault(); performMove(p, null, null); });
     const addBtn = document.createElement('button'); addBtn.className = 'pf-add-sub'; addBtn.textContent = '+ Add subtask'; addBtn.addEventListener('click', (e) => { e.stopPropagation(); addSubtask(p.id, null); }); sublist.appendChild(addBtn);
     div.querySelector('.pf-chevron').addEventListener('click', (e) => { e.stopPropagation(); const allExpanded = (function check(list) { return list.every(s => (!s.subtasks || !s.subtasks.length || (s.expanded && check(s.subtasks)))); })(p.subtasks); (function setAll(list, val) { list.forEach(s => { s.expanded = val; if (s.subtasks && s.subtasks.length) setAll(s.subtasks, val); }); })(p.subtasks, !allExpanded); render(); }); div.querySelector('.pf-node-del').addEventListener('click', (e) => { e.stopPropagation(); deleteProject(p.id); }); div.querySelector('.pf-badge').addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); openStatusMenu(e.currentTarget, p.status, (st) => cycleProjectStatus(p.id, st)); });
-    if (nodeHeader) nodeHeader.addEventListener('pointerdown', (e) => { if (e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; const titleEl2 = e.target.closest('.pf-node-title'); if (titleEl2 && titleEl2.contentEditable === 'true') return; dragHandleArmedProject = true; });
-    if (nodeHeader) {
-      nodeHeader.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId === p.id) return; e.preventDefault(); e.stopPropagation(); nodeHeader.classList.add('pf-drop-copy-target'); });
-      nodeHeader.addEventListener('dragleave', (e) => { if (e.target === nodeHeader) nodeHeader.classList.remove('pf-drop-copy-target'); });
-      nodeHeader.addEventListener('drop', (e) => {
-        if (!draggingSubId || draggingProjectId === p.id) return;
-        e.preventDefault(); e.stopPropagation();
-        nodeHeader.classList.remove('pf-drop-copy-target');
-        const sourceProject = projects.find(pr => pr.id === draggingProjectId);
-        const ids = _draggingSubIds.length ? _draggingSubIds.slice() : [draggingSubId];
-        draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; clearIndicators();
-        if (sourceProject) { copySubtasksToProject(sourceProject, ids, p.id); clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); }
-      });
-    }
     const titleEl = div.querySelector('.pf-node-title'); let titleClickCount = 0; let titleClickTimer = null; let _titleTapCount = 0; let _titleTapTimer = null;
     titleEl.addEventListener('pointerdown', (e) => { if (titleEl.contentEditable === 'true') e.stopPropagation(); });
     titleEl.addEventListener('click', (e) => { e.stopPropagation(); if (titleEl.contentEditable === 'true') return; titleClickCount++; if (titleClickCount === 1) { titleClickTimer = setTimeout(() => { titleClickCount = 0; }, 200); } else if (titleClickCount === 2) { clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } });
@@ -5465,7 +5493,7 @@
     titleEl.addEventListener('blur', () => { titleEl.contentEditable = 'false'; const val = titleEl.textContent.trim() || 'Untitled'; if (val !== p.title) { _lastProjectId = p.id; snapshot(); p.title = val; scheduleSave(); renderSplitList(); } }); titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
     const descEl = div.querySelector('.pf-node-desc'); descEl.addEventListener('pointerdown', (e) => e.stopPropagation()); descEl.addEventListener('click', (e) => e.stopPropagation()); descEl.addEventListener('blur', () => { const val = descEl.textContent.trim(); if (val !== (p.description || '')) { _lastProjectId = p.id; snapshot(); p.description = val || ''; scheduleSave(); } }); descEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); descEl.blur(); } });
     if (nodeHeader) nodeHeader.addEventListener('click', (e) => { if (_moveArmed && _moveClipboard && _moveClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); moveClipboardAsMain(p); return; } if (_pasteArmed && _taskClipboard && _taskClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; } if (e.target.closest('.pf-node-title') || e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; toggleExpand(p.id); }, true);
-    makeDraggable(div, p); makeResizable(div, p); return div;
+    return div;
   }
 
   let subMultiSelect = [];
@@ -5665,9 +5693,10 @@
     row.querySelector('.pf-sub-handle').addEventListener('pointerdown', () => { dragHandleArmed = true; });
     row.querySelector('.pf-subrow-title').addEventListener('pointerdown', (e) => { const t = row.querySelector('.pf-subrow-title'); if (t.contentEditable === 'true') { e.stopPropagation(); return; } dragHandleArmed = true; });
     row.draggable = true;
+    wireTouchCarry(row, p, s); 
     row.addEventListener('dragstart', (e) => { if (!dragHandleArmed) { e.preventDefault(); return; } e.stopPropagation(); dragHandleArmed = false; draggingSubId = s.id; draggingProjectId = p.id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', s.id); } catch (err) {} if (subMultiSelect.length && subMultiSelect.includes(s.id)) { _draggingSubIds = subMultiSelect.slice(); } else { _draggingSubIds = [s.id]; } requestAnimationFrame(() => row.classList.add('pf-sub-dragging')); });
     row.addEventListener('click', (e) => { if (_moveArmed && _moveClipboard && _moveClipboard.length) { if (e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates') || e.target.closest('.pf-sub-ctx-btn')) return; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); moveClipboardUnder(p, s); return; } if (!_pasteArmed || !_taskClipboard || !_taskClipboard.length) return; if (e.target.closest('.pf-sub-add') || e.target.closest('.pf-sub-del') || e.target.closest('.pf-sub-dates') || e.target.closest('.pf-sub-ctx-btn')) return; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); pasteClipboardUnder(p, s); }, true);
-    row.addEventListener('dragend', () => { row.classList.remove('pf-sub-dragging'); draggingSubId = null; draggingProjectId = null; clearIndicators(); });
+    row.addEventListener('dragend', () => { row.classList.remove('pf-sub-dragging'); draggingSubId = null; draggingProjectId = null; clearIndicators(); root.querySelectorAll('.pf-sub-drop-target, .pf-sub-drop-copy').forEach(el => el.classList.remove('pf-sub-drop-target', 'pf-sub-drop-copy')); });
     row.addEventListener('dragover', (e) => { if (!draggingSubId || draggingProjectId !== p.id || draggingSubId === s.id) return; e.preventDefault(); e.stopPropagation(); const rect = row.getBoundingClientRect(); const ratio = (e.clientY - rect.top) / rect.height; const zone = ratio < 0.25 ? 'before' : ratio > 0.75 ? 'after' : 'nest'; clearIndicators(); row.classList.add('pf-drop-' + zone); row.dataset.dropZone = zone; });
     row.addEventListener('dragleave', (e) => { if (e.target === row) row.classList.remove('pf-drop-before', 'pf-drop-after', 'pf-drop-nest'); });
     row.addEventListener('drop', (e) => { if (!draggingSubId || draggingProjectId !== p.id || draggingSubId === s.id) return; e.preventDefault(); e.stopPropagation(); performMove(p, s.id, row.dataset.dropZone || 'after'); });
@@ -5683,22 +5712,212 @@
     t.addEventListener('touchend', (e) => { if (t.contentEditable === 'true') return; _subTitleTapCount++; if (_subTitleTapCount === 2) { clearTimeout(_subTitleTapTimer); _subTitleTapCount = 0; e.preventDefault(); clearTimeout(_subTitleClickTimer); t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } else { clearTimeout(_subTitleTapTimer); _subTitleTapTimer = setTimeout(() => { _subTitleTapCount = 0; }, 350); } });
     t.addEventListener('blur', () => { const val = t.textContent.trim() || 'Untitled'; t.contentEditable = 'false'; if (val !== s.title) { _lastProjectId = p.id; snapshot(); s.title = val; scheduleSave(); } }); t.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); t.blur(); } if (e.key === 'Escape') { t.textContent = s.title; t.blur(); } }); return row;
   }
+    // SUBSECTION: Subtask Touch Carry (pointer-coarse path for cross-project moves)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  let _touchCarryActive = false;
+  let _touchCarry = null;
+  let _touchCarryTimer = null;
+  const TOUCH_CARRY_HOLD = 260;   
+  const TOUCH_CARRY_SLOP = 8;     
 
-  let dragProjectId = null; let dragHandleArmedProject = false;
-  function clearProjectIndicators() { root.querySelectorAll('.pf-node-drop-before, .pf-node-drop-after').forEach(el => el.classList.remove('pf-node-drop-before', 'pf-node-drop-after')); }
+  function carryOtherProjects(sourceId) { return projects.filter(pr => pr.id !== sourceId); }
 
-  function makeDraggable(el, p) {
-    el.draggable = true;
-    const handle = el.querySelector('.pf-drag-handle');
-    handle.addEventListener('pointerdown', () => { dragHandleArmedProject = true; });
-    el.addEventListener('dragstart', (e) => { if (!dragHandleArmedProject) { e.preventDefault(); return; } dragHandleArmedProject = false; dragProjectId = p.id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', p.id); } catch (err) {} requestAnimationFrame(() => { el.classList.add('pf-dragging'); root.querySelectorAll('.pf-node').forEach(n => { if (n.dataset.id !== p.id) n.classList.add('pf-drop-target'); }); }); });
-    el.addEventListener('dragend', () => { el.classList.remove('pf-dragging'); dragProjectId = null; clearProjectIndicators(); root.querySelectorAll('.pf-drop-target').forEach(n => n.classList.remove('pf-drop-target')); });
-    el.addEventListener('dragover', (e) => { if (!dragProjectId || dragProjectId === p.id) return; e.preventDefault(); e.stopPropagation(); clearProjectIndicators(); const idx = projects.findIndex(pr => pr.id === p.id); const isFirst = idx === 0 || projects.findIndex(pr => pr.id === dragProjectId) === idx - 1 && idx === 1; const rect = el.getBoundingClientRect(); const zone = (idx === 0 && (e.clientX - rect.left) / rect.width < 0.3) ? 'before' : 'after'; el.classList.add('pf-node-drop-' + zone); el.dataset.dropZone = zone; });
-    el.addEventListener('dragleave', () => { el.classList.remove('pf-node-drop-before', 'pf-node-drop-after'); });
-    el.addEventListener('drop', (e) => { if (!dragProjectId || dragProjectId === p.id) return; e.preventDefault(); e.stopPropagation(); const zone = el.dataset.dropZone || 'after'; snapshot(); const src = projects.find(pr => pr.id === dragProjectId); if (src && src.category !== p.category) { src.category = p.category; } const srcIdx = projects.findIndex(pr => pr.id === dragProjectId); projects.splice(srcIdx, 1); const destIdx = projects.findIndex(pr => pr.id === p.id); projects.splice(zone === 'before' ? destIdx : destIdx + 1, 0, src); dragProjectId = null; clearProjectIndicators(); scheduleSave(); render(); });
-
+  function beginTouchCarry(row, p, s) {
+    if (_touchCarry) return false;
+    if (!carryOtherProjects(p.id).length) {
+      showToast('Create another project first — a task can only be carried to a different project', true);
+      return false;
+    }
+    const ids = (subMultiSelect.length && subMultiSelect.indexOf(s.id) !== -1) ? subMultiSelect.slice() : [s.id];
+    _touchCarryActive = true;
+    _touchCarry = { ids: ids, sourceId: p.id, copy: false, sourceRow: row, title: s.title, hover: null };
+    
+    
+    
+    
+    const detailEl = root.querySelector('.pf-split-detail');
+    if (detailEl) { detailEl.style.transition = ''; detailEl.style.transform = ''; detailEl.style.opacity = ''; }
+    if (navigator.vibrate) navigator.vibrate(15);
+    row.classList.add('pf-sub-carrying');
+    renderCarryBar();
+    return true;
   }
-  function makeResizable(el, p) { const MIN_W = 190, MIN_H = 140; const grip = el.querySelector('.pf-node-resize'); let resizing = false, moved = false, startX, startY, startW, startH; grip.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); resizing = true; moved = false; startX = e.clientX; startY = e.clientY; startW = el.offsetWidth; startH = el.offsetHeight; safePointerCapture(grip, e.pointerId); }); grip.addEventListener('pointermove', (e) => { if (!resizing) return; const dx = e.clientX - startX, dy = e.clientY - startY; if (!moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) { moved = true; snapshot(); el.style.maxWidth = 'none'; } if (!moved) return; const newW = Math.max(MIN_W, startW + dx); const newH = Math.max(MIN_H, startH + dy); p.width = newW; el.style.width = newW + 'px'; if (p.expanded) { p.height = newH; el.style.height = newH + 'px'; el.style.display = 'flex'; el.style.flexDirection = 'column'; const sl = el.querySelector('.pf-sublist'); if (sl) { sl.style.flex = '1 1 auto'; sl.style.overflowY = 'auto'; sl.style.minHeight = '0'; } } }); function end() { if (!resizing) return; resizing = false; if (moved) { scheduleSave(); render(); } } grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end); grip.addEventListener('dblclick', (e) => { e.stopPropagation(); snapshot(); p.height = null; p.width = null; scheduleSave(); render(); }); }
+
+  function renderCarryBar() {
+    if (!_touchCarry) return;
+    const bar = document.createElement('div');
+    bar.className = 'pf-carry-bar';
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', 'Carry task to another project');
+    const label = document.createElement('span');
+    label.className = 'pf-carry-label';
+    label.textContent = 'Move to';
+    bar.appendChild(label);
+    const strip = document.createElement('div');
+    strip.className = 'pf-carry-strip';
+    carryOtherProjects(_touchCarry.sourceId).forEach(pr => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'pf-carry-chip';
+      chip.dataset.projectId = pr.id;
+      chip.setAttribute('aria-label', 'Drop here to take this task into ' + pr.title);
+      chip.innerHTML = '<span class="pf-carry-dot" style="background:' + (pr.color || 'var(--text-dim)') + '"></span>' + escapeHtml(pr.title);
+      chip.addEventListener('click', () => { commitCarry(pr.id); });
+      strip.appendChild(chip);
+    });
+    bar.appendChild(strip);
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'pf-carry-toggle';
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.title = 'Copy instead of moving';
+    toggle.textContent = 'Copy';
+    toggle.addEventListener('click', () => {
+      if (!_touchCarry) return;
+      _touchCarry.copy = !_touchCarry.copy;
+      toggle.setAttribute('aria-pressed', String(_touchCarry.copy));
+      toggle.classList.toggle('pf-carry-toggle-on', _touchCarry.copy);
+      paintCarryTargets();
+    });
+    bar.appendChild(toggle);
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'pf-carry-cancel';
+    cancel.setAttribute('aria-label', 'Cancel carry');
+    cancel.textContent = '×';
+    cancel.addEventListener('click', () => { endTouchCarry(); showToast('Carry canceled'); });
+    bar.appendChild(cancel);
+    root.appendChild(bar);
+    _touchCarry.bar = bar;
+  }
+
+  
+  
+  function carryTargetAt(x, y) {
+    if (!_touchCarry || !_touchCarry.bar) return null;
+    const chips = _touchCarry.bar.querySelectorAll('.pf-carry-chip');
+    for (const chip of chips) {
+      const r = chip.getBoundingClientRect();
+      const pad = 10;
+      if (x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad) return chip;
+    }
+    return null;
+  }
+
+  function paintCarryTargets(x, y) {
+    if (!_touchCarry || !_touchCarry.bar) return;
+    const hit = typeof x === 'number' ? carryTargetAt(x, y) : null;
+    _touchCarry.hover = hit;
+    _touchCarry.bar.querySelectorAll('.pf-carry-chip').forEach(chip => {
+      chip.classList.toggle('pf-sub-drop-target', chip === hit && !_touchCarry.copy);
+      chip.classList.toggle('pf-sub-drop-copy', chip === hit && _touchCarry.copy);
+    });
+  }
+
+  function moveGhost(x, y) {
+    if (!_touchCarry) return;
+    if (!_touchCarry.ghost) {
+      const g = document.createElement('div');
+      g.className = 'pf-carry-ghost';
+      g.setAttribute('aria-hidden', 'true');
+      g.textContent = _touchCarry.ids.length > 1 ? _touchCarry.ids.length + ' tasks' : _touchCarry.title;
+      root.appendChild(g);
+      _touchCarry.ghost = g;
+    }
+    _touchCarry.ghost.style.left = x + 'px';
+    _touchCarry.ghost.style.top = y + 'px';
+  }
+
+  function carryTouchGuard(e) { if (_touchCarryActive && e.cancelable) e.preventDefault(); }
+  function addCarryTouchGuard() { document.addEventListener('touchmove', carryTouchGuard, { passive: false }); }
+  function removeCarryTouchGuard() { document.removeEventListener('touchmove', carryTouchGuard); }
+
+  function commitCarry(targetProjectId) {
+    if (!_touchCarry) return;
+    const carry = _touchCarry;
+    const source = projects.find(pr => pr.id === carry.sourceId);
+    const ids = carry.ids.slice();
+    const copy = carry.copy;
+    
+    endTouchCarry();
+    if (!source) return;
+    if (copy) { copySubtasksToProject(source, ids, targetProjectId); }
+    else { moveSubtasksToProject(source, ids, targetProjectId); }
+    clearSubSelect();
+    root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
+  }
+
+  function endTouchCarry() {
+    clearTimeout(_touchCarryTimer);
+    _touchCarryTimer = null;
+    const carry = _touchCarry;
+    _touchCarry = null;
+    _touchCarryActive = false;
+    removeCarryTouchGuard();
+    if (!carry) return;
+    if (carry.ghost && carry.ghost.remove) carry.ghost.remove();
+    if (carry.bar && carry.bar.remove) carry.bar.remove();
+    if (carry.sourceRow && carry.sourceRow.classList) carry.sourceRow.classList.remove('pf-sub-carrying');
+  }
+
+  function wireTouchCarry(row, p, s) {
+    const grip = row.querySelector('.pf-sub-handle');
+    if (!grip) return;
+    let armed = false, startX = 0, startY = 0, pointerId = null;
+    const disarm = () => { armed = false; clearTimeout(_touchCarryTimer); _touchCarryTimer = null; };
+    grip.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'touch' || _touchCarry) return;
+      armed = true; startX = e.clientX || 0; startY = e.clientY || 0; pointerId = e.pointerId;
+      clearTimeout(_touchCarryTimer);
+      _touchCarryTimer = setTimeout(() => {
+        _touchCarryTimer = null;
+        if (!armed) return;
+        armed = false;
+        if (!beginTouchCarry(row, p, s)) return;
+        addCarryTouchGuard();
+        safePointerCapture(grip, pointerId); 
+        const move = (ev) => {
+          if (!_touchCarry) return;
+          if (ev.preventDefault) ev.preventDefault();
+          if (ev.stopPropagation) ev.stopPropagation();
+          const x = ev.clientX || 0, y = ev.clientY || 0;
+          moveGhost(x, y);
+          paintCarryTargets(x, y);
+        };
+        const release = () => {
+          grip.removeEventListener('pointermove', move);
+          grip.removeEventListener('pointerup', release);
+          grip.removeEventListener('pointercancel', release);
+          if (!_touchCarry) return;
+          const hit = _touchCarry.hover;
+          if (hit && hit.dataset && hit.dataset.projectId) commitCarry(hit.dataset.projectId);
+          else endTouchCarry();
+        };
+        grip.addEventListener('pointermove', move);
+        grip.addEventListener('pointerup', release);
+        grip.addEventListener('pointercancel', release);
+        moveGhost(startX, startY);
+      }, TOUCH_CARRY_HOLD);
+    });
+    grip.addEventListener('pointermove', (e) => {
+      if (!armed) return;
+      if (Math.abs((e.clientX || 0) - startX) > TOUCH_CARRY_SLOP || Math.abs((e.clientY || 0) - startY) > TOUCH_CARRY_SLOP) disarm();
+    });
+    grip.addEventListener('pointerup', disarm);
+    grip.addEventListener('pointercancel', disarm);
+  }
+  window._pf.touchCarry = function() {
+    return _touchCarry ? { ids: _touchCarry.ids.slice(), sourceId: _touchCarry.sourceId, copy: !!_touchCarry.copy, hover: _touchCarry.hover && _touchCarry.hover.dataset ? _touchCarry.hover.dataset.projectId : null } : null;
+  };
+  window._pf.isTouchCarrying = function() { return _touchCarryActive; };
     // SUBSECTION: Shared View State
   
   
@@ -6309,6 +6528,28 @@
         });
         item.addEventListener('dragend', () => { splitList.querySelectorAll('.pf-split-list-item').forEach(el => el.classList.remove('pf-dragging')); splitList.querySelectorAll('.pf-split-drop-indicator').forEach(el => el.remove()); });
         item.addEventListener('dragover', (e) => {
+          
+          
+          
+          
+          
+          
+          if (draggingSubId) {
+            e.preventDefault(); e.stopPropagation();
+            splitList.querySelectorAll('.pf-split-drop-indicator').forEach(el => el.remove());
+            
+            
+            if (draggingProjectId === p.id) {
+              item.classList.remove('pf-sub-drop-target', 'pf-sub-drop-copy');
+              if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+              return;
+            }
+            const copyDrop = !!e.altKey;
+            if (e.dataTransfer) e.dataTransfer.dropEffect = copyDrop ? 'copy' : 'move';
+            item.classList.toggle('pf-sub-drop-copy', copyDrop);
+            item.classList.toggle('pf-sub-drop-target', !copyDrop);
+            return;
+          }
           e.preventDefault(); e.dataTransfer.dropEffect = 'move';
           splitList.querySelectorAll('.pf-split-drop-indicator').forEach(el => el.remove());
           const indicator = document.createElement('div');
@@ -6318,8 +6559,26 @@
           if (e.clientY < midY) { item.parentNode.insertBefore(indicator, item); }
           else { item.parentNode.insertBefore(indicator, item.nextSibling); }
         });
-        item.addEventListener('dragleave', (e) => { if (!item.contains(e.relatedTarget)) { splitList.querySelectorAll('.pf-split-drop-indicator').forEach(el => el.remove()); } });
+        item.addEventListener('dragleave', (e) => { if (!item.contains(e.relatedTarget)) { splitList.querySelectorAll('.pf-split-drop-indicator').forEach(el => el.remove()); item.classList.remove('pf-sub-drop-target', 'pf-sub-drop-copy'); } });
         item.addEventListener('drop', (e) => {
+          if (draggingSubId) {
+            item.classList.remove('pf-sub-drop-target', 'pf-sub-drop-copy');
+            if (draggingProjectId === p.id) { e.preventDefault(); e.stopPropagation(); return; }
+            e.preventDefault(); e.stopPropagation();
+            splitList.querySelectorAll('.pf-split-drop-indicator').forEach(el => el.remove());
+            const sourceProject = projects.find(pr => pr.id === draggingProjectId);
+            const subIds = _draggingSubIds.length ? _draggingSubIds.slice() : [draggingSubId];
+            const copyDrop = !!e.altKey;
+            
+            
+            draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; clearIndicators();
+            if (sourceProject) {
+              if (copyDrop) { copySubtasksToProject(sourceProject, subIds, p.id); }
+              else { moveSubtasksToProject(sourceProject, subIds, p.id); }
+              clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
+            }
+            return;
+          }
           e.preventDefault();
           splitList.querySelectorAll('.pf-split-drop-indicator').forEach(el => el.remove());
           const raw = readDragText(e, 'text/plain'); if (!raw) return;
@@ -10412,6 +10671,7 @@
   (function() {
     let _swipeStartX = 0, _swipeStartY = 0, _swipeRow = null, _swipeMoved = false;
     document.addEventListener('touchstart', function(e) {
+      if (_touchCarryActive) return; 
       const row = e.target.closest('.pf-subrow');
       if (!row || subMultiSelect.length > 0) return;
       _swipeRow = row;
@@ -10420,7 +10680,7 @@
       _swipeMoved = false;
     }, { passive: true });
     document.addEventListener('touchmove', function(e) {
-      if (!_swipeRow) return;
+      if (_touchCarryActive || !_swipeRow) return;
       const dx = e.touches[0].clientX - _swipeStartX;
       const dy = e.touches[0].clientY - _swipeStartY;
       if (Math.abs(dy) > 30) { _swipeRow = null; return; }
@@ -10467,6 +10727,7 @@
     let _backStartX = 0, _backStartY = 0, _backActive = false;
     const detailEl = document.getElementById('pf-split-detail');
     document.addEventListener('touchstart', function(e) {
+      if (_touchCarryActive) return; 
       if (!root.classList.contains('pf-detail-open')) return;
       if (root.classList.contains('pf-device-desktop')) return;
       if (root.classList.contains('pf-extend-open')) return;
@@ -10479,7 +10740,7 @@
       detailEl.style.transition = 'none';
     }, { passive: true });
     document.addEventListener('touchmove', function(e) {
-      if (!_backActive) return;
+      if (_touchCarryActive || !_backActive) return;
       const dy = Math.abs(e.touches[0].clientY - _backStartY);
       if (dy > 40) { _backActive = false; detailEl.style.transform = ''; detailEl.style.opacity = ''; detailEl.style.transition = ''; return; }
       const dx = Math.max(0, e.touches[0].clientX - _backStartX);
@@ -10488,7 +10749,7 @@
       detailEl.style.opacity = (1 - progress * 0.4).toString();
     }, { passive: true });
     document.addEventListener('touchend', function(e) {
-      if (!_backActive) { return; }
+      if (_touchCarryActive || !_backActive) { return; }
       const dx = e.changedTouches[0].clientX - _backStartX;
       if (dx > 80) {
         detailEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
@@ -12766,7 +13027,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-
 // SECTION: FIREBASE CLOUD SYNC
 
 (function() {
@@ -13781,7 +14041,7 @@ if ('serviceWorker' in navigator) {
   
   
   function pushSelective() {
-    try { _pushSelectiveInner(); } catch (err) { window._pf.showToast('⚠ Push failed: ' + (err.message || err), true); logError('Firebase push', err); }
+    try { _pushSelectiveInner(); } catch (err) { window._pf.showToast('⚠ Push failed: ' + (err.message || err), true); if (window._pf.logError) window._pf.logError('Firebase push', err); }
   }
   function _pushSelectiveInner() {
     const projects = window._pf.getProjects();
@@ -13817,13 +14077,13 @@ if ('serviceWorker' in navigator) {
       
       userRef().set(JSON.parse(JSON.stringify(projects))).catch(function(err) {
         window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
-        logError('Firebase push (full set)', err);
+        if (window._pf.logError) window._pf.logError('Firebase push (full set)', err);
       });
       hasChanges = true;
     } else if (hasChanges) {
       db.ref('users/' + _fbUser.uid).update(updates).catch(function(err) {
         window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
-        logError('Firebase push (selective)', err);
+        if (window._pf.logError) window._pf.logError('Firebase push (selective)', err);
       });
     }
     _lastPushedIdOrder = currentIdOrder;
@@ -13835,10 +14095,10 @@ if ('serviceWorker' in navigator) {
       catRef().set(JSON.parse(JSON.stringify(categories)));
       _lastPushedCatHash = catHash;
     }
-    try { db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))); } catch(e) { logError('Firebase push (categoryEmojis)', e); }
-    try { snoozePresetsRef().set(JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || []))); } catch(e) { logError('Firebase push (snoozePresets)', e); }
+    try { db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))); } catch(e) { if (window._pf.logError) window._pf.logError('Firebase push (categoryEmojis)', e); }
+    try { snoozePresetsRef().set(JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || []))); } catch(e) { if (window._pf.logError) window._pf.logError('Firebase push (snoozePresets)', e); }
 
-    try { pushNotesIfNeeded().catch(function(e) { logError('Firebase push (notes)', e); }); } catch(e) { logError('Firebase push (notes)', e); }
+    try { pushNotesIfNeeded().catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }); } catch(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }
 
     if (hasChanges || catChanged) {
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
@@ -13939,7 +14199,7 @@ if ('serviceWorker' in navigator) {
       snoozePresetsRef().set(JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || []))),
       archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive()))),
       trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
-      pushNotesIfNeeded().catch(function(e) { logError('Firebase push (notes)', e); }),
+      pushNotesIfNeeded().catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }),
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
     ]);
   }
