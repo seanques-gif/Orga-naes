@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-PGRV7dWMmgG85zC8zPAETBVoO40QR4kW8h9pXP/2HiU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-rsVq/8biyFhvcw8pG4ZZ5L5/bnnqAsxjNt0vIxjEbY0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1668,6 +1668,16 @@
   .pf-week-backlog-chip-title-wrap.pf-clickable { cursor: pointer; }
   .pf-week-backlog-chip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pf-week-backlog-chip-project { font-size: max(9px, calc(var(--font-size-base) - 5px)); color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  
+  .pf-week-backlog-chip-due { font-size: max(9px, calc(var(--font-size-base) - 5px)); color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-week-backlog-chip-due.pf-due-soon { color: var(--ongoing); }
+  .pf-week-backlog-chip-due.pf-due-overdue { color: var(--danger); }
+  .pf-week-backlog-chip-scheduled { border-style: dashed; opacity: 0.85; }
+  
+  .pf-week-backlog-scheduled-note { flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: max(9px, calc(var(--font-size-base) - 4px)); color: var(--text-dim); padding: 2px 4px; }
+  .pf-week-backlog-scheduled-label { flex: 1; min-width: 0; }
+  .pf-week-backlog-scheduled-toggle { border: 1px solid var(--sub-border); border-radius: 6px; background: none; color: var(--text-dim); cursor: pointer; font: inherit; padding: 1px 8px; flex-shrink: 0; }
+  .pf-week-backlog-scheduled-toggle:hover { border-color: var(--accent); color: var(--accent); }
   .pf-week-backlog-chip-del {
     background: none; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) - 1px);
     cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0;
@@ -2554,7 +2564,7 @@
     <div class="pf-week-backlog" id="pf-week-backlog">
       <div class="pf-week-backlog-head">
         <span class="pf-week-backlog-label" data-ic-before="download">Backlog <span id="pf-week-backlog-count" class="pf-dim"></span></span>
-        <button class="pf-undo-btn" class="pf-undo-btn pf-btn-autoarrange" id="pf-backlog-arrange-btn" title="Spread backlog tasks across the rest of this week, starting today">↻ Auto-arrange</button>
+        <button class="pf-undo-btn pf-btn-autoarrange" id="pf-backlog-arrange-btn" title="Spread the undated backlog tasks across the rest of this week, starting today">↻ Auto-arrange</button>
       </div>
       <div id="pf-week-backlog-list" class="pf-week-backlog-list pf-week-backlog-flow"></div>
     </div>
@@ -7994,6 +8004,16 @@
   let _backlogUndoSnapshot = null;
   let _weeklyUndoDueAtReverts = null;
   let _dismissedUndoSnapshot = null;
+  
+  
+  
+  const _passChangesTakenBack = new Set();
+  
+  
+  
+  
+  
+  const _movesTakenBack = new Map();
   function weeklySnapshot() {
     _weeklyUndoSnapshot = JSON.parse(JSON.stringify(weeklyData));
     _backlogUndoSnapshot = JSON.parse(JSON.stringify(backlogData));
@@ -8222,6 +8242,42 @@
 
     let changed = false;
     let carriedCount = 0;   
+    
+    
+    
+    let passSnapshotTaken = false;
+    function ensurePassSnapshot() {
+      if (passSnapshotTaken) return;
+      weeklySnapshot();
+      passSnapshotTaken = true;
+    }
+    const prunedTitles = [];      
+    const prunedEntries = [];     
+    const keptTitles = [];        
+    const detachEntry = (t) => Object.assign({}, t, { sourceId: null, sourceType: null });
+    
+    
+    function pruneVerdict(t) {
+      if (!t.sourceId) return 'as-is';
+      
+      
+      
+      
+      if (_passChangesTakenBack.has(t.id)) return 'as-is';
+      const node = nodeById.get(t.sourceId);
+      if (!node) return 'detach';
+      return node.status === 'completed' ? 'prune' : 'as-is';
+    }
+    function pruneList(arr) {
+      const out = [];
+      arr.forEach(t => {
+        const verdict = pruneVerdict(t);
+        if (verdict === 'prune') { prunedTitles.push(t.title); prunedEntries.push(t); return; }
+        if (verdict === 'detach') { keptTitles.push(t.title); out.push(detachEntry(t)); return; }
+        out.push(t);
+      });
+      return out;
+    }
 
     
     
@@ -8233,42 +8289,42 @@
       weeklyData[ds].forEach(t => {
         if (!t.sourceId) return;
         const node = nodeById.get(t.sourceId);
-        if (node && node.dueAt && node.dueAt !== ds) relocations.push({ from: ds, task: t, to: node.dueAt });
+        if (!node || !node.dueAt || node.dueAt === ds) return;
+        
+        
+        if (_movesTakenBack.get(t.id) === node.dueAt) return;
+        relocations.push({ from: ds, task: t, to: node.dueAt });
       });
     });
-    relocations.forEach(({ from, task, to }) => {
-      weeklyData[from] = weeklyData[from].filter(t => t !== task);
-      if (!weeklyData[from].length) delete weeklyData[from];
-      if (!weeklyData[to]) weeklyData[to] = [];
-      weeklyData[to].push(task);
-      changed = true;
-    });
+    if (relocations.length) {
+      ensurePassSnapshot();          
+      relocations.forEach(({ from, task, to }) => {
+        _movesTakenBack.delete(task.id);
+        weeklyData[from] = weeklyData[from].filter(t => t !== task);
+        if (!weeklyData[from].length) delete weeklyData[from];
+        if (!weeklyData[to]) weeklyData[to] = [];
+        weeklyData[to].push(task);
+        changed = true;
+      });
+    }
 
     
     
     
     
     Object.keys(weeklyData).forEach(ds => {
-      const before = weeklyData[ds].length;
-      weeklyData[ds] = weeklyData[ds].filter(t => {
-        if (!t.sourceId) return true;
-        const node = nodeById.get(t.sourceId);
-        
-        
-        
-        return !!node && node.status !== 'completed';
-      });
-      if (weeklyData[ds].length !== before) changed = true;
-      if (!weeklyData[ds].length) delete weeklyData[ds];
+      const arr = weeklyData[ds];
+      if (!arr.some(t => pruneVerdict(t) !== 'as-is')) return;
+      ensurePassSnapshot();                  
+      const next = pruneList(arr);
+      changed = true;                        
+      if (next.length) weeklyData[ds] = next; else delete weeklyData[ds];
     });
-    {
-      const beforeBacklog = backlogData.length;
-      backlogData = backlogData.filter(t => {
-        if (!t.sourceId) return true;
-        const node = nodeById.get(t.sourceId);
-        return !!node && node.status !== 'completed';
-      });
-      if (backlogData.length !== beforeBacklog) { saveBacklog(); if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel(); }
+    if (backlogData.some(t => pruneVerdict(t) !== 'as-is')) {
+      ensurePassSnapshot();                  
+      backlogData = pruneList(backlogData);
+      saveBacklog();
+      if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel();
     }
     
     
@@ -8328,7 +8384,18 @@
     
     const existingSourceIds = new Set();
     Object.values(weeklyData).forEach(arr => arr.forEach(t => { if (t.sourceId) existingSourceIds.add(t.sourceId); }));
-    backlogData.forEach(t => { if (t.sourceId) existingSourceIds.add(t.sourceId); });
+    const todayForScheduling = todayLocalStr();
+    backlogData.forEach(t => {
+      if (!t.sourceId) return;
+      const due = backlogChipDueAt(t);
+      
+      
+      
+      
+      
+      
+      if (!due || due < todayForScheduling) existingSourceIds.add(t.sourceId);
+    });
     dueNodes.forEach(({ dueAt, title, sourceId, sourceType, projectTitle }) => {
       if (existingSourceIds.has(sourceId)) return;
       
@@ -8350,6 +8417,31 @@
       saveWeekly();
       if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel();
       if (carriedCount) showToast('📥 Moved ' + carriedCount + ' overdue planner task' + (carriedCount > 1 ? 's' : '') + ' to Backlog');
+    }
+
+    
+    
+    
+    
+    if (relocations.length || prunedTitles.length || keptTitles.length) {
+      const bits = [];
+      if (relocations.length) bits.push(relocations.length === 1
+        ? '📅 Moved "' + relocations[0].task.title + '" to ' + formatDateShort(relocations[0].to) + " — its task's due date changed"
+        : '📅 Moved ' + relocations.length + " planner entries whose task's due date changed");
+      if (prunedTitles.length) bits.push(prunedTitles.length === 1
+        ? '🧹 Cleared "' + prunedTitles[0] + '" — its task was completed'
+        : '🧹 Cleared ' + prunedTitles.length + ' planner items whose task was completed');
+      if (keptTitles.length) bits.push(keptTitles.length === 1
+        ? '📌 Kept "' + keptTitles[0] + '" — its task is gone, so it is a plain item now'
+        : '📌 Kept ' + keptTitles.length + ' planner items whose task is gone — plain items now');
+      showToast(bits.join(' · '), false, false, () => {
+        
+        
+        
+        prunedEntries.forEach(e => _passChangesTakenBack.add(e.id));
+        relocations.forEach(r => _movesTakenBack.set(r.task.id, r.to));
+        weeklyUndo();
+      }, 'Undo');
     }
   }
   
@@ -8605,29 +8697,56 @@
   
   
   
+  
+  
+  
+  
+  let _backlogShowScheduled = false;
+  function backlogSourceNode(t) {
+    if (!t || !t.sourceId) return null;
+    const p = projects.find(pr => pr.id === t.sourceId || (pr.subtasks && findSubNode(pr.subtasks, t.sourceId)));
+    if (!p) return null;
+    return p.id === t.sourceId ? p : findSubNode(p.subtasks, t.sourceId);
+  }
+  function backlogChipDueAt(t) { const node = backlogSourceNode(t); return node && node.dueAt ? node.dueAt : null; }
+  function backlogChipScheduled(t) { const due = backlogChipDueAt(t); return !!due && due >= todayLocalStr(); }
+
+  
+  
+  
   function renderBacklogSection(weekStart) {
     const list = document.getElementById('pf-week-backlog-list');
     const countEl = document.getElementById('pf-week-backlog-count');
     const arrangeBtn = document.getElementById('pf-backlog-arrange-btn');
     if (!list) return;
     list.innerHTML = '';
-    countEl.textContent = backlogData.length ? '(' + backlogData.length + ')' : '';
-    arrangeBtn.disabled = !backlogData.length;
+    const scheduled = backlogData.filter(t => backlogChipScheduled(t));
+    const unscheduled = backlogData.filter(t => !backlogChipScheduled(t));
+    const shown = _backlogShowScheduled ? backlogData : unscheduled;
+    countEl.textContent = backlogData.length ? '(' + unscheduled.length + ')' : '';
+    arrangeBtn.disabled = !unscheduled.length;
     if (!backlogData.length) {
       const empty = document.createElement('div');
       empty.className = 'pf-week-backlog-empty';
       empty.textContent = 'Nothing in backlog. Overdue planner tasks land here to be sorted manually.';
       list.appendChild(empty);
+    } else if (!shown.length) {
+      const empty = document.createElement('div');
+      empty.className = 'pf-week-backlog-empty';
+      empty.textContent = 'Nothing unscheduled in backlog.';
+      list.appendChild(empty);
     }
-    backlogData.forEach(t => {
+    shown.forEach(t => {
+      const isScheduled = backlogChipScheduled(t);
+      const chipDueAt = backlogChipDueAt(t);
       const srcProject = t.sourceId ? projects.find(pr => pr.id === t.sourceId || (pr.subtasks && (function findIn(subs) { return subs.some(s => s.id === t.sourceId || (s.subtasks && findIn(s.subtasks))); })(pr.subtasks))) : null;
       const accentColor = srcProject && srcProject.color ? srcProject.color : null;
       const chip = document.createElement('div');
       chip.draggable = true;
       chip.dataset.taskId = t.id;
-      chip.className = 'pf-week-backlog-chip' + (accentColor ? ' pf-week-backlog-chip-accent' : '');
+      chip.className = 'pf-week-backlog-chip' + (accentColor ? ' pf-week-backlog-chip-accent' : '') + (isScheduled ? ' pf-week-backlog-chip-scheduled' : '');
       if (accentColor) chip.style.setProperty('--pf-task-accent', accentColor);
-      chip.title = t.title + (t.projectTitle ? ' · ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '');
+      chip.title = t.title + (t.projectTitle ? ' · ' + t.projectTitle : '') + (chipDueAt ? ' · due ' + formatDateShort(chipDueAt) : '') + (t.sourceId ? ' (click to open)' : '') + (isScheduled ? ' - scheduled, hidden from the backlog' : '');
       const check = document.createElement('input');
       check.type = 'checkbox';
       check.className = 'pf-week-backlog-chip-check';
@@ -8647,6 +8766,12 @@
         projSpan.className = 'pf-week-backlog-chip-project';
         projSpan.textContent = t.projectTitle;
         titleWrap.appendChild(projSpan);
+      }
+      if (chipDueAt) {
+        const dueSpan = document.createElement('div');
+        dueSpan.className = 'pf-week-backlog-chip-due ' + dueStatusClass(chipDueAt, t.done);
+        dueSpan.textContent = 'due ' + formatDateShort(chipDueAt);
+        titleWrap.appendChild(dueSpan);
       }
       if (t.sourceId) {
         titleWrap.addEventListener('click', (e) => {
@@ -8679,6 +8804,22 @@
       chip.addEventListener('dragend', () => { chip.style.opacity = ''; });
       list.appendChild(chip);
     });
+    if (scheduled.length) {
+      const note = document.createElement('div');
+      note.className = 'pf-week-backlog-scheduled-note';
+      const label = document.createElement('span');
+      label.className = 'pf-week-backlog-scheduled-label';
+      label.textContent = scheduled.length + ' scheduled item' + (scheduled.length > 1 ? 's' : '') + ' hidden (dated today or later)';
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'pf-week-backlog-scheduled-toggle';
+      toggle.textContent = _backlogShowScheduled ? 'Hide' : 'Show';
+      toggle.setAttribute('aria-expanded', String(!!_backlogShowScheduled));
+      toggle.title = _backlogShowScheduled ? 'Stop showing the dated items' : 'Show the dated items here (they are already on their day)';
+      toggle.addEventListener('click', () => { _backlogShowScheduled = !_backlogShowScheduled; renderBacklogSection(weekStart); });
+      note.appendChild(label); note.appendChild(toggle);
+      list.appendChild(note);
+    }
   }
   
   
@@ -8739,7 +8880,8 @@
   
   
   document.getElementById('pf-backlog-arrange-btn').addEventListener('click', () => {
-    if (!backlogData.length) return;
+    const toSpread = backlogData.filter(t => !backlogChipScheduled(t));
+    if (!toSpread.length) return;
     const start = getWeekStart(weekOffset);
     const todayStr = todayLocalStr();
     const candidateDays = [];
@@ -8750,7 +8892,7 @@
     }
     if (!candidateDays.length) { showToast("Can't auto-arrange into a finished week (switch to the current or a future week)", true); return; }
     weeklySnapshot();
-    const toPlace = backlogData.slice();
+    const toPlace = toSpread.slice();
     toPlace.forEach(t => {
       let best = candidateDays[0];
       let bestCount = (weeklyData[best] || []).length;
