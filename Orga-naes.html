@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-cnXM+ul6U1/MHmq6OZCyLhboDJD6EA4yTtU8uupTYY0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-5MdR0fXo5zONq2djUpPN6lpk7dVlmWR6M/mbQ+w7F9g='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14123,6 +14123,19 @@ if ('serviceWorker' in navigator) {
       
       
       
+      const pulledNotesInfo = localNotesSnap ? notesDiff(localNotesSnap, remoteNotes, remoteNoteTombstones) : null;
+      if (pulledNotesInfo && pulledNotesInfo.conflict) {
+        if (window._pf && window._pf.snapshot) window._pf.snapshot();
+        _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, trash: remoteTrash, notes: remoteNotes, noteTombstones: remoteNoteTombstones };
+        showConflictModal(localProjects, remoteProjects, pulledNotesInfo);
+        localStorage.removeItem(NEEDS_PULL_KEY);
+        return;
+      }
+
+      
+      
+      
+      
       
       const updated = [];
       if (!catsMatch) { window._pf.setCategories(remoteCategories); window._pf.saveCategories(); updated.push('categories'); }
@@ -14452,6 +14465,81 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function noteContentKey(n) {
+    if (!n || typeof n !== 'object') return '';
+    
+    
+    
+    return JSON.stringify({ title: n.title || '', body: n.body || '', pinned: !!n.pinned });
+  }
+  function notesDiff(localSnap, remoteNotes, remoteTombs) {
+    const local = (localSnap && Array.isArray(localSnap.notes)) ? localSnap.notes : [];
+    const localTombs = (localSnap && localSnap.tombstones && typeof localSnap.tombstones === 'object') ? localSnap.tombstones : {};
+    const remote = Array.isArray(remoteNotes) ? remoteNotes.filter(Boolean) : [];
+    const remoteTombsMap = (remoteTombs && typeof remoteTombs === 'object') ? remoteTombs : {};
+    const mine = {}, theirs = {};
+    local.forEach(function(n) { if (n && n.id) mine[n.id] = n; });
+    remote.forEach(function(n) { if (n && n.id) theirs[n.id] = n; });
+    const changed = [], localOnly = [], cloudOnly = [], deletedHere = [], deletedInCloud = [];
+    Object.keys(mine).forEach(function(id) {
+      const here = mine[id];
+      if (theirs[id]) {
+        if (noteContentKey(here) !== noteContentKey(theirs[id])) changed.push(here);
+        return;
+      }
+      const cloudDeletedAt = remoteTombsMap[id] ? String(remoteTombsMap[id]) : '';
+      if (!cloudDeletedAt) { localOnly.push(here); return; }
+      
+      
+      const hereAt = String(here.updatedAt || '');
+      if (hereAt && hereAt > cloudDeletedAt) deletedInCloud.push(here);
+    });
+    Object.keys(theirs).forEach(function(id) {
+      if (mine[id]) return;
+      const deletedHereAt = localTombs[id] ? String(localTombs[id]) : '';
+      if (!deletedHereAt) { cloudOnly.push(theirs[id]); return; }
+      const theirAt = String(theirs[id].updatedAt || '');
+      if (theirAt && theirAt > deletedHereAt) deletedHere.push(theirs[id]);
+    });
+    return {
+      conflict: changed.length > 0 || deletedHere.length > 0 || deletedInCloud.length > 0,
+      changed: changed, localOnly: localOnly, cloudOnly: cloudOnly,
+      deletedHere: deletedHere, deletedInCloud: deletedInCloud
+    };
+  }
+  
+  
+  function notesDivergenceLines(info) {
+    if (!info) return [];
+    const names = function(list) {
+      return list.slice(0, 3).map(function(n) { return '"' + ((n && n.title) || 'Untitled') + '"'; }).join(', ')
+        + (list.length > 3 ? ', …+' + (list.length - 3) + ' more' : '');
+    };
+    const out = [];
+    if (info.changed.length) out.push('Changed on both sides (' + info.changed.length + '): ' + names(info.changed));
+    if (info.deletedInCloud.length) out.push('Edited here after the cloud deleted it (' + info.deletedInCloud.length + '): ' + names(info.deletedInCloud));
+    if (info.deletedHere.length) out.push('Edited in the cloud after it was deleted here (' + info.deletedHere.length + '): ' + names(info.deletedHere));
+    if (info.localOnly.length) out.push('Only on this device (' + info.localOnly.length + '): kept either way');
+    if (info.cloudOnly.length) out.push('Only in the cloud (' + info.cloudOnly.length + '): kept either way');
+    return out;
+  }
+  
+  function notesAtStake(info) {
+    if (!info) return 0;
+    return info.changed.length + info.deletedInCloud.length + info.deletedHere.length;
+  }
   function notesSignature(snap) {
     if (!snap) return 'null';
     const notes = Array.isArray(snap.notes) ? snap.notes.slice().sort(function(a, b) { return String(a && a.id).localeCompare(String(b && b.id)); }) : [];
@@ -14657,16 +14745,32 @@ if ('serviceWorker' in navigator) {
       const remoteNotes = notesVal ? (Array.isArray(notesVal) ? notesVal.filter(Boolean) : Object.values(notesVal).filter(Boolean)) : [];
       const remoteNoteTombstones = (tombVal && typeof tombVal === 'object') ? tombVal : {};
       const localNotesSnap = (window._pf.getNotesSnapshot && window._pf.getNotesSnapshot()) || null;
+      
+      
+      
+      
+      
       const notesMatch = !!localNotesSnap
-        && JSON.stringify(localNotesSnap.notes) === JSON.stringify(remoteNotes)
-        && JSON.stringify(localNotesSnap.tombstones) === JSON.stringify(remoteNoteTombstones);
+        && notesSignature(localNotesSnap) === notesSignature({ notes: remoteNotes, tombstones: remoteNoteTombstones });
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
       const archMatch = JSON.stringify(normalizeForSync(remoteArchive)) === JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
       const trashMatch = JSON.stringify(normalizeForSync(remoteTrash)) === JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
       const fullMatch = remoteStr === localStr && catsMatch && archMatch && trashMatch && notesMatch;
+      const pushNotesInfo = localNotesSnap ? notesDiff(localNotesSnap, remoteNotes, remoteNoteTombstones) : null;
 
       if (projVal && fullMatch) {
         window._pf.showToast('✅ Already up to date with cloud');
+        return;
+      }
+
+      
+      
+      
+      
+      if (pushNotesInfo && pushNotesInfo.conflict) {
+        if (window._pf && window._pf.snapshot) window._pf.snapshot();
+        _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, trash: remoteTrash, notes: remoteNotes, noteTombstones: remoteNoteTombstones };
+        showConflictModal(localProjects, remoteProjects, pushNotesInfo);
         return;
       }
 
@@ -14824,12 +14928,16 @@ if ('serviceWorker' in navigator) {
   let _pendingPullExtras = null;
   
   
+  let _pendingNotesInfo = null;
+  
+  
   
   
   function dismissConflictModal() {
     document.getElementById('pf-conflict-modal').classList.remove('pf-conflict-open');
     _pendingRemote = null;
     _pendingPullExtras = null;
+    _pendingNotesInfo = null;
   }
   if (window._pf && window._pf.registerEscDismissable) {
     window._pf.registerEscDismissable({
@@ -14839,8 +14947,9 @@ if ('serviceWorker' in navigator) {
     });
   }
   
-  function showConflictModal(local, remote) {
+  function showConflictModal(local, remote, notesInfo) {
     _pendingRemote = remote;
+    _pendingNotesInfo = notesInfo || null;
     
     
     
@@ -14993,6 +15102,15 @@ if ('serviceWorker' in navigator) {
     
     
     if (diffs.changed.length) diffHtml += '<b>Modified (in both, but different): ' + diffs.changed.length + ':</b><br>' + diffs.changed.slice(0, 5).map(p => '• ' + labelFor(p)).join('<br>') + (diffs.changed.length > 5 ? '<br>…+' + (diffs.changed.length - 5) + ' more' : '') + '<br>';
+    
+    
+    
+    const noteLines = notesDivergenceLines(notesInfo);
+    if (noteLines.length) {
+      const escNote = window._pf.escapeHtml;
+      diffHtml += '<b>Notes' + (notesInfo && notesInfo.conflict ? ' — this needs your decision' : '') + ':</b><br>'
+        + noteLines.map(function(l) { return '• ' + escNote(l); }).join('<br>') + '<br>';
+    }
     if (!diffHtml) diffHtml = 'Minor differences detected';
     localEl.innerHTML = '<b>Local:</b> ' + local.length + ' projects · ' + localStats.tasks + ' tasks · ' + localStats.completed + ' done' + (localBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + localBadge + '</span>' : '');
     remoteEl.innerHTML = '<b>Cloud:</b> ' + remote.length + ' projects · ' + remoteStats.tasks + ' tasks · ' + remoteStats.completed + ' done' + (remoteBadge ? '<br><span style="color:var(--accent);font-weight:700;">' + remoteBadge + '</span>' : '') + '<br><br>' + diffHtml;
@@ -15009,7 +15127,12 @@ if ('serviceWorker' in navigator) {
     
     
     
-    pfConfirm('Keep local & push to cloud', 'This will overwrite the cloud with your local data. Any cloud-only changes will be lost.', 'Overwrite cloud').then(function(ok) { if (!ok) return;
+    
+    const noteStakes = notesAtStake(_pendingNotesInfo);
+    const noteWarn = noteStakes
+      ? ' That includes ' + noteStakes + ' note' + (noteStakes > 1 ? 's' : '') + ' changed on both sides — the cloud' + (noteStakes > 1 ? ' copies are' : ' copy is') + ' lost.'
+      : '';
+    pfConfirm('Keep local & push to cloud', 'This will overwrite the cloud with your local data. Any cloud-only changes will be lost.' + noteWarn, 'Overwrite cloud').then(function(ok) { if (!ok) return;
     dismissConflictModal();
     
     
@@ -15028,7 +15151,11 @@ if ('serviceWorker' in navigator) {
     
     
     
-    pfConfirm('Use cloud data', 'This will replace your local data with the cloud version. Any local-only changes will be lost.', 'Use cloud').then(function(ok) { if (!ok) return;
+    const noteStakes = notesAtStake(_pendingNotesInfo);
+    const noteWarn = noteStakes
+      ? ' That includes ' + noteStakes + ' note' + (noteStakes > 1 ? 's' : '') + ' changed on both sides — your local' + (noteStakes > 1 ? ' copies are' : ' copy is') + ' lost.'
+      : '';
+    pfConfirm('Use cloud data', 'This will replace your local data with the cloud version. Any local-only changes will be lost.' + noteWarn, 'Use cloud').then(function(ok) { if (!ok) return;
     const remoteToApply = _pendingRemote;
     const extrasToApply = _pendingPullExtras;
     dismissConflictModal();
