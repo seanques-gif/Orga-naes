@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-rsVq/8biyFhvcw8pG4ZZ5L5/bnnqAsxjNt0vIxjEbY0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-cnXM+ul6U1/MHmq6OZCyLhboDJD6EA4yTtU8uupTYY0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4612,6 +4612,11 @@
   
   
   
+  
+  
+  
+  
+  
   const _tabSyncStores = [];
 
   function registerTabSync(spec) {
@@ -4663,12 +4668,43 @@
     const from = (byKey && typeof byKey === 'object') ? byKey : {};
     const out = {};
     Object.keys(from).sort().forEach(function(k) { if (Array.isArray(from[k]) && from[k].length) out[k] = from[k]; });
-    return JSON.stringify(out);
+    return _serCanon(out);
   }
   function _serStore(store, value) {
     if (store.mode === 'map') return _serMap(value);
     if (store.mode === 'nested') return _serNested(value);
-    return _ser(value);
+    return _serCanon(value);
+  }
+
+  
+  
+  
+  
+  function _serCanon(v) {
+    if (v === null || typeof v !== 'object') return _ser(v);
+    if (Array.isArray(v)) return '[' + v.map(_serCanon).join(',') + ']';
+    const keys = Object.keys(v).sort();
+    return '{' + keys.map(k => JSON.stringify(k) + ':' + _serCanon(v[k])).join(',') + '}';
+  }
+  
+  
+  
+  function _stampOf(item) {
+    if (!item || typeof item !== 'object') return null;
+    const v = item.updatedAt;
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string' && v) { const n = Date.parse(v); return isNaN(n) ? null : n; }
+    return null;
+  }
+  
+  
+  
+  
+  
+  function _conflictWinner(o, t) {
+    const so = _stampOf(o), st = _stampOf(t);
+    if (so !== null && st !== null && so !== st) return so > st ? o : t;
+    return _serCanon(o) >= _serCanon(t) ? o : t;
   }
 
   function _itemsById(list) {
@@ -4688,16 +4724,27 @@
     let added = 0, updated = 0, dropped = 0, conflicts = 0;
     order.forEach(id => {
       const o = mine.get(id), t = theirs.get(id), b = ancestor.get(id);
-      const oJ = o ? _ser(o) : null, tJ = t ? _ser(t) : null, bJ = b ? _ser(b) : null;
+      const oJ = o ? _serCanon(o) : null, tJ = t ? _serCanon(t) : null, bJ = b ? _serCanon(b) : null;
       if (o && t) {
         if (oJ === tJ) { merged.push(o); return; }                             
         if (bJ !== null && oJ === bJ) { updated++; merged.push(t); return; }   
         if (bJ !== null && tJ === bJ) { merged.push(o); return; }              
-        conflicts++; merged.push(o); return;                                   
+        
+        
+        
+        
+        conflicts++;
+        const winner = _conflictWinner(o, t);
+        if (winner === t) updated++;
+        merged.push(winner);
+        return;
       }
       if (o && !t) {
         if (bJ !== null && oJ === bJ) { dropped++; droppedIds.push(id); return; }  
-        if (bJ !== null) conflicts++;                                          
+        
+        
+        
+        if (bJ !== null) { conflicts++; dropped++; droppedIds.push(id); return; }
         merged.push(o); return;                                                
       }
       if (!o && t) {
@@ -4750,7 +4797,7 @@
     if (r.added) parts.push(r.added + ' added');
     if (r.updated) parts.push(r.updated + ' updated');
     if (r.dropped) parts.push(r.dropped + ' removed');
-    if (r.conflicts) parts.push(r.conflicts + ' conflict' + (r.conflicts > 1 ? 's' : '') + ' kept here');
+    if (r.conflicts) parts.push(r.conflicts + ' conflict' + (r.conflicts > 1 ? 's' : '') + ' resolved');
     return parts.join(', ');
   }
 
