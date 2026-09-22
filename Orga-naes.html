@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-5MdR0fXo5zONq2djUpPN6lpk7dVlmWR6M/mbQ+w7F9g='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-T93PahUKyswVpBVMoatRZR4znpVovXVjkN5VNCdA6eY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -13486,19 +13486,54 @@ if ('serviceWorker' in navigator) {
   
   
   
-  function restReadResults() {
-    if (!_fbUser || typeof _fbUser.getIdToken !== 'function') {
-      return Promise.reject(new Error('Cloud is not responding. Check your connection, then try again.'));
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const AUTH_EXPIRED_MSG = 'Cloud sign-in has expired — sign out and back in, then try again';
+  function restFetch(leafPath, init) {
+    function once(forceRefresh) {
+      return Promise.resolve()
+        .then(function() {
+          if (!_fbUser || typeof _fbUser.getIdToken !== 'function') {
+            throw new Error('Cloud is not responding. Check your connection, then try again.');
+          }
+          return _fbUser.getIdToken(!!forceRefresh);
+        })
+        .then(function(token) {
+          return fetch(firebaseConfig.databaseURL + '/users/' + encodeURIComponent(_fbUser.uid) + leafPath + '.json?auth=' + token, init);
+        });
     }
-    return _fbUser.getIdToken().then(function(token) {
-      var base = firebaseConfig.databaseURL;
-      var paths = ['projects', 'categories', 'archive', 'trash', 'notes', 'noteTombstones'];
-      return Promise.all(paths.map(function(p) {
-        return fetch(base + '/users/' + encodeURIComponent(_fbUser.uid) + '/' + p + '.json?auth=' + token)
-          .then(function(r) { if (!r.ok) throw new Error('Cloud read failed over fallback (HTTP ' + r.status + ')'); return r.json(); });
-      })).then(function(vals) {
-        return vals.map(function(v) { return { val: function() { return v; } }; });
+    return once(false).then(function(r) {
+      if (!r || r.status !== 401) return r;
+      
+      
+      
+      return once(true).catch(function(refreshErr) {
+        if (window._pf && window._pf.logError) window._pf.logError('Firebase auth refresh', refreshErr);
+        throw new Error(AUTH_EXPIRED_MSG);
+      }).then(function(r2) {
+        if (r2 && r2.status === 401) throw new Error(AUTH_EXPIRED_MSG + ' (the cloud refused a freshly issued sign-in token, HTTP 401)');
+        return r2;
       });
+    });
+  }
+  function restReadResults() {
+    var paths = ['projects', 'categories', 'archive', 'trash', 'notes', 'noteTombstones'];
+    return Promise.all(paths.map(function(p) {
+      return restFetch('/' + p, undefined)
+        .then(function(r) { if (!r.ok) throw new Error('Cloud read failed over fallback (HTTP ' + r.status + ')'); return r.json(); });
+    })).then(function(vals) {
+      return vals.map(function(v) { return { val: function() { return v; } }; });
     });
   }
   
@@ -14428,17 +14463,27 @@ if ('serviceWorker' in navigator) {
     
     const catHash = JSON.stringify(categories);
     const catChanged = catHash !== _lastPushedCatHash;
+    
+    
+    
+    
+    
+    
     if (catChanged) {
-      catRef().set(JSON.parse(JSON.stringify(categories)));
-      _lastPushedCatHash = catHash;
+      catRef().set(JSON.parse(JSON.stringify(categories))).then(function() {
+        _lastPushedCatHash = catHash;
+      }, function(err) {
+        window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+        if (window._pf.logError) window._pf.logError('Firebase push (categories)', err);
+      });
     }
-    try { db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))); } catch(e) { if (window._pf.logError) window._pf.logError('Firebase push (categoryEmojis)', e); }
-    try { snoozePresetsRef().set(JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || []))); } catch(e) { if (window._pf.logError) window._pf.logError('Firebase push (snoozePresets)', e); }
+    db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (categoryEmojis)', e); });
+    snoozePresetsRef().set(JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || []))).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (snoozePresets)', e); });
 
     try { pushNotesIfNeeded().catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }); } catch(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }
 
     if (hasChanges || catChanged) {
-      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now());
+      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now()).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (updatedAt)', e); });
       _lastPushedHash = currentHash;
       updateLastSync();
     }
@@ -14629,7 +14674,7 @@ if ('serviceWorker' in navigator) {
     if (!_fbUser || typeof _fbUser.getIdToken !== 'function') {
       return Promise.reject(new Error('Cloud is not responding — the push may not have completed. Check your connection and push again.'));
     }
-    return _fbUser.getIdToken().then(function(token) {
+    return Promise.resolve().then(function() {
       const payload = {
         projects: JSON.parse(JSON.stringify(window._pf.getProjects())),
         categories: JSON.parse(JSON.stringify(window._pf.getCategories())),
@@ -14644,7 +14689,7 @@ if ('serviceWorker' in navigator) {
         payload.notes = JSON.parse(JSON.stringify(snap.notes));
         payload.noteTombstones = JSON.parse(JSON.stringify(snap.tombstones));
       }
-      return fetch(firebaseConfig.databaseURL + '/users/' + encodeURIComponent(_fbUser.uid) + '.json?auth=' + token, {
+      return restFetch('', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -14665,7 +14710,20 @@ if ('serviceWorker' in navigator) {
   
   
   function pushWithTimestamp() {
-    resetPushBookkeeping(window._pf.getProjects(), window._pf.getCategories(), window._pf.getArchive(), window._pf.getTrash());
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    const sentProjects = JSON.parse(JSON.stringify(window._pf.getProjects()));
+    const sentCategories = JSON.parse(JSON.stringify(window._pf.getCategories()));
+    const sentArchive = JSON.parse(JSON.stringify(window._pf.getArchive()));
+    const sentTrash = JSON.parse(JSON.stringify(window._pf.getTrash()));
     const writePromise = withRetry(function(attempt) {
       if (attempt === 1) return Promise.race([sdkWriteAll(), cloudWriteTimeout()]);
       return Promise.race([restWriteAll(), cloudWriteTimeout()]);
@@ -14676,7 +14734,11 @@ if ('serviceWorker' in navigator) {
     
     
     
-    writePromise.then(function() { updateLastSync(); }, function() {});
+    writePromise.then(function() {
+      
+      resetPushBookkeeping(sentProjects, sentCategories, sentArchive, sentTrash);
+      updateLastSync();
+    }, function() {});
     return writePromise;
   }
 
@@ -15238,8 +15300,16 @@ if ('serviceWorker' in navigator) {
   
   
   const APP_VERSION = (function() { try { const m = document.querySelector('meta[name="version"]'); return m ? m.content : 'unknown'; } catch (e) { return 'unknown'; } })();
-  if (_fbUser) db.ref('users/' + _fbUser.uid + '/appVersion').set(APP_VERSION);
-  auth.onAuthStateChanged(function(u) { if (u) db.ref('users/' + u.uid + '/appVersion').set(APP_VERSION); });
+  
+  
+  
+  
+  const putAppVersion = function(uid) {
+    try { db.ref('users/' + uid + '/appVersion').set(APP_VERSION).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase appVersion', e); }); }
+    catch (e) { if (window._pf.logError) window._pf.logError('Firebase appVersion', e); }
+  };
+  if (_fbUser) putAppVersion(_fbUser.uid);
+  auth.onAuthStateChanged(function(u) { if (u) putAppVersion(u.uid); });
 })();
 
 })();
