@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-VA612Nu1Gw6AW23YBLjEpExUxxIrrfULyqrDOGGMCbs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-6P8o4HHgnXPdQolidwxGkGlc3SwE+tO4NbLQ4oL32io='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -13552,7 +13552,9 @@ if ('serviceWorker' in navigator) {
     
     function refuse(reason) {
       if (isRulesRefusal(reason)) {
-        return Promise.reject(new Error(RULES_DENIED_MSG + ' (HTTP 401 ' + String(reason).slice(0, 60) + ')'));
+        const e = new Error(RULES_DENIED_MSG + ' (HTTP 401 ' + String(reason).slice(0, 60) + ')');
+        e.rulesDenied = true;   
+        return Promise.reject(e);
       }
       return Promise.reject(new Error(AUTH_EXPIRED_MSG + ' (the cloud refused a freshly issued sign-in token' + (reason ? ': ' + String(reason).slice(0, 60) : '') + ', HTTP 401)'));
     }
@@ -14720,35 +14722,91 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  function buildCloudPayload() {
+    const payload = {
+      projects: JSON.parse(JSON.stringify(window._pf.getProjects())),
+      categories: JSON.parse(JSON.stringify(window._pf.getCategories())),
+      categoryEmojis: JSON.parse(JSON.stringify(window._pf.getCategoryEmojis())),
+      snoozePresets: JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || [])),
+      archive: JSON.parse(JSON.stringify(window._pf.getArchive())),
+      trash: JSON.parse(JSON.stringify(window._pf.getTrash())),
+      updatedAt: Date.now()
+    };
+    const snap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
+    if (snap && (snap.notes.length > 0 || Object.keys(snap.tombstones).length > 0 || _notesPulledThisSession)) {
+      payload.notes = JSON.parse(JSON.stringify(snap.notes));
+      payload.noteTombstones = JSON.parse(JSON.stringify(snap.tombstones));
+    }
+    return payload;
+  }
   function restWriteAll() {
     if (!_fbUser || typeof _fbUser.getIdToken !== 'function') {
       return Promise.reject(new Error('Cloud is not responding — the push may not have completed. Check your connection and push again.'));
     }
     return Promise.resolve().then(function() {
-      const payload = {
-        projects: JSON.parse(JSON.stringify(window._pf.getProjects())),
-        categories: JSON.parse(JSON.stringify(window._pf.getCategories())),
-        categoryEmojis: JSON.parse(JSON.stringify(window._pf.getCategoryEmojis())),
-        snoozePresets: JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || [])),
-        archive: JSON.parse(JSON.stringify(window._pf.getArchive())),
-        trash: JSON.parse(JSON.stringify(window._pf.getTrash())),
-        updatedAt: Date.now()
-      };
-      const snap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
-      if (snap && (snap.notes.length > 0 || Object.keys(snap.tombstones).length > 0 || _notesPulledThisSession)) {
-        payload.notes = JSON.parse(JSON.stringify(snap.notes));
-        payload.noteTombstones = JSON.parse(JSON.stringify(snap.tombstones));
-      }
       return restFetch('', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(buildCloudPayload())
       }).then(function(r) {
         if (!r.ok) throw new Error('Cloud write failed over fallback (HTTP ' + r.status + ')');
         return r.json();
       }).then(function(body) {
         if (body && body.error) throw new Error('Cloud write denied: ' + body.error);
       });
+    });
+  }
+  
+  
+  
+  function isRulesDenied(err) {
+    if (!err) return false;
+    if (err.rulesDenied) return true;
+    if (String(err.code || '') === 'PERMISSION_DENIED') return true;
+    return /PERMISSION_DENIED|Permission denied/.test(String(err.message || ''));
+  }
+  
+  
+  
+  
+  
+  function pushKeyByKeyAfterRefusal(err) {
+    if (!isRulesDenied(err)) throw err;
+    const payload = buildCloudPayload();
+    const keys = Object.keys(payload);
+    const report = { landed: [], refused: [] };
+    let chain = Promise.resolve();
+    keys.forEach(function(key) {
+      chain = chain.then(function() {
+        return restFetch('/' + key, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload[key] === undefined ? null : payload[key])
+        }).then(function(r) {
+          if (r && r.ok) { report.landed.push(key); return; }
+          report.refused.push({ key: key, reason: 'HTTP ' + (r ? r.status : 'no response') });
+        }, function(e) {
+          report.refused.push({ key: key, reason: String((e && e.message) || e || 'refused').slice(0, 120) });
+        });
+      });
+    });
+    return chain.then(function() {
+      
+      
+      
+      if (!report.refused.length) throw err;
+      const names = report.refused.map(function(d) { return d.key; }).join(', ');
+      if (window._pf && window._pf.logError) {
+        window._pf.logError('Firebase push refused by the rules', new Error(
+          'refused: ' + names + ' | landed: ' + report.landed.length + ' of ' + keys.length + ' | ' + report.refused[0].reason));
+      }
+      const why = /permission denied/i.test(report.refused[0].reason) ? 'the database rules do not allow it' : report.refused[0].reason;
+      throw new Error('Cloud refused ' + report.refused.length + ' of ' + keys.length + ' keys (' + names + ') — ' + why +
+        '. The other ' + report.landed.length + ' synced. Publish the current database.rules.json, then push again');
     });
   }
   
@@ -14777,7 +14835,11 @@ if ('serviceWorker' in navigator) {
     const writePromise = withRetry(function(attempt) {
       if (attempt === 1) return Promise.race([sdkWriteAll(), cloudWriteTimeout()]);
       return Promise.race([restWriteAll(), cloudWriteTimeout()]);
-    }, 'push');
+    }, 'push').catch(function(err) {
+      
+      
+      return pushKeyByKeyAfterRefusal(err);
+    });
     
     
     
