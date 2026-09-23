@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-T93PahUKyswVpBVMoatRZR4znpVovXVjkN5VNCdA6eY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-VA612Nu1Gw6AW23YBLjEpExUxxIrrfULyqrDOGGMCbs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -13499,7 +13499,42 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   const AUTH_EXPIRED_MSG = 'Cloud sign-in has expired — sign out and back in, then try again';
+  const RULES_DENIED_MSG = 'Cloud refused the request — the database rules do not allow one of the synced keys. Publish the current database.rules.json in the Firebase console, then try again';
+  
+  
+  function restAuthReason(r) {
+    if (!r) return Promise.resolve('');
+    let reader = null;
+    try {
+      if (typeof r.clone === 'function') reader = r.clone();
+      else if (typeof r.text === 'function') reader = r;
+    } catch (e) { reader = null; }
+    if (!reader) return Promise.resolve('');
+    try {
+      return Promise.resolve(reader.text()).then(function(t) {
+        try {
+          const body = JSON.parse(String(t == null ? '' : t));
+          return (body && typeof body.error === 'string') ? body.error : '';
+        } catch (e) { return ''; }
+      }, function() { return ''; });
+    } catch (e) { return Promise.resolve(''); }
+  }
+  
+  
+  function isRulesRefusal(reason) {
+    return /permission denied|access denied|permission_denied/i.test(String(reason || ''));
+  }
   function restFetch(leafPath, init) {
     function once(forceRefresh) {
       return Promise.resolve()
@@ -13513,17 +13548,32 @@ if ('serviceWorker' in navigator) {
           return fetch(firebaseConfig.databaseURL + '/users/' + encodeURIComponent(_fbUser.uid) + leafPath + '.json?auth=' + token, init);
         });
     }
+    
+    
+    function refuse(reason) {
+      if (isRulesRefusal(reason)) {
+        return Promise.reject(new Error(RULES_DENIED_MSG + ' (HTTP 401 ' + String(reason).slice(0, 60) + ')'));
+      }
+      return Promise.reject(new Error(AUTH_EXPIRED_MSG + ' (the cloud refused a freshly issued sign-in token' + (reason ? ': ' + String(reason).slice(0, 60) : '') + ', HTTP 401)'));
+    }
     return once(false).then(function(r) {
       if (!r || r.status !== 401) return r;
-      
-      
-      
-      return once(true).catch(function(refreshErr) {
-        if (window._pf && window._pf.logError) window._pf.logError('Firebase auth refresh', refreshErr);
-        throw new Error(AUTH_EXPIRED_MSG);
-      }).then(function(r2) {
-        if (r2 && r2.status === 401) throw new Error(AUTH_EXPIRED_MSG + ' (the cloud refused a freshly issued sign-in token, HTTP 401)');
-        return r2;
+      return restAuthReason(r).then(function(reason) {
+        
+        
+        if (isRulesRefusal(reason)) return refuse(reason);
+        
+        
+        
+        return once(true).catch(function(refreshErr) {
+          if (window._pf && window._pf.logError) window._pf.logError('Firebase auth refresh', refreshErr);
+          throw new Error(AUTH_EXPIRED_MSG);
+        }).then(function(r2) {
+          if (r2 && r2.status === 401) {
+            return restAuthReason(r2).then(function(reason2) { return refuse(reason2); });
+          }
+          return r2;
+        });
       });
     });
   }
