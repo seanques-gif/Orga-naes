@@ -68,6 +68,12 @@ tests/baselines/current/
 /package.json
 /.github/
 /database.rules.json
+# Firebase CLI deploy config for those rules (same local-only decision):
+# firebase.json points the CLI at database.rules.json, .firebaserc maps the
+# aliases, so publishing the rules is one command per project instead of a
+# console paste. Both are mirrored into snapshots with the rest of the tooling.
+/firebase.json
+/.firebaserc
 # Local source for the faces embedded into the artifact (AUD-08): the .woff2
 # files plus fonts.json, read by scripts/gen-embedded-fonts.mjs at build time.
 /fonts/
