@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-hX1CZJCHZbD25UfrIBbvkvmle3pLtwXwTKoKphXN25g='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Jj058q4YktZ5GQOSIwVLOSWJfmWMnSXISGDT4e/eG+k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3707,88 +3707,6 @@
     return arr.filter(Boolean).map((p, i) => conformCloudProject(p, label + '[' + i + ']', report, extra)).filter(Boolean);
   }
 
-  
-  
-  
-  function conformCloudTrash(list, report) {
-    const arr = Array.isArray(list) ? list : (list && typeof list === 'object' ? Object.values(list) : []);
-    const out = [];
-    arr.filter(Boolean).forEach((t, i) => {
-      const path = 'trash[' + i + ']';
-      if (!t || typeof t !== 'object') { payloadNote(report, path, 'was not a bin entry and was dropped'); return; }
-      const str = (v) => (typeof v === 'string' ? v : (v === null || typeof v === 'undefined' ? null : String(v)));
-      const rid = repairCloudId(t.id, path);
-      if (rid.changed) payloadNote(report, path + '.id', rid.why);
-      if (!rid.id) { payloadNote(report, path, 'could not be given an id the rules accept and was dropped'); return; }
-      const id = rid.id;
-      let title = str(t.title);
-      if (!title || !title.trim()) { title = 'Untitled'; payloadNote(report, path + '.title', 'was empty and became "Untitled"'); }
-      if (title.length > PAYLOAD_LIMITS.project.title) { title = title.slice(0, PAYLOAD_LIMITS.project.title); payloadNote(report, path + '.title', 'trimmed to ' + PAYLOAD_LIMITS.project.title); }
-      
-      
-      
-      const entry = Object.assign({}, t, { id: id, title: title });
-      const copy = {};
-      Object.keys(entry).forEach((k) => {
-        if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
-        copy[k] = entry[k];
-      });
-      if (copy.kind !== null && typeof copy.kind !== 'undefined') {
-        const kind = String(copy.kind);
-        if (['project', 'subtask', 'note'].indexOf(kind) === -1) { delete copy.kind; payloadNote(report, path + '.kind', 'was not a known bin kind and was dropped'); }
-        else copy.kind = kind;
-      }
-      ['deletedAt', 'projectTitle'].forEach((k) => {
-        if (copy[k] === null || typeof copy[k] === 'undefined') return;
-        const v = String(copy[k]);
-        const cap = (k === 'projectTitle') ? PAYLOAD_LIMITS.project.title : PAYLOAD_LIMITS.stamp;
-        if (v.length > cap) { copy[k] = v.slice(0, cap); payloadNote(report, path + '.' + k, 'trimmed to ' + cap); }
-        else copy[k] = v;
-      });
-      if (typeof copy.index !== 'undefined' && copy.index !== null) {
-        const n = Number(copy.index);
-        copy.index = (!isFinite(n) || n < 0) ? 0 : Math.min(n, 100000);
-      }
-      if (copy.node && typeof copy.node === 'object') {
-        const kind = copy.kind || 'project';
-        if (kind === 'note' && window._pf && typeof window._pf.conformCloudNotes === 'function') copy.node = window._pf.conformCloudNotes([copy.node], report)[0] || null;
-        else if (kind === 'subtask') copy.node = conformCloudSubtask(copy.node, path + '.node', 1, report);
-        else copy.node = conformCloudProject(copy.node, path + '.node', report);
-        if (!copy.node) { payloadNote(report, path, 'held a binned node that could not be conformed and was dropped'); return; }
-      }
-      
-      
-      if (copy.parentPath && typeof copy.parentPath === 'object') {
-        const pp = Array.isArray(copy.parentPath) ? copy.parentPath : Object.values(copy.parentPath);
-        const kept = pp.map((v) => repairCloudId(v, path + '.parentPath')).filter((r) => r.id).map((r) => r.id);
-        if (kept.length !== pp.filter(Boolean).length) payloadNote(report, path + '.parentPath', 'had entries that are not record ids and they were dropped');
-        copy.parentPath = kept;
-      }
-      
-      
-      Object.keys(copy).forEach((k) => {
-        if (['id', 'title', 'kind', 'deletedAt', 'projectTitle', 'index', 'node', 'parentPath', 'projectId'].indexOf(k) !== -1) return;
-        const v = copy[k];
-        
-        
-        
-        if (typeof v === 'string') {
-          if (v.length > 200) { copy[k] = v.slice(0, 200); payloadNote(report, path + '.' + k, 'trimmed to 200'); }
-          return;
-        }
-        if (v === null || typeof v === 'boolean' || typeof v === 'number' || (v && typeof v === 'object')) return;
-        delete copy[k]; payloadNote(report, path + '.' + k, 'was not uploadable and was dropped');
-      });
-      if (typeof copy.projectId !== 'undefined' && copy.projectId !== null) {
-        const pidRef = repairCloudId(copy.projectId, path + '.projectId');
-        if (pidRef.changed) payloadNote(report, path + '.projectId', pidRef.why);
-        if (pidRef.id) copy.projectId = pidRef.id; else delete copy.projectId;
-      }
-      out.push(copy);
-    });
-    return out;
-  }
-
   function conformCloudNotes(list, report) {
     const arr = Array.isArray(list) ? list : (list && typeof list === 'object' ? Object.values(list) : []);
     return arr.filter(Boolean).map((n, i) => {
@@ -3861,24 +3779,6 @@
 
   
   
-  function conformCloudAccount(data, report) {
-    const rep = report || payloadReport();
-    const out = {
-      projects: conformCloudProjects(data.projects, rep),
-      categories: conformCloudCategories(data.categories, rep),
-      categoryEmojis: conformCloudCategoryEmojis(data.categoryEmojis, rep),
-      snoozePresets: conformCloudSnoozePresets(data.snoozePresets, rep),
-      archive: conformCloudProjects(data.archive, rep, ['archivedAt']),
-      trash: conformCloudTrash(data.trash, rep)
-    };
-    if (typeof data.notes !== 'undefined') out.notes = conformCloudNotes(data.notes, rep);
-    if (typeof data.noteTombstones !== 'undefined') out.noteTombstones = data.noteTombstones;
-    out.updatedAt = data.updatedAt;
-    return { payload: out, report: rep };
-  }
-
-  
-  
   
   
   
@@ -3935,12 +3835,10 @@
   if (window._pf) {
     window._pf.PAYLOAD_LIMITS = PAYLOAD_LIMITS;
     window._pf.conformCloudProjects = conformCloudProjects;
-    window._pf.conformCloudTrash = conformCloudTrash;
     window._pf.conformCloudNotes = conformCloudNotes;
     window._pf.conformCloudSnoozePresets = conformCloudSnoozePresets;
     window._pf.conformCloudCategories = conformCloudCategories;
     window._pf.conformCloudCategoryEmojis = conformCloudCategoryEmojis;
-    window._pf.conformCloudAccount = conformCloudAccount;
     window._pf.payloadReport = payloadReport;
     window._pf.payloadSummary = payloadSummary;
     window._pf.capCloudText = capCloudText;
@@ -14271,8 +14169,11 @@ if ('serviceWorker' in navigator) {
     
     
     
-    const source = (kind === 'trash') ? conformedQuiet('conformCloudTrash', list)
-      : (kind === 'archive') ? conformedQuiet('conformCloudProjects', list, ['archivedAt'])
+    
+    
+    
+    
+    const source = (kind === 'archive') ? conformedQuiet('conformCloudProjects', list, ['archivedAt'])
       : conformedQuiet('conformCloudProjects', list);
     return source.map(function(item) {
       if (!item || typeof item !== 'object') return item;
