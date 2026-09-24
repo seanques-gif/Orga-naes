@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-6P8o4HHgnXPdQolidwxGkGlc3SwE+tO4NbLQ4oL32io='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-0b46zwrA3+oNNaHJ/9PahiavwdENldQ0STrYFOF1w10='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3410,6 +3410,440 @@
   });
 
   let _saveModalEl = null;
+  // SUBSECTION: Cloud Payload Conformance (what the database rules will accept)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const PAYLOAD_LIMITS = {
+    maxNest: 10,          
+    id: 32,               
+    stamp: 35,            
+    project: { title: 200, category: 40, description: 2000, xy: 1000000 },
+    subtask: { title: 200, comment: 200, timeLogged: 1000000000, timerStartLo: 1500000000000, timerStartHi: 4102444800000 },
+    note: { title: 120, body: 100000 },
+    snooze: { label: 12, value: 10080 },
+    category: 40,
+    emojiKey: 40,
+    emojiValue: 24
+  };
+  
+  
+  const PAYLOAD_KEYS = {
+    project: ['id', 'title', 'status', 'category', 'description', 'color', 'dueAt', 'createdAt', 'completedAt', 'expanded', '_manualStatus', 'x', 'y', 'recurrence', 'subtasks'],
+    subtask: ['id', 'title', 'status', 'expanded', 'createdAt', 'dueAt', 'completedAt', 'timeLogged', 'timerStart', 'recurrence', 'blockedBy', 'comments', 'subtasks'],
+    note: ['id', 'title', 'body', 'pinned', 'createdAt', 'updatedAt'],
+    snooze: ['label', 'kind', 'value']
+  };
+  const PAYLOAD_RE = {
+    id: /^[A-Za-z0-9_-]{1,32}$/,
+    due: /^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/,
+    color: /^#[0-9a-fA-F]{3,8}$/,
+    recurrence: /^(daily|weekdays|weekly|biweekly|monthly)$/
+  };
+  const PAYLOAD_RECURRENCE = ['daily', 'weekdays', 'weekly', 'biweekly', 'monthly'];
+
+  
+  
+  function payloadReport() { return { changes: [] }; }
+  function payloadNote(report, path, what) { if (report && report.changes.length < 40) report.changes.push(path + ' ' + what); }
+  function payloadSummary(report) {
+    const n = report ? report.changes.length : 0;
+    return { count: n, first: n ? report.changes[0] : '', all: n ? report.changes.join('; ') : '' };
+  }
+
+  
+  
+  function cloudText(val, max) {
+    const s = (val === null || typeof val === 'undefined') ? null : String(val);
+    if (s === null) return null;
+    return s.length > max ? s.slice(0, max) : s;
+  }
+  function cloudCap(val, max) {
+    const s = (val === null || typeof val === 'undefined') ? '' : String(val);
+    return s.length > max ? s.slice(0, max) : s;
+  }
+
+  
+  
+  
+  
+  
+  
+  function conformCloudProject(p, path, report, extra) {
+    const extraKeys = extra || [];
+    const out = {};
+    if (!p || typeof p !== 'object') { payloadNote(report, path, 'was not an object and was dropped'); return null; }
+    const str = (v) => (typeof v === 'string' ? v : (v === null || typeof v === 'undefined' ? null : String(v)));
+    let id = str(p.id);
+    if (!id || !PAYLOAD_RE.id.test(id)) {
+      id = (typeof uid === 'function') ? uid() : 'p' + Date.now();
+      payloadNote(report, path + '.id', 'was not a valid record id and was replaced');
+    }
+    let title = str(p.title);
+    if (!title || !title.trim()) { title = 'Untitled'; payloadNote(report, path + '.title', 'was empty and became "Untitled"'); }
+    if (title.length > PAYLOAD_LIMITS.project.title) { payloadNote(report, path + '.title', 'trimmed ' + title.length + ' → ' + PAYLOAD_LIMITS.project.title); title = title.slice(0, PAYLOAD_LIMITS.project.title); }
+    let status = str(p.status);
+    if (STATUSES.indexOf(status) === -1) { payloadNote(report, path + '.status', 'was "' + status + '" (no such status) and became planned'); status = 'planned'; }
+    out.id = id; out.title = title; out.status = status;
+
+    
+    
+    
+    const category = str(p.category);
+    if (category === null) out.category = null;
+    else if (category === '') { out.category = null; payloadNote(report, path + '.category', "was '' and became null"); }
+    else if (category.length > PAYLOAD_LIMITS.project.category) { out.category = category.slice(0, PAYLOAD_LIMITS.project.category); payloadNote(report, path + '.category', 'trimmed ' + category.length + ' → ' + PAYLOAD_LIMITS.project.category); }
+    else out.category = category;
+
+    const description = str(p.description);
+    if (description === null) out.description = null;
+    else if (description.length > PAYLOAD_LIMITS.project.description) { out.description = description.slice(0, PAYLOAD_LIMITS.project.description); payloadNote(report, path + '.description', 'trimmed ' + description.length + ' → ' + PAYLOAD_LIMITS.project.description); }
+    else out.description = description;
+
+    const color = str(p.color);
+    if (color === null || color === '') { out.color = null; if (color === '') payloadNote(report, path + '.color', "was '' and became null"); }
+    else if (!PAYLOAD_RE.color.test(color)) { out.color = null; payloadNote(report, path + '.color', 'was not a hex colour and became null'); }
+    else out.color = color;
+
+    const dueAt = str(p.dueAt);
+    if (dueAt === null || dueAt === '') { out.dueAt = null; if (dueAt === '') payloadNote(report, path + '.dueAt', "was '' and became null"); }
+    else if (!PAYLOAD_RE.due.test(dueAt)) { out.dueAt = null; payloadNote(report, path + '.dueAt', 'was not YYYY-MM-DD and became null'); }
+    else out.dueAt = dueAt;
+
+    ['createdAt', 'completedAt'].forEach((k) => {
+      const v = str(p[k]);
+      if (v === null || v === '') { out[k] = null; return; }
+      if (v.length > PAYLOAD_LIMITS.stamp) { out[k] = v.slice(0, PAYLOAD_LIMITS.stamp); payloadNote(report, path + '.' + k, 'trimmed to ' + PAYLOAD_LIMITS.stamp); return; }
+      out[k] = v;
+    });
+
+    out.expanded = !!p.expanded;
+    if (typeof p._manualStatus !== 'undefined') out._manualStatus = !!p._manualStatus;
+    ['x', 'y'].forEach((k) => {
+      const n = Number(p[k]);
+      if (typeof p[k] !== 'number' || !isFinite(n)) { out[k] = 0; payloadNote(report, path + '.' + k, 'was not a number and became 0'); return; }
+      if (n > PAYLOAD_LIMITS.project.xy || n < -PAYLOAD_LIMITS.project.xy) { out[k] = Math.max(-PAYLOAD_LIMITS.project.xy, Math.min(PAYLOAD_LIMITS.project.xy, n)); payloadNote(report, path + '.' + k, 'was outside the drawing bounds and was clamped'); return; }
+      out[k] = n;
+    });
+
+    const recurrence = str(p.recurrence);
+    if (recurrence === null || recurrence === '') { out.recurrence = null; if (recurrence === '') payloadNote(report, path + '.recurrence', "was '' and became null"); }
+    else if (!PAYLOAD_RE.recurrence.test(recurrence)) { out.recurrence = null; payloadNote(report, path + '.recurrence', 'was not a known repeat and became null'); }
+    else out.recurrence = recurrence;
+
+    extraKeys.forEach((k) => {
+      const v = str(p[k]);
+      if (v === null) { out[k] = null; return; }
+      if (v.length > PAYLOAD_LIMITS.stamp) { out[k] = v.slice(0, PAYLOAD_LIMITS.stamp); payloadNote(report, path + '.' + k, 'trimmed to ' + PAYLOAD_LIMITS.stamp); return; }
+      out[k] = v;
+    });
+
+    const subs = Array.isArray(p.subtasks) ? p.subtasks : (p.subtasks && typeof p.subtasks === 'object' ? Object.values(p.subtasks) : []);
+    out.subtasks = subs.filter(Boolean).map((s, i) => conformCloudSubtask(s, path + '.subtasks[' + i + ']', 1, report)).filter(Boolean);
+
+    
+    
+    Object.keys(p).forEach((k) => {
+      if (PAYLOAD_KEYS.project.indexOf(k) !== -1) return;
+      if (extraKeys.indexOf(k) !== -1) return;
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
+      payloadNote(report, path + '.' + k, 'is a local-only field and was not uploaded');
+    });
+    return out;
+  }
+
+  function conformCloudSubtask(s, path, depth, report) {
+    if (!s || typeof s !== 'object') { payloadNote(report, path, 'was not a task and was dropped'); return null; }
+    const str = (v) => (typeof v === 'string' ? v : (v === null || typeof v === 'undefined' ? null : String(v)));
+    const out = {};
+    let id = str(s.id);
+    if (!id || !PAYLOAD_RE.id.test(id)) { id = (typeof uid === 'function') ? uid() : 's' + Date.now(); payloadNote(report, path + '.id', 'was not a valid record id and was replaced'); }
+    let title = str(s.title);
+    if (!title || !title.trim()) { title = 'Untitled'; payloadNote(report, path + '.title', 'was empty and became "Untitled"'); }
+    if (title.length > PAYLOAD_LIMITS.subtask.title) { payloadNote(report, path + '.title', 'trimmed ' + title.length + ' → ' + PAYLOAD_LIMITS.subtask.title); title = title.slice(0, PAYLOAD_LIMITS.subtask.title); }
+    let status = str(s.status);
+    if (STATUSES.indexOf(status) === -1) { payloadNote(report, path + '.status', 'was "' + status + '" (no such status) and became planned'); status = 'planned'; }
+    out.id = id; out.title = title; out.status = status;
+    out.expanded = !!s.expanded;
+
+    ['createdAt', 'completedAt'].forEach((k) => {
+      const v = str(s[k]);
+      out[k] = (v === null || v === '') ? null : (v.length > PAYLOAD_LIMITS.stamp ? v.slice(0, PAYLOAD_LIMITS.stamp) : v);
+      if (v && v.length > PAYLOAD_LIMITS.stamp) payloadNote(report, path + '.' + k, 'trimmed to ' + PAYLOAD_LIMITS.stamp);
+    });
+    const dueAt = str(s.dueAt);
+    if (dueAt === null || dueAt === '') out.dueAt = null;
+    else if (!PAYLOAD_RE.due.test(dueAt)) { out.dueAt = null; payloadNote(report, path + '.dueAt', 'was not YYYY-MM-DD and became null'); }
+    else out.dueAt = dueAt;
+
+    const recurrence = str(s.recurrence);
+    if (recurrence === null || recurrence === '') out.recurrence = null;
+    else if (!PAYLOAD_RE.recurrence.test(recurrence)) { out.recurrence = null; payloadNote(report, path + '.recurrence', 'was not a known repeat and became null'); }
+    else out.recurrence = recurrence;
+
+    if (typeof s.timeLogged !== 'undefined' && s.timeLogged !== null) {
+      const n = Number(s.timeLogged);
+      if (!isFinite(n) || n < 0) { out.timeLogged = null; payloadNote(report, path + '.timeLogged', 'was not a duration and became null'); }
+      else out.timeLogged = Math.min(n, PAYLOAD_LIMITS.subtask.timeLogged);
+    }
+    if (typeof s.timerStart !== 'undefined' && s.timerStart !== null) {
+      const n = Number(s.timerStart);
+      if (!isFinite(n) || n < PAYLOAD_LIMITS.subtask.timerStartLo || n > PAYLOAD_LIMITS.subtask.timerStartHi) { out.timerStart = null; payloadNote(report, path + '.timerStart', 'was outside the plausible clock range and became null'); }
+      else out.timerStart = n;
+    }
+
+    const blocked = Array.isArray(s.blockedBy) ? s.blockedBy : (s.blockedBy && typeof s.blockedBy === 'object' ? Object.values(s.blockedBy) : []);
+    const blockedIds = blocked.map(str).filter((v) => v && PAYLOAD_RE.id.test(v));
+    if (blockedIds.length !== blocked.filter(Boolean).length) payloadNote(report, path + '.blockedBy', 'had entries that are not record ids and they were dropped');
+    out.blockedBy = blockedIds;
+
+    const comments = Array.isArray(s.comments) ? s.comments : (s.comments && typeof s.comments === 'object' ? Object.values(s.comments) : []);
+    out.comments = comments.filter(Boolean).map((c, i) => {
+      const cpath = path + '.comments[' + i + ']';
+      const text = str(c && c.text);
+      const time = str(c && c.time);
+      if (!text || !time) { payloadNote(report, cpath, 'was missing its text or time and was dropped'); return null; }
+      let t = text.length > PAYLOAD_LIMITS.subtask.comment ? text.slice(0, PAYLOAD_LIMITS.subtask.comment) : text;
+      if (t.length !== text.length) payloadNote(report, cpath + '.text', 'trimmed ' + text.length + ' → ' + PAYLOAD_LIMITS.subtask.comment);
+      const stamp = time.length > PAYLOAD_LIMITS.stamp ? time.slice(0, PAYLOAD_LIMITS.stamp) : time;
+      if (stamp.length !== time.length) payloadNote(report, cpath + '.time', 'trimmed to ' + PAYLOAD_LIMITS.stamp);
+      return { text: t, time: stamp };
+    }).filter(Boolean);
+
+    const subs = Array.isArray(s.subtasks) ? s.subtasks : (s.subtasks && typeof s.subtasks === 'object' ? Object.values(s.subtasks) : []);
+    if (depth >= PAYLOAD_LIMITS.maxNest) {
+      if (subs.filter(Boolean).length) payloadNote(report, path + '.subtasks', 'is nested deeper than the cloud allows (' + PAYLOAD_LIMITS.maxNest + ' levels) — the deeper tasks stay on this device');
+      out.subtasks = [];
+    } else {
+      out.subtasks = subs.filter(Boolean).map((c, i) => conformCloudSubtask(c, path + '.subtasks[' + i + ']', depth + 1, report)).filter(Boolean);
+    }
+
+    Object.keys(s).forEach((k) => {
+      if (PAYLOAD_KEYS.subtask.indexOf(k) !== -1) return;
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
+      payloadNote(report, path + '.' + k, 'is a local-only field and was not uploaded');
+    });
+    return out;
+  }
+
+  function conformCloudProjects(list, report, extra) {
+    const arr = Array.isArray(list) ? list : (list && typeof list === 'object' ? Object.values(list) : []);
+    const label = (extra && extra.length) ? 'archive' : 'projects';
+    return arr.filter(Boolean).map((p, i) => conformCloudProject(p, label + '[' + i + ']', report, extra)).filter(Boolean);
+  }
+
+  
+  
+  
+  function conformCloudTrash(list, report) {
+    const arr = Array.isArray(list) ? list : (list && typeof list === 'object' ? Object.values(list) : []);
+    const out = [];
+    arr.filter(Boolean).forEach((t, i) => {
+      const path = 'trash[' + i + ']';
+      if (!t || typeof t !== 'object') { payloadNote(report, path, 'was not a bin entry and was dropped'); return; }
+      const str = (v) => (typeof v === 'string' ? v : (v === null || typeof v === 'undefined' ? null : String(v)));
+      let id = str(t.id);
+      if (!id || !PAYLOAD_RE.id.test(id)) { id = (typeof uid === 'function') ? uid() : 'x' + Date.now(); payloadNote(report, path + '.id', 'was not a valid record id and was replaced'); }
+      let title = str(t.title);
+      if (!title || !title.trim()) { title = 'Untitled'; payloadNote(report, path + '.title', 'was empty and became "Untitled"'); }
+      if (title.length > PAYLOAD_LIMITS.project.title) { title = title.slice(0, PAYLOAD_LIMITS.project.title); payloadNote(report, path + '.title', 'trimmed to ' + PAYLOAD_LIMITS.project.title); }
+      
+      
+      
+      const entry = Object.assign({}, t, { id: id, title: title });
+      const copy = {};
+      Object.keys(entry).forEach((k) => {
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
+        copy[k] = entry[k];
+      });
+      if (copy.kind !== null && typeof copy.kind !== 'undefined') {
+        const kind = String(copy.kind);
+        if (['project', 'subtask', 'note'].indexOf(kind) === -1) { delete copy.kind; payloadNote(report, path + '.kind', 'was not a known bin kind and was dropped'); }
+        else copy.kind = kind;
+      }
+      ['deletedAt', 'projectTitle'].forEach((k) => {
+        if (copy[k] === null || typeof copy[k] === 'undefined') return;
+        const v = String(copy[k]);
+        const cap = (k === 'projectTitle') ? PAYLOAD_LIMITS.project.title : PAYLOAD_LIMITS.stamp;
+        if (v.length > cap) { copy[k] = v.slice(0, cap); payloadNote(report, path + '.' + k, 'trimmed to ' + cap); }
+        else copy[k] = v;
+      });
+      if (typeof copy.index !== 'undefined' && copy.index !== null) {
+        const n = Number(copy.index);
+        copy.index = (!isFinite(n) || n < 0) ? 0 : Math.min(n, 100000);
+      }
+      if (copy.node && typeof copy.node === 'object') {
+        const kind = copy.kind || 'project';
+        if (kind === 'note' && window._pf && typeof window._pf.conformCloudNotes === 'function') copy.node = window._pf.conformCloudNotes([copy.node], report)[0] || null;
+        else if (kind === 'subtask') copy.node = conformCloudSubtask(copy.node, path + '.node', 1, report);
+        else copy.node = conformCloudProject(copy.node, path + '.node', report);
+        if (!copy.node) { payloadNote(report, path, 'held a binned node that could not be conformed and was dropped'); return; }
+      }
+      
+      
+      if (copy.parentPath && typeof copy.parentPath === 'object') {
+        const pp = Array.isArray(copy.parentPath) ? copy.parentPath : Object.values(copy.parentPath);
+        const kept = pp.filter((v) => typeof v === 'string' && PAYLOAD_RE.id.test(v));
+        if (kept.length !== pp.filter(Boolean).length) payloadNote(report, path + '.parentPath', 'had entries that are not record ids and they were dropped');
+        copy.parentPath = kept;
+      }
+      
+      
+      Object.keys(copy).forEach((k) => {
+        if (['id', 'title', 'kind', 'deletedAt', 'projectTitle', 'index', 'node', 'parentPath', 'projectId'].indexOf(k) !== -1) return;
+        const v = copy[k];
+        if (typeof v === 'string' && v.length > 200) { copy[k] = v.slice(0, 200); payloadNote(report, path + '.' + k, 'trimmed to 200'); }
+        else if (v === null || typeof v === 'boolean' || typeof v === 'number' || (v && typeof v === 'object')) return;
+        else { delete copy[k]; payloadNote(report, path + '.' + k, 'was not uploadable and was dropped'); }
+      });
+      if (typeof copy.projectId !== 'undefined' && copy.projectId !== null && !PAYLOAD_RE.id.test(String(copy.projectId))) { delete copy.projectId; payloadNote(report, path + '.projectId', 'was not a record id and was dropped'); }
+      out.push(copy);
+    });
+    return out;
+  }
+
+  function conformCloudNotes(list, report) {
+    const arr = Array.isArray(list) ? list : (list && typeof list === 'object' ? Object.values(list) : []);
+    return arr.filter(Boolean).map((n, i) => {
+      const path = 'notes[' + i + ']';
+      if (!n || typeof n !== 'object') { payloadNote(report, path, 'was not a note and was dropped'); return null; }
+      const str = (v) => (typeof v === 'string' ? v : (v === null || typeof v === 'undefined' ? null : String(v)));
+      let id = str(n.id);
+      if (!id || !PAYLOAD_RE.id.test(id)) { payloadNote(report, path + '.id', 'was not a valid note id and the note was dropped'); return null; }
+      const nowIso = new Date().toISOString();
+      let updatedAt = str(n.updatedAt) || str(n.createdAt) || nowIso;
+      if (updatedAt.length > PAYLOAD_LIMITS.stamp) { updatedAt = updatedAt.slice(0, PAYLOAD_LIMITS.stamp); payloadNote(report, path + '.updatedAt', 'trimmed to ' + PAYLOAD_LIMITS.stamp); }
+      const createdAt = str(n.createdAt) ? (str(n.createdAt).length > PAYLOAD_LIMITS.stamp ? str(n.createdAt).slice(0, PAYLOAD_LIMITS.stamp) : str(n.createdAt)) : null;
+      const title = cloudCap(str(n.title) || '', PAYLOAD_LIMITS.note.title);
+      if (title.length !== (str(n.title) || '').length) payloadNote(report, path + '.title', 'trimmed to ' + PAYLOAD_LIMITS.note.title);
+      const body = cloudCap(str(n.body) || '', PAYLOAD_LIMITS.note.body);
+      if (body.length !== (str(n.body) || '').length) payloadNote(report, path + '.body', 'trimmed to ' + PAYLOAD_LIMITS.note.body);
+      Object.keys(n).forEach((k) => {
+        if (PAYLOAD_KEYS.note.indexOf(k) !== -1) return;
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
+        payloadNote(report, path + '.' + k, 'is a local-only field and was not uploaded');
+      });
+      return { id: id, title: title, body: body, pinned: !!n.pinned, createdAt: createdAt, updatedAt: updatedAt };
+    }).filter(Boolean);
+  }
+
+  function conformCloudSnoozePresets(list, report) {
+    const arr = Array.isArray(list) ? list : (list && typeof list === 'object' ? Object.values(list) : []);
+    return arr.filter(Boolean).map((p, i) => {
+      const path = 'snoozePresets[' + i + ']';
+      if (!p || typeof p !== 'object') { payloadNote(report, path, 'was not a preset and was dropped'); return null; }
+      let label = cloudCap(String(p.label === null || typeof p.label === 'undefined' ? '' : p.label), PAYLOAD_LIMITS.snooze.label);
+      if (!label) { label = 'Later'; payloadNote(report, path + '.label', 'was empty and became "Later"'); }
+      else if (String(p.label).length > PAYLOAD_LIMITS.snooze.label) payloadNote(report, path + '.label', 'trimmed to ' + PAYLOAD_LIMITS.snooze.label);
+      const kind = (String(p.kind) === 'tomorrow') ? 'tomorrow' : 'minutes';
+      if (String(p.kind) !== kind) payloadNote(report, path + '.kind', 'was "' + p.kind + '" and became "' + kind + '"');
+      let value = Number(p.value);
+      if (!isFinite(value) || value < 0) { value = 0; payloadNote(report, path + '.value', 'was not a number and became 0'); }
+      else if (value > PAYLOAD_LIMITS.snooze.value) { payloadNote(report, path + '.value', 'was above the maximum and became ' + PAYLOAD_LIMITS.snooze.value); value = PAYLOAD_LIMITS.snooze.value; }
+      if (kind === 'tomorrow' && value > 23) value = 23;
+      return { label: label, kind: kind, value: value };
+    }).filter(Boolean);
+  }
+
+  function conformCloudCategories(list, report) {
+    const arr = Array.isArray(list) ? list : (list && typeof list === 'object' ? Object.values(list) : []);
+    const out = [];
+    arr.filter(Boolean).forEach((c, i) => {
+      const name = String(c);
+      if (!name) { payloadNote(report, 'categories[' + i + ']', 'was empty and was dropped'); return; }
+      if (name.length > PAYLOAD_LIMITS.category) { out.push(name.slice(0, PAYLOAD_LIMITS.category)); payloadNote(report, 'categories[' + i + ']', 'trimmed to ' + PAYLOAD_LIMITS.category); return; }
+      out.push(name);
+    });
+    return out;
+  }
+
+  function conformCloudCategoryEmojis(map, report) {
+    const out = {};
+    if (!map || typeof map !== 'object') return out;
+    Object.keys(map).forEach((k) => {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
+      const v = String(map[k] === null || typeof map[k] === 'undefined' ? '' : map[k]);
+      if (!k || k.length > PAYLOAD_LIMITS.emojiKey) { payloadNote(report, 'categoryEmojis["' + k + '"]', 'has a category name the rules do not allow and was dropped'); return; }
+      if (!v || v.length > PAYLOAD_LIMITS.emojiValue) { payloadNote(report, 'categoryEmojis["' + k + '"]', 'has an emoji the rules do not allow and was dropped'); return; }
+      out[k] = v;
+    });
+    return out;
+  }
+
+  
+  
+  function conformCloudAccount(data, report) {
+    const rep = report || payloadReport();
+    const out = {
+      projects: conformCloudProjects(data.projects, rep),
+      categories: conformCloudCategories(data.categories, rep),
+      categoryEmojis: conformCloudCategoryEmojis(data.categoryEmojis, rep),
+      snoozePresets: conformCloudSnoozePresets(data.snoozePresets, rep),
+      archive: conformCloudProjects(data.archive, rep, ['archivedAt']),
+      trash: conformCloudTrash(data.trash, rep)
+    };
+    if (typeof data.notes !== 'undefined') out.notes = conformCloudNotes(data.notes, rep);
+    if (typeof data.noteTombstones !== 'undefined') out.noteTombstones = data.noteTombstones;
+    out.updatedAt = data.updatedAt;
+    return { payload: out, report: rep };
+  }
+
+  
+  
+  
+  function capCloudText(value, max, label) {
+    const s = String(value === null || typeof value === 'undefined' ? '' : value);
+    if (s.length <= max) return s;
+    if (typeof showToast === 'function') {
+      showToast('✂ ' + (label || 'Text') + ' is limited to ' + max + ' characters — the last ' + (s.length - max) + ' were not kept', true);
+    }
+    return s.slice(0, max);
+  }
+  if (window._pf) {
+    window._pf.PAYLOAD_LIMITS = PAYLOAD_LIMITS;
+    window._pf.conformCloudProjects = conformCloudProjects;
+    window._pf.conformCloudTrash = conformCloudTrash;
+    window._pf.conformCloudNotes = conformCloudNotes;
+    window._pf.conformCloudSnoozePresets = conformCloudSnoozePresets;
+    window._pf.conformCloudCategories = conformCloudCategories;
+    window._pf.conformCloudCategoryEmojis = conformCloudCategoryEmojis;
+    window._pf.conformCloudAccount = conformCloudAccount;
+    window._pf.payloadReport = payloadReport;
+    window._pf.payloadSummary = payloadSummary;
+    window._pf.capCloudText = capCloudText;
+  }
   // SUBSECTION: Global Keyboard Shortcuts
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -5563,8 +5997,8 @@
     titleEl.addEventListener('pointerdown', (e) => { if (titleEl.contentEditable === 'true') e.stopPropagation(); });
     titleEl.addEventListener('click', (e) => { e.stopPropagation(); if (titleEl.contentEditable === 'true') return; titleClickCount++; if (titleClickCount === 1) { titleClickTimer = setTimeout(() => { titleClickCount = 0; }, 200); } else if (titleClickCount === 2) { clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } });
     titleEl.addEventListener('touchend', (e) => { if (titleEl.contentEditable === 'true') return; _titleTapCount++; if (_titleTapCount === 2) { clearTimeout(_titleTapTimer); _titleTapCount = 0; e.preventDefault(); clearTimeout(titleClickTimer); titleClickCount = 0; titleEl.contentEditable = 'true'; titleEl.focus(); const range = document.createRange(); range.selectNodeContents(titleEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } else { clearTimeout(_titleTapTimer); _titleTapTimer = setTimeout(() => { _titleTapCount = 0; }, 350); } });
-    titleEl.addEventListener('blur', () => { titleEl.contentEditable = 'false'; const val = titleEl.textContent.trim() || 'Untitled'; if (val !== p.title) { _lastProjectId = p.id; snapshot(); p.title = val; scheduleSave(); renderSplitList(); } }); titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
-    const descEl = div.querySelector('.pf-node-desc'); descEl.addEventListener('pointerdown', (e) => e.stopPropagation()); descEl.addEventListener('click', (e) => e.stopPropagation()); descEl.addEventListener('blur', () => { const val = descEl.textContent.trim(); if (val !== (p.description || '')) { _lastProjectId = p.id; snapshot(); p.description = val || ''; scheduleSave(); } }); descEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); descEl.blur(); } });
+    titleEl.addEventListener('blur', () => { titleEl.contentEditable = 'false'; const val = capCloudText(titleEl.textContent.trim() || 'Untitled', PAYLOAD_LIMITS.project.title, 'Project title'); if (val !== p.title) { _lastProjectId = p.id; snapshot(); p.title = val; scheduleSave(); renderSplitList(); } }); titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
+    const descEl = div.querySelector('.pf-node-desc'); descEl.addEventListener('pointerdown', (e) => e.stopPropagation()); descEl.addEventListener('click', (e) => e.stopPropagation()); descEl.addEventListener('blur', () => { const val = capCloudText(descEl.textContent.trim(), PAYLOAD_LIMITS.project.description, 'Project description'); if (val !== (p.description || '')) { _lastProjectId = p.id; snapshot(); p.description = val || ''; scheduleSave(); } }); descEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); descEl.blur(); } });
     if (nodeHeader) nodeHeader.addEventListener('click', (e) => { if (_moveArmed && _moveClipboard && _moveClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); moveClipboardAsMain(p); return; } if (_pasteArmed && _taskClipboard && _taskClipboard.length) { if (e.target.closest('.pf-node-del')) return; e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; } if (e.target.closest('.pf-node-title') || e.target.closest('.pf-node-del') || e.target.closest('.pf-chevron') || e.target.closest('.pf-badge') || e.target.closest('.pf-header-meta')) return; toggleExpand(p.id); }, true);
     return div;
   }
@@ -5783,7 +6217,7 @@
     t.addEventListener('click', (e) => { if (e.ctrlKey || e.metaKey) return; e.stopPropagation(); if (t.contentEditable === 'true') return; if (e.detail >= 2) return; if (window._splitSelectSuppressed) { window._splitSelectSuppressed = false; return; } if (subMultiSelect.length > 0) { const idx = subMultiSelect.indexOf(s.id); if (idx > -1) { subMultiSelect.splice(idx, 1); row.classList.remove('pf-sub-selected'); } else { subMultiSelect.push(s.id); row.classList.add('pf-sub-selected'); } renderSubSelectBar(p); return; } clearTimeout(_subTitleClickTimer); _subTitleClickTimer = setTimeout(() => { if (hasChildren) toggleSubExpand(p.id, s.id); }, 200); });
     t.addEventListener('dblclick', (e) => { e.stopPropagation(); clearTimeout(_subTitleClickTimer); clearTimeout(_subTitleTapTimer); _subTitleTapCount = 0; t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); });
     t.addEventListener('touchend', (e) => { if (t.contentEditable === 'true') return; _subTitleTapCount++; if (_subTitleTapCount === 2) { clearTimeout(_subTitleTapTimer); _subTitleTapCount = 0; e.preventDefault(); clearTimeout(_subTitleClickTimer); t.contentEditable = 'true'; t.focus(); const range = document.createRange(); range.selectNodeContents(t); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } else { clearTimeout(_subTitleTapTimer); _subTitleTapTimer = setTimeout(() => { _subTitleTapCount = 0; }, 350); } });
-    t.addEventListener('blur', () => { const val = t.textContent.trim() || 'Untitled'; t.contentEditable = 'false'; if (val !== s.title) { _lastProjectId = p.id; snapshot(); s.title = val; scheduleSave(); } }); t.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); t.blur(); } if (e.key === 'Escape') { t.textContent = s.title; t.blur(); } }); return row;
+    t.addEventListener('blur', () => { const val = capCloudText(t.textContent.trim() || 'Untitled', PAYLOAD_LIMITS.subtask.title, 'Task title'); t.contentEditable = 'false'; if (val !== s.title) { _lastProjectId = p.id; snapshot(); s.title = val; scheduleSave(); } }); t.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); t.blur(); } if (e.key === 'Escape') { t.textContent = s.title; t.blur(); } }); return row;
   }
     // SUBSECTION: Subtask Touch Carry (pointer-coarse path for cross-project moves)
   
@@ -6490,7 +6924,7 @@
             ev.stopPropagation(); _closeCtx();
             const newName = prompt('Rename category:', cat);
             if (!newName || newName.trim() === '' || newName.trim() === cat) return;
-            const trimmed = newName.trim();
+            const trimmed = capCloudText(newName.trim(), PAYLOAD_LIMITS.category, 'Category name');
             if (categories.includes(trimmed)) { showToast('Category "' + trimmed + '" already exists'); return; }
             snapshot();
             const idx = categories.indexOf(cat);
@@ -13700,9 +14134,20 @@ if ('serviceWorker' in navigator) {
   
   
   
-  function normalizeForSync(list) {
+  function normalizeForSync(list, kind) {
     if (!Array.isArray(list)) return list;
-    return list.map(function(item) {
+    
+    
+    
+    
+    
+    
+    
+    
+    const source = (kind === 'trash') ? conformedQuiet('conformCloudTrash', list)
+      : (kind === 'archive') ? conformedQuiet('conformCloudProjects', list, ['archivedAt'])
+      : conformedQuiet('conformCloudProjects', list);
+    return source.map(function(item) {
       if (!item || typeof item !== 'object') return item;
       var copy = Object.assign({}, item);
       delete copy.expanded;
@@ -14173,8 +14618,8 @@ if ('serviceWorker' in navigator) {
       const notesMatch = !!localNotesSnap
         && notesSignature(localNotesSnap) === notesSignature({ notes: remoteNotes, tombstones: remoteNoteTombstones });
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
-      const archMatch = JSON.stringify(normalizeForSync(remoteArchive)) === JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
-      const trashMatch = JSON.stringify(normalizeForSync(remoteTrash)) === JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
+      const archMatch = JSON.stringify(normalizeForSync(remoteArchive, 'archive')) === JSON.stringify(normalizeForSync(window._pf.getArchive() || [], 'archive'));
+      const trashMatch = JSON.stringify(normalizeForSync(remoteTrash, 'trash')) === JSON.stringify(normalizeForSync(window._pf.getTrash() || [], 'trash'));
 
       db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
         if (emojiSnap.val()) window._pf.setCategoryEmojis(emojiSnap.val());
@@ -14451,8 +14896,8 @@ if ('serviceWorker' in navigator) {
     _lastPushedIdOrder = projects.map(p => p.id);
     _lastPushedCatHash = JSON.stringify(categories);
     _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
-    if (typeof archive !== 'undefined') _lastPushedArchiveHash = JSON.stringify(normalizeForSync(archive));
-    if (typeof trash !== 'undefined') _lastPushedTrashHash = JSON.stringify(normalizeForSync(trash));
+    if (typeof archive !== 'undefined') _lastPushedArchiveHash = JSON.stringify(normalizeForSync(archive, 'archive'));
+    if (typeof trash !== 'undefined') _lastPushedTrashHash = JSON.stringify(normalizeForSync(trash, 'trash'));
     
     
     
@@ -14484,8 +14929,8 @@ if ('serviceWorker' in navigator) {
     
     projects.forEach((p, i) => {
       if (_lastPushedHash[p.id] !== currentHash[p.id]) {
-        updates['projects/' + i] = JSON.parse(JSON.stringify(p));
-        hasChanges = true;
+        const one = conformed('conformCloudProjects', [p]);
+        if (one.length) { updates['projects/' + i] = one[0]; hasChanges = true; }
       }
     });
 
@@ -14499,7 +14944,7 @@ if ('serviceWorker' in navigator) {
     if (hasDeletion || orderChanged) {
       
       
-      userRef().set(JSON.parse(JSON.stringify(projects))).catch(function(err) {
+      userRef().set(cloudProjects()).catch(function(err) {
         window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (window._pf.logError) window._pf.logError('Firebase push (full set)', err);
       });
@@ -14522,15 +14967,15 @@ if ('serviceWorker' in navigator) {
     
     
     if (catChanged) {
-      catRef().set(JSON.parse(JSON.stringify(categories))).then(function() {
+      catRef().set(cloudCategories()).then(function() {
         _lastPushedCatHash = catHash;
       }, function(err) {
         window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (window._pf.logError) window._pf.logError('Firebase push (categories)', err);
       });
     }
-    db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (categoryEmojis)', e); });
-    snoozePresetsRef().set(JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || []))).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (snoozePresets)', e); });
+    db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(cloudCategoryEmojis()).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (categoryEmojis)', e); });
+    snoozePresetsRef().set(cloudSnoozePresets()).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (snoozePresets)', e); });
 
     try { pushNotesIfNeeded().catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }); } catch(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }
 
@@ -14702,12 +15147,12 @@ if ('serviceWorker' in navigator) {
   
   function sdkWriteAll() {
     return Promise.all([
-      userRef().set(JSON.parse(JSON.stringify(window._pf.getProjects()))),
-      catRef().set(JSON.parse(JSON.stringify(window._pf.getCategories()))),
-      db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(JSON.parse(JSON.stringify(window._pf.getCategoryEmojis()))),
-      snoozePresetsRef().set(JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || []))),
-      archiveRef().set(JSON.parse(JSON.stringify(window._pf.getArchive()))),
-      trashRef().set(JSON.parse(JSON.stringify(window._pf.getTrash()))),
+      userRef().set(cloudProjects()),
+      catRef().set(cloudCategories()),
+      db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(cloudCategoryEmojis()),
+      snoozePresetsRef().set(cloudSnoozePresets()),
+      archiveRef().set(cloudArchive()),
+      trashRef().set(cloudTrash()),
       pushNotesIfNeeded().catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }),
       db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
     ]);
@@ -14726,19 +15171,64 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function conformed(name, value, extra) {
+    const rep = (window._pf && typeof window._pf.payloadReport === 'function') ? window._pf.payloadReport() : null;
+    const fn = window._pf && window._pf[name];
+    const out = (typeof fn === 'function') ? fn(value, rep, extra) : value;
+    if (rep) reportCloudConformance(rep);
+    return out;
+  }
+  
+  
+  
+  
+  
+  function conformedQuiet(name, value, extra) {
+    const fn = window._pf && window._pf[name];
+    return (typeof fn === 'function') ? fn(value, undefined, extra) : value;
+  }
+  
+  
+  
+  const _conformanceReported = new Set();
+  function reportCloudConformance(rep) {
+    const s = (window._pf && typeof window._pf.payloadSummary === 'function') ? window._pf.payloadSummary(rep) : null;
+    if (!s || !s.count) return;
+    if (_conformanceReported.has(s.all)) return;
+    _conformanceReported.add(s.all);
+    if (window._pf.logError) window._pf.logError('Cloud payload conformed to the database rules', new Error(
+      s.count + ' value(s) are outside what the database rules allow and were clipped or dropped before upload — ' + s.all));
+    if (window._pf.showToast) window._pf.showToast('☁ ' + s.count + ' value(s) were too large or unknown for the cloud and were not uploaded as-is (see the error log)', true);
+  }
+  function cloudProjects() { return conformed('conformCloudProjects', window._pf.getProjects()); }
+  function cloudArchive() { return conformed('conformCloudProjects', window._pf.getArchive(), ['archivedAt']); }
+  function cloudTrash() { return conformed('conformCloudTrash', window._pf.getTrash()); }
+  function cloudCategories() { return conformed('conformCloudCategories', window._pf.getCategories()); }
+  function cloudCategoryEmojis() { return conformed('conformCloudCategoryEmojis', window._pf.getCategoryEmojis()); }
+  function cloudSnoozePresets() { return conformed('conformCloudSnoozePresets', window._pf.getSnoozePresets() || []); }
+
   function buildCloudPayload() {
     const payload = {
-      projects: JSON.parse(JSON.stringify(window._pf.getProjects())),
-      categories: JSON.parse(JSON.stringify(window._pf.getCategories())),
-      categoryEmojis: JSON.parse(JSON.stringify(window._pf.getCategoryEmojis())),
-      snoozePresets: JSON.parse(JSON.stringify(window._pf.getSnoozePresets() || [])),
-      archive: JSON.parse(JSON.stringify(window._pf.getArchive())),
-      trash: JSON.parse(JSON.stringify(window._pf.getTrash())),
+      projects: cloudProjects(),
+      categories: cloudCategories(),
+      categoryEmojis: cloudCategoryEmojis(),
+      snoozePresets: cloudSnoozePresets(),
+      archive: cloudArchive(),
+      trash: cloudTrash(),
       updatedAt: Date.now()
     };
     const snap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
     if (snap && (snap.notes.length > 0 || Object.keys(snap.tombstones).length > 0 || _notesPulledThisSession)) {
-      payload.notes = JSON.parse(JSON.stringify(snap.notes));
+      payload.notes = conformed('conformCloudNotes', snap.notes);
       payload.noteTombstones = JSON.parse(JSON.stringify(snap.tombstones));
     }
     return payload;
@@ -14927,8 +15417,8 @@ if ('serviceWorker' in navigator) {
       const notesMatch = !!localNotesSnap
         && notesSignature(localNotesSnap) === notesSignature({ notes: remoteNotes, tombstones: remoteNoteTombstones });
       const catsMatch = JSON.stringify(remoteCategories) === JSON.stringify(window._pf.getCategories() || []);
-      const archMatch = JSON.stringify(normalizeForSync(remoteArchive)) === JSON.stringify(normalizeForSync(window._pf.getArchive() || []));
-      const trashMatch = JSON.stringify(normalizeForSync(remoteTrash)) === JSON.stringify(normalizeForSync(window._pf.getTrash() || []));
+      const archMatch = JSON.stringify(normalizeForSync(remoteArchive, 'archive')) === JSON.stringify(normalizeForSync(window._pf.getArchive() || [], 'archive'));
+      const trashMatch = JSON.stringify(normalizeForSync(remoteTrash, 'trash')) === JSON.stringify(normalizeForSync(window._pf.getTrash() || [], 'trash'));
       const fullMatch = remoteStr === localStr && catsMatch && archMatch && trashMatch && notesMatch;
       const pushNotesInfo = localNotesSnap ? notesDiff(localNotesSnap, remoteNotes, remoteNoteTombstones) : null;
 
