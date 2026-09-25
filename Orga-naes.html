@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Jj058q4YktZ5GQOSIwVLOSWJfmWMnSXISGDT4e/eG+k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-GUzPimD92CXEsT4Uj+OTFQZO2IFB1AqP2PjMP0JvSCE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3720,7 +3720,13 @@
       const nowIso = new Date().toISOString();
       let updatedAt = str(n.updatedAt) || str(n.createdAt) || nowIso;
       if (updatedAt.length > PAYLOAD_LIMITS.stamp) { updatedAt = updatedAt.slice(0, PAYLOAD_LIMITS.stamp); payloadNote(report, path + '.updatedAt', 'trimmed to ' + PAYLOAD_LIMITS.stamp); }
-      const createdAt = str(n.createdAt) ? (str(n.createdAt).length > PAYLOAD_LIMITS.stamp ? str(n.createdAt).slice(0, PAYLOAD_LIMITS.stamp) : str(n.createdAt)) : null;
+      
+      
+      
+      
+      
+      
+      const createdAt = str(n.createdAt) ? (str(n.createdAt).length > PAYLOAD_LIMITS.stamp ? str(n.createdAt).slice(0, PAYLOAD_LIMITS.stamp) : str(n.createdAt)) : updatedAt;
       const title = cloudCap(str(n.title) || '', PAYLOAD_LIMITS.note.title);
       if (title.length !== (str(n.title) || '').length) payloadNote(report, path + '.title', 'trimmed to ' + PAYLOAD_LIMITS.note.title);
       const body = cloudCap(str(n.body) || '', PAYLOAD_LIMITS.note.body);
@@ -15496,18 +15502,32 @@ if ('serviceWorker' in navigator) {
     if (lastBackup === today) return;
     const backupRef = db.ref('users/' + _fbUser.uid + '/backups/' + today);
     const notesSnap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
-    backupRef.set({
-      
-      
-      
+    
+    
+    
+    
+    
+    
+    
+    
+    const row = {
       projects: cloudProjects(),
+      archive: cloudArchive(),
       categories: cloudCategories(),
-      
-      
-      notes: notesSnap ? conformed('conformCloudNotes', notesSnap.notes) : null,
-      noteTombstones: notesSnap ? JSON.parse(JSON.stringify(notesSnap.tombstones)) : null,
+      categoryEmojis: cloudCategoryEmojis(),
+      snoozePresets: cloudSnoozePresets(),
       timestamp: Date.now()
-    });
+    };
+    
+    
+    
+    
+    
+    
+    
+    if (notesSnap && notesSnap.notes.length > 0) row.notes = conformed('conformCloudNotes', notesSnap.notes);
+    if (notesSnap && Object.keys(notesSnap.tombstones).length > 0) row.noteTombstones = JSON.parse(JSON.stringify(notesSnap.tombstones));
+    backupRef.set(row);
     localStorage.setItem('pf-firebase-last-backup', today);
     
     
@@ -15566,20 +15586,47 @@ if ('serviceWorker' in navigator) {
       backupsList.querySelectorAll('.pf-backup-restore-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
           const key = btn.dataset.backupKey;
-          pfConfirm('Restore backup', 'Restore backup from ' + key + '? This will overwrite your current data.', 'Restore').then(function(ok) { if (!ok) return;
+          
+          
+          
+          const row = val[key] || {};
+          const rowList = function(v) { return Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : null); };
+          const held = [
+            ((rowList(row.projects) || []).length) + ' project(s)',
+            ((rowList(row.archive) || []).length) + ' archived',
+            ((rowList(row.categories) || []).length) + ' category(ies)',
+            ((rowList(row.notes) || []).length) + ' note(s)'
+          ].join(', ');
+          pfConfirm('Restore backup',
+            'Restore the backup from ' + key + '? It holds ' + held +
+            '. This replaces this device\u2019s projects, archive, categories, category emojis, snooze presets and notes. A snapshot is taken first, so Undo can put it back.',
+            'Restore').then(function(ok) { if (!ok) return;
           window._pf.snapshot();
-          const b = val[key];
-          if (b.projects) {
-            const p = Array.isArray(b.projects) ? b.projects : Object.values(b.projects);
-            window._pf.setProjects(p);
-            window._pf.scheduleSave(); window._pf.render();
+          const applied = [];
+          
+          
+          
+          
+          
+          const applyList = function(v, label, setter) {
+            const list = rowList(v);
+            if (!list) return;
+            setter(list);
+            applied.push(label);
+          };
+          applyList(row.projects, 'projects', function(l) { window._pf.setProjects(l); });
+          applyList(row.archive, 'archive', function(l) { window._pf.setArchive(l); });
+          applyList(row.categories, 'categories', function(l) { window._pf.setCategories(l); window._pf.saveCategories(); });
+          if (row.categoryEmojis && typeof row.categoryEmojis === 'object') { window._pf.setCategoryEmojis(row.categoryEmojis); applied.push('category emojis'); }
+          applyList(row.snoozePresets, 'snooze presets', function(l) { window._pf.setSnoozePresets(l); });
+          if (rowList(row.notes) || (row.noteTombstones && typeof row.noteTombstones === 'object')) {
+            
+            
+            window._pf.adoptCloudNotes(rowList(row.notes) || [], row.noteTombstones || {});
+            applied.push('notes');
           }
-          if (b.categories) {
-            const c = Array.isArray(b.categories) ? b.categories : Object.values(b.categories);
-            window._pf.setCategories(c);
-            window._pf.saveCategories();
-          }
-          window._pf.showToast('✅ Restored backup from ' + key);
+          window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
+          window._pf.showToast('✅ Restored ' + (applied.length ? applied.join(', ') : 'nothing') + ' from ' + key);
           backupsList.style.display = 'none';
           });
         });
