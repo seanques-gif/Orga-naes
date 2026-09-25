@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-W/KX0XRNtLLALshjBT+cnhZxP3YRFJdBqV5Q9aJ/Yj8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-TdzgLWfJQ51EBJcKv9dxsr44XYVcGHgTA1fPYIGcQ8k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -15623,6 +15623,13 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  
+  
+  
   const RESTORE_PREVIEW_LABELS = {
     projects: 'Projects',
     archive: 'Archived projects',
@@ -15705,8 +15712,26 @@ if ('serviceWorker' in navigator) {
     list.forEach(function(c) { t.added += c.added.length; t.changed += c.changed.length; t.removed += c.removed.length; });
     return t;
   }
+  
+  
+  
+  
+  
+  function lastCloudSyncAt() {
+    let stored = 0;
+    try { stored = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0', 10) || 0; } catch (e) { stored = 0; }
+    return Math.max(_lastSyncTime || 0, stored);
+  }
   function buildRestorePreview(row) {
     const cap = rowCaptures(row);
+    
+    
+    
+    
+    
+    const capturedAt = Number((row && row.timestamp) || 0) || 0;
+    const syncedAt = lastCloudSyncAt();
+    const behind = !!(capturedAt && syncedAt && capturedAt < syncedAt);
     const snap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
     const local = {
       projects: (window._pf.getProjects && window._pf.getProjects()) || [],
@@ -15724,7 +15749,16 @@ if ('serviceWorker' in navigator) {
     };
     const sections = [];
     const add = function(key, diff) {
-      sections.push({ key: key, label: RESTORE_PREVIEW_LABELS[key], captured: !!cap[key], added: diff.added, changed: diff.changed, removed: diff.removed });
+      sections.push({
+        key: key, label: RESTORE_PREVIEW_LABELS[key], captured: !!cap[key],
+        added: diff.added, changed: diff.changed, removed: diff.removed,
+        
+        
+        
+        
+        
+        rollback: behind && (diff.changed.length + diff.removed.length) > 0
+      });
     };
     const none = { added: [], changed: [], removed: [] };
     add('projects', cap.projects ? entryTitles(cloudDiffLists(local.projects, rowList(row.projects))) : none);
@@ -15744,7 +15778,19 @@ if ('serviceWorker' in navigator) {
     add('notes', { added: noteDiff.added.map(noteName), changed: noteDiff.changed.map(noteName), removed: noteDiff.removed.map(noteName) });
     add('noteTombstones', cap.noteTombstones ? diffKeyedMaps(local.noteTombstones, row.noteTombstones) : none);
     const captured = sections.filter(function(s) { return s.captured; });
-    const out = { status: 'preview', key: '', row: row, captured: captured.map(function(s) { return s.label; }), collections: sections, selection: {}, totals: sumRestoreDiffs(captured) };
+    const out = {
+      status: 'preview', key: '', row: row,
+      captured: captured.map(function(s) { return s.label; }),
+      collections: sections, selection: {}, totals: sumRestoreDiffs(captured),
+      
+      
+      
+      
+      stale: {
+        behind: behind, at: capturedAt, since: syncedAt,
+        labels: sections.filter(function(s) { return s.captured && s.rollback; }).map(function(s) { return s.label; })
+      }
+    };
     captured.forEach(function(s) { out.selection[s.key] = true; });
     return out;
   }
@@ -15753,7 +15799,12 @@ if ('serviceWorker' in navigator) {
   function restoreSelectionSummary(out) {
     const sel = out.selection || {};
     const chosen = out.collections.filter(function(c) { return c.captured && sel[c.key]; });
-    return { chosen: chosen, totals: sumRestoreDiffs(chosen), labels: chosen.map(function(c) { return c.label; }) };
+    return {
+      chosen: chosen, totals: sumRestoreDiffs(chosen), labels: chosen.map(function(c) { return c.label; }),
+      
+      
+      rollback: chosen.filter(function(c) { return c.rollback; }).map(function(c) { return c.label; })
+    };
   }
   
   
@@ -15776,6 +15827,16 @@ if ('serviceWorker' in navigator) {
     const shown = list.slice(0, 3).map(pfRestoreEsc).join(', ');
     return list.length > 3 ? shown + ' …+' + (list.length - 3) + ' more' : shown;
   };
+  
+  
+  
+  function restoreAge(t) {
+    const d = Math.max(0, Date.now() - (t || 0));
+    if (d < 60000) return 'just now';
+    if (d < 3600000) return Math.floor(d / 60000) + ' min ago';
+    if (d < 86400000) return Math.floor(d / 3600000) + 'h ago';
+    return Math.floor(d / 86400000) + 'd ago';
+  }
   const RESTORE_OUTCOME = { applied: ' — applied', skipped: ' — left as it is (not ticked)' };
   const pfRestorePreviewEl = document.getElementById('pf-firebase-restore-preview');
   function restorePreviewHtml(out) {
@@ -15798,16 +15859,33 @@ if ('serviceWorker' in navigator) {
     
     
     if (out.status === 'applied') return headHtml + rows;
-    return headHtml + rows +
+    
+    
+    
+    
+    const staleHtml = (out.stale && out.stale.behind)
+      ? '<div class="pf-restore-stale" style="' + dim + 'padding:4px 6px;color:var(--danger);">\u26a0 Captured ' + restoreAge(out.stale.at) +
+        ' — older than this device\u2019s last cloud sync (' + restoreAge(out.stale.since) + '), so nothing you have done since is in it.' +
+        '<div class="pf-restore-risk" style="color:var(--text-dim);padding-top:2px;"></div></div>'
+      : '';
+    return headHtml + staleHtml + rows +
       '<div class="pf-restore-summary" style="' + dim + 'padding:4px 6px;"></div>' +
       '<button class="pf-undo-btn pf-restore-go" style="margin:4px 6px;">Restore selected</button>';
   }
   
   
   function renderRestoreSelection(out) {
+    const summary = restoreSelectionSummary(out);
+    const risk = pfRestorePreviewEl ? pfRestorePreviewEl.querySelector('.pf-restore-risk') : null;
+    if (risk) {
+      
+      
+      risk.textContent = summary.rollback.length
+        ? 'Restoring ' + (summary.rollback.length === 1 ? 'it' : 'them') + ' would overwrite newer work in: ' + summary.rollback.join(', ') + '.'
+        : 'None of the ticked collections would overwrite newer work.';
+    }
     const el = pfRestorePreviewEl ? pfRestorePreviewEl.querySelector('.pf-restore-summary') : null;
     if (!el) return out;
-    const summary = restoreSelectionSummary(out);
     const n = summary.chosen.length;
     const total = out.collections.filter(function(c) { return c.captured; }).length;
     el.textContent = n === 0
@@ -15854,9 +15932,15 @@ if ('serviceWorker' in navigator) {
     const against = (t.added + t.changed + t.removed) === 0
       ? 'This device already matches for everything you ticked'
       : 'That is ' + t.added + ' added, ' + t.changed + ' changed and ' + t.removed + ' gone against this device';
+    
+    
+    
+    const rollback = summary.rollback.length
+      ? ' This row is older than this device\u2019s last cloud sync, so it overwrites newer work in ' + summary.rollback.join(', ') + '.'
+      : '';
     pfConfirm('Restore backup',
       'Restore ' + summary.labels.join(', ') + ' from ' + out.key + '? ' + against +
-      '. Everything you did NOT tick is left exactly as it is now. A snapshot is taken first, so Undo can put it back.',
+      '.' + rollback + ' Everything you did NOT tick is left exactly as it is now. A snapshot is taken first, so Undo can put it back.',
       'Restore').then(function(ok) {
       if (!ok) { out.status = 'declined'; return renderRestorePreview(out); }
       window._pf.snapshot();
