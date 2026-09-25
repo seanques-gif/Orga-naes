@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DOmE6gcBcuko6/vuMQEWRd2AG2LeWjgKZIRAmqFHiSw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-W/KX0XRNtLLALshjBT+cnhZxP3YRFJdBqV5Q9aJ/Yj8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2384,7 +2384,7 @@
             </label>
             <button class="pf-undo-btn pf-opt-btn pf-mt-4" id="pf-firebase-backups-btn"  disabled><span class="pf-opt-ico" data-ic="planner"></span> Restore from Backup</button>
             <div class="pf-firebase-backups-list" id="pf-firebase-backups-list" style="display:none;"></div>
-            <!-- What a Restore WOULD change, computed against this device and shown before the confirmation is answered (module 45). -->
+            <!-- What a Restore would change on THIS device, and where the collections to bring back are ticked (module 45). -->
             <div class="pf-firebase-backups-list" id="pf-firebase-restore-preview" style="display:none;"></div>
             <button class="pf-undo-btn pf-opt-btn pf-mt-4" id="pf-firebase-purge-trash"  disabled><span class="pf-opt-ico" data-ic="trash"></span> Remove leftover cloud recycle bin</button>
             <div class="pf-firebase-backups-list" id="pf-firebase-purge-report" style="display:none;"></div>
@@ -15616,6 +15616,13 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  
+  
+  
   const RESTORE_PREVIEW_LABELS = {
     projects: 'Projects',
     archive: 'Archived projects',
@@ -15689,6 +15696,15 @@ if ('serviceWorker' in navigator) {
   const pfRestoreEsc = function(t) { return (window._pf && window._pf.escapeHtml) ? window._pf.escapeHtml(String(t)) : String(t); };
   
   
+  
+  
+  
+  
+  function sumRestoreDiffs(list) {
+    const t = { added: 0, changed: 0, removed: 0 };
+    list.forEach(function(c) { t.added += c.added.length; t.changed += c.changed.length; t.removed += c.removed.length; });
+    return t;
+  }
   function buildRestorePreview(row) {
     const cap = rowCaptures(row);
     const snap = (window._pf && typeof window._pf.getNotesSnapshot === 'function') ? window._pf.getNotesSnapshot() : null;
@@ -15727,20 +15743,27 @@ if ('serviceWorker' in navigator) {
     }) : none;
     add('notes', { added: noteDiff.added.map(noteName), changed: noteDiff.changed.map(noteName), removed: noteDiff.removed.map(noteName) });
     add('noteTombstones', cap.noteTombstones ? diffKeyedMaps(local.noteTombstones, row.noteTombstones) : none);
-    const totals = { added: 0, changed: 0, removed: 0 };
-    sections.forEach(function(s) {
-      if (!s.captured) return;
-      totals.added += s.added.length; totals.changed += s.changed.length; totals.removed += s.removed.length;
-    });
-    const out = {
-      status: 'preview',
-      key: '',
-      captured: sections.filter(function(s) { return s.captured; }).map(function(s) { return s.label; }),
-      collections: sections,
-      totals: totals
-    };
-    if (window._pf) window._pf._lastRestorePreview = out;
+    const captured = sections.filter(function(s) { return s.captured; });
+    const out = { status: 'preview', key: '', row: row, captured: captured.map(function(s) { return s.label; }), collections: sections, selection: {}, totals: sumRestoreDiffs(captured) };
+    captured.forEach(function(s) { out.selection[s.key] = true; });
     return out;
+  }
+  
+  
+  function restoreSelectionSummary(out) {
+    const sel = out.selection || {};
+    const chosen = out.collections.filter(function(c) { return c.captured && sel[c.key]; });
+    return { chosen: chosen, totals: sumRestoreDiffs(chosen), labels: chosen.map(function(c) { return c.label; }) };
+  }
+  
+  
+  
+  function readRestoreSelection(out) {
+    const boxes = pfRestorePreviewEl ? pfRestorePreviewEl.querySelectorAll('.pf-restore-pick') : [];
+    const sel = Object.assign({}, out.selection || {});
+    (boxes || []).forEach(function(b) { sel[b.dataset.restoreKey] = !!b.checked; });
+    out.selection = sel;
+    return sel;
   }
   const restoreCounts = function(c) {
     const parts = [];
@@ -15753,23 +15776,44 @@ if ('serviceWorker' in navigator) {
     const shown = list.slice(0, 3).map(pfRestoreEsc).join(', ');
     return list.length > 3 ? shown + ' …+' + (list.length - 3) + ' more' : shown;
   };
+  const RESTORE_OUTCOME = { applied: ' — applied', skipped: ' — left as it is (not ticked)' };
   const pfRestorePreviewEl = document.getElementById('pf-firebase-restore-preview');
   function restorePreviewHtml(out) {
     const dim = 'font-size: calc(var(--font-size-base) - 5px);color:var(--text-dim);';
-    const body = 'font-size: calc(var(--font-size-base) - 5px);color:var(--text);';
     const key = pfRestoreEsc(out.key);
     let head;
-    if (out.status === 'applied') head = '✅ Restored ' + pfRestoreEsc((out.applied || []).join(', ') || 'nothing') + ' from ' + key + ' — this is what it changed:';
-    else if (out.status === 'declined') head = 'Cancelled — nothing was applied. This is what ' + key + ' would have changed:';
-    else head = 'What ' + key + ' would change on this device — nothing has been applied yet:';
-    return '<div style="' + dim + 'padding:6px;">' + head + '</div>' + out.collections.map(function(c) {
+    if (out.status === 'applied') head = '✅ Restored ' + pfRestoreEsc((out.applied || []).join(', ') || 'nothing') + ' from ' + key + ' — each collection below says what happened to it:';
+    else if (out.status === 'declined') head = 'Cancelled — nothing was applied. Choose what to bring back from ' + key + ':';
+    else head = 'Choose what to bring back from ' + key + ' — nothing has been applied yet:';
+    const rows = out.collections.map(function(c) {
       if (!c.captured) return '<div style="' + dim + 'padding:2px 6px;"><b>' + c.label + '</b> — not captured by this row, left as it is</div>';
-      let line = '<div style="' + body + 'padding:2px 6px;"><b>' + c.label + '</b> ' + restoreCounts(c) + '</div>';
-      if (c.added.length) line += '<div style="' + dim + 'padding:0 6px 0 16px;">+ ' + restoreNames(c.added) + '</div>';
-      if (c.changed.length) line += '<div style="' + dim + 'padding:0 6px 0 16px;">~ ' + restoreNames(c.changed) + '</div>';
-      if (c.removed.length) line += '<div style="' + dim + 'padding:0 6px 0 16px;">− ' + restoreNames(c.removed) + '</div>';
-      return line;
+      const box = out.status === 'applied' ? '' : '<input type="checkbox" class="pf-restore-pick" data-restore-key="' + c.key + '"> ';
+      const tail = out.status === 'applied' ? (RESTORE_OUTCOME[c.outcome] || '') : '';
+      return '<div style="' + dim + 'padding:2px 6px;"><label>' + box + '<b>' + c.label + '</b> ' + restoreCounts(c) + tail +
+        (c.added.length ? '<br>+ ' + restoreNames(c.added) : '') +
+        (c.changed.length ? '<br>~ ' + restoreNames(c.changed) : '') +
+        (c.removed.length ? '<br>− ' + restoreNames(c.removed) : '') + '</label></div>';
     }).join('');
+    const headHtml = '<div style="' + dim + 'padding:6px;">' + head + '</div>';
+    
+    
+    if (out.status === 'applied') return headHtml + rows;
+    return headHtml + rows +
+      '<div class="pf-restore-summary" style="' + dim + 'padding:4px 6px;"></div>' +
+      '<button class="pf-undo-btn pf-restore-go" style="margin:4px 6px;">Restore selected</button>';
+  }
+  
+  
+  function renderRestoreSelection(out) {
+    const el = pfRestorePreviewEl ? pfRestorePreviewEl.querySelector('.pf-restore-summary') : null;
+    if (!el) return out;
+    const summary = restoreSelectionSummary(out);
+    const n = summary.chosen.length;
+    const total = out.collections.filter(function(c) { return c.captured; }).length;
+    el.textContent = n === 0
+      ? 'Nothing selected — tick the collections to bring back.'
+      : n + ' of ' + total + ' collections selected — +' + summary.totals.added + ' added, ' + summary.totals.changed + ' changed, −' + summary.totals.removed + ' gone';
+    return out;
   }
   
   
@@ -15781,7 +15825,70 @@ if ('serviceWorker' in navigator) {
     if (!pfRestorePreviewEl) return out;
     pfRestorePreviewEl.style.display = 'block';
     pfRestorePreviewEl.innerHTML = restorePreviewHtml(out);
+    if (out.status === 'applied') return out;
+    pfRestorePreviewEl.querySelectorAll('.pf-restore-pick').forEach(function(b) {
+      b.checked = !!out.selection[b.dataset.restoreKey];
+      b.addEventListener('change', function() {
+        out.selection[b.dataset.restoreKey] = !!b.checked;
+        renderRestoreSelection(out);
+      });
+    });
+    const go = pfRestorePreviewEl.querySelector('.pf-restore-go');
+    if (go) go.addEventListener('click', function() { restoreSelected(out); });
+    renderRestoreSelection(out);
     return out;
+  }
+  
+  
+  
+  function restoreSelected(out) {
+    const sel = readRestoreSelection(out);
+    const summary = restoreSelectionSummary(out);
+    if (!summary.chosen.length) {
+      if (window._pf.showToast) window._pf.showToast('Nothing selected — tick the collections to bring back', true);
+      return;
+    }
+    const row = out.row || {};
+    const cap = rowCaptures(row);
+    const t = summary.totals;
+    const against = (t.added + t.changed + t.removed) === 0
+      ? 'This device already matches for everything you ticked'
+      : 'That is ' + t.added + ' added, ' + t.changed + ' changed and ' + t.removed + ' gone against this device';
+    pfConfirm('Restore backup',
+      'Restore ' + summary.labels.join(', ') + ' from ' + out.key + '? ' + against +
+      '. Everything you did NOT tick is left exactly as it is now. A snapshot is taken first, so Undo can put it back.',
+      'Restore').then(function(ok) {
+      if (!ok) { out.status = 'declined'; return renderRestorePreview(out); }
+      window._pf.snapshot();
+      const appliedList = [];
+      const applyList = function(unit, value, label, setter) {
+        if (!sel[unit]) return;
+        const list = rowList(value);
+        if (!list) return;
+        setter(list);
+        appliedList.push(label);
+      };
+      applyList('projects', row.projects, 'projects', function(l) { window._pf.setProjects(l); });
+      applyList('archive', row.archive, 'archive', function(l) { window._pf.setArchive(l); });
+      applyList('categories', row.categories, 'categories', function(l) { window._pf.setCategories(l); window._pf.saveCategories(); });
+      if (sel.categoryEmojis && cap.categoryEmojis) { window._pf.setCategoryEmojis(row.categoryEmojis); appliedList.push('category emojis'); }
+      applyList('snoozePresets', row.snoozePresets, 'snooze presets', function(l) { window._pf.setSnoozePresets(l); });
+      if (cap.notes && (sel.notes || sel.noteTombstones)) {
+        const snap = (window._pf.getNotesSnapshot && window._pf.getNotesSnapshot()) || { notes: [], tombstones: {} };
+        window._pf.adoptCloudNotes(
+          sel.notes ? (rowList(row.notes) || []) : (snap.notes || []),
+          sel.noteTombstones ? (row.noteTombstones || {}) : (snap.tombstones || {})
+        );
+        if (sel.notes) appliedList.push('notes');
+        if (sel.noteTombstones) appliedList.push('deleted-note records');
+      }
+      window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
+      out.collections.forEach(function(c) { c.outcome = !c.captured ? 'untouched' : (sel[c.key] ? 'applied' : 'skipped'); });
+      out.status = 'applied'; out.applied = appliedList;
+      renderRestorePreview(out);
+      window._pf.showToast('✅ Restored ' + (appliedList.length ? appliedList.join(', ') : 'nothing') + ' from ' + out.key);
+      backupsList.style.display = 'none';
+    });
   }
 
   
@@ -15815,58 +15922,9 @@ if ('serviceWorker' in navigator) {
           
           
           
-          const row = val[key] || {};
-          const held = [
-            ((rowList(row.projects) || []).length) + ' project(s)',
-            ((rowList(row.archive) || []).length) + ' archived',
-            ((rowList(row.categories) || []).length) + ' category(ies)',
-            ((rowList(row.notes) || []).length) + ' note(s)'
-          ].join(', ');
           
           
-          
-          
-          const captures = rowCaptures(row);
-          const preview = renderRestorePreview(buildRestorePreview(row), key);
-          const totals = preview.totals;
-          const against = (totals.added + totals.changed + totals.removed) === 0
-            ? 'Against this device it changes nothing'
-            : 'Against this device that is ' + totals.added + ' added, ' + totals.changed + ' changed and ' + totals.removed + ' gone, across ' + preview.captured.join(', ');
-          pfConfirm('Restore backup',
-            'Restore the backup from ' + key + '? It holds ' + held + '. ' + against +
-            ' — the per-collection detail is above. It replaces this device\u2019s projects, archive, categories, category emojis, snooze presets and notes. A snapshot is taken first, so Undo can put it back.',
-            'Restore').then(function(ok) {
-          if (!ok) { preview.status = 'declined'; renderRestorePreview(preview); return; }
-          window._pf.snapshot();
-          const applied = [];
-          
-          
-          
-          
-          
-          const applyList = function(v, label, setter) {
-            const list = rowList(v);
-            if (!list) return;
-            setter(list);
-            applied.push(label);
-          };
-          applyList(row.projects, 'projects', function(l) { window._pf.setProjects(l); });
-          applyList(row.archive, 'archive', function(l) { window._pf.setArchive(l); });
-          applyList(row.categories, 'categories', function(l) { window._pf.setCategories(l); window._pf.saveCategories(); });
-          if (row.categoryEmojis && typeof row.categoryEmojis === 'object') { window._pf.setCategoryEmojis(row.categoryEmojis); applied.push('category emojis'); }
-          applyList(row.snoozePresets, 'snooze presets', function(l) { window._pf.setSnoozePresets(l); });
-          if (captures.notes) {
-            
-            
-            window._pf.adoptCloudNotes(rowList(row.notes) || [], row.noteTombstones || {});
-            applied.push('notes');
-          }
-          window._pf.scheduleSave(); window._pf.render(); window._pf.renderSplitList();
-          preview.status = 'applied'; preview.applied = applied;
-          renderRestorePreview(preview);
-          window._pf.showToast('✅ Restored ' + (applied.length ? applied.join(', ') : 'nothing') + ' from ' + key);
-          backupsList.style.display = 'none';
-          });
+          renderRestorePreview(buildRestorePreview(val[key] || {}), key);
         });
       });
     });
