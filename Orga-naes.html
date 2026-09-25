@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Ag5SeCdoKmiPUadeqldcC9i49tz3dMflIhPWCCMqm9M='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-E8gbLMlOCXT7BeXCtbwIWOe/3WvrY2jiIt6aATxlcQI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3483,6 +3483,28 @@
 
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  const BIN_ENTRY_ONLY_KEYS = ['node', 'projectId', 'projectTitle', 'parentPath', 'index'];
+  
+  
+  function stripBinEntryKeys(obj) {
+    if (!obj || typeof obj !== 'object') return 0;
+    let n = 0;
+    BIN_ENTRY_ONLY_KEYS.forEach(function(k) {
+      if (Object.prototype.hasOwnProperty.call(obj, k)) { delete obj[k]; n++; }
+    });
+    return n;
+  }
+
+  
+  
   function payloadReport() { return { changes: [] }; }
   function payloadNote(report, path, what) { if (report && report.changes.length < 40) report.changes.push(path + ' ' + what); }
   function payloadSummary(report) {
@@ -3851,6 +3873,11 @@
     window._pf.payloadSummary = payloadSummary;
     window._pf.capCloudText = capCloudText;
     window._pf.attachCapCounter = attachCapCounter;
+    
+    
+    
+    window._pf.BIN_ENTRY_ONLY_KEYS = BIN_ENTRY_ONLY_KEYS;
+    window._pf.stripBinEntryKeys = stripBinEntryKeys;
   }
   // SUBSECTION: Global Keyboard Shortcuts
   document.addEventListener('keydown', (e) => {
@@ -5012,6 +5039,14 @@
         if (allDone && p.status !== 'completed') { p.status = 'completed'; if (!p.completedAt) p.completedAt = new Date().toISOString(); delete p._manualStatus; repaired++; }
         else if (!allDone && p.status === 'completed') { p.status = 'ongoing'; p.completedAt = null; delete p._manualStatus; repaired++; }
       }
+      
+      
+      
+      
+      
+      
+      
+      repaired += stripBinEntryKeys(p);
       return p;
     }).filter(Boolean);
     const allIds = new Set();
@@ -5366,7 +5401,14 @@
       if (typeof t.index !== 'number') t.index = 0;
     }
     
-    if (!t.node || typeof t.node !== 'object' || Array.isArray(t.node)) {
+    
+    
+    
+    
+    
+    
+    
+    if ((t.kind === 'subtask' || t.kind === 'note') && (!t.node || typeof t.node !== 'object' || Array.isArray(t.node))) {
       
       t.node = { id: t.id, title: t.title, status: 'planned', subtasks: [] };
     }
@@ -5386,8 +5428,13 @@
     _archiveTabStore.recordBase();   
   }
   function saveArchive() { const _json = JSON.stringify(archive); _archiveTabStore.recordBase(_json); safeSet(ARCHIVE_KEY, _json, false); }
-  function archiveProject(p) { archive = archive.filter(a => a.id !== p.id); archive.push({ ...JSON.parse(JSON.stringify(p)), archivedAt: new Date().toISOString() }); saveArchive(); }
-  function restoreFromArchive(id) { const idx = archive.findIndex(a => a.id === id); if (idx < 0) return; const item = archive.splice(idx, 1)[0]; delete item.archivedAt; projects.push(item); saveArchive(); scheduleSave(); render(); renderArchiveList(); showToast('"' + item.title + '" restored'); }
+  
+  
+  
+  
+  
+  function archiveProject(p) { archive = archive.filter(a => a.id !== p.id); const copy = { ...JSON.parse(JSON.stringify(p)), archivedAt: new Date().toISOString() }; stripBinEntryKeys(copy); archive.push(copy); saveArchive(); }
+  function restoreFromArchive(id) { const idx = archive.findIndex(a => a.id === id); if (idx < 0) return; const item = archive.splice(idx, 1)[0]; delete item.archivedAt; stripBinEntryKeys(item); projects.push(item); saveArchive(); scheduleSave(); render(); renderArchiveList(); showToast('"' + item.title + '" restored'); }
   function renderArchiveList() {
     const list = document.getElementById('pf-archive-list');
     document.getElementById('pf-archive-count').textContent = archive.length ? '(' + archive.length + ')' : '';
@@ -5489,6 +5536,11 @@
       showToast('"' + (item.title || 'Subtask') + '" restored');
     } else {
       delete item.deletedAt; delete item.kind;
+      
+      
+      
+      
+      stripBinEntryKeys(item);
       projects.push(item);
       scheduleSave(); render();
       showToast('"' + item.title + '" restored');
@@ -12299,6 +12351,11 @@
     setArchive: (a) => { archive = a; saveArchive(); },
     getTrash: () => trash,
     setTrash: (t) => { trash = t; saveTrash(); },
+    
+    
+    
+    archiveProject: (p) => archiveProject(p),
+    restoreFromArchive: (id) => restoreFromArchive(id),
     scheduleSave: () => scheduleSave(),
     confirmDialog: (title, message, okLabel, cancelLabel) => pfConfirmDialog(title, message, okLabel, cancelLabel),
     optionsShowGroup: (id) => optionsShowGroup(id),
