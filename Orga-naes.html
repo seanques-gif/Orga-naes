@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-TdzgLWfJQ51EBJcKv9dxsr44XYVcGHgTA1fPYIGcQ8k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-E30mac92D348bzcsmjWeI6zkE+99rmcW7PflrwXte+Q='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -15630,6 +15630,14 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
   const RESTORE_PREVIEW_LABELS = {
     projects: 'Projects',
     archive: 'Archived projects',
@@ -15749,15 +15757,26 @@ if ('serviceWorker' in navigator) {
     };
     const sections = [];
     const add = function(key, diff) {
+      
+      
+      
+      
+      
+      
+      const costsNothing = diff.changed.length === 0 && diff.removed.length === 0;
       sections.push({
         key: key, label: RESTORE_PREVIEW_LABELS[key], captured: !!cap[key],
         added: diff.added, changed: diff.changed, removed: diff.removed,
         
         
         
+        costsNothing: costsNothing,
         
         
-        rollback: behind && (diff.changed.length + diff.removed.length) > 0
+        
+        
+        
+        rollback: behind && !costsNothing
       });
     };
     const none = { added: [], changed: [], removed: [] };
@@ -15791,8 +15810,18 @@ if ('serviceWorker' in navigator) {
         labels: sections.filter(function(s) { return s.captured && s.rollback; }).map(function(s) { return s.label; })
       }
     };
+    
+    
+    out.missing = restoreMissingSet(out).map(function(c) { return c.label; });
     captured.forEach(function(s) { out.selection[s.key] = true; });
     return out;
+  }
+  
+  
+  
+  
+  function restoreMissingSet(out) {
+    return (out.collections || []).filter(function(c) { return c.captured && c.costsNothing && c.added.length > 0; });
   }
   
   
@@ -15868,8 +15897,13 @@ if ('serviceWorker' in navigator) {
         ' — older than this device\u2019s last cloud sync (' + restoreAge(out.stale.since) + '), so nothing you have done since is in it.' +
         '<div class="pf-restore-risk" style="color:var(--text-dim);padding-top:2px;"></div></div>'
       : '';
+    
+    
+    const missingHere = restoreMissingSet(out);
     return headHtml + staleHtml + rows +
       '<div class="pf-restore-summary" style="' + dim + 'padding:4px 6px;"></div>' +
+      '<button class="pf-undo-btn pf-restore-safe" style="margin:4px 6px;">Bring back only what this device is missing' +
+      (missingHere.length ? ' (' + missingHere.length + ')' : '') + '</button>' +
       '<button class="pf-undo-btn pf-restore-go" style="margin:4px 6px;">Restore selected</button>';
   }
   
@@ -15911,8 +15945,28 @@ if ('serviceWorker' in navigator) {
         renderRestoreSelection(out);
       });
     });
+    const preset = pfRestorePreviewEl.querySelector('.pf-restore-safe');
+    if (preset) preset.addEventListener('click', function() { restoreMissingSelection(out); });
     const go = pfRestorePreviewEl.querySelector('.pf-restore-go');
     if (go) go.addEventListener('click', function() { restoreSelected(out); });
+    renderRestoreSelection(out);
+    return out;
+  }
+  
+  
+  
+  
+  function restoreMissingSelection(out) {
+    const missing = restoreMissingSet(out);
+    if (!missing.length) {
+      if (window._pf.showToast) window._pf.showToast('Nothing to bring back — every collection this backup carries would change or drop something on this device', true);
+      return out;
+    }
+    const sel = {};
+    missing.forEach(function(c) { sel[c.key] = true; });
+    out.selection = sel;
+    const boxes = pfRestorePreviewEl ? pfRestorePreviewEl.querySelectorAll('.pf-restore-pick') : [];
+    (boxes || []).forEach(function(b) { b.checked = !!sel[b.dataset.restoreKey]; });
     renderRestoreSelection(out);
     return out;
   }
