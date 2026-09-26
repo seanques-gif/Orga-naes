@@ -17,6 +17,11 @@ GLM 5.3 Flash - Audit report.md
 
 # AI-collab docs: local-only (owner decision 2026-09-13) — not part of the published project
 AGENTS.md
+# Pointer files for the tools that do not read AGENTS.md natively (owner
+# decision: the briefing lives in AGENTS.md alone — one record, no drift).
+/CLAUDE.md
+/AI-RELAY.md
+/.github/copilot-instructions.md
 
 # Design/audit records: local-only (owner decision 2026-09-13)
 DESIGN.md
