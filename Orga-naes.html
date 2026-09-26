@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-E8gbLMlOCXT7BeXCtbwIWOe/3WvrY2jiIt6aATxlcQI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-67737dfpXUPBNJ+62vd7/CX/a0Wa2VjkWEUX/cN01b4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -244,7 +244,6 @@
     #pf-root .pf-options-mobile { display: none !important; }
     #pf-root .pf-options-desktop { display: none !important; }
     #pf-root #pf-toolbar-back { display: none !important; }
-    #pf-root .pf-mobile-back { display: none !important; }
     #pf-root .pf-toolbar { display: none !important; }
     
     #pf-root:not(.pf-device-desktop) .pf-search-wrap.pf-search-open {
@@ -428,7 +427,6 @@
     padding: 2px; background: var(--sub-bg); border-radius: 6px; border: 1px solid var(--card-border);
     overflow: visible;
   }
-  #pf-root .pf-tb-sep { width: 1px; height: 20px; background: var(--card-border); margin: 0 4px; flex-shrink: 0; }
   #pf-root .pf-toolbar .pf-tb-group + .pf-tb-group,
   #pf-root .pf-toolbar .pf-new-btn + .pf-tb-group,
   #pf-root .pf-toolbar .pf-tb-group + .pf-search-wrap,
@@ -591,7 +589,6 @@
   @media (max-width: 800px) {
     #pf-root .pf-toolbar { flex-wrap: wrap; overflow-x: visible; gap: var(--space-xs); padding: 4px 6px; }
     #pf-root .pf-tb-group { padding: 1px; }
-    #pf-root .pf-tb-sep { display: none; }
     #pf-root .pf-due-filter { display: none; }
     #pf-root .pf-search-wrap { order: 0; width: auto; }
     #pf-root .pf-search { width: 100%; }
@@ -615,8 +612,6 @@
     #pf-root.pf-detail-open .pf-split-detail { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
     #pf-root.pf-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
     #pf-root.pf-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
-    #pf-root .pf-mobile-back { display: none; }
-    #pf-root.pf-mobile-detail-open .pf-mobile-back { display: inline-flex; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: calc(var(--font-size-base) - 2px); padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
     #pf-tb-undoredo { display: flex !important; }
     #pf-tb-duefilter { display: flex !important; }
     #pf-tb-viewtools { display: flex !important; }
@@ -651,7 +646,6 @@
   #pf-root.pf-device-mobile .pf-toolbar { gap: 2px; padding: 4px 6px; }
   #pf-root.pf-device-mobile .pf-undo-btn { min-width: 32px; min-height: 32px; font-size: max(14px, var(--font-size-base)); }
   #pf-root.pf-device-mobile .pf-split-list-item { padding: 4px 12px; gap: 6px; margin: 0 4px 0 16px; }
-  #pf-root.pf-device-mobile .pf-split-list-status { min-width: 0; padding: 0; font-size: 0; border-radius: 50%; width: 10px; height: 10px; display: inline-block; flex-shrink: 0; background: currentColor !important; }
   #pf-root.pf-device-mobile .pf-subrow { padding: 10px 8px; }
   #pf-root.pf-device-mobile .pf-chevron { width: 28px; height: 28px; }
 
@@ -750,7 +744,6 @@
     #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
     #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail .pf-node { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
     #pf-root.pf-device-tablet.pf-detail-open .pf-split-detail .pf-node .pf-sublist { flex: none; overflow-y: visible; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
-    #pf-root.pf-device-tablet.pf-detail-open .pf-mobile-back { display: inline-flex !important; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: calc(var(--font-size-base) - 2px); padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
   }
 
   #pf-root.pf-device-desktop .pf-split-list-item:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
@@ -763,8 +756,6 @@
   #pf-root.pf-device-desktop .pf-split-divider { display: block; }
   #pf-root.pf-device-desktop.pf-detail-open .pf-split-list { display: block; }
   #pf-root.pf-device-desktop.pf-detail-open .pf-split-divider { display: block; }
-  #pf-root.pf-device-desktop .pf-mobile-back,
-  #pf-root.pf-device-desktop.pf-detail-open .pf-mobile-back { display: none !important; }
   #pf-root.pf-device-desktop .pf-bottom-nav { display: none !important; }
   #pf-root.pf-device-desktop .pf-toolbar { display: flex !important; flex-wrap: wrap; overflow-x: visible; }
   #pf-root.pf-device-desktop #pf-today-btn { display: inline-flex !important; }
@@ -781,7 +772,6 @@
   
   @media (max-width: 768px) and (min-width: 501px) {
     #pf-root .pf-toolbar { gap: var(--space-xs); padding: 4px 8px; }
-    #pf-root .pf-tb-sep { display: none; }
     #pf-root .pf-undo-btn { padding: 5px 8px; font-size: calc(var(--font-size-base) - 2px); }
     #pf-root .pf-split-list { width: 100%; max-width: 100%; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
     #pf-root#pf-root .pf-split-list-title { font-size: calc(var(--font-size-base) - 1px); } 
@@ -801,14 +791,11 @@
     #pf-root .pf-split-divider { display: none; }
     #pf-root.pf-detail-open .pf-split-list { display: none; }
     #pf-root.pf-detail-open .pf-split-detail { display: flex; zoom: 0.85; }
-    #pf-root .pf-mobile-back { display: none; }
-    #pf-root.pf-detail-open .pf-mobile-back { display: inline-flex !important; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: calc(var(--font-size-base) - 2px); padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
   }
   
   @media (max-width: 500px) {
     #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
     #pf-root#pf-root .pf-split-list-title { font-size: calc(var(--font-size-base) - 1px); } 
-    #pf-root .pf-split-list-status { font-size: max(9px, calc(var(--font-size-base) - 5px)); padding: 2px 5px; }
     #pf-root#pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 3px); } 
     #pf-root .pf-split-list-due { font-size: max(9px, calc(var(--font-size-base) - 5px)); }
     #pf-root .pf-node { max-width: 100%; }
@@ -843,12 +830,10 @@
     scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
     -webkit-overflow-scrolling: touch;
   }
-  #pf-root .pf-mobile-back { display: none; }
   #pf-root.pf-detail-open .pf-split-list { display: none; }
   #pf-root.pf-detail-open .pf-split-divider { display: none; }
   #pf-root.pf-device-desktop .pf-split-divider { display: block; }
   #pf-root.pf-device-tablet .pf-split-divider { display: block; }
-  #pf-root.pf-detail-open .pf-mobile-back { display: inline-flex !important; align-items: center; gap: 4px; background: var(--sub-bg); border: 1px solid var(--card-border); color: var(--text); font-size: calc(var(--font-size-base) - 2px); padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; }
   #pf-root .pf-split-list { animation: pf-list-slide var(--dur-surface) var(--ease-console); }
   @keyframes pf-list-slide { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
   #pf-root .pf-split-divider {
@@ -917,15 +902,9 @@
   #pf-root .pf-split-delete-bar button[data-action="delete"] { color: var(--danger); border-color: var(--danger); }
   #pf-root .pf-split-delete-bar button[data-action="delete"]:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
   #pf-root .pf-split-delete-bar span { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
-  #pf-root .pf-split-list-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: transform 0.15s; }
-  @media (hover: hover) and (pointer: fine) {
-    #pf-root .pf-split-list-item:hover .pf-split-list-dot { transform: scale(1.2); }
-  }
   #pf-root .pf-split-list-title { flex: 1; font-size: calc(var(--font-size-base) - 2px); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
   #pf-root .pf-split-list-item.pf-split-active .pf-split-list-title { font-weight: 500; color: var(--accent); }
-  #pf-root .pf-split-list-status { font-size: max(9px, calc(var(--font-size-base) - 5.5px)); padding: 2px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; width: 62px; text-align: center; display: inline-block; transition: background 0.3s var(--ease-console), color 0.3s var(--ease-console); }
   #pf-root .pf-split-list-progress { font-size: max(9px, calc(var(--font-size-base) - 5.5px)); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 36px; text-align: center; display: inline-block; }
-  #pf-root .pf-split-list-progress-pct { font-size: max(8.5px, max(9px, calc(var(--font-size-base) - 5.5px))); font-weight: 500; color: var(--text-dim); opacity: 0.65; margin-left: 3px; }
   #pf-root .pf-split-list-due { font-size: max(9px, calc(var(--font-size-base) - 5.5px)); color: var(--text-dim); flex-shrink: 0; display: inline-flex; align-items: center; gap: var(--space-xs); width: 58px; text-align: right; }
   #pf-root .pf-split-list-due.pf-overdue { color: var(--danger); font-weight: 600; }
   #pf-root .pf-split-list-edit { display: none; }
@@ -974,7 +953,6 @@
   @keyframes pf-ctx-fade { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
   #pf-root .pf-cat-items-wrap { overflow: hidden;     transition: max-height 0.3s var(--ease-console), opacity 0.25s var(--ease-console); max-height: 2000px; opacity: 1; }
   #pf-root .pf-cat-items-wrap.pf-collapsed { max-height: 0; opacity: 0; }
-  #pf-root .pf-pull-indicator { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: 32px; height: 32px; border-radius: 50%; background: var(--card); border: 2px solid var(--accent); display: none; z-index: var(--z-toast); font-size: calc(var(--font-size-base) + 4px); line-height: 28px; text-align: center; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none; }
   #pf-root .pf-scroll-top { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(10px); width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--accent-contrast); border: none; font-size: calc(var(--font-size-base) + 4px); line-height: 40px; text-align: center; cursor: pointer; z-index: var(--z-chrome); box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.25s var(--ease-out-strong), transform 0.25s var(--ease-out-strong); }
   #pf-root .pf-scroll-top.pf-visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
   #pf-root.pf-device-mobile .pf-scroll-top { bottom: 80px; }
@@ -1097,7 +1075,6 @@
     padding: 0 0 0 4px; opacity: 1; transition: color 0.15s; flex-shrink: 0;
   }
   #pf-root .pf-node-del:hover { color: var(--danger); }
-  #pf-root .pf-node-meta { display: flex; align-items: center; justify-content: space-between; padding: 0 11px 11px 37px; gap: 6px; }
   #pf-root .pf-badge { font-size: clamp(9px, 1.4vw, 11px); font-weight: 600; padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 9px); border-radius: 100px; border: 1px solid transparent; cursor: pointer; letter-spacing: 0.2px; white-space: nowrap; margin-top: 0; line-height: 1.2; align-self: center; transition: transform 0.15s, filter 0.15s, background 0.3s var(--ease-console), color 0.3s var(--ease-console); flex-shrink: 0; }
   @media (hover: hover) and (pointer: fine) {
     #pf-root .pf-badge:hover { transform: scale(1.05); filter: brightness(1.15); }
@@ -1215,7 +1192,6 @@
   #pf-root .pf-color-custom-label { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
   #pf-root .pf-color-modal-btns { display: flex; gap: 8px; }
   #pf-root .pf-header-meta { display: inline-flex; align-items: center; gap: clamp(3px, 0.7vw, 6px); flex-shrink: 0; font-size: clamp(9px, 1.4vw, 12px); }
-  #pf-root .pf-node-dates { padding: 0 11px 10px 37px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   #pf-root .pf-due-wrap { display: inline-flex; align-items: center; flex-shrink: 0; }
 
   #pf-root .pf-due-chip {
@@ -1424,7 +1400,6 @@
   #pf-root .pf-opt-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 2px 18px 14px; }
   #pf-root .pf-options-row .pf-undo-btn { width: auto; flex-shrink: 0; padding: 6px 8px; font-size: calc(var(--font-size-base) - 1px); }
   #pf-root .pf-options-row { display: flex; align-items: center; gap: 10px; }
-  #pf-root .pf-options-label { font-size: var(--font-size-base); color: var(--text); }
   #pf-root .pf-range-input { flex: 1; cursor: pointer; accent-color: var(--accent); }
   #pf-root .pf-options-val { font-size: calc(var(--font-size-base) - 2.5px); color: var(--text-dim); min-width: 32px; text-align: right; }
   #pf-root .pf-shortcuts-panel {
@@ -1698,7 +1673,6 @@
   #pf-root .pf-xp-badge,
   #pf-root .pf-freeze-badge,
   #pf-root .pf-split-list-progress,
-  #pf-root .pf-split-list-progress-pct,
   #pf-root .pf-split-list-due,
   #pf-root .pf-count,
   #pf-root .pf-due-chip,
@@ -3514,11 +3488,6 @@
 
   
   
-  function cloudText(val, max) {
-    const s = (val === null || typeof val === 'undefined') ? null : String(val);
-    if (s === null) return null;
-    return s.length > max ? s.slice(0, max) : s;
-  }
   
   
   
@@ -3531,7 +3500,12 @@
   
   
   
-  function repairCloudId(value, seed) {
+  
+  
+  
+  
+  
+  function repairRecordId(value, seed) {
     const s = (value === null || typeof value === 'undefined') ? '' : String(value);
     if (PAYLOAD_RE.id.test(s)) return { id: s, changed: false, why: '' };
     const cleaned = s.replace(/[^A-Za-z0-9_-]/g, '');
@@ -3553,6 +3527,48 @@
     if (!PAYLOAD_RE.id.test(candidate)) return { id: '', changed: true, why: why + ' — and the replacement still fails the rules pattern' };
     return { id: candidate, changed: true, why: why };
   }
+  
+  
+  
+  function repairRecordColor(value) {
+    const s = (value === null || typeof value === 'undefined') ? '' : String(value);
+    return PAYLOAD_RE.color.test(s) ? s : null;
+  }
+  
+  
+  
+  
+  
+  const RECORD_REF_FIELDS = ['id', 'sourceId', 'projectId'];
+  function repairRecordRefs(item) {
+    if (!item || typeof item !== 'object') return item;
+    for (let i = 0; i < RECORD_REF_FIELDS.length; i++) {
+      const k = RECORD_REF_FIELDS[i];
+      if (typeof item[k] === 'string' && item[k]) {
+        
+        
+        
+        item[k] = repairRecordId(item[k], k).id;
+      }
+    }
+    if ('color' in item) item.color = repairRecordColor(item.color);
+    return item;
+  }
+  
+  
+  function repairRecordTree(nodes) {
+    if (!Array.isArray(nodes)) return nodes;
+    nodes.forEach(function(n) {
+      if (!n || typeof n !== 'object') return;
+      repairRecordRefs(n);
+      if (Array.isArray(n.subtasks)) repairRecordTree(n.subtasks);
+    });
+    return nodes;
+  }
+  
+  
+  _pf.repairRecordId = repairRecordId;
+  _pf.repairRecordColor = repairRecordColor;
 
   function cloudCap(val, max) {
     const s = (val === null || typeof val === 'undefined') ? '' : String(val);
@@ -3570,7 +3586,7 @@
     const out = {};
     if (!p || typeof p !== 'object') { payloadNote(report, path, 'was not an object and was dropped'); return null; }
     const str = (v) => (typeof v === 'string' ? v : (v === null || typeof v === 'undefined' ? null : String(v)));
-    const rid = repairCloudId(p.id, path);
+    const rid = repairRecordId(p.id, path);
     if (rid.changed) payloadNote(report, path + '.id', rid.why);
     if (!rid.id) { payloadNote(report, path, 'could not be given an id the rules accept and was dropped'); return null; }
     const id = rid.id;
@@ -3651,7 +3667,7 @@
     if (!s || typeof s !== 'object') { payloadNote(report, path, 'was not a task and was dropped'); return null; }
     const str = (v) => (typeof v === 'string' ? v : (v === null || typeof v === 'undefined' ? null : String(v)));
     const out = {};
-    const rid = repairCloudId(s.id, path);
+    const rid = repairRecordId(s.id, path);
     if (rid.changed) payloadNote(report, path + '.id', rid.why);
     if (!rid.id) { payloadNote(report, path, 'could not be given an id the rules accept and was dropped'); return null; }
     const id = rid.id;
@@ -3692,7 +3708,7 @@
     
     
     const blocked = Array.isArray(s.blockedBy) ? s.blockedBy : (s.blockedBy && typeof s.blockedBy === 'object' ? Object.values(s.blockedBy) : []);
-    const blockedIds = blocked.map((v) => repairCloudId(v, path + '.blockedBy')).filter((r) => r.id).map((r) => r.id);
+    const blockedIds = blocked.map((v) => repairRecordId(v, path + '.blockedBy')).filter((r) => r.id).map((r) => r.id);
     if (blockedIds.length !== blocked.filter(Boolean).length) payloadNote(report, path + '.blockedBy', 'had entries that are not record ids and they were dropped');
     out.blockedBy = blockedIds;
 
@@ -3737,7 +3753,7 @@
       const path = 'notes[' + i + ']';
       if (!n || typeof n !== 'object') { payloadNote(report, path, 'was not a note and was dropped'); return null; }
       const str = (v) => (typeof v === 'string' ? v : (v === null || typeof v === 'undefined' ? null : String(v)));
-      const rid = repairCloudId(n.id, path);
+      const rid = repairRecordId(n.id, path);
       if (rid.changed) payloadNote(report, path + '.id', rid.why);
       if (!rid.id) { payloadNote(report, path, 'could not be given an id the rules accept and was dropped'); return null; }
       const id = rid.id;
@@ -4496,19 +4512,6 @@
     });
   }
 
-  function triggerFileBackup() {
-    if (!projects.length) return;
-    const blob = new Blob([JSON.stringify(projects, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const d = new Date();
-    a.href = url;
-    a.download = 'orga-naes-backup-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('💾 Backup saved');
-  }
-
   let _autoBackupTimer = null;
   
   
@@ -5004,7 +5007,14 @@
       if (!Array.isArray(subs)) return [];
       return subs.filter(Boolean).map(s => {
         if (!s || typeof s !== 'object') { repaired++; return null; }
-        if (!s.id || seenIds.has(s.id)) { s.id = uid(); repaired++; }
+        
+        
+        
+        
+        
+        const sid = repairRecordId(s.id, 'subtask');
+        if (!sid.id || seenIds.has(sid.id)) { s.id = uid(); repaired++; }
+        else if (sid.changed) { s.id = sid.id; repaired++; }
         seenIds.add(s.id);
         if (!s.title || typeof s.title !== 'string') { s.title = s.title ? String(s.title) : 'Untitled'; repaired++; }
         if (!STATUSES.includes(s.status)) { s.status = 'planned'; repaired++; }
@@ -5019,7 +5029,9 @@
     }
     const cleaned = list.filter(Boolean).map(p => {
       if (!p || typeof p !== 'object') { repaired++; return null; }
-      if (!p.id || seenIds.has(p.id)) { p.id = uid(); repaired++; }
+      const pid = repairRecordId(p.id, 'project');
+      if (!pid.id || seenIds.has(pid.id)) { p.id = uid(); repaired++; }
+      else if (pid.changed) { p.id = pid.id; repaired++; }
       seenIds.add(p.id);
       if (!p.title || typeof p.title !== 'string') { p.title = p.title ? String(p.title) : 'Untitled'; repaired++; }
       if (!STATUSES.includes(p.status)) { p.status = 'planned'; repaired++; }
@@ -5030,6 +5042,9 @@
       if (p.completedAt && isNaN(Date.parse(p.completedAt))) { p.completedAt = null; repaired++; }
       if (p.createdAt && isNaN(Date.parse(p.createdAt))) { p.createdAt = null; repaired++; }
       if (p.category && typeof p.category !== 'string') { p.category = null; repaired++; }
+      
+      
+      if ('color' in p) { const col = repairRecordColor(p.color); if (col !== p.color) { p.color = col; repaired++; } }
       p.subtasks = fixSubtasks(p.subtasks, 0);
       if (typeof p.expanded === 'undefined') p.expanded = false;
       
@@ -5051,7 +5066,7 @@
     }).filter(Boolean);
     const allIds = new Set();
     (function collectIds(list) { list.forEach(p => { allIds.add(p.id); if (p.subtasks) (function walk(subs) { subs.forEach(s => { allIds.add(s.id); if (s.subtasks) walk(s.subtasks); }); })(p.subtasks); }); })(cleaned);
-    (function cleanDeps(list) { list.forEach(p => { if (p.subtasks) (function walk(subs) { subs.forEach(s => { if (s.blockedBy) { const before = s.blockedBy.length; s.blockedBy = s.blockedBy.filter(id => allIds.has(id)); if (s.blockedBy.length < before) repaired += before - s.blockedBy.length; } if (s.subtasks) walk(s.subtasks); }); })(p.subtasks); }); })(cleaned);
+    (function cleanDeps(list) { list.forEach(p => { if (p.subtasks) (function walk(subs) { subs.forEach(s => { if (s.blockedBy) { const before = s.blockedBy.length; s.blockedBy = s.blockedBy.map(v => repairRecordId(v, 'blockedBy').id).filter(Boolean).filter(id => allIds.has(id)); if (s.blockedBy.length < before) repaired += before - s.blockedBy.length; } if (s.subtasks) walk(s.subtasks); }); })(p.subtasks); }); })(cleaned);
     return { projects: cleaned, repaired };
   }
 
@@ -5332,6 +5347,16 @@
       : store.mode === 'map' ? mergeMapFromTab(base, store.get(), incoming)
       : store.mode === 'nested' ? mergeNestedFromTab(base, store.get(), incoming)
       : mergeItemsFromTab(base, store.get(), incoming);
+    
+    
+    
+    
+    
+    if (store.mode === 'items') {
+      repairRecordTree(result.merged);
+    } else if (store.mode === 'nested') {
+      Object.keys(result.merged || {}).forEach(function(k) { repairRecordTree(result.merged[k]); });
+    }
     const mergedJson = store.serialize(result.merged);
     const changed = mergedJson !== store.serialize(store.get());
     const what = _describeTabSync(result);
@@ -5380,11 +5405,18 @@
   }
   function repairArchiveEntry(a, seenIds) {
     if (!a || typeof a !== 'object' || Array.isArray(a)) return null;
-    if (typeof a.id !== 'string' || !a.id || seenIds.has(a.id)) a.id = uid();
+    
+    
+    
+    const rid = repairRecordId(a.id, 'archive');
+    if (!rid.id || seenIds.has(rid.id)) a.id = uid();
+    else if (rid.changed) a.id = rid.id;
     seenIds.add(a.id);
     if (typeof a.title !== 'string' || !a.title.trim()) a.title = 'Untitled';
     if (typeof a.status !== 'string' || !['planned','ongoing','completed'].includes(a.status)) a.status = 'planned';
     if (!Array.isArray(a.subtasks)) a.subtasks = [];
+    if ('color' in a) a.color = repairRecordColor(a.color);
+    repairRecordTree(a.subtasks);   
     a.archivedAt = repairDateString(a.archivedAt);
     return a;
   }
@@ -5392,8 +5424,14 @@
     if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
     
     if (t.kind !== 'project' && t.kind !== 'subtask' && t.kind !== 'note') t.kind = 'project';
-    if (typeof t.id !== 'string' || !t.id || seenIds.has(t.id)) t.id = uid();
+    const rid = repairRecordId(t.id, 'bin');
+    if (!rid.id || seenIds.has(rid.id)) t.id = uid();
+    else if (rid.changed) t.id = rid.id;
     seenIds.add(t.id);
+    
+    if (typeof t.projectId === 'string' && t.projectId) t.projectId = repairRecordId(t.projectId, 'projectId').id || null;
+    
+    if ('color' in t) t.color = repairRecordColor(t.color);
     if (typeof t.title !== 'string' || !t.title.trim()) t.title = 'Untitled';
     if (t.kind !== 'project' && t.kind !== 'note') {
       if (!t.projectId || typeof t.projectId !== 'string') t.projectId = null;
@@ -5412,17 +5450,40 @@
       
       t.node = { id: t.id, title: t.title, status: 'planned', subtasks: [] };
     }
+    if (t.node && typeof t.node === 'object' && !Array.isArray(t.node)) {
+      
+      
+      const nid = repairRecordId(t.node.id, 'bin');
+      if (t.node.id) t.node.id = nid.id || t.id;
+      if ('color' in t.node) t.node.color = repairRecordColor(t.node.color);
+      if (Array.isArray(t.node.subtasks)) repairRecordTree(t.node.subtasks);
+    }
     t.deletedAt = repairDateString(t.deletedAt) || new Date().toISOString();
     return t;
+  }
+  
+  
+  
+  function repairArchiveList(list) {
+    const seenIds = new Set();
+    let dropped = 0;
+    const out = (Array.isArray(list) ? list : []).map(a => repairArchiveEntry(a, seenIds)).filter(a => { if (!a) { dropped++; return false; } return true; });
+    return { list: out, dropped: dropped };
+  }
+  function repairTrashList(list) {
+    const seenIds = new Set();
+    let dropped = 0;
+    const out = (Array.isArray(list) ? list : []).map(t => repairTrashEntry(t, seenIds)).filter(t => { if (!t) { dropped++; return false; } return true; });
+    return { list: out, dropped: dropped };
   }
   const ARCHIVE_KEY = 'project-flow-archive';
   let archive = [];
   let archiveLoaded = false;   
   async function loadArchive() {
     try { const res = await safeGet(ARCHIVE_KEY, false); if (res && res.value) archive = JSON.parse(res.value); } catch (e) { archive = []; logError('Load archive', e); }
-    if (!Array.isArray(archive)) archive = [];
-    const seenIds = new Set(); let repaired = 0;
-    archive = archive.map(a => repairArchiveEntry(a, seenIds)).filter(a => { if (!a) { repaired++; return false; } return true; });
+    const _ar = repairArchiveList(archive);
+    archive = _ar.list;
+    let repaired = _ar.dropped;
     if (repaired > 0) { saveArchive(); showToast('🔧 Auto-repaired ' + repaired + ' archive issue' + (repaired > 1 ? 's' : '')); }
     archiveLoaded = true;
     _archiveTabStore.recordBase();   
@@ -5457,9 +5518,9 @@
   let trashLoaded = false;     
   async function loadTrash() {
     try { const res = await safeGet(TRASH_KEY, false); if (res && res.value) trash = JSON.parse(res.value); } catch (e) { trash = []; logError('Load trash', e); }
-    if (!Array.isArray(trash)) trash = [];
-    const seenIds = new Set(); let repaired = 0;
-    trash = trash.map(t => repairTrashEntry(t, seenIds)).filter(t => { if (!t) { repaired++; return false; } return true; });
+    const _tr = repairTrashList(trash);
+    trash = _tr.list;
+    let repaired = _tr.dropped;
     purgeOldTrash();
     if (repaired > 0) { saveTrash(); showToast('🔧 Auto-repaired ' + repaired + ' trash issue' + (repaired > 1 ? 's' : '')); }
     trashLoaded = true;
@@ -5858,8 +5919,6 @@
   function focusEl(selector) { requestAnimationFrame(() => { let el = root.querySelector(selector); if (el) { el.contentEditable = 'true'; el.focus(); const range = document.createRange(); range.selectNodeContents(el); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } }); }
   function escapeHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function highlightMatch(escaped, term) { if (!term) return escaped; const re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'); return escaped.replace(re, '<mark style="background:var(--accent);color:var(--accent-contrast,#fff);border-radius:2px;padding:0 2px;">$1</mark>'); }
-  function formatTime(sec) { const d = Math.floor(sec / 86400); const h = Math.floor((sec % 86400) / 3600); const m = Math.floor((sec % 3600) / 60); if (d > 0) return d + 'd ' + h + 'h ' + m + 'm'; if (h > 0) return h + 'h ' + m + 'm'; return m + 'm'; }
-  function toggleTimer(p, s) { _lastProjectId = p.id; snapshot(); if (s.timerStart) { s.timeLogged = (s.timeLogged || 0) + Math.floor((Date.now() - s.timerStart) / 1000); s.timerStart = null; } else { s.timerStart = Date.now(); } scheduleSave(); render(); }
 
   const LEVEL_MARKERS = ['\u25CF', '\u25C6', '\u25B6', '\u25B8']; const LEVEL_COLORS = ['var(--depth0)', 'var(--depth1)', 'var(--depth2)', 'var(--depth3)'];
   function levelMarkerFor(depth) { return { marker: LEVEL_MARKERS[Math.min(depth, LEVEL_MARKERS.length - 1)], color: LEVEL_COLORS[Math.min(depth, LEVEL_COLORS.length - 1)] }; }
@@ -8021,7 +8080,9 @@
       if (res && res.value) {
         const data = JSON.parse(res.value);
         const now = todayLocalStr();
-        if (data.date === now) { todayTasks = data.tasks || []; todayDate = data.date; }
+        
+        
+        if (data.date === now) { todayTasks = repairRecordTree(data.tasks || []); todayDate = data.date; }
         else { todayTasks = []; todayDate = now; }
       } else { todayDate = todayLocalStr(); }
     } catch (e) { todayTasks = []; todayDate = todayLocalStr(); logError('Load today', e); }
@@ -8380,8 +8441,16 @@
   function daysAgoLocalStr(n) { const d = new Date(); d.setDate(d.getDate() - n); return localDateStr(d); }
   function weekDateStr(d) { return localDateStr(d); }
   let weeklyLoaded = false;   
+  
+  
+  
+  function repairWeeklyData(data) {
+    const out = (data && typeof data === 'object' && !Array.isArray(data)) ? data : {};
+    Object.keys(out).forEach(function(k) { repairRecordTree(out[k]); });
+    return out;
+  }
   async function loadWeekly() {
-    try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = JSON.parse(res.value); } catch (e) { weeklyData = {}; logError('Load weekly planner', e); }
+    try { const res = await safeGet(WEEKLY_KEY, false); if (res && res.value) weeklyData = repairWeeklyData(JSON.parse(res.value)); } catch (e) { weeklyData = {}; logError('Load weekly planner', e); }
     weeklyLoaded = true;
     _weeklyTabStore.recordBase();
   }
@@ -8536,11 +8605,6 @@
   function dismissOccurrence(sourceId, dueAt) {
     if (!sourceId || !dueAt) return;
     dismissedOccurrences[dismissalKey(sourceId, dueAt)] = true;
-    saveDismissed();
-  }
-  function undismissOccurrence(sourceId, dueAt) {
-    if (!sourceId || !dueAt) return;
-    delete dismissedOccurrences[dismissalKey(sourceId, dueAt)];
     saveDismissed();
   }
   
@@ -9472,7 +9536,7 @@
   const REMINDERS_KEY = 'project-flow-reminders';
   let reminders = [];
   let remindersLoaded = false;
-  async function loadReminders() { try { const res = await safeGet(REMINDERS_KEY, false); if (res && res.value) reminders = JSON.parse(res.value); } catch (e) { reminders = []; logError('Load reminders', e); } remindersLoaded = true; _remindersTabStore.recordBase(); refreshReminderBadges(); }
+  async function loadReminders() { try { const res = await safeGet(REMINDERS_KEY, false); if (res && res.value) reminders = repairRecordTree(JSON.parse(res.value)); } catch (e) { reminders = []; logError('Load reminders', e); } remindersLoaded = true; _remindersTabStore.recordBase(); refreshReminderBadges(); }
 
   
   
@@ -10700,11 +10764,19 @@
     
     node = ownSafe(node && typeof node === 'object' ? node : {});
     if (node.subtasks && typeof node.subtasks === 'object' && !Array.isArray(node.subtasks)) node.subtasks = [];
-    if (typeof node.id !== 'string' || !node.id || seenIds.has(node.id)) node.id = uid();
+    
+    
+    
+    
+    const rid = repairRecordId(node.id, 'import');
+    if (!rid.id || seenIds.has(rid.id)) node.id = uid();
+    else if (rid.changed) node.id = rid.id;
     seenIds.add(node.id);
     if (typeof node.title !== 'string' || !node.title.trim()) node.title = 'Untitled';
     if (!STATUSES.includes(node.status)) node.status = 'planned';
     if (node.category != null && typeof node.category !== 'string') node.category = null;
+    if ('color' in node) node.color = repairRecordColor(node.color);
+    if (Array.isArray(node.blockedBy)) node.blockedBy = node.blockedBy.map(v => repairRecordId(v, 'blockedBy').id).filter(Boolean);
     if (node.dueAt != null && typeof node.dueAt !== 'string') node.dueAt = null;
     if (node.createdAt != null && typeof node.createdAt !== 'string') node.createdAt = null;
     if (node.completedAt != null && typeof node.completedAt !== 'string') node.completedAt = null;
@@ -10767,7 +10839,7 @@
     
     
     
-    if (Array.isArray(importedArchive)) { archive = importedArchive; saveArchive(); restoredExtras++; }
+    if (Array.isArray(importedArchive)) { archive = repairArchiveList(importedArchive).list; saveArchive(); restoredExtras++; }
     projects = sanitizeImportedProjects(data);
     projects.forEach(p => { p.expanded = false; });
     const fromProjects = projects.map(p => p.category).filter(Boolean);
@@ -10775,10 +10847,10 @@
     categories = Array.from(new Set(categories.concat(safeImportedCategories, fromProjects)));
     collapsedCategories = Object.assign({}, collapsedCategories, importedCollapsed);
     saveCategories(); saveCollapsedCategories(); scheduleSave(); render();
-    if (Array.isArray(importedTrash)) { trash = importedTrash; saveTrash(); renderTrashList(); restoredExtras++; }
-    if (importedToday && Array.isArray(importedToday.tasks)) { todayTasks = importedToday.tasks; todayDate = typeof importedToday.date === 'string' ? importedToday.date : todayLocalStr(); saveToday(); renderTodayList(); restoredExtras++; }
-    if (importedWeekly) { weeklyData = importedWeekly; saveWeekly(); renderWeeklyPanel(); restoredExtras++; }
-    if (Array.isArray(importedReminders)) { reminders = importedReminders; saveReminders(); restoredExtras++; }
+    if (Array.isArray(importedTrash)) { trash = repairTrashList(importedTrash).list; saveTrash(); renderTrashList(); restoredExtras++; }
+    if (importedToday && Array.isArray(importedToday.tasks)) { todayTasks = repairRecordTree(importedToday.tasks); todayDate = typeof importedToday.date === 'string' ? importedToday.date : todayLocalStr(); saveToday(); renderTodayList(); restoredExtras++; }
+    if (importedWeekly) { weeklyData = repairWeeklyData(importedWeekly); saveWeekly(); renderWeeklyPanel(); restoredExtras++; }
+    if (Array.isArray(importedReminders)) { reminders = repairRecordTree(importedReminders); saveReminders(); restoredExtras++; }
     if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); restoredExtras++; }
     
     
@@ -12173,7 +12245,7 @@
       { id: 'AUD-03', status: 'remediated', evidence: '533372b', note: 'sw.js CACHE_VERSION is the artifact own sha256 prefix, so it cannot go stale' },
       { id: 'AUD-04', status: 'remediated', evidence: 'aaa5279', note: 'Exports carry a schemaVersion and a documented migration reader keeps older files importable' },
       { id: 'AUD-05', status: 'remediated', evidence: 'f02b6a0', note: 'The wipe derives from a key registry (static table + write-time registration + a sweep of both stores)' },
-      { id: 'AUD-06', status: 'remediated', evidence: 'a0d159f', note: 'uid() draws 16 bytes from crypto.getRandomValues, with a documented no-CSPRNG fallback' },
+      { id: 'AUD-06', status: 'remediated', evidence: 'a0d159f', note: 'uid() draws 15 bytes from crypto.getRandomValues (a 31-character id against the 32-character rule cap), with a documented no-CSPRNG fallback' },
       { id: 'AUD-07', status: 'remediated', evidence: 'd95d6a5', note: 'The triplicated prototype-pollution guard is one shared definition (the ~35 helpers did not reproduce)' },
       { id: 'AUD-08', status: 'remediated', evidence: '6997f69', note: 'Fonts regenerate from local sources — 396.7 KB to 121.4 KB of payload — and a build-time size budget guards growth' },
       { id: 'AUD-09', status: 'remediated', evidence: 'b8a5622', note: 'One guarded entry function: a repeat evaluation cannot reach a fragment, and a duplicate boot is reported rather than absorbed' },
@@ -12343,14 +12415,19 @@
 
   window._pf = Object.assign(window._pf || {}, {
     getProjects: () => projects,
-    setProjects: (p) => { projects = p; },
+    
+    
+    
+    
+    
+    setProjects: (p) => { projects = Array.isArray(p) ? p : []; repairRecordTree(projects); },
     getCategories: () => categories,
     setCategories: (c) => { categories = c; },
     renderSplitList: () => renderSplitList(),
     getArchive: () => archive,
-    setArchive: (a) => { archive = a; saveArchive(); },
+    setArchive: (a) => { archive = Array.isArray(a) ? a : []; repairRecordTree(archive); saveArchive(); },
     getTrash: () => trash,
-    setTrash: (t) => { trash = t; saveTrash(); },
+    setTrash: (t) => { trash = Array.isArray(t) ? t : []; repairRecordTree(trash); trash.forEach(function(e) { if (e && typeof e === 'object' && e.node && typeof e.node === 'object') repairRecordTree([e.node]); }); saveTrash(); },
     
     
     
@@ -12497,6 +12574,20 @@
   let notesSaveTimer = null;
   let notesSelection = [];   
   let lastClickedNoteId = null; 
+  
+  
+  
+  
+  
+  
+  
+  function _normalizeNote(n) {
+    if (!n || typeof n !== 'object' || typeof n.id !== 'string' || !n.id) return null;
+    const rid = repairRecordId(n.id, 'note');
+    if (!rid.id) return null;
+    return { id: rid.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || n.createdAt || new Date().toISOString() };
+  }
+  function _normalizeNoteList(list) { return (Array.isArray(list) ? list : []).map(_normalizeNote).filter(Boolean); }
 
   
   
@@ -12674,7 +12765,7 @@
   async function loadNotes() {
     if (notesLoaded) return;
     const epoch = ++loadEpoch;
-    try { const res = await safeGet(NOTES_KEY, false); if (epoch !== loadEpoch) return; if (res && res.value) notes = JSON.parse(res.value); } catch (e) { notes = []; logError('Load notes', e); }
+    try { const res = await safeGet(NOTES_KEY, false); if (epoch !== loadEpoch) return; if (res && res.value) notes = _normalizeNoteList(JSON.parse(res.value)); } catch (e) { notes = []; logError('Load notes', e); }
     try { const res2 = await safeGet(NOTES_TOMB_KEY, false); if (epoch !== loadEpoch) return; if (res2 && res2.value) noteTombstones = JSON.parse(res2.value) || {}; } catch (e) { noteTombstones = {}; }
     if (epoch !== loadEpoch) return; 
     notesLoaded = true;
@@ -13523,8 +13614,7 @@
       saveTombstones();
     }
     if (notesLoaded && notes.length) return; 
-    notes = snapNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string' && !isTombstoned(n.id))
-      .map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
+    notes = _normalizeNoteList(snapNotes).filter(n => !isTombstoned(n.id));
     notesLoaded = true;
     notesLoadedEmpty = false;
     saveNotes();
@@ -13542,11 +13632,12 @@
   
   window._pf.adoptRestoredNote = function(note) {
     ++loadEpoch; 
-    if (!note || typeof note.id !== 'string') return;
-    delete noteTombstones[note.id];
+    const adopted = _normalizeNote(note);
+    if (!adopted) return;
+    delete noteTombstones[adopted.id];
     saveTombstones();
-    if (!noteById(note.id)) {
-      notes.push(note);
+    if (!noteById(adopted.id)) {
+      notes.push(adopted);
       saveNotes();
     }
     notesLoaded = true;
@@ -13586,8 +13677,7 @@
     if (cloudTombstones && typeof cloudTombstones === 'object') {
       Object.keys(cloudTombstones).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (cloudTombstones[k] || '')) noteTombstones[k] = cloudTombstones[k]; });
     }
-    notes = clean.filter(n => !isTombstoned(n.id))
-      .map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
+    notes = _normalizeNoteList(clean).filter(n => !isTombstoned(n.id));
     notesLoaded = true;
     notesLoadedEmpty = notes.length === 0;
     if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
@@ -13626,10 +13716,8 @@
     notes.forEach(n => { if (!byIdMap[n.id]) byIdMap[n.id] = n; }); 
     notes = Object.keys(byIdMap)
       .filter(id => !isTombstoned(id))
-      .map(id => {
-        const n = byIdMap[id];
-        return { id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() };
-      });
+      .map(id => _normalizeNote(byIdMap[id]))
+      .filter(Boolean);
     notesLoaded = true;
     notesLoadedEmpty = notes.length === 0;
     if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
@@ -13656,11 +13744,12 @@
     if (incomingTombstones && typeof incomingTombstones === 'object') {
       Object.keys(ownSafe(incomingTombstones)).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (incomingTombstones[k] || '')) noteTombstones[k] = incomingTombstones[k]; });
     }
-    const clean = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string').map(ownSafe);
-    const visible = clean.filter(n => !isTombstoned(n.id));
+    
+    
+    const visible = _normalizeNoteList(nextNotes.filter(n => n && typeof n === 'object').map(ownSafe)).filter(n => !isTombstoned(n.id));
     const importedIds = new Set(visible.map(n => n.id));
     notes.filter(n => !importedIds.has(n.id)).forEach(n => recordNoteTombstone(n.id));
-    notes = visible.map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
+    notes = visible;
     notesLoaded = true;
     notesLoadedEmpty = notes.length === 0;
     if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
@@ -13673,7 +13762,7 @@
   window._pf.replaceNotes = function(nextNotes, incomingTombstones) {
     ++loadEpoch; 
     if (!Array.isArray(nextNotes)) return;
-    const clean = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string');
+    const clean = _normalizeNoteList(nextNotes);   
     if (!clean.length) return; 
     
     
@@ -13704,9 +13793,7 @@
     ++loadEpoch;
     if (!Array.isArray(nextNotes)) return;
     
-    notes = nextNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string')
-      .map(ownSafe)
-      .map(n => ({ id: n.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() }));
+    notes = _normalizeNoteList(nextNotes.filter(n => n && typeof n === 'object').map(ownSafe));
     noteTombstones = (nextTombstones && typeof nextTombstones === 'object') ? ownSafe(nextTombstones) : {};
     notesLoaded = true;
     notesLoadedEmpty = notes.length === 0;
@@ -13723,16 +13810,6 @@
   
   
   
-  function _normalizeExternalNote(n) {
-    return {
-      id: n.id,
-      title: String(n.title || '').slice(0, 120),
-      body: String(n.body || '').slice(0, 100000),
-      pinned: !!n.pinned,
-      createdAt: n.createdAt || new Date().toISOString(),
-      updatedAt: n.updatedAt || n.createdAt || new Date().toISOString()
-    };
-  }
   function _applyExternalNotes(list) {
     ++loadEpoch;   
     const seen = new Set();
@@ -13741,7 +13818,7 @@
       if (!n || typeof n !== 'object' || typeof n.id !== 'string' || !n.id) return;
       if (seen.has(n.id) || isTombstoned(n.id)) return;   
       seen.add(n.id);
-      next.push(_normalizeExternalNote(n));
+      next.push(_normalizeNote(n));
     });
     notes = next;
     notesLoaded = true;
