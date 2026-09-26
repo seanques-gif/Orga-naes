@@ -84,6 +84,11 @@ firebase-debug.log
 # files plus fonts.json, read by scripts/gen-embedded-fonts.mjs at build time.
 /fonts/
 /Orga-naes.html.sha256
+# Local rollback copies of the artifact kept while iterating: never ships. A
+# tracked copy would be served as a second URL and silently stale the moment
+# the artifact is rebuilt, so it stays here (and in snapshots, which mirror
+# ignored files).
+/Orga-naes.html.bak-*
 /HANDOFF.md
 /NEXT-PLAN.md
 /PRODUCT.md
