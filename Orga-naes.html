@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-usCAusdoyTroVBN/4W3hV4Kr3fgkYFKz5m/quKVrmZE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-A/GGSmc031HfEova7kS8GQNE0UVmBG9msT/RxDtTt/A='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -15186,8 +15186,12 @@ if ('serviceWorker' in navigator) {
 
   
   
+  
+  
+  
+  
   function pushSelective() {
-    try { _pushSelectiveInner(); } catch (err) { window._pf.showToast('⚠ Push failed: ' + (err.message || err), true); if (window._pf.logError) window._pf.logError('Firebase push', err); }
+    try { return _pushSelectiveInner(); } catch (err) { window._pf.showToast('⚠ Push failed: ' + (err.message || err), true); if (window._pf.logError) window._pf.logError('Firebase push', err); return Promise.resolve(); }
   }
   function _pushSelectiveInner() {
     const projects = window._pf.getProjects();
@@ -15196,6 +15200,7 @@ if ('serviceWorker' in navigator) {
     const currentIdOrder = projects.map(p => p.id);
     const orderChanged = JSON.stringify(currentIdOrder) !== JSON.stringify(_lastPushedIdOrder);
     const updates = {};
+    const pending = [];
     let hasChanges = false;
 
     
@@ -15221,16 +15226,16 @@ if ('serviceWorker' in navigator) {
     if (hasDeletion || orderChanged) {
       
       
-      userRef().set(cloudProjects()).catch(function(err) {
+      pending.push(userRef().set(cloudProjects()).catch(function(err) {
         window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (window._pf.logError) window._pf.logError('Firebase push (full set)', err);
-      });
+      }));
       hasChanges = true;
     } else if (hasChanges) {
-      db.ref('users/' + _fbUser.uid).update(updates).catch(function(err) {
+      pending.push(db.ref('users/' + _fbUser.uid).update(updates).catch(function(err) {
         window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (window._pf.logError) window._pf.logError('Firebase push (selective)', err);
-      });
+      }));
     }
     _lastPushedIdOrder = currentIdOrder;
 
@@ -15244,24 +15249,28 @@ if ('serviceWorker' in navigator) {
     
     
     if (catChanged) {
-      catRef().set(cloudCategories()).then(function() {
+      pending.push(catRef().set(cloudCategories()).then(function() {
         _lastPushedCatHash = catHash;
       }, function(err) {
         window._pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (window._pf.logError) window._pf.logError('Firebase push (categories)', err);
-      });
+      }));
     }
-    db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(cloudCategoryEmojis()).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (categoryEmojis)', e); });
-    snoozePresetsRef().set(cloudSnoozePresets()).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (snoozePresets)', e); });
+    pending.push(db.ref('users/' + _fbUser.uid + '/categoryEmojis').set(cloudCategoryEmojis()).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (categoryEmojis)', e); }));
+    pending.push(snoozePresetsRef().set(cloudSnoozePresets()).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (snoozePresets)', e); }));
 
-    try { pushNotesIfNeeded().catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }); } catch(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }
+    let notesPush = Promise.resolve();
+    try { notesPush = pushNotesIfNeeded().catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }); } catch(e) { if (window._pf.logError) window._pf.logError('Firebase push (notes)', e); }
+    pending.push(notesPush);
 
     if (hasChanges || catChanged) {
-      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now()).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (updatedAt)', e); });
+      pending.push(db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now()).catch(function(e) { if (window._pf.logError) window._pf.logError('Firebase push (updatedAt)', e); }));
       _lastPushedHash = currentHash;
       updateLastSync();
     }
     _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
+    
+    return Promise.all(pending);
   }
   let _lastPushedCatHash = '';
   let _lastPushedArchiveHash = '';
@@ -15699,7 +15708,19 @@ if ('serviceWorker' in navigator) {
     
     
     
-    if (_fbPushTimer) { clearTimeout(_fbPushTimer); _fbPushTimer = null; pushSelective(); }
+    
+    
+    const flushed = _fbPushTimer ? (clearTimeout(_fbPushTimer), _fbPushTimer = null, pushSelective()) : null;
+    if (flushed && typeof flushed.then === 'function') {
+      flushed.then(_compareCloudThenPush, _compareCloudThenPush);
+      return;
+    }
+    _compareCloudThenPush();
+  };
+  
+  
+  
+  function _compareCloudThenPush() {
     
     
     
