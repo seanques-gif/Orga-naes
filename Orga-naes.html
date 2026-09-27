@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-iKTU2sTdZ7mYw3gMvdmXUqpDFbMJufKfJj+ruQbCdz4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-WJYM9X2kqKIpIBvvMr3pAdY3d1buhC7Iz7n4G0rchMQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6616,6 +6616,19 @@
     if (!moves || !moves.length) { showToast('Select task(s) to cut first', true); return; }
     _moveClipboard = moves;
     _moveOriginIds = new Set(moves.map(m => m.node.id));
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    clearSubSelect();
+    splitMultiSelect = [];
+    renderSplitList(); renderSplitDetail();
+    root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
     showToast(moves.length === 1 ? '"' + moves[0].node.title + '" cut — click a project/task to move it' : moves.length + ' tasks cut — click a project/task to move them', false, true);
   }
   
