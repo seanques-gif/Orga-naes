@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-WJYM9X2kqKIpIBvvMr3pAdY3d1buhC7Iz7n4G0rchMQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-AgMePoT04sckofypK3shmquUKi/BhgH6Nq70tCCm1AI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6590,8 +6590,9 @@
   
   
   
+  
+  
   let _moveClipboard = null; 
-  let _moveOriginIds = null; 
   function buildMoveFromSelection() {
     if (subMultiSelect.length) {
       const byProject = new Map();
@@ -6600,10 +6601,10 @@
         if (!owner) return;
         if (!byProject.has(owner.id)) byProject.set(owner.id, []);
         const node = findSubNode(owner.subtasks, id);
-        if (node) byProject.get(owner.id).push(node);
+        if (node) byProject.get(owner.id).push({ node, fromArray: findSubParentArray(owner.subtasks, id) });
       });
       const out = [];
-      byProject.forEach((nodes, fromProjectId) => nodes.forEach(n => out.push({ node: n, fromProjectId: fromProjectId })));
+      byProject.forEach((items, fromProjectId) => items.forEach(it => out.push({ node: it.node, fromProjectId: fromProjectId, fromArray: it.fromArray })));
       return out;
     }
     if (splitMultiSelect.length) {
@@ -6615,7 +6616,6 @@
     const moves = buildMoveFromSelection();
     if (!moves || !moves.length) { showToast('Select task(s) to cut first', true); return; }
     _moveClipboard = moves;
-    _moveOriginIds = new Set(moves.map(m => m.node.id));
     
     
     
@@ -6629,22 +6629,33 @@
     splitMultiSelect = [];
     renderSplitList(); renderSplitDetail();
     root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
-    showToast(moves.length === 1 ? '"' + moves[0].node.title + '" cut — click a project/task to move it' : moves.length + ' tasks cut — click a project/task to move them', false, true);
+    
+    
+    
+    
+    _moveArmed = true;
+    root.classList.add('pf-move-armed');
+    showToast(moves.length === 1 ? '"' + moves[0].node.title + '" cut — click a project/task to move it (Esc to cancel)' : moves.length + ' tasks cut — click a project/task to move them (Esc to cancel)', false, true);
   }
   
   
   function finishMove(movedCount, label) {
-    if (_moveOriginIds && _moveOriginIds.size) {
-      _moveOriginIds.forEach(id => {
-        
-        for (const pr of projects.slice()) {
-          if (pr.id === id) { continue; } 
-          const arr = findSubParentArray(pr.subtasks, id);
-          if (arr) { const idx = arr.findIndex(x => x.id === id); if (idx > -1) arr.splice(idx, 1); }
-        }
+    if (_moveClipboard && _moveClipboard.length) {
+      
+      
+      
+      
+      
+      
+      
+      
+      _moveClipboard.forEach(m => {
+        if (!m.fromArray) return;
+        const idx = m.fromArray.findIndex(x => x && x.id === m.node.id);
+        if (idx > -1) m.fromArray.splice(idx, 1);
       });
     }
-    _moveClipboard = null; _moveOriginIds = null;
+    _moveClipboard = null;
     _pasteArmed = false; root.classList.remove('pf-paste-armed');
     _moveArmed = false; root.classList.remove('pf-move-armed');
     clearSubSelect(); splitMultiSelect = []; root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
@@ -7540,7 +7551,7 @@
       ...(!isMobile ? [{ icon: 'arrow-up', label: 'Promote to Project', action: () => { promoteSubToProject(p, s); } }] : []),
       { icon: 'clipboard', label: 'Copy to Project…', action: () => { openCopyToProjectModal(p, [s.id]); } },
       { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [s]; showToast('Task copied. Click a project to paste as main task, or a task to nest under it'); } },
-      { icon: 'scissors', label: 'Cut (move — click a project/task after)', action: () => { _moveClipboard = [{ node: s, fromProjectId: p.id }]; _moveOriginIds = new Set([s.id]); _moveArmed = true; root.classList.add('pf-move-armed'); showToast('Cut "' + s.title + '" — click a project to move as main task, or a task to nest under it', false, true); } },
+      { icon: 'scissors', label: 'Cut (move — click a project/task after)', action: () => { _moveClipboard = [{ node: s, fromProjectId: p.id, fromArray: findSubParentArray(p.subtasks, s.id) }]; _moveArmed = true; root.classList.add('pf-move-armed'); showToast('Cut "' + s.title + '" — click a project to move as main task, or a task to nest under it', false, true); } },
       ...(!isMobile ? [{ icon: 'refresh', label: 'Repeat: ' + (s.recurrence || 'None'), cycling: true, action: () => { const opts = [null,'daily','weekdays','weekly','biweekly','monthly','quarterly','yearly']; const labels = ['None','Daily','Weekdays','Weekly','Biweekly','Monthly','Quarterly','Yearly']; const cur = opts.indexOf(s.recurrence || null); const next = (cur + 1) % opts.length; snapshot(); s.recurrence = opts[next]; scheduleSave(); renderSplitDetail(); showToast('Repeat: ' + labels[next]); return 'Repeat: ' + labels[next]; } }] : []),
       { sep: true },
       { icon: 'trash', label: 'Delete', danger: true, action: () => { deleteSubtask(p.id, s.id); } },
