@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-AgMePoT04sckofypK3shmquUKi/BhgH6Nq70tCCm1AI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-V0ih5ASu7PdW/Nxw2zPnCahYG5edGMyTCavgsg0/iD0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6593,6 +6593,23 @@
   
   
   let _moveClipboard = null; 
+  
+  
+  
+  
+  
+  
+  
+  
+  function projectAsSubtask(pr) {
+    const sub = {
+      id: pr.id, title: pr.title, status: pr.status || 'planned',
+      expanded: !!pr.expanded, createdAt: pr.createdAt || new Date().toISOString(),
+      comments: [], subtasks: pr.subtasks || []
+    };
+    ['dueAt', 'completedAt', 'recurrence'].forEach(k => { if (pr[k] !== undefined && pr[k] !== null) sub[k] = pr[k]; });
+    return sub;
+  }
   function buildMoveFromSelection() {
     if (subMultiSelect.length) {
       const byProject = new Map();
@@ -6608,7 +6625,11 @@
       return out;
     }
     if (splitMultiSelect.length) {
-      return splitMultiSelect.map(id => projects.find(pr => pr.id === id)).filter(Boolean).map(pr => ({ node: pr, fromProjectId: pr.id }));
+      
+      
+      
+      
+      return splitMultiSelect.map(id => projects.find(pr => pr.id === id)).filter(Boolean).map(pr => ({ node: projectAsSubtask(pr), fromProjectId: pr.id, topLevel: true }));
     }
     return null;
   }
@@ -6650,6 +6671,11 @@
       
       
       _moveClipboard.forEach(m => {
+        if (m.topLevel) {
+          const i = projects.findIndex(pr => pr.id === m.node.id);
+          if (i > -1) projects.splice(i, 1);
+          return;
+        }
         if (!m.fromArray) return;
         const idx = m.fromArray.findIndex(x => x && x.id === m.node.id);
         if (idx > -1) m.fromArray.splice(idx, 1);
