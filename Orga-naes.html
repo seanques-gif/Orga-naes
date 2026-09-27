@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-fCRF5aLqvpBMvLAgtdEcYuSjqtbi1fjw/V0iwvCqaJA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-usCAusdoyTroVBN/4W3hV4Kr3fgkYFKz5m/quKVrmZE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -15431,32 +15431,27 @@ if ('serviceWorker' in navigator) {
         
         
         
+        
+        
+        
+        
+        
         const autoNotesInfo = notesDiff(notesSnap, remoteNotes, remoteNoteTombstones);
         if (autoNotesInfo && autoNotesInfo.conflict && !_notesOverwriteAuthorized) {
           let shouldPark = false;
           if (autoNotesInfo.changed.length > 0) {
-            const first = autoNotesInfo.changed[0];
-            const localNote = (notesSnap && Array.isArray(notesSnap.notes)) ? notesSnap.notes.find(function(n) { return n && n.id === first.id; }) : null;
-            const remoteNote = remoteNotes.find(function(n) { return n && n.id === first.id; }) || null;
-            const localUpdated = localNote && String(localNote.updatedAt || '');
-            const remoteUpdated = remoteNote && String(remoteNote.updatedAt || '');
-            shouldPark = remoteUpdated > localUpdated;
-          } else if (autoNotesInfo.deletedInCloud.length > 0) {
-            
-            const first = autoNotesInfo.deletedInCloud[0];
-            const localNote = (notesSnap && Array.isArray(notesSnap.notes)) ? notesSnap.notes.find(function(n) { return n && n.id === first.id; }) : null;
-            const tombTime = remoteNoteTombstones[first.id] ? String(remoteNoteTombstones[first.id]) : '';
-            const localUpdated = localNote && String(localNote.updatedAt || '');
-            shouldPark = tombTime > localUpdated;
-          } else if (autoNotesInfo.deletedHere.length > 0) {
-            
-            const first = autoNotesInfo.deletedHere[0];
-            const remoteNote = remoteNotes.find(function(n) { return n && n.id === first.id; }) || null;
-            const localTomb = (notesSnap && notesSnap.tombstones && typeof notesSnap.tombstones === 'object') ? notesSnap.tombstones[first.id] : undefined;
-            const remoteUpdated = remoteNote && String(remoteNote.updatedAt || '');
-            const localTombTime = localTomb ? String(localTomb) : '';
-            shouldPark = remoteUpdated > localTombTime;
+            shouldPark = autoNotesInfo.changed.some(function(localNote) {
+              const remoteNote = (localNote && typeof localNote.id === 'string')
+                ? (remoteNotes.find(function(n) { return n && n.id === localNote.id; }) || null) : null;
+              const localUpdated = (localNote && String(localNote.updatedAt || '')) || '';
+              const remoteUpdated = remoteNote ? String(remoteNote.updatedAt || '') : '';
+              return remoteUpdated > localUpdated;
+            });
           }
+          
+          
+          
+          if (autoNotesInfo.deletedHere.length > 0) shouldPark = true;
           if (shouldPark) {
             if (_notesConflictParkedHash !== notesHash) {
               _notesConflictParkedHash = notesHash;
