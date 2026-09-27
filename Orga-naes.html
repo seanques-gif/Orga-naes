@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-BycGIi/0cUHBaQJBrWpXWIWAdsWjPjC5pInJHUiYE5A='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-iKTU2sTdZ7mYw3gMvdmXUqpDFbMJufKfJj+ruQbCdz4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1024,6 +1024,11 @@
     mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
   }
   #pf-root .pf-sub-select-bar::-webkit-scrollbar { display: none; }
+  
+  #pf-root .pf-toast.pf-toast-lift {
+    bottom: calc(var(--selbar-bottom-offset, 78px) + 58px + env(safe-area-inset-bottom, 0px)) !important;
+    top: auto !important;
+  }
   #pf-root .pf-selbar-btn {
     font-family: inherit; font-size: calc(var(--font-size-base) - 2px); font-weight: 600; color: var(--text);
     background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid transparent; border-radius: var(--radius-control);
@@ -4220,6 +4225,13 @@
       toastEl.appendChild(btn);
     }
     toastEl.className = 'pf-toast pf-toast-show' + (isError ? ' pf-toast-error' : '');
+    
+    
+    
+    
+    
+    
+    toastEl.classList.toggle('pf-toast-lift', !!root.querySelector('.pf-sub-select-bar'));
     toastTimer = setTimeout(() => { toastEl.classList.remove('pf-toast-show'); }, undoable ? 5000 : (actionCallback ? 8000 : 2600));
   }
   function hasStorage() { try { localStorage.setItem('__test__', '1'); localStorage.removeItem('__test__'); return true; } catch (e) { return false; } }
