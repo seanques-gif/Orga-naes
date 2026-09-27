@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ZVZHq02wM5fFGVz9Kk+ItZ/QdCbOcOzEXNCBUR3sHoc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-inWzAKbHrmtRAqgaKvqDMPFacrbOmQKyf3DrWu0ddXU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6575,6 +6575,98 @@
     return _touchCarry ? { ids: _touchCarry.ids.slice(), sourceId: _touchCarry.sourceId, copy: !!_touchCarry.copy, hover: _touchCarry.hover && _touchCarry.hover.dataset ? _touchCarry.hover.dataset.projectId : null } : null;
   };
   window._pf.isTouchCarrying = function() { return _touchCarryActive; };
+  // SUBSECTION: Swipe-to-dismiss
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const SWIPE_DISMISS_MS = 200;        
+  const SWIPE_DISMISS_RELEASE_PX = 80; 
+  const SWIPE_DISMISS_CANCEL_PX = 40;  
+  const SWIPE_DISMISS_FADE = 0.4;      
+
+  function _swipeDismissMotion() {
+    return 'transform ' + SWIPE_DISMISS_MS + 'ms ease-out, opacity ' + SWIPE_DISMISS_MS + 'ms ease-out';
+  }
+
+  
+  
+  function _swipeDismissReset(el) {
+    el.style.transform = '';
+    el.style.opacity = '';
+    el.style.transition = '';
+  }
+
+  
+  
+  function _swipeDismissPlay(el, spec) {
+    el.style.transition = _swipeDismissMotion();
+    el.style.transform = spec.closed;
+    el.style.opacity = '0';
+    if (navigator.vibrate) navigator.vibrate(10);
+    setTimeout(function() {
+      _swipeDismissReset(el);
+      spec.dismissed();
+    }, SWIPE_DISMISS_MS);
+  }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function _swipeDismissDrag(spec) {
+    let swipeFromX = 0, swipeFromY = 0, swipeEl = null;
+    function yielded() { return !!(spec.yields && spec.yields()); }
+
+    document.addEventListener('touchstart', function(e) {
+      swipeEl = null;
+      if (yielded()) return;
+      const el = spec.el();
+      if (!el) return;
+      swipeFromX = e.touches[0].clientX;
+      swipeFromY = e.touches[0].clientY;
+      if (!spec.begin(e, el)) return;
+      swipeEl = el;
+      el.style.transition = 'none';
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function(e) {
+      if (!swipeEl || yielded()) return;
+      const t = e.touches[0];
+      const across = spec.axis === 'x' ? Math.abs(t.clientY - swipeFromY) : Math.abs(t.clientX - swipeFromX);
+      if (across > SWIPE_DISMISS_CANCEL_PX) { _swipeDismissReset(swipeEl); swipeEl = null; return; }
+      const travel = spec.axis === 'x' ? Math.max(0, t.clientX - swipeFromX) : t.clientY - swipeFromY;
+      if (travel < 0) return; 
+      const progress = Math.min(travel / spec.progressPx, 1);
+      swipeEl.style.transform = spec.offset(travel);
+      swipeEl.style.opacity = (1 - progress * SWIPE_DISMISS_FADE).toString();
+    }, { passive: true });
+
+    document.addEventListener('touchend', function(e) {
+      if (!swipeEl || yielded()) return;
+      const el = swipeEl;
+      swipeEl = null;
+      const t = e.changedTouches[0];
+      const travel = spec.axis === 'x' ? Math.max(0, t.clientX - swipeFromX) : t.clientY - swipeFromY;
+      if (travel > SWIPE_DISMISS_RELEASE_PX) { _swipeDismissPlay(el, spec); return; }
+      el.style.transition = _swipeDismissMotion();
+      el.style.transform = '';
+      el.style.opacity = '';
+      setTimeout(function() { el.style.transition = ''; }, SWIPE_DISMISS_MS);
+    }, { passive: true });
+  }
     // SUBSECTION: Shared View State
   
   
@@ -11662,6 +11754,34 @@
   })();
 
   
+  
+  const _detailSwipe = {
+    el: function() { return document.getElementById('pf-split-detail'); },
+    closed: 'translateX(100%)',
+    dismissed: _goBackToProjects,
+    yields: function() { return _touchCarryActive; }, 
+    begin: function(e) {
+      if (!root.classList.contains('pf-detail-open')) return false;
+      if (root.classList.contains('pf-device-desktop')) return false;
+      if (root.classList.contains('pf-extend-open')) return false;
+      
+      
+      
+      
+      
+      const row = e.target && e.target.closest ? e.target.closest('.pf-subrow') : null;
+      if (row && !subMultiSelect.length && root.classList.contains('pf-device-tablet')) return false;
+      const x = e.touches[0].clientX;
+      const sw = window.innerWidth;
+      if (x < sw * 0.05 || x > sw * 0.95) return false;
+      return true;
+    },
+    axis: 'x',
+    progressPx: 150,
+    offset: function(dx) { return 'translateX(' + dx + 'px)'; },
+  };
+
+  
   (function() {
     let _swipeStartX = 0, _swipeStartY = 0, _swipeRow = null, _swipeMoved = false;
     document.addEventListener('touchstart', function(e) {
@@ -11689,12 +11809,7 @@
         if (root.classList.contains('pf-device-mobile')) { _swipeRow = null; return; }
         if (root.classList.contains('pf-device-tablet')) {
           _swipeRow = null;
-          const detailEl = document.getElementById('pf-split-detail');
-          detailEl.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
-          detailEl.style.transform = 'translateX(100%)';
-          detailEl.style.opacity = '0';
-          if (navigator.vibrate) navigator.vibrate(10);
-          setTimeout(function() { detailEl.style.transition = ''; detailEl.style.transform = ''; detailEl.style.opacity = ''; _goBackToProjects(); }, 300);
+          _swipeDismissPlay(_detailSwipe.el(), _detailSwipe);
           return;
         }
         const p = _swipeRow.__project;
@@ -11717,120 +11832,43 @@
   })();
 
   
-  (function() {
-    let _backStartX = 0, _backStartY = 0, _backActive = false;
-    const detailEl = document.getElementById('pf-split-detail');
-    document.addEventListener('touchstart', function(e) {
-      if (_touchCarryActive) return; 
-      if (!root.classList.contains('pf-detail-open')) return;
-      if (root.classList.contains('pf-device-desktop')) return;
-      if (root.classList.contains('pf-extend-open')) return;
-      const x = e.touches[0].clientX;
-      const sw = window.innerWidth;
-      if (x < sw * 0.05 || x > sw * 0.95) return;
-      _backStartX = x;
-      _backStartY = e.touches[0].clientY;
-      _backActive = true;
-      detailEl.style.transition = 'none';
-    }, { passive: true });
-    document.addEventListener('touchmove', function(e) {
-      if (_touchCarryActive || !_backActive) return;
-      const dy = Math.abs(e.touches[0].clientY - _backStartY);
-      if (dy > 40) { _backActive = false; detailEl.style.transform = ''; detailEl.style.opacity = ''; detailEl.style.transition = ''; return; }
-      const dx = Math.max(0, e.touches[0].clientX - _backStartX);
-      const progress = Math.min(dx / 150, 1);
-      detailEl.style.transform = 'translateX(' + dx + 'px)';
-      detailEl.style.opacity = (1 - progress * 0.4).toString();
-    }, { passive: true });
-    document.addEventListener('touchend', function(e) {
-      if (_touchCarryActive || !_backActive) { return; }
-      const dx = e.changedTouches[0].clientX - _backStartX;
-      if (dx > 80) {
-        detailEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-        detailEl.style.transform = 'translateX(100%)';
-        detailEl.style.opacity = '0';
-        if (navigator.vibrate) navigator.vibrate(10);
-        setTimeout(function() {
-          detailEl.style.transition = '';
-          detailEl.style.transform = '';
-          detailEl.style.opacity = '';
-          _goBackToProjects();
-        }, 200);
-      } else {
-        detailEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-        detailEl.style.transform = '';
-        detailEl.style.opacity = '';
-        setTimeout(function() { detailEl.style.transition = ''; }, 200);
-      }
-      _backActive = false;
-    }, { passive: true });
-  })();
+  _swipeDismissDrag(_detailSwipe);
+  // SUBSECTION: Modal helpers (focus/visibility)
+  
+  
+  
+  let _modalStartY = 0;
+  function getVisibleModal() {
+    for (let i = 0; i < ALL_MODALS.length; i++) {
+      if (ALL_MODALS[i] && ALL_MODALS[i].style.display !== 'none') return ALL_MODALS[i];
+    }
+    return null;
+  }
+  function isModalHeader(target, modal) {
+    const firstChild = modal.children[0];
+    if (!firstChild) return false;
+    if (firstChild.contains(target)) return true;
+    if (target.closest('.pf-panel-close')) return true;
+    const rect = modal.getBoundingClientRect();
+    const touchY = _modalStartY;
+    return touchY < rect.top + 50;
+  }
 
   
-  (function() {
-    let _modalStartX = 0, _modalStartY = 0, _modalActive = false, _modalEl = null;
-    // SUBSECTION: Modal Helpers (Focus/Visibility)
-    function getVisibleModal() {
-      for (let i = 0; i < ALL_MODALS.length; i++) {
-        if (ALL_MODALS[i] && ALL_MODALS[i].style.display !== 'none') return ALL_MODALS[i];
-      }
-      return null;
-    }
-    function isModalHeader(target, modal) {
-      const firstChild = modal.children[0];
-      if (!firstChild) return false;
-      if (firstChild.contains(target)) return true;
-      if (target.closest('.pf-panel-close')) return true;
-      const rect = modal.getBoundingClientRect();
-      const touchY = _modalStartY;
-      return touchY < rect.top + 50;
-    }
-    document.addEventListener('touchstart', function(e) {
-      if (root.classList.contains('pf-device-desktop')) return;
-      const modal = getVisibleModal();
-      if (!modal) return;
-      if (!modal.contains(e.target) && e.target !== modalBackdrop) return;
-      _modalStartX = e.touches[0].clientX;
+  _swipeDismissDrag({
+    el: getVisibleModal,
+    closed: 'translate(-50%, 100%)',
+    dismissed: closeAllModals,
+    begin: function(e, modal) {
+      if (root.classList.contains('pf-device-desktop')) return false;
+      if (!modal.contains(e.target) && e.target !== modalBackdrop) return false;
       _modalStartY = e.touches[0].clientY;
-      _modalEl = modal;
-      if (!isModalHeader(e.target, modal)) { _modalActive = false; return; }
-      _modalActive = true;
-      _modalEl.style.transition = 'none';
-    }, { passive: true });
-    document.addEventListener('touchmove', function(e) {
-      if (!_modalActive || !_modalEl) return;
-      const dx = Math.abs(e.touches[0].clientX - _modalStartX);
-      const dy = e.touches[0].clientY - _modalStartY;
-      if (dx > 40) { _modalActive = false; _modalEl.style.transform = ''; _modalEl.style.opacity = ''; _modalEl.style.transition = ''; return; }
-      if (dy < 0) return;
-      const progress = Math.min(dy / 200, 1);
-      _modalEl.style.transform = 'translate(-50%, calc(-50% + ' + dy + 'px))';
-      _modalEl.style.opacity = (1 - progress * 0.4).toString();
-    }, { passive: true });
-    document.addEventListener('touchend', function(e) {
-      if (!_modalActive || !_modalEl) { _modalActive = false; return; }
-      const dy = e.changedTouches[0].clientY - _modalStartY;
-      if (dy > 80) {
-        _modalEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-        _modalEl.style.transform = 'translate(-50%, 100%)';
-        _modalEl.style.opacity = '0';
-        if (navigator.vibrate) navigator.vibrate(10);
-        setTimeout(function() {
-          _modalEl.style.transition = '';
-          _modalEl.style.transform = '';
-          _modalEl.style.opacity = '';
-          closeAllModals();
-          _modalEl = null;
-        }, 200);
-      } else {
-        _modalEl.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-        _modalEl.style.transform = '';
-        _modalEl.style.opacity = '';
-        setTimeout(function() { if (_modalEl) { _modalEl.style.transition = ''; } }, 200);
-      }
-      _modalActive = false;
-    }, { passive: true });
-  })();
+      return isModalHeader(e.target, modal);
+    },
+    axis: 'y',
+    progressPx: 200,
+    offset: function(dy) { return 'translate(-50%, calc(-50% + ' + dy + 'px))'; },
+  });
 
   
 
