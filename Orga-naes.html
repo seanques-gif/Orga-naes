@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Xpi4ftYXCRs/g4DXzsH/ZCC/s4uOVBF8xYBbvQ+qjCA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-BycGIi/0cUHBaQJBrWpXWIWAdsWjPjC5pInJHUiYE5A='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -15203,6 +15203,16 @@ if ('serviceWorker' in navigator) {
   }
   let _lastPushedCatHash = '';
   let _lastPushedArchiveHash = '';
+  
+  
+  
+  
+  
+  
+  
+  
+  let _notesConflictParkedHash = '';
+  let _notesOverwriteAuthorized = false;
   let _lastPushedNotesHash = '';
   
   
@@ -15330,6 +15340,7 @@ if ('serviceWorker' in navigator) {
         const remoteNoteTombstones = (tSnap.val() && typeof tSnap.val() === 'object') ? tSnap.val() : {};
         if (notesSignature({ notes: notesSnap.notes, tombstones: notesSnap.tombstones }) === notesSignature({ notes: remoteNotes, tombstones: remoteNoteTombstones })) {
           _lastPushedNotesHash = notesHash; 
+          _notesConflictParkedHash = ''; 
           return undefined;
         }
         if (!localHasNotes && remoteCount > 0 && !_notesPulledThisSession) {
@@ -15346,6 +15357,21 @@ if ('serviceWorker' in navigator) {
         const liveRemote = remoteNotes.filter(function(n) { return n && !remoteNoteTombstones[n.id]; });
         if (!localHasNotes && liveRemote.length > 0 && Object.keys(remoteNoteTombstones).length === 0) {
           _lastPushedNotesHash = notesHash;
+          return undefined;
+        }
+        
+        
+        
+        
+        
+        
+        const autoNotesInfo = notesDiff(notesSnap, remoteNotes, remoteNoteTombstones);
+        if (autoNotesInfo && autoNotesInfo.conflict && !_notesOverwriteAuthorized) {
+          if (_notesConflictParkedHash !== notesHash) {
+            _notesConflictParkedHash = notesHash;
+            window._pf.showToast('⚠ Note changed on both devices - not pushed. Use Pull or Push to choose a version', true);
+            if (window._pf.logError) window._pf.logError('Firebase push (notes)', new Error('both-sides note divergence parked, overwrite refused'));
+          }
           return undefined;
         }
         return Promise.all([
@@ -16658,10 +16684,18 @@ if ('serviceWorker' in navigator) {
     
     
     window._pf.showToast('☁ Pushing to cloud...');
+    
+    
+    
+    
+    _notesOverwriteAuthorized = true;
     pushWithTimestamp().then(function() {
+      _notesOverwriteAuthorized = false;
+      _notesConflictParkedHash = ''; 
       window._pf.showToast('✅ Kept local data & pushed to cloud');
       window._pf.closeAllModals();
     }).catch(function(err) {
+      _notesOverwriteAuthorized = false;
       window._pf.showToast('❌ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
       if (window._pf.logError) window._pf.logError('Firebase conflict push', err);
     });
