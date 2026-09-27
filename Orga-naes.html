@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-A/GGSmc031HfEova7kS8GQNE0UVmBG9msT/RxDtTt/A='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-w++Gkp/TaMfAzXqgDBfrBX4LsyfZzu0XDWQIHNmKh+k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6900,7 +6900,14 @@
   });
   searchInput.addEventListener('blur', () => { if (!searchInput.value) searchWrap.classList.remove('pf-search-open'); });
   searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { searchInput.value = ''; searchTerm = ''; searchWrap.classList.remove('pf-has-value', 'pf-search-open'); searchInput.blur(); renderSplitList(); renderSplitDetail(); return; }
+    // Escape is deliberately NOT handled here. This branch used to clear the
+    // search and return without stopping propagation, so the event still
+    // reached the document Escape stack — whose search check was already false
+    // by then — and one press cleared the search AND closed whatever sat
+    // underneath (the reported "Esc should close the search first" against the
+    // detail view). The stack owns Escape now: its search entry is tier 1 and
+    // clears first, and _clearSearch() also removes the mobile search overlay
+    // and returns the wrap to the toolbar, which this private branch never did.
     // Enter / Shift+Enter: jump to the next / previous search match.
     if (e.key === 'Enter' && searchTerm) { e.preventDefault(); jumpToSearchMatch(e.shiftKey ? -1 : 1); }
   });
