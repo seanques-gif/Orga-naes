@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-d6aCCr2CNgEa1peQ7UjW7tA/2AP8xeNsofo2S1jVtpM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-aJ/BU6qxlMfzXicoIvRmPUOrcRgGDPVc69mt7lpKEao='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -980,6 +980,8 @@
   #pf-root #pf-split-collapse-all { margin-right: auto; }
   #pf-root .pf-split-collapse-btn:hover { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
   #pf-root .pf-split-toggle-active { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  
+  @media (max-width: 1199px) { #pf-root.pf-device-desktop .pf-collapse-words { display: none; } }
   #pf-root .pf-split-detail {
     display: none; overflow: auto; padding: 0; position: relative; flex-direction: column; transition: transform var(--dur-surface) var(--ease-console), opacity var(--dur-surface) var(--ease-console);
     background: var(--bg); width: 100%; flex: 1;
@@ -8128,7 +8130,12 @@
     syncProjectsNav();
     const sortBar = document.createElement('div');
     sortBar.className = 'pf-split-sort';
-    sortBar.innerHTML = '<button id="pf-split-collapse-all" class="pf-split-collapse-btn" title="Collapse/Expand all categories">▾ All</button>' +
+    
+    
+    
+    
+    
+    sortBar.innerHTML = '<button id="pf-split-collapse-all" class="pf-split-collapse-btn" title="Expand/collapse every category group" aria-label="Collapse all category groups"><span class="pf-collapse-chevron">▾</span><span class="pf-collapse-words"> Collapse all</span></button>' +
       '<button id="pf-split-hide-completed" class="pf-split-collapse-btn' + (showCompletedProjects ? ' pf-split-toggle-active' : '') + '" title="Show completed projects">' + pfIcon(showCompletedProjects ? 'check-square' : 'square') + ' Completed</button>' +
       '<select id="pf-split-sort-sel" aria-label="Sort projects"><option value="manual">Manual</option><option value="name">Name</option><option value="status">Status</option><option value="due-cat">Due Date</option><option value="created">Newest</option></select>';
     splitList.appendChild(sortBar);
@@ -8137,7 +8144,13 @@
     sortBar.querySelector('#pf-split-hide-completed').addEventListener('click', () => { showCompletedProjects = !showCompletedProjects; safeSet('project-flow-hide-completed', String(showCompletedProjects), false); renderSplitList(); });
     const collapseBtn = sortBar.querySelector('#pf-split-collapse-all');
     const allCollapsed = categories.length > 0 && categories.every(c => splitCollapsedCats[c]);
-    collapseBtn.textContent = allCollapsed ? '▸ All' : '▾ All';
+    
+    
+    
+    
+    collapseBtn.querySelector('.pf-collapse-chevron').textContent = allCollapsed ? '▸' : '▾';
+    collapseBtn.querySelector('.pf-collapse-words').textContent = allCollapsed ? ' Expand all' : ' Collapse all';
+    collapseBtn.setAttribute('aria-label', allCollapsed ? 'Expand all category groups' : 'Collapse all category groups');
     collapseBtn.addEventListener('click', () => {
       if (allCollapsed) { categories.forEach(c => { splitCollapsedCats[c] = false; }); }
       else { categories.forEach(c => { splitCollapsedCats[c] = true; }); }
