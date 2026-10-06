@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-aJ/BU6qxlMfzXicoIvRmPUOrcRgGDPVc69mt7lpKEao='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-xeHBu/Sh1Q9+LwvqChk9JE0b46g4rlJkd9OzZetZ6aY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -7905,6 +7905,41 @@
   }
   
   
+  
+  
+  
+  function splitCatOrder(grouped) {
+    if (projectsView.indexOf(PROJECTS_CAT_PREFIX) === 0) {
+      const picked = projectsView.slice(PROJECTS_CAT_PREFIX.length);
+      return [picked === '' ? '__uncategorized__' : picked];
+    }
+    return categories.concat(grouped['__uncategorized__'] ? ['__uncategorized__'] : []);
+  }
+  
+  
+  
+  
+  
+  function splitFilteredProjects() {
+    return sortProjects(projects.filter(p => matchesSearch(p) && projectPassesCompleted(p) && projectInView(p)));
+  }
+  function splitGroupedByCat() {
+    const grouped = {};
+    splitFilteredProjects().forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
+    return grouped;
+  }
+  function splitVisibleItems() {
+    const grouped = splitGroupedByCat();
+    const items = [];
+    splitCatOrder(grouped).forEach(cat => {
+      const group = grouped[cat];
+      if (!group || !group.length || splitCollapsedCats[cat]) return;
+      group.forEach(p => items.push(p));
+    });
+    return items;
+  }
+  
+  
   function projectsViewCounts() {
     const counts = { all: 0, active: 0, completed: 0 };
     projects.forEach(function(p) { counts.all++; if (p.status === 'completed') counts.completed++; else counts.active++; });
@@ -7980,11 +8015,21 @@
     const labels = projectsNavCountLabels();
     Object.keys(labels).forEach(function(v) { setProjectsNavLabel(v, labels[v]); });
   }
+  
+  
+  
+  
+  function openPickedCategory(value) {
+    if (String(value).indexOf(PROJECTS_CAT_PREFIX) !== 0) return;
+    const name = value.slice(PROJECTS_CAT_PREFIX.length);
+    splitCollapsedCats[name === '' ? '__uncategorized__' : name] = false;
+  }
   function setProjectsView(value) {
     if (value !== 'all' && value !== 'active' && value !== 'completed'
       && String(value).indexOf(PROJECTS_CAT_PREFIX) !== 0) return false;
     if (value === projectsView) return false;
     projectsView = value;
+    openPickedCategory(value);
     if (projectsNav) projectsNav.setActive(value);
     try { localStorage.setItem(PROJECTS_VIEW_KEY, value); } catch (e) {}
     renderSplitList();
@@ -8189,12 +8234,11 @@
         saveCategories(); scheduleSave(); renderCategoryList(); render();
       });
     }
-    const grouped = {};
-    sortProjects(projects.filter(p => matchesSearch(p) && projectPassesCompleted(p) && projectInView(p))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
+    const grouped = splitGroupedByCat();
     
     const extraCats = Object.keys(grouped).filter(c => c !== '__uncategorized__' && !categories.includes(c));
     if (extraCats.length) { categories.push(...extraCats); saveCategories(); }
-    const catOrder = categories.concat(grouped['__uncategorized__'] ? ['__uncategorized__'] : []);
+    const catOrder = splitCatOrder(grouped);
     let _itemAnimIdx = 0;
     function buildCatBlock(cat) {
       const group = grouped[cat] || [];
@@ -8409,7 +8453,7 @@
         return item;
       } };
     }
-    const visibleCount = projects.filter(p => matchesSearch(p) && projectPassesCompleted(p) && projectInView(p)).length;
+    const visibleCount = splitFilteredProjects().length;
     const useChunking = visibleCount > CHUNK_THRESHOLD;
     const pending = [];
     catOrder.forEach(cat => {
@@ -8810,23 +8854,22 @@
 
   splitList.setAttribute('tabindex', '0');
   splitList.addEventListener('keydown', (e) => {
-    const grouped = {};
-    sortProjects(projects.filter(p => matchesSearch(p) && (showCompletedProjects || p.status !== 'completed'))).forEach(p => { const cat = p.category || '__uncategorized__'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(p); });
-    const catOrder = categories.concat(grouped['__uncategorized__'] ? ['__uncategorized__'] : []);
-    const items = [];
-    catOrder.forEach(cat => { const group = grouped[cat]; if (!group || !group.length) return; if (splitCollapsedCats[cat]) return; group.forEach(p => items.push(p)); });
+    
+    
+    
+    const items = splitVisibleItems();
     if (!items.length) return;
     const curIdx = items.findIndex(p => p.id === splitSelectedId);
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       const next = curIdx < items.length - 1 ? curIdx + 1 : 0;
       splitSelectedId = items[next].id; splitMultiSelect = []; renderSplitList(); renderSplitDetail();
-      const el = splitList.querySelector('.pf-split-active'); if (el) el.scrollIntoView({ block: 'nearest' });
+      const el = splitList.querySelector('.pf-split-active'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       const prev = curIdx > 0 ? curIdx - 1 : items.length - 1;
       splitSelectedId = items[prev].id; splitMultiSelect = []; renderSplitList(); renderSplitDetail();
-      const el = splitList.querySelector('.pf-split-active'); if (el) el.scrollIntoView({ block: 'nearest' });
+      const el = splitList.querySelector('.pf-split-active'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (splitSelectedId) renderSplitDetail();
