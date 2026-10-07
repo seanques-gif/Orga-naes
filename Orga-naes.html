@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Ho4RLXnvA20oxI5Muia+yd+Gjlu7T0JoCf65SQh+gVY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-U6+yhxdGG9juWHIImbj6i+TX4kWclFRXrqV16uhQkec='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2420,6 +2420,10 @@
     display: inline-block; box-sizing: border-box; width: 9px; height: 9px;
     border: 1px solid var(--card-border); border-radius: 50%;
   }
+  
+  #pf-root .pf-split-nav .pf-nav-dot.pf-nav-proj { background: var(--text-dim); }
+  #pf-root .pf-split-nav .branched-menu__item[data-passive] { cursor: default; }
+  #pf-root .pf-split-nav .branched-menu__item[data-passive]:hover { color: var(--bm-muted); }
   #pf-root .pf-split-nav .pf-nav-more {
     position: absolute; right: 0; z-index: 1;
     top: calc(6px + var(--pf-row-i, 0) * var(--bm-row) + (var(--bm-row) - 24px) / 2);
@@ -6984,6 +6988,7 @@
   
   const BRANCHED_PAD = 6;    
   const BRANCHED_MARK = 16;  
+  const BRANCHED_STEP = 14;  
 
   
   
@@ -7038,7 +7043,11 @@
       const set = toOpenSet(given.defaultOpen === undefined ? 0 : given.defaultOpen);
       for (let i = 0; i < items.length; i++) {
         const kids = kidsOf(items[i]);
-        if (kids && set.has(i) && kids.length) return kids[0].value === undefined ? '' : kids[0].value;
+        if (!kids || !set.has(i)) continue;
+        for (let k = 0; k < kids.length; k++) {
+          if (isPassive(kids[k])) continue;   
+          return kids[k].value === undefined ? '' : kids[k].value;
+        }
       }
       return '';
     }
@@ -7051,14 +7060,21 @@
       const rowY = function(k) { return BRANCHED_PAD + k * rowHeight + rowHeight / 2; };
       return { r: r, endX: endX, rowY: rowY };
     }
-    function branchPath(g, k) {
-      return 'M ' + trunk + ' ' + (g.rowY(k) - g.r) + ' A ' + g.r + ' ' + g.r + ' 0 0 0 ' + (trunk + g.r) + ' ' + g.rowY(k) + ' H ' + g.endX;
+    
+    
+    
+    function depthStep(kid) { return kid && kid.depth > 0 ? kid.depth * BRANCHED_STEP : 0; }
+    
+    
+    function isPassive(kid) { return !!kid && kid.passive === true; }
+    function branchPath(g, k, s) {
+      return 'M ' + trunk + ' ' + (g.rowY(k) - g.r) + ' A ' + g.r + ' ' + g.r + ' 0 0 0 ' + (trunk + g.r) + ' ' + g.rowY(k) + ' H ' + (g.endX + s);
     }
-    function reachPath(g, k) {
-      return 'M ' + trunk + ' 0 V ' + (g.rowY(k) - g.r) + ' A ' + g.r + ' ' + g.r + ' 0 0 0 ' + (trunk + g.r) + ' ' + g.rowY(k) + ' H ' + g.endX;
+    function reachPath(g, k, s) {
+      return 'M ' + trunk + ' 0 V ' + (g.rowY(k) - g.r) + ' A ' + g.r + ' ' + g.r + ' 0 0 0 ' + (trunk + g.r) + ' ' + g.rowY(k) + ' H ' + (g.endX + s);
     }
-    function reachLength(g, k) {
-      return g.rowY(k) - g.r + (Math.PI * g.r) / 2 + (g.endX - trunk - g.r);
+    function reachLength(g, k, s) {
+      return g.rowY(k) - g.r + (Math.PI * g.r) / 2 + (g.endX + s - trunk - g.r);
     }
 
     const heads = [], sections = [], rowsBySection = [], reachBySection = [];
@@ -7130,14 +7146,15 @@
         sections[i] = section; heads[i] = head;
         if (kids) {
           const height = BRANCHED_PAD * 2 + kids.length * rowHeight;
+          const deepest = kids.reduce(function(m, kid) { return Math.max(m, depthStep(kid)); }, 0);
           const body = anyEl('div', 'branched-menu__body');
           const fold = anyEl('div', 'branched-menu__fold');
           const tree = anyEl('div', 'branched-menu__tree');
           tree.style.height = height + 'px';
-          let markup = '<svg class="branched-menu__lines" width="' + indent + '" height="' + height + '" aria-hidden="true">' +
+          let markup = '<svg class="branched-menu__lines" width="' + (indent + deepest) + '" height="' + height + '" aria-hidden="true">' +
             '<path class="branched-menu__base" d="M ' + trunk + ' 0 V ' + (kids.length ? g.rowY(kids.length - 1) - g.r : 0) + '"/>';
-          kids.forEach(function(kid, k) { markup += '<path class="branched-menu__base" d="' + branchPath(g, k) + '"/>'; });
-          kids.forEach(function(kid, k) { markup += '<path class="branched-menu__reach" d="' + reachPath(g, k) + '"/>'; });
+          kids.forEach(function(kid, k) { markup += '<path class="branched-menu__base" d="' + branchPath(g, k, depthStep(kid)) + '"/>'; });
+          kids.forEach(function(kid, k) { markup += '<path class="branched-menu__reach" d="' + reachPath(g, k, depthStep(kid)) + '"/>'; });
           markup += '</svg>';
           tree.innerHTML = markup;
           const reaches = tree.querySelectorAll('.branched-menu__reach');
@@ -7145,6 +7162,9 @@
           kids.forEach(function(kid, k) {
             const row = anyEl('button', 'branched-menu__item');
             row.type = 'button';
+            const step = depthStep(kid);
+            if (step) { row.style.paddingLeft = (indent + step) + 'px'; row.setAttribute('data-depth', String(kid.depth)); }
+            if (isPassive(kid)) row.setAttribute('data-passive', '');
             if (kid.icon) {
               const box = anyEl('span', 'branched-menu__icon');
               box.setAttribute('aria-hidden', 'true');
@@ -7156,6 +7176,9 @@
             row.appendChild(label);
             on(row, 'click', function() {
               if (destroyed) return;
+              
+              
+              if (isPassive(kid)) return;
               cursorEl = row;
               select(kid.value, kid);
             });
@@ -7207,11 +7230,12 @@
           const reaches = reachBySection[i] || [];
           const g = geometry();
           kids.forEach(function(kid, k) {
-            const chosen = kid.value === active;
+            const content = isPassive(kid);
+            const chosen = !content && kid.value === active;
             flag(rows[k], 'data-active', chosen);
             if (chosen) rows[k].setAttribute('aria-current', 'true'); else rows[k].removeAttribute('aria-current');
-            rows[k].tabIndex = isOpen ? 0 : -1;
-            const len = reachLength(g, k);
+            rows[k].tabIndex = (isOpen && !content) ? 0 : -1;
+            const len = reachLength(g, k, depthStep(kid));
             reaches[k].style.strokeDasharray = String(len);
             
             
@@ -7252,7 +7276,11 @@
         out.push({ el: heads[i], kind: kids ? 'head' : 'leaf', index: i, item: item });
         if (kids && open.has(i)) {
           const rows = rowsBySection[i] || [];
-          kids.forEach(function(kid, k) { out.push({ el: rows[k], kind: 'child', index: i, child: k, item: kid }); });
+          kids.forEach(function(kid, k) {
+            
+            if (isPassive(kid)) return;
+            out.push({ el: rows[k], kind: 'child', index: i, child: k, item: kid });
+          });
         }
       });
       return out;
@@ -7884,6 +7912,9 @@
   const PROJECTS_VIEW_LABELS = { all: 'All projects', active: 'Active', completed: 'Completed' };
   const PROJECTS_VIEW_ICONS = { all: 'list', active: 'clock', completed: 'check-square' };
   const PROJECTS_CAT_PREFIX = 'cat:';
+  
+  
+  const PROJECTS_ITEM_PREFIX = 'proj:';
   let projectsView = 'all';
   let projectsNav = null;
   let projectsNavSig = '';
@@ -7962,12 +7993,33 @@
     projects.forEach(function(p) { if (p.category && seen.indexOf(p.category) === -1) seen.push(p.category); });
     return seen;
   }
+  
+  
+  
+  
+  
+  function projectsNavUnder(key) {
+    if (projectsView !== PROJECTS_CAT_PREFIX + key) return [];
+    return splitFilteredProjects()
+      .filter(function(p) { return (p.category || '') === key; })
+      .map(function(p) {
+        return {
+          value: PROJECTS_ITEM_PREFIX + p.id,
+          label: (p.emoji ? p.emoji + ' ' : '') + p.title,
+          icon: '<span class="pf-nav-dot pf-nav-proj"></span>',
+          passive: true,
+          depth: 1
+        };
+      });
+  }
   function projectNavItems() {
-    const counts = projectsViewCounts();
-    const cats = projectNavCategories().map(function(c) {
-      return { value: PROJECTS_CAT_PREFIX + c, label: (categoryEmojis[c] ? categoryEmojis[c] + ' ' : '') + c, icon: categoryDotMarkup(c) };
+    const cats = [];
+    projectNavCategories().forEach(function(c) {
+      cats.push({ value: PROJECTS_CAT_PREFIX + c, label: (categoryEmojis[c] ? categoryEmojis[c] + ' ' : '') + c, icon: categoryDotMarkup(c) });
+      cats.push.apply(cats, projectsNavUnder(c));
     });
     cats.push({ value: PROJECTS_CAT_PREFIX, label: 'Uncategorized', icon: 'info' });
+    cats.push.apply(cats, projectsNavUnder(''));
     return [
       { label: 'Views', icon: 'list', children: [
         { value: 'all', label: PROJECTS_VIEW_LABELS.all, icon: PROJECTS_VIEW_ICONS.all },
@@ -7995,7 +8047,12 @@
   
   
   function projectsNavShape() {
-    return categories.map(function(c) { return c + '\u0001' + (catColors[c] || '') + '\u0001' + (categoryEmojis[c] || ''); }).join('\u0002');
+    const cats = categories.map(function(c) { return c + '\u0001' + (catColors[c] || '') + '\u0001' + (categoryEmojis[c] || ''); }).join('\u0002');
+    
+    
+    
+    const key = projectsView.indexOf(PROJECTS_CAT_PREFIX) === 0 ? projectsView.slice(PROJECTS_CAT_PREFIX.length) : null;
+    return cats + '\u0003' + (key === null ? '' : key + '\u0001' + projectsNavUnder(key).map(function(i) { return i.value; }).join(','));
   }
   function setProjectsNavLabel(value, text) {
     if (!projectsNav) return;
@@ -8177,6 +8234,7 @@
   
   
   
+  
   function decorateProjectsNavCats(menu) {
     const nav = menu || projectsNav;
     if (!nav) return;
@@ -8185,10 +8243,14 @@
     
     
     
-    projectNavCategories().forEach(function(name, k) {
+    
+    
+    let rowIndex = 0;
+    projectNavCategories().forEach(function(name) {
       const row = nav.itemEl(PROJECTS_CAT_PREFIX + name);
       const tree = row && row.parentNode;
-      if (!tree) return;
+      const under = projectsNavUnder(name).length;
+      if (!tree) { rowIndex += 1 + under; return; }
       
       
       row.setAttribute('data-cat-actions', '');
@@ -8198,13 +8260,14 @@
       more.title = 'Category actions: rename, colour, emoji, delete';
       more.setAttribute('aria-label', 'Actions for ' + name);
       more.textContent = '\u22ef';
-      more.style.setProperty('--pf-row-i', String(k));
+      more.style.setProperty('--pf-row-i', String(rowIndex));
       more.addEventListener('click', function(e) {
         e.stopPropagation();
         const rect = more.getBoundingClientRect();
         openCategoryActionsMenu(name, rect.left, rect.bottom + 4);
       });
       tree.appendChild(more);
+      rowIndex += 1 + under;
     });
   }
   function initProjectsNav() {
