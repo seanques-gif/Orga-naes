@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ZEQgmSvsF5a+FEhIqgEIlbWj1oUjiFlbrgCtDDyzMQM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ULV1WFSbT6NrvVWuzgNRtZ56e2wpIHXkppc2477dAfs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2399,15 +2399,16 @@
   }
   
   #pf-root .pf-split-nav { display: none; }
+  
   #pf-root.pf-device-desktop .pf-split-nav {
-    display: block; width: 186px; flex: none; min-height: 0;
+    display: block; width: 220px; flex: none; min-height: 0;
     overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
     scrollbar-color: var(--card-border) transparent;
     padding: 6px 10px 6px 4px; border-right: 1px solid var(--card-border);
   }
   @media (orientation: landscape) {
     #pf-root.pf-device-tablet .pf-split-nav {
-      display: block; width: 186px; flex: none; min-height: 0;
+      display: block; width: 220px; flex: none; min-height: 0;
       overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
       scrollbar-color: var(--card-border) transparent;
       padding: 6px 10px 6px 4px; border-right: 1px solid var(--card-border);
@@ -2427,6 +2428,8 @@
   }
   
   #pf-root .pf-split-nav .pf-nav-dot.pf-nav-proj { background: var(--text-dim); }
+  
+  #pf-root .pf-split-nav .pf-nav-prog { display: inline-flex; flex: none; }
   #pf-root .pf-split-nav .branched-menu__item[data-passive] { cursor: default; }
   #pf-root .pf-split-nav .branched-menu__item[data-passive]:hover { color: var(--bm-muted); }
   #pf-root .pf-split-nav .pf-nav-more {
@@ -8432,6 +8435,8 @@
   
   
   
+  
+  
   function paintProjectsNav() {
     if (!projectsNav) return;
     const key = projectsView.indexOf(PROJECTS_CAT_PREFIX) === 0 ? projectsView.slice(PROJECTS_CAT_PREFIX.length) : null;
@@ -8444,10 +8449,13 @@
       if (!p) return;
       if (splitMultiSelect.indexOf(id) !== -1) row.setAttribute('data-proj-selected', ''); else row.removeAttribute('data-proj-selected');
       if (splitSelectedId === id) row.setAttribute('data-proj-active', ''); else row.removeAttribute('data-proj-active');
-      const box = row.querySelector('.branched-menu__icon');
-      if (!box) return;
-      const ring = progressRingHtml(p, false) || '<span class="pf-nav-dot pf-nav-proj"></span>';
-      if (box._pfRing !== ring) { box._pfRing = ring; box.innerHTML = ring; }
+      const ring = progressRingHtml(p, false);
+      let slot = row.querySelector('.pf-nav-prog');
+      
+      
+      if (!ring) { if (slot) row.removeChild(slot); return; }
+      if (!slot) { slot = document.createElement('span'); slot.className = 'pf-nav-prog'; row.appendChild(slot); }
+      if (slot._pfRing !== ring) { slot._pfRing = ring; slot.innerHTML = ring; }
     });
   }
   function initProjectsNav() {
