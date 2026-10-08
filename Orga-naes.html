@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Hncwtdy/hmg2cGIsq0aEddIKpuZ4nXyVckbGYShbA/w='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-pjakkgQS+8ij7cDTfMLx+D+e/GX1Lr4ytlYzaeD79KE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2431,6 +2431,7 @@
   
   #pf-root .pf-split-nav .branched-menu { width: 100%; max-width: 100%; }
   
+  #pf-root .pf-split-nav .branched-menu__item[data-proj-jump] > .branched-menu__label { flex: 1; }
   #pf-root .pf-split-nav .pf-nav-prog { display: inline-flex; flex: none; }
   #pf-root .pf-split-nav .branched-menu__item[data-passive] { cursor: default; }
   #pf-root .pf-split-nav .branched-menu__item[data-passive]:hover { color: var(--bm-muted); }
@@ -8445,6 +8446,8 @@
       if (row.parentNode) row.parentNode.appendChild(more);
     });
   }
+  
+  
   
   
   
