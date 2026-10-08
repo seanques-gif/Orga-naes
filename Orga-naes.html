@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-NFJFu1MeRbTO+DrYpISru5Its5odgOzWY4bVmYLVs4U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-LCAmvSohDx1EJ+EB5OTo+AndUNidJ/6r0ITX4iNE65E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4585,6 +4585,7 @@
       ['project-flow-options-tab', 'device', 'last used Options group'],
       ['project-flow-notes-size', 'device', 'notes panel size'],
       ['project-flow-notes-view', 'device', 'notes panel: the view the list was left on'],
+      ['project-flow-notes-nav-folded', 'device', 'notes navigator: sections left folded'],
       ['project-flow-projects-view', 'device', 'projects rail: the view the list was left on'],
       ['project-flow-split-collapsed', 'device', 'split list: category groups left collapsed'],
       ['project-flow-week-hidden-days', 'device', 'weekly planner: days hidden from the grid'],
@@ -14592,6 +14593,29 @@
       { value: 'unlinked', label: NOTE_VIEW_LABELS.unlinked, icon: NOTE_VIEW_ICONS.unlinked }
     ] }
   ];
+  
+  
+  
+  
+  
+  const NOTES_FOLD_KEY = 'project-flow-notes-nav-folded';
+  function readNotesFolds() {
+    let raw = null;
+    try { raw = localStorage.getItem(NOTES_FOLD_KEY); } catch (e) { return {}; }
+    if (!raw) return {};
+    let parsed = null;
+    try { parsed = JSON.parse(raw); } catch (e) { return {}; }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out = {};
+    Object.keys(parsed).forEach(function(k) { if (parsed[k] === true) out[k] = true; });
+    return out;
+  }
+  let notesFolds = readNotesFolds();
+  function saveNotesFolds() {
+    const out = {};
+    Object.keys(notesFolds).forEach(function(k) { if (notesFolds[k]) out[k] = true; });
+    try { localStorage.setItem(NOTES_FOLD_KEY, JSON.stringify(out)); } catch (e) {}
+  }
   let notesView = 'all';
   let notesNav = null;
   
@@ -14638,19 +14662,27 @@
   function mountNotesNav() {
     const host = document.getElementById('pf-notes-nav');
     if (!host || typeof branchedMenu !== 'function') return null;
+    const openSections = [];
+    NOTE_VIEWS.forEach(function(item, i) { if (!notesFolds[item.label]) openSections.push(i); });
     try {
       return branchedMenu({
         mount: host,
         label: 'Note views',
         items: NOTE_VIEWS,
-        defaultOpen: [0, 1],
+        defaultOpen: openSections,
         defaultActive: notesView,
         rowHeight: 30,
         indent: 34,
         trunk: 12,
         radius: 8,
         fontSize: 'calc(var(--font-size-base) - 1px)',
-        onSelect: function(value) { setNotesView(value); }
+        onSelect: function(value) { setNotesView(value); },
+        onToggle: function(i, isOpen) {
+          const item = NOTE_VIEWS[i];
+          if (!item) return;
+          if (isOpen) delete notesFolds[item.label]; else notesFolds[item.label] = true;
+          saveNotesFolds();
+        }
       });
     } catch (e) {
       return null;   
