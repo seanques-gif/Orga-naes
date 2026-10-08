@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ZKO73s4dZM4rdJbBpvIwTepfI4FUaGB4hADp3LfSjVM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-bqAc2WtoR2sCsoouOfapaKHlGVSgS/Jg4Bh43UYp0X4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1926,7 +1926,6 @@
   #pf-root .pf-status-menu-item:not(.pf-current):hover { background: var(--card-hover); }
   
   #pf-root .pf-cat-add { background: transparent; border: none; color: var(--text-dim); font-size: calc(var(--font-size-base) + 2px); font-weight: 700; cursor: pointer; margin-right: 4px; padding: 0 2px; border-radius: 6px; line-height: 1; }
-  #pf-root .pf-empty-hint { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); padding: 8px 16px; font-style: italic; opacity: 0.7; }
   #pf-root .pf-ext-inline { cursor: pointer; display: inline-flex; align-items: center; }
 
   
@@ -8492,12 +8491,12 @@
       splitList.appendChild(catLabel);
       const catItemsWrap = document.createElement('div');
       catItemsWrap.className = 'pf-cat-items-wrap' + (_isCollapsed ? ' pf-collapsed' : '');
-      if (!group.length && !_isCollapsed) {
-        const hint = document.createElement('div');
-        hint.className = 'pf-empty-hint'; 
-        hint.textContent = 'No projects in this category';
-        catItemsWrap.appendChild(hint);
-      }
+      
+      
+      
+      
+      
+      
       splitList.appendChild(catItemsWrap);
       _itemAnimIdx = 0;
       return { wrap: catItemsWrap, makeItem: (p) => {
