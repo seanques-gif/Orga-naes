@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-aS3q52k1KORjxMsXKq4Vpc2rBONe1JkzmpSucWHWAVg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-rp7+3eQvqXWmZEn4rOf18JA84+wAvRNy6g/7G/zOGbQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8096,10 +8096,25 @@
     const counts = projectsViewCounts();
     const labels = {};
     Object.keys(PROJECTS_VIEW_LABELS).forEach(function(v) { labels[v] = PROJECTS_VIEW_LABELS[v] + ' (' + counts[v] + ')'; });
-    projectNavCategories().forEach(function(c) {
-      labels[PROJECTS_CAT_PREFIX + c] = (categoryEmojis[c] ? categoryEmojis[c] + ' ' : '') + c + ' (' + projects.filter(function(p) { return (p.category || '') === c; }).length + ')';
+    
+    
+    
+    
+    
+    
+    
+    
+    const shown = {};
+    projects.forEach(function(p) {
+      if (!matchesSearch(p) || !projectPassesCompleted(p)) return;
+      if (projectsView === 'completed' && p.status !== 'completed') return;
+      const key = p.category || '__uncategorized__';
+      shown[key] = (shown[key] || 0) + 1;
     });
-    labels[PROJECTS_CAT_PREFIX] = 'Uncategorized (' + projects.filter(function(p) { return !p.category; }).length + ')';
+    projectNavCategories().forEach(function(c) {
+      labels[PROJECTS_CAT_PREFIX + c] = (categoryEmojis[c] ? categoryEmojis[c] + ' ' : '') + c + ' (' + (shown[c] || 0) + ')';
+    });
+    labels[PROJECTS_CAT_PREFIX] = 'Uncategorized (' + (shown['__uncategorized__'] || 0) + ')';
     return labels;
   }
   
