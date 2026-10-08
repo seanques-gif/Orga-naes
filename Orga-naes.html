@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-bqAc2WtoR2sCsoouOfapaKHlGVSgS/Jg4Bh43UYp0X4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-NFJFu1MeRbTO+DrYpISru5Its5odgOzWY4bVmYLVs4U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4586,6 +4586,7 @@
       ['project-flow-notes-size', 'device', 'notes panel size'],
       ['project-flow-notes-view', 'device', 'notes panel: the view the list was left on'],
       ['project-flow-projects-view', 'device', 'projects rail: the view the list was left on'],
+      ['project-flow-split-collapsed', 'device', 'split list: category groups left collapsed'],
       ['project-flow-week-hidden-days', 'device', 'weekly planner: days hidden from the grid'],
       ['pf-last-save-time', 'device', 'last save stamp'],
       ['pf-last-export-time', 'device', 'last export stamp'],
@@ -5155,7 +5156,7 @@
     if (categoryEmojis[oldName]) { categoryEmojis[newName] = categoryEmojis[oldName]; delete categoryEmojis[oldName]; saveCatEmojis(); }
     if (catColors[oldName]) { catColors[newName] = catColors[oldName]; delete catColors[oldName]; saveCatColors(); }
     if (collapsedCategories[oldName]) { collapsedCategories[newName] = collapsedCategories[oldName]; delete collapsedCategories[oldName]; saveCollapsedCategories(); }
-    if (splitCollapsedCats[oldName]) { splitCollapsedCats[newName] = true; delete splitCollapsedCats[oldName]; }
+    if (splitCollapsedCats[oldName]) { splitCollapsedCats[newName] = true; delete splitCollapsedCats[oldName]; saveSplitCollapsed(); }
     retargetProjectsView(oldName, newName);
     saveCategories(); scheduleSave(); render(); renderCategoryList(); renderSplitList();
     return true;
@@ -5168,7 +5169,7 @@
     if (categoryEmojis[name]) { delete categoryEmojis[name]; saveCatEmojis(); }
     if (catColors[name]) { delete catColors[name]; saveCatColors(); }
     delete collapsedCategories[name];
-    delete splitCollapsedCats[name];
+    delete splitCollapsedCats[name]; saveSplitCollapsed();
     
     
     dropProjectsView(name);
@@ -7854,7 +7855,31 @@
   const splitDetail = document.getElementById('pf-split-detail');
   let splitSelectedId = null;
   let splitMultiSelect = [];
-  let splitCollapsedCats = {};
+  
+  
+  
+  
+  
+  
+  
+  const SPLIT_COLLAPSED_KEY = 'project-flow-split-collapsed';
+  function readSplitCollapsed() {
+    let raw = null;
+    try { raw = localStorage.getItem(SPLIT_COLLAPSED_KEY); } catch (e) { return {}; }
+    if (!raw) return {};
+    let parsed = null;
+    try { parsed = JSON.parse(raw); } catch (e) { return {}; }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out = {};
+    Object.keys(parsed).forEach(function(k) { if (parsed[k] === true) out[k] = true; });
+    return out;
+  }
+  function saveSplitCollapsed() {
+    const out = {};
+    Object.keys(splitCollapsedCats).forEach(function(k) { if (splitCollapsedCats[k]) out[k] = true; });
+    try { localStorage.setItem(SPLIT_COLLAPSED_KEY, JSON.stringify(out)); } catch (e) {}
+  }
+  let splitCollapsedCats = readSplitCollapsed();
   let _splitCatMultiSelect = [];
 
   let _splitSelectTimer = null;
@@ -8130,6 +8155,7 @@
     const key = name === '' ? '__uncategorized__' : name;
     if (!splitCollapsedCats[key]) return false;   
     splitCollapsedCats[key] = false;
+    saveSplitCollapsed();
     return true;
   }
   function setProjectsView(value) {
@@ -8357,6 +8383,7 @@
     collapseBtn.addEventListener('click', () => {
       if (allCollapsed) { categories.forEach(c => { splitCollapsedCats[c] = false; }); }
       else { categories.forEach(c => { splitCollapsedCats[c] = true; }); }
+      saveSplitCollapsed();
       renderSplitList();
     });
     if (splitMultiSelect.length >= 1) {
@@ -8418,7 +8445,7 @@
           return;
         }
         _splitCatMultiSelect = [];
-        splitCollapsedCats[cat] = !splitCollapsedCats[cat]; renderSplitList();
+        splitCollapsedCats[cat] = !splitCollapsedCats[cat]; saveSplitCollapsed(); renderSplitList();
       });
       if (cat !== '__uncategorized__') {
         catLabel.addEventListener('contextmenu', (e) => {
@@ -12870,6 +12897,7 @@
             const allCollapsed = categories.length > 0 && categories.every(c => splitCollapsedCats[c]);
             if (allCollapsed) { categories.forEach(c => { splitCollapsedCats[c] = false; }); }
             else { categories.forEach(c => { splitCollapsedCats[c] = true; }); }
+            saveSplitCollapsed();
             renderSplitList();
             showToast(allCollapsed ? 'Expanded all categories' : 'Collapsed all categories');
           }
