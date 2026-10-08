@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-rp7+3eQvqXWmZEn4rOf18JA84+wAvRNy6g/7G/zOGbQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ZEQgmSvsF5a+FEhIqgEIlbWj1oUjiFlbrgCtDDyzMQM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2414,7 +2414,13 @@
     }
   }
   
-  #pf-root .pf-split-nav .branched-menu__item[data-cat-actions] { padding-right: 26px; }
+  #pf-root .pf-split-nav .branched-menu__item[data-nav-actions] { padding-right: 26px; }
+  
+  #pf-root .pf-split-nav .branched-menu__item[data-proj-selected] {
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+    border-left: 1px solid var(--accent);
+  }
+  #pf-root .pf-split-nav .branched-menu__item[data-proj-active] { color: var(--accent); font-weight: 500; }
   #pf-root .pf-split-nav .pf-nav-dot {
     display: inline-block; box-sizing: border-box; width: 9px; height: 9px;
     border: 1px solid var(--card-border); border-radius: 50%;
@@ -7511,6 +7517,12 @@
     ['dueAt', 'completedAt', 'recurrence'].forEach(k => { if (pr[k] !== undefined && pr[k] !== null) sub[k] = pr[k]; });
     return sub;
   }
+  
+  
+  
+  
+  
+  function moveClipOf(pr) { return { node: projectAsSubtask(pr), fromProjectId: pr.id, topLevel: true }; }
   function buildMoveFromSelection() {
     if (subMultiSelect.length) {
       const byProject = new Map();
@@ -7530,7 +7542,7 @@
       
       
       
-      return splitMultiSelect.map(id => projects.find(pr => pr.id === id)).filter(Boolean).map(pr => ({ node: projectAsSubtask(pr), fromProjectId: pr.id, topLevel: true }));
+      return splitMultiSelect.map(id => projects.find(pr => pr.id === id)).filter(Boolean).map(moveClipOf);
     }
     return null;
   }
@@ -7647,6 +7659,11 @@
     if (!node.subtasks) return false;
     return node.subtasks.some(c => idSet.has(c.id) || nodeHasSelectedDescendant(c, idSet));
   }
+  
+  
+  function projectClip(pr) {
+    return { id: pr.id, title: pr.title, status: pr.status, dueAt: pr.dueAt, completedAt: pr.completedAt, recurrence: pr.recurrence, subtasks: pr.subtasks || [] };
+  }
   function buildClipboardFromSelection() {
     
     if (subMultiSelect.length) {
@@ -7669,7 +7686,7 @@
     }
     
     if (splitMultiSelect.length) {
-      return splitMultiSelect.map(id => projects.find(pr => pr.id === id)).filter(Boolean).map(pr => ({ id: pr.id, title: pr.title, status: pr.status, dueAt: pr.dueAt, completedAt: pr.completedAt, recurrence: pr.recurrence, subtasks: pr.subtasks || [] }));
+      return splitMultiSelect.map(id => projects.find(pr => pr.id === id)).filter(Boolean).map(projectClip);
     }
     return null;
   }
@@ -8157,6 +8174,7 @@
     }
     const labels = projectsNavCountLabels();
     Object.keys(labels).forEach(function(v) { setProjectsNavLabel(v, labels[v]); });
+    paintProjectsNav();
   }
   
   
@@ -8227,6 +8245,32 @@
     } catch (e) {
       return null;   
     }
+  }
+  
+  
+  
+  
+  function navMoreButton(title, aria, open) {
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'pf-nav-more';
+    more.title = title;
+    more.setAttribute('aria-label', aria);
+    more.textContent = '\u22ef';
+    more.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const rect = more.getBoundingClientRect();
+      open(rect.left, rect.bottom + 4);
+    });
+    return more;
+  }
+  
+  
+  
+  
+  function navRowIndex(row) {
+    const rows = row.parentNode ? row.parentNode.querySelectorAll('.branched-menu__item') : [];
+    return Array.prototype.indexOf.call(rows, row);
   }
   
   
@@ -8330,23 +8374,15 @@
       if (!tree) { rowIndex += 1 + under; return; }
       
       
-      row.setAttribute('data-cat-actions', '');
-      const more = document.createElement('button');
-      more.type = 'button';
-      more.className = 'pf-nav-more';
-      more.title = 'Category actions: rename, colour, emoji, delete';
-      more.setAttribute('aria-label', 'Actions for ' + name);
-      more.textContent = '\u22ef';
+      row.setAttribute('data-nav-actions', '');
+      const more = navMoreButton('Category actions: rename, colour, emoji, delete', 'Actions for ' + name,
+        function(x, y) { openCategoryActionsMenu(name, x, y); });
       more.style.setProperty('--pf-row-i', String(rowIndex));
-      more.addEventListener('click', function(e) {
-        e.stopPropagation();
-        const rect = more.getBoundingClientRect();
-        openCategoryActionsMenu(name, rect.left, rect.bottom + 4);
-      });
       tree.appendChild(more);
       rowIndex += 1 + under;
     });
   }
+  
   
   
   
@@ -8363,11 +8399,55 @@
     projectsNavUnder(key).forEach(function(item) {
       const row = nav.itemEl(item.value);
       if (!row || row.getAttribute('data-proj-jump') !== null) return;
-      row.setAttribute('data-proj-jump', '');
       const id = item.value.slice(PROJECTS_ITEM_PREFIX.length);
-      row.addEventListener('click', function() {
-        if (typeof window._splitSelect === 'function') window._splitSelect(id, null);
+      const live = function() { return projects.find(function(pr) { return pr.id === id; }); };
+      if (!live()) return;
+      row.setAttribute('data-proj-jump', '');
+      row.addEventListener('click', function(e) {
+        const p = live();
+        if (!p) return;
+        if (_moveArmed && _moveClipboard && _moveClipboard.length) { e.preventDefault(); e.stopPropagation(); moveClipboardAsMain(p); return; }
+        if (_pasteArmed && _taskClipboard && _taskClipboard.length) { e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; }
+        window._splitSelect(id, e);
       });
+      row.addEventListener('contextmenu', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        if (window.matchMedia('(pointer: coarse)').matches) return;
+        const p = live();
+        if (p) _showCtxMenu(e.clientX, e.clientY, p);
+      });
+      if (row.getAttribute('data-nav-actions') !== null) return;
+      const p = live();
+      if (!p) return;
+      row.setAttribute('data-nav-actions', '');
+      const more = navMoreButton('Project actions: rename, status, duplicate, archive, delete', 'Actions for ' + p.title,
+        function(x, y) { const now = live(); if (now) _showCtxMenu(x, y, now); });
+      more.style.setProperty('--pf-row-i', String(navRowIndex(row)));
+      if (row.parentNode) row.parentNode.appendChild(more);
+    });
+  }
+  
+  
+  
+  
+  
+  
+  function paintProjectsNav() {
+    if (!projectsNav) return;
+    const key = projectsView.indexOf(PROJECTS_CAT_PREFIX) === 0 ? projectsView.slice(PROJECTS_CAT_PREFIX.length) : null;
+    if (key === null) return;
+    projectsNavUnder(key).forEach(function(item) {
+      const row = projectsNav.itemEl(item.value);
+      if (!row) return;
+      const id = item.value.slice(PROJECTS_ITEM_PREFIX.length);
+      const p = projects.find(function(pr) { return pr.id === id; });
+      if (!p) return;
+      if (splitMultiSelect.indexOf(id) !== -1) row.setAttribute('data-proj-selected', ''); else row.removeAttribute('data-proj-selected');
+      if (splitSelectedId === id) row.setAttribute('data-proj-active', ''); else row.removeAttribute('data-proj-active');
+      const box = row.querySelector('.branched-menu__icon');
+      if (!box) return;
+      const ring = progressRingHtml(p, false) || '<span class="pf-nav-dot pf-nav-proj"></span>';
+      if (box._pfRing !== ring) { box._pfRing = ring; box.innerHTML = ring; }
     });
   }
   function initProjectsNav() {
@@ -8385,6 +8465,18 @@
   else document.addEventListener('DOMContentLoaded', initProjectsNav, { once: true });
   _pf.projectsView = function() { return projectsView; };
   _pf.setProjectsView = function(value) { return setProjectsView(value); };
+
+  
+  
+  
+  function progressRingHtml(p, withCount) {
+    const tc = countTree(p.subtasks);
+    if (!tc.total) return '';
+    const pct = tc.done / tc.total;
+    const pctLabel = Math.round(pct * 100);
+    const r = 8, circ = 2 * Math.PI * r, offset = circ * (1 - pct);
+    return '<svg class="pf-progress-ring" width="20" height="20" viewBox="0 0 20 20" title="' + pctLabel + '% complete"><circle cx="10" cy="10" r="' + r + '" fill="none" stroke="var(--card-border)" stroke-width="2.5"/><circle cx="10" cy="10" r="' + r + '" fill="none" stroke="var(--' + (p.status === 'waiting' ? 'accent' : p.status) + ')" stroke-width="2.5" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '" stroke-linecap="round" transform="rotate(-90 10 10)"/></svg>' + (withCount ? '<span class="pf-split-list-progress" title="' + pctLabel + '% complete">' + tc.done + '/' + tc.total + '</span>' : '');
+  }
 
   function renderSplitList() {
     splitList.innerHTML = '';
@@ -8659,11 +8751,7 @@
           scheduleSave(); renderSplitList(); renderSplitDetail();
           moved.forEach(m => { const el = splitList.querySelector('[data-project-id="' + m.id + '"]'); if (el) { el.classList.add('pf-drop-settling'); el.addEventListener('animationend', () => el.classList.remove('pf-drop-settling'), { once: true }); } });
         });
-        const tc = countTree(p.subtasks);
-        const pct = tc.total ? tc.done / tc.total : 0;
-        const pctLabel = Math.round(pct * 100);
-        const r = 8, circ = 2 * Math.PI * r, offset = circ * (1 - pct);
-        const progressHtml = tc.total ? '<svg class="pf-progress-ring" width="20" height="20" viewBox="0 0 20 20" title="' + pctLabel + '% complete"><circle cx="10" cy="10" r="' + r + '" fill="none" stroke="var(--card-border)" stroke-width="2.5"/><circle cx="10" cy="10" r="' + r + '" fill="none" stroke="var(--' + (p.status === 'waiting' ? 'accent' : p.status) + ')" stroke-width="2.5" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '" stroke-linecap="round" transform="rotate(-90 10 10)"/></svg><span class="pf-split-list-progress" title="' + pctLabel + '% complete">' + tc.done + '/' + tc.total + '</span>' : '';
+        const progressHtml = progressRingHtml(p, true);
         let dueHtml = '<span class="pf-split-list-due"></span>';
         if (p.dueAt) {
           const now = new Date(); now.setHours(0,0,0,0);
@@ -8881,6 +8969,8 @@
       { icon: 'bell', label: 'Set Reminder', action: () => { promptReminder(p.id, p.title, 'project'); } },
       { label: '→ ' + STATUS_LABEL[statusNext], action: () => { _lastProjectId = p.id; snapshot(); p.status = statusNext; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
       { icon: 'clipboard', label: 'Duplicate', action: () => { snapshot(); const dup = JSON.parse(JSON.stringify(p)); dup.id = uid(); dup.title += ' (copy)'; projects.push(dup); scheduleSave(); renderSplitList(); } },
+      { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [projectClip(p)]; showToast('"' + p.title + '" copied — click a project/task to paste it (Esc to cancel)'); } },
+      { icon: 'scissors', label: 'Cut (move — click a project/task after)', action: () => { _moveClipboard = [moveClipOf(p)]; _moveArmed = true; root.classList.add('pf-move-armed'); showToast('Cut "' + p.title + '" — click a project/task to move it (Esc to cancel)', false, true); } },
     ];
 
     items.push({ sep: true });
