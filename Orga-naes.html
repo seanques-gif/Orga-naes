@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-OuQ1l/ge4b/kYEBAgc7RvGOuLLo5sKV32Td7a9knrM8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DUW7/eNDk20fDpaFV6cOL571yIZWDIm6dEQgVCWsuZo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -7374,7 +7374,16 @@
             const chosen = !content && kid.value === active;
             flag(rows[k], 'data-active', chosen);
             if (chosen) rows[k].setAttribute('aria-current', 'true'); else rows[k].removeAttribute('aria-current');
-            rows[k].tabIndex = (isOpen && !content) ? 0 : -1;
+            
+            
+            
+            
+            
+            
+            
+            
+            const focusable = content && kid.focusable === true;
+            rows[k].tabIndex = (isOpen && (!content || focusable)) ? 0 : -1;
             const len = reachLength(g, k, depthStep(kid), drops[k]);
             reaches[k].style.strokeDasharray = String(len);
             
@@ -8319,6 +8328,13 @@
           label: (p.emoji ? p.emoji + ' ' : '') + p.title,
           icon: '<span class="pf-nav-dot pf-nav-proj"></span>',
           passive: true,
+          
+          
+          
+          
+          
+          
+          focusable: true,
           depth: 1
         };
       });
@@ -8722,6 +8738,21 @@
           if (!p) return;
           if (_moveArmed && _moveClipboard && _moveClipboard.length) { e.preventDefault(); e.stopPropagation(); moveClipboardAsMain(p); return; }
           if (_pasteArmed && _taskClipboard && _taskClipboard.length) { e.preventDefault(); e.stopPropagation(); pasteClipboardAsMain(p); return; }
+          window._splitSelect(id, e);
+        });
+        
+        
+        
+        
+        
+        
+        
+        row.addEventListener('keydown', function(e) {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          const p = live();
+          if (!p) return;
+          if (e.preventDefault) e.preventDefault();
+          e.stopPropagation();
           window._splitSelect(id, e);
         });
         row.addEventListener('dblclick', function(e) {
