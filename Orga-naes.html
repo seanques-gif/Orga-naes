@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-PY2ECphDO/eUBLWAQLJDZ6OE5PPOLHDl0V5DT+t2CB0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ptpExnnl6aPjPAdIr9kGw1JHx9k5DvEO+vt6rLtOsEg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14018,11 +14018,26 @@
   
   
   let _pfConfirmResolve = null;
+  
+  
+  
+  
+  
+  
+  let _pfConfirmReturnFocus = null;
   function pfConfirmDialog(title, message, okLabel, cancelLabel) {
     return new Promise(function(resolve) {
       
       if (_pfConfirmResolve) { _pfConfirmResolve(false); }
       _pfConfirmResolve = resolve;
+      
+      
+      
+      
+      if (!_pfConfirmReturnFocus) {
+        const ae = document.activeElement;
+        _pfConfirmReturnFocus = (ae && ae !== document.body) ? ae : null;
+      }
       const t = document.getElementById('pf-confirm-title');
       const m = document.getElementById('pf-confirm-message');
       const okB = document.getElementById('pf-confirm-ok');
@@ -14047,17 +14062,37 @@
     if (modal) modal.classList.remove('pf-conflict-open');
     const r = _pfConfirmResolve; _pfConfirmResolve = null;
     if (r) r(result);
+    
+    
+    
+    
+    
+    
+    const back = _pfConfirmReturnFocus;
+    _pfConfirmReturnFocus = null;
+    if (back && back.isConnected !== false &&
+        (typeof back.focus === 'function') &&
+        (typeof document.contains !== 'function' || document.contains(back))) {
+      try { back.focus(); } catch (e) {  }
+    }
   }
   const _pfConfirmOkBtn = document.getElementById('pf-confirm-ok');
   if (_pfConfirmOkBtn) _pfConfirmOkBtn.addEventListener('click', function() { settleConfirmDialog(true); });
   const _pfConfirmCancelBtn = document.getElementById('pf-confirm-cancel');
   if (_pfConfirmCancelBtn) _pfConfirmCancelBtn.addEventListener('click', function() { settleConfirmDialog(false); });
-  if (_pf && _pf.registerEscDismissable) {
-    _pf.registerEscDismissable({
-      key: 'confirm-dialog',
-      check: function() { const m = document.getElementById('pf-confirm-modal'); return !!(m && m.classList.contains('pf-conflict-open')); },
-      run: function() { settleConfirmDialog(false); }
-    });
+  
+  
+  
+  
+  
+  function _pfConfirmDialogEscape() {
+    if (_pf && _pf.registerEscDismissable) {
+      _pf.registerEscDismissable({
+        key: 'confirm-dialog',
+        check: function() { const m = document.getElementById('pf-confirm-modal'); return !!(m && m.classList.contains('pf-conflict-open')); },
+        run: function() { settleConfirmDialog(false); }
+      });
+    }
   }
 
   
@@ -14803,6 +14838,11 @@
     closeAllModals: () => closeAllModals(),
     errorLogAsText: () => errorLogAsText()
   });
+
+  
+  
+  
+  _pfConfirmDialogEscape();
 
   
 
