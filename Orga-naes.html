@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-z4jODVUpJ0vIexCVTjMYOj4o/DQZenSqiXKVXmWvkeg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-GA1jLn6fF1oyGAuAqZDoWW6LeDZlgbdevCLUnT1Uawg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -5873,8 +5873,18 @@
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function projectIsLive(id) { return projects.some(function(p) { return p && p.id === id; }); }
   function archiveProject(p) { archive = archive.filter(a => a.id !== p.id); const copy = { ...JSON.parse(JSON.stringify(p)), archivedAt: new Date().toISOString() }; stripBinEntryKeys(copy); archive.push(copy); saveArchive(); }
-  function restoreFromArchive(id) { const idx = archive.findIndex(a => a.id === id); if (idx < 0) return; const item = archive.splice(idx, 1)[0]; delete item.archivedAt; stripBinEntryKeys(item); projects.push(item); saveArchive(); scheduleSave(); render(); renderArchiveList(); showToast('"' + item.title + '" restored'); }
+  function restoreFromArchive(id) { const idx = archive.findIndex(a => a.id === id); if (idx < 0) return; const item = archive.splice(idx, 1)[0]; delete item.archivedAt; stripBinEntryKeys(item); if (projectIsLive(item.id)) { saveArchive(); renderArchiveList(); showToast('"' + item.title + '" is already in your projects'); return; } projects.push(item); saveArchive(); scheduleSave(); render(); renderArchiveList(); showToast('"' + item.title + '" restored'); }
   function renderArchiveList() {
     const list = document.getElementById('pf-archive-list');
     document.getElementById('pf-archive-count').textContent = archive.length ? '(' + archive.length + ')' : '';
@@ -5973,7 +5983,7 @@
     } else if (kind === 'subtask') {
       const restored = restoreSubtaskFromBin(item);
       if (!restored) { trash.push(item); saveTrash(); showToast('⚠ Its project no longer exists — restore the project first', true); return; }
-      showToast('"' + (item.title || 'Subtask') + '" restored');
+      showToast('"' + (item.title || 'Subtask') + '"' + (restored === 'duplicate' ? ' is already in the task list' : ' restored'));
     } else {
       delete item.deletedAt; delete item.kind;
       
@@ -5981,6 +5991,16 @@
       
       
       stripBinEntryKeys(item);
+      
+      
+      
+      
+      if (projectIsLive(item.id)) {
+        showToast('"' + item.title + '" is already in your projects');
+        saveTrash();
+        renderTrashList();
+        return;
+      }
       projects.push(item);
       scheduleSave(); render();
       showToast('"' + item.title + '" restored');
@@ -5994,6 +6014,12 @@
     const p = projects.find(x => x.id === item.projectId);
     if (!p) return false;
     if (!Array.isArray(p.subtasks)) p.subtasks = [];
+    
+    
+    
+    
+    
+    if (findSubNode(p.subtasks, item.id)) return 'duplicate';
     const node = item.node || { id: item.id, title: item.title, status: 'planned', subtasks: [] };
     let arr = p.subtasks;
     let valid = true;
