@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-extI1BF7ikz7jJ19P622+knLpCg3f8fBc4aYSIrWnnM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-oVry/7Cx/ZeKx8ybJPbUVyNvSg/KFBogLhZP1Chyu5Q='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -8152,14 +8152,36 @@
   
   
   
-  let _navModeTwoCol = navTwoColumn();
-  window.addEventListener('resize', function() {
-    if (projectsNavMode !== 'tree') return;
-    const now = navTwoColumn();
-    if (now === _navModeTwoCol) return;
-    _navModeTwoCol = now;
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function syncTreeOnlyColumns() {
+    const shouldHide = treeSole();
+    if (root.classList.contains('pf-list-hidden') === shouldHide) return false;
     applyProjectsNavMode();
     renderSplitList();
+    return true;
+  }
+  let _navModeSettle = null;
+  window.addEventListener('resize', function() {
+    syncTreeOnlyColumns();
+    
+    
+    
+    
+    
+    
+    clearTimeout(_navModeSettle);
+    _navModeSettle = setTimeout(syncTreeOnlyColumns, 260);
   });
   
   
