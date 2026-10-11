@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-vHmAtI0vZvCWDdFJp48g7rycRCJ8TQMMcFqAXb9+nbg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-PY2ECphDO/eUBLWAQLJDZ6OE5PPOLHDl0V5DT+t2CB0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2961,9 +2961,9 @@
     </div>
     <div class="pf-activity-list pf-scroll-x pf-min-h-0 pf-pad-4" id="pf-copy-modal-list"></div>
   </div>
-  <div class="pf-conflict-modal" id="pf-conflict-modal">
+  <div class="pf-conflict-modal" id="pf-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="pf-conflict-title">
     <div class="pf-conflict-box">
-      <div class="pf-conflict-title" data-ic-before="alert">Sync Conflict Detected</div>
+      <div class="pf-conflict-title" id="pf-conflict-title" data-ic-before="alert">Sync Conflict Detected</div>
       <div class="pf-conflict-cols">
         <div class="pf-conflict-col"><div class="pf-conflict-col-title" data-ic-before="save">Local</div><div id="pf-conflict-local"></div></div>
         <div class="pf-conflict-col"><div class="pf-conflict-col-title" data-ic-before="cloud">Cloud</div><div id="pf-conflict-remote"></div></div>
@@ -2980,7 +2980,7 @@
        overwrite-cloud guard with zero UI. Rendered AFTER the conflict modal
        so it stacks on top when both are open. Reuses pf-conflict classes —
        no dedicated CSS. -->
-  <div class="pf-conflict-modal" id="pf-confirm-modal">
+  <div class="pf-conflict-modal" id="pf-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="pf-confirm-title">
     <div class="pf-conflict-box">
       <div class="pf-conflict-title" id="pf-confirm-title">Please confirm</div>
       <div class="pf-conflict-col" id="pf-confirm-message" style="margin-bottom:12px;"></div>
@@ -14033,6 +14033,13 @@
       if (okB) okB.textContent = okLabel || 'OK';
       if (cancelB) cancelB.textContent = cancelLabel || 'Cancel';
       if (modal) modal.classList.add('pf-conflict-open');
+      
+      
+      
+      
+      
+      
+      if (cancelB && typeof cancelB.focus === 'function') cancelB.focus();
     });
   }
   function settleConfirmDialog(result) {
