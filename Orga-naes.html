@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-GA1jLn6fF1oyGAuAqZDoWW6LeDZlgbdevCLUnT1Uawg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-extI1BF7ikz7jJ19P622+knLpCg3f8fBc4aYSIrWnnM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -17376,21 +17376,44 @@ if ('serviceWorker' in navigator) {
     const currentIds = new Set(projects.map(p => p.id));
     const oldIds = Object.keys(_lastPushedHash);
     const hasDeletion = oldIds.some(id => !currentIds.has(id));
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    const sentHash = currentHash;
+    const sentIdOrder = currentIdOrder;
+    const sentSnapshot = JSON.stringify(normalizeForSync(projects));
+    
+    
+    
+    function noteProjectsLanded() {
+      _lastPushedHash = sentHash;
+      _lastPushedIdOrder = sentIdOrder;
+      _lastPushedSnapshot = sentSnapshot;
+      updateLastSync();
+    }
     if (hasDeletion || orderChanged) {
       
       
-      pending.push(userRef().set(cloudProjects()).catch(function(err) {
+      pending.push(userRef().set(cloudProjects()).then(noteProjectsLanded, function(err) {
         _pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (_pf.logError) _pf.logError('Firebase push (full set)', err);
       }));
       hasChanges = true;
     } else if (hasChanges) {
-      pending.push(db.ref('users/' + _fbUser.uid).update(updates).catch(function(err) {
+      pending.push(db.ref('users/' + _fbUser.uid).update(updates).then(noteProjectsLanded, function(err) {
         _pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (_pf.logError) _pf.logError('Firebase push (selective)', err);
       }));
     }
-    _lastPushedIdOrder = currentIdOrder;
 
     
     const catHash = JSON.stringify(categories);
@@ -17419,10 +17442,9 @@ if ('serviceWorker' in navigator) {
 
     if (hasChanges || catChanged) {
       pending.push(db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now()).catch(function(e) { if (_pf.logError) _pf.logError('Firebase push (updatedAt)', e); }));
-      _lastPushedHash = currentHash;
-      updateLastSync();
+      
+      
     }
-    _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
     
     return Promise.all(pending);
   }
