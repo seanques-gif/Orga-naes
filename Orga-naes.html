@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DUW7/eNDk20fDpaFV6cOL571yIZWDIm6dEQgVCWsuZo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-vHmAtI0vZvCWDdFJp48g7rycRCJ8TQMMcFqAXb9+nbg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -5313,16 +5313,35 @@
       const dot = name === 'Uncategorized'
         ? '<span class="pf-category-swatch" style="background:transparent;border:1px solid var(--card-border)"></span>'
         : '<span class="pf-category-swatch" style="background:' + categoryColor(name) + '"></span>';
-      return '<div class="pf-cat-option" data-new-cat="' + escapeHtml(name) + '" style="cursor:pointer; padding:8px 6px;">' + dot + '<span class="pf-category-name">' + escapeHtml(name) + '</span></div>';
+      
+      
+      
+      
+      
+      return '<button type="button" tabindex="0" class="pf-cat-option" data-new-cat="' + escapeHtml(name) + '" style="cursor:pointer; padding:8px 6px; display:block; width:100%; text-align:left; background:transparent; border:none; color:inherit; font:inherit;">' + dot + '<span class="pf-category-name">' + escapeHtml(name) + '</span></button>';
     }).join('');
+    
+    
+    
+    const choose = (row) => {
+      const val = row.dataset.newCat;
+      closeAllModals();
+      addProject(val === 'Uncategorized' ? null : val);
+    };
     newProjectCatList.querySelectorAll('[data-new-cat]').forEach(row => {
-      row.addEventListener('click', () => {
-        const val = row.dataset.newCat;
-        closeAllModals();
-        addProject(val === 'Uncategorized' ? null : val);
+      row.addEventListener('click', () => choose(row));
+      row.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        if (e.preventDefault) e.preventDefault();
+        choose(row);
       });
     });
     openModal(newProjectPopover, 'flex');
+    
+    
+    
+    const first = newProjectCatList.querySelector('.pf-cat-option');
+    if (first && typeof first.focus === 'function') first.focus();
   }
   const newProjectCatInput = document.getElementById('pf-new-project-cat-input');
   function addCategoryFromNewProject() {
