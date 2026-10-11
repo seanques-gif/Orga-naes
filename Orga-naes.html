@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-8ybm9eKYtPnPV75vneJTY1kIetI4a1R1khehjruDN5U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Un+74B45EmarsXZXEFKR8bJf3g/EKICIrDpeh5CKyAQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9418,7 +9418,11 @@
         item.addEventListener('click', (e) => { if (e.target.closest('.pf-split-list-edit')) { e.stopPropagation(); _inlineRename(item, p); } });
 
         if (p.dueAt) { const td = new Date(); td.setHours(0,0,0,0); if (p.dueAt === td.toISOString().slice(0,10) && p.status !== 'completed') item.classList.add('pf-due-today'); }
-        const emojiIcon = p.emoji || '';
+        
+        
+        
+        
+        const emojiIcon = escapeHtml(p.emoji || '');
         item.innerHTML = (emojiIcon ? '<span class="pf-emoji-btn" style="font-size: calc(var(--font-size-base) - 1px);">' + emojiIcon + '</span>' : '') +
           '<span class="pf-split-list-title" title="' + escapeHtml(p.title) + '">' + (searchTerm ? highlightMatch(escapeHtml(p.title), searchTerm) : escapeHtml(p.title)) + '</span>' +
           progressHtml +
