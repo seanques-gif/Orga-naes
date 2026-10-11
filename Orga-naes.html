@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-oVry/7Cx/ZeKx8ybJPbUVyNvSg/KFBogLhZP1Chyu5Q='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-nb20HW/OT7jGB2lH/jvnWIFo+c5KsQawuanGs8BPL7Q='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6666,11 +6666,22 @@
       nodes.push(node);
     }
     if (!nodes.length) { clearIndicators(); return; }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    const idSet = new Set(ids);
+    const roots = nodes.filter(n => !nodes.some(other => other !== n && idSet.has(other.id) && isDescendant(other, n.id)));
     snapshot();
-    ids.forEach(id => { const arr = findSubParentArray(p.subtasks, id); if (arr) { const idx = arr.findIndex(s => s.id === id); if (idx > -1) arr.splice(idx, 1); } });
-    if (!targetId) { nodes.forEach(n => p.subtasks.push(n)); }
-    else if (zone === 'nest') { const targetNode = findSubNode(p.subtasks, targetId); if (!targetNode.subtasks) targetNode.subtasks = []; nodes.forEach(n => targetNode.subtasks.push(n)); targetNode.expanded = true; }
-    else { const destArr = findSubParentArray(p.subtasks, targetId); const tIdx = destArr.findIndex(s => s.id === targetId); destArr.splice(zone === 'before' ? tIdx : tIdx + 1, 0, ...nodes); }
+    roots.forEach(n => { const arr = findSubParentArray(p.subtasks, n.id); if (arr) { const idx = arr.findIndex(s => s.id === n.id); if (idx > -1) arr.splice(idx, 1); } });
+    if (!targetId) { roots.forEach(n => p.subtasks.push(n)); }
+    else if (zone === 'nest') { const targetNode = findSubNode(p.subtasks, targetId); if (!targetNode.subtasks) targetNode.subtasks = []; roots.forEach(n => targetNode.subtasks.push(n)); targetNode.expanded = true; }
+    else { const destArr = findSubParentArray(p.subtasks, targetId); const tIdx = destArr.findIndex(s => s.id === targetId); destArr.splice(zone === 'before' ? tIdx : tIdx + 1, 0, ...roots); }
     draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; subMultiSelect = []; clearIndicators(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); render();
   }
 
