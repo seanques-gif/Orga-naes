@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Ggm3vMkWbna7QBnqiKxntnaQYD1lV6PljOeiXatUSUs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-3G8VPbtmSvwniCMg90T2KaOW/xqvjPHM4eyQNhcIvMo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -10312,11 +10312,28 @@
       '</div>';
     }).join('');
     list.querySelectorAll('[data-snap-idx]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const idx = parseInt(btn.dataset.snapIdx);
         const snap = snaps[idx];
         if (!snap || !snap.projects) return;
-        if (!confirm('Restore snapshot from ' + new Date(snap.timestamp).toLocaleString() + '?\n\nThis will replace your current data. (You can undo with Ctrl+Z)')) return;
+        
+        
+        
+        
+        
+        
+        const when = new Date(snap.timestamp).toLocaleString();
+        const tail = 'This will replace your current data. (You can undo with Ctrl+Z)';
+        const report = (_pf && typeof _pf.backupConflictReport === 'function') ? _pf.backupConflictReport({ projects: snap.projects }) : null;
+        const conflicts = (report && _pf && typeof _pf.backupConflictSummary === 'function') ? _pf.backupConflictSummary(report) : '';
+        let proceed;
+        if (_pf && typeof _pf.confirmDialog === 'function') {
+          proceed = await _pf.confirmDialog(conflicts ? 'This snapshot conflicts with your data' : 'Restore this snapshot?',
+            'Restore snapshot from ' + when + '? ' + (conflicts ? conflicts + ' ' : '') + tail, 'Restore');
+        } else {
+          proceed = confirm('Restore snapshot from ' + when + '?\n\n' + (conflicts ? conflicts + '\n\n' : '') + tail);
+        }
+        if (!proceed) return;
         snapshot();
         const result = validateAndRepair(snap.projects);
         projects = result.projects;
@@ -13261,6 +13278,89 @@
       ' on this device. Undo it from the toast afterwards, or with Ctrl+Z.';
   }
 
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function restoreRecordSig(rec) {
+    if (!rec || typeof rec !== 'object') return String(rec);
+    return JSON.stringify(_snapshotNormalize([rec])[0]);
+  }
+  function restoreConflictDiff(localList, incomingList) {
+    const l = {}, r = {};
+    (localList || []).forEach(function(x) { if (x && x.id != null) l[x.id] = x; });
+    (incomingList || []).forEach(function(x) { if (x && x.id != null) r[x.id] = x; });
+    return {
+      
+      added: (incomingList || []).filter(function(x) { return x && x.id != null && !l[x.id]; }),
+      
+      removed: (localList || []).filter(function(x) { return x && x.id != null && !r[x.id]; }),
+      
+      changed: (localList || []).filter(function(x) { return x && x.id != null && r[x.id] && restoreRecordSig(x) !== restoreRecordSig(r[x.id]); })
+    };
+  }
+  
+  
+  
+  
+  function backupConflictReport(incoming) {
+    const inc = incoming || {};
+    const pf = _pf || {};
+    const snap = (typeof pf.getNotesSnapshot === 'function') ? pf.getNotesSnapshot() : null;
+    const localNotes = (snap && Array.isArray(snap.notes)) ? snap.notes : null;
+    const report = { projects: null, notes: null, conflicts: 0 };
+    if (Array.isArray(inc.projects)) {
+      const d = restoreConflictDiff((typeof pf.getProjects === 'function' ? pf.getProjects() : []) || [], inc.projects);
+      report.projects = d;
+      report.conflicts += d.removed.length + d.changed.length;
+    }
+    if (Array.isArray(inc.notes) && localNotes) {
+      const d = restoreConflictDiff(localNotes, inc.notes);
+      report.notes = d;
+      report.conflicts += d.removed.length + d.changed.length;
+    }
+    return report;
+  }
+  
+  
+  function restoreNameList(records) {
+    const names = (records || []).map(function(r) { return '"' + ((r && r.title) || 'Untitled') + '"'; });
+    if (names.length <= 3) return names.join(', ');
+    return names.slice(0, 3).join(', ') + ' and ' + (names.length - 3) + ' more';
+  }
+  
+  
+  
+  function backupConflictSummary(report) {
+    if (!report) return '';
+    const parts = [];
+    [['projects', 'project'], ['notes', 'note']].forEach(function(pair) {
+      const d = report[pair[0]], word = pair[1];
+      if (!d) return;
+      if (d.removed.length) {
+        parts.push('This backup does not carry ' + d.removed.length + ' ' + word + (d.removed.length === 1 ? '' : 's') +
+          ' this device holds (' + restoreNameList(d.removed) + '), so importing it would drop them.');
+      }
+      if (d.changed.length) {
+        parts.push(d.changed.length + ' ' + word + (d.changed.length === 1 ? ' this device holds differs' : 's this device holds differ') +
+          ' from the backup\u2019s copy and would be overwritten (' + restoreNameList(d.changed) + ').');
+      }
+    });
+    return parts.join(' ');
+  }
+  if (_pf) {
+    _pf.backupConflictReport = backupConflictReport;
+    _pf.backupConflictSummary = backupConflictSummary;
+  }
+
   function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets) {
     snapshot(true, 'Imported a backup');
     let restoredExtras = 0;
@@ -13323,7 +13423,13 @@
           
           
           if (_pf && typeof _pf.confirmDialog === 'function') {
-            const proceed = await _pf.confirmDialog('Replace local data?', importReplaceSummary(data, importedNotes, importedReminders), 'Import & replace');
+            
+            
+            
+            const report = backupConflictReport({ projects: data, notes: importedNotes });
+            const conflicts = backupConflictSummary(report);
+            const body = importReplaceSummary(data, importedNotes, importedReminders) + (conflicts ? ' ' + conflicts : '');
+            const proceed = await _pf.confirmDialog(conflicts ? 'This backup conflicts with your data' : 'Replace local data?', body, 'Import & replace');
             if (!proceed) { showToast('Import cancelled.'); importInput.value = ''; return; }
           }
           applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets);
@@ -15391,6 +15497,9 @@
           const anyUnpinned = notesSelection.some(id => { const n = noteById(id); return n && !n.pinned; });
           notesSelection.forEach(id => { const n = noteById(id); if (n) n.pinned = anyUnpinned; });
           saveNotes(); renderNotesList(); showToast(anyUnpinned ? '✓ Pinned ' + notesSelection.length : '✓ Unpinned ' + notesSelection.length);
+          
+          
+          if (typeof logActivity === 'function') logActivity((anyUnpinned ? 'Pinned ' : 'Unpinned ') + notesSelection.length + (notesSelection.length === 1 ? ' note' : ' notes'));
         } else if (action === 'copy') {
           copyTextToClipboard(allText, notesSelection.length + (notesSelection.length === 1 ? ' note' : ' notes') + ' copied');
         } else if (action === 'delete') {
@@ -15563,6 +15672,7 @@
     saveNotes();
     renderNotesList();
     renderNotesEditor();
+    if (typeof logActivity === 'function') logActivity((n.pinned ? 'Pinned note "' : 'Unpinned note "') + (n.title || 'Untitled') + '"');
   }
 
   async function copyActiveNote() {
@@ -15593,6 +15703,13 @@
       n.title = title; n.body = body; n.updatedAt = new Date().toISOString();
       saveNotes();
       renderNotesList();
+      
+      
+      
+      
+      
+      
+      if (typeof logActivity === 'function') logActivity('Edited note "' + (n.title || 'Untitled') + '"');
     }
   }
 
