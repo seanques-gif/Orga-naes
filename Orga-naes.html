@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-fDGUJK6xtdgH3R5ZAvktMkGsrmUdAs0zCV2ooV27KO4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-b9lodihHrDE3XDxiWLISA4iG19fNFcKrWW0b26drDCE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14628,23 +14628,59 @@
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const REGISTER_SELF = 'this-register';
   const PF_AUDIT_REGISTER = Object.freeze({
-    source: 'MASTER-AUDIT-2026-09-19.md',
+    sources: Object.freeze([
+      Object.freeze({ file: 'MASTER-AUDIT-2026-09-19.md', heading: '## FINDINGS TABLE (all findings)' }),
+      Object.freeze({ file: 'docs/audits/full-audit-2026-10-12.md', heading: '## FINDINGS TABLE (all findings)' })
+    ]),
     findings: Object.freeze([
-      { id: 'AUD-01', status: 'remediated', evidence: 'c291fed', note: 'Imports capped at three stages (25 MB of raw text, file.size before the read, a bounded 20,000-node census), each refusing before any state changes' },
-      { id: 'AUD-02', status: 'remediated', evidence: 'c291fed', note: 'The sign-out wipe covers the last three account-scoped keys (xp, reminder-days, dismissed-weekly)' },
-      { id: 'AUD-03', status: 'remediated', evidence: '533372b', note: 'sw.js CACHE_VERSION is the artifact own sha256 prefix, so it cannot go stale' },
-      { id: 'AUD-04', status: 'remediated', evidence: 'aaa5279', note: 'Exports carry a schemaVersion and a documented migration reader keeps older files importable' },
-      { id: 'AUD-05', status: 'remediated', evidence: 'f02b6a0', note: 'The wipe derives from a key registry (static table + write-time registration + a sweep of both stores)' },
-      { id: 'AUD-06', status: 'remediated', evidence: 'a0d159f', note: 'uid() draws 15 bytes from crypto.getRandomValues (a 31-character id against the 32-character rule cap), with a documented no-CSPRNG fallback' },
-      { id: 'AUD-07', status: 'remediated', evidence: 'd95d6a5', note: 'The triplicated prototype-pollution guard is one shared definition (the ~35 helpers did not reproduce)' },
-      { id: 'AUD-08', status: 'remediated', evidence: '6997f69', note: 'Fonts regenerate from local sources — 396.7 KB to 121.4 KB of payload — and a build-time size budget guards growth' },
-      { id: 'AUD-09', status: 'remediated', evidence: 'b8a5622', note: 'One guarded entry function: a repeat evaluation cannot reach a fragment, and a duplicate boot is reported rather than absorbed' },
-      { id: 'AUD-10', status: 'remediated', evidence: '681cbe5', note: 'The service worker cache-fill branch is bounded by a FILLABLE allowlist derived from ASSETS' },
-      { id: 'AUD-11', status: 'reviewed', evidence: '5dbfbbe', note: 'One unreachable guard deleted (the setItem idempotent wrap) and four reachable readiness gates kept with their justification' },
-      { id: 'AUD-12', status: 'confirmed', evidence: 'owner-side', note: 'Device-bound checks (PWA install, touch, on-device notification click-through) are not reachable from here' },
-      { id: 'AUD-13', status: 'confirmed', evidence: 'build budget', note: '933 KB single file (gzip 283 KB), 121.4 KB of it embedded fonts, parse cost accepted by design; growth is now gated per area by the build' },
-      { id: 'AUD-14', status: 'confirmed', evidence: 'no analytics', note: 'Error and activity logs hold user text locally; no third-party analytics anywhere' }
+      { id: 'AUD-01', status: 'remediated', evidence: 'c291fed', source: 'MASTER-AUDIT-2026-09-19.md', note: 'Imports capped at three stages (25 MB of raw text, file.size before the read, a bounded 20,000-node census), each refusing before any state changes' },
+      { id: 'AUD-02', status: 'remediated', evidence: 'c291fed', source: 'MASTER-AUDIT-2026-09-19.md', note: 'The sign-out wipe covers the last three account-scoped keys (xp, reminder-days, dismissed-weekly)' },
+      { id: 'AUD-03', status: 'remediated', evidence: '533372b', source: 'MASTER-AUDIT-2026-09-19.md', note: 'sw.js CACHE_VERSION is the artifact own sha256 prefix, so it cannot go stale' },
+      { id: 'AUD-04', status: 'remediated', evidence: 'aaa5279', source: 'MASTER-AUDIT-2026-09-19.md', note: 'Exports carry a schemaVersion and a documented migration reader keeps older files importable' },
+      { id: 'AUD-05', status: 'remediated', evidence: 'f02b6a0', source: 'MASTER-AUDIT-2026-09-19.md', note: 'The wipe derives from a key registry (static table + write-time registration + a sweep of both stores)' },
+      { id: 'AUD-06', status: 'remediated', evidence: 'a0d159f', source: 'MASTER-AUDIT-2026-09-19.md', note: 'uid() draws 15 bytes from crypto.getRandomValues (a 31-character id against the 32-character rule cap), with a documented no-CSPRNG fallback' },
+      { id: 'AUD-07', status: 'remediated', evidence: 'd95d6a5', source: 'MASTER-AUDIT-2026-09-19.md', note: 'The triplicated prototype-pollution guard is one shared definition (the ~35 helpers did not reproduce)' },
+      { id: 'AUD-08', status: 'remediated', evidence: '6997f69', source: 'MASTER-AUDIT-2026-09-19.md', note: 'Fonts regenerate from local sources — 396.7 KB to 121.4 KB of payload — and a build-time size budget guards growth' },
+      { id: 'AUD-09', status: 'remediated', evidence: 'b8a5622', source: 'MASTER-AUDIT-2026-09-19.md', note: 'One guarded entry function: a repeat evaluation cannot reach a fragment, and a duplicate boot is reported rather than absorbed' },
+      { id: 'AUD-10', status: 'remediated', evidence: '681cbe5', source: 'MASTER-AUDIT-2026-09-19.md', note: 'The service worker cache-fill branch is bounded by a FILLABLE allowlist derived from ASSETS' },
+      { id: 'AUD-11', status: 'reviewed', evidence: '5dbfbbe', source: 'MASTER-AUDIT-2026-09-19.md', note: 'One unreachable guard deleted (the setItem idempotent wrap) and four reachable readiness gates kept with their justification' },
+      { id: 'AUD-12', status: 'confirmed', evidence: 'owner-side', source: 'MASTER-AUDIT-2026-09-19.md', note: 'Device-bound checks (PWA install, touch, on-device notification click-through) are not reachable from here' },
+      { id: 'AUD-13', status: 'confirmed', evidence: 'build budget', source: 'MASTER-AUDIT-2026-09-19.md', note: 'One file of 1065 KB (gzip 315 KB), 121.4 KB of it embedded fonts, parse cost accepted by design; growth is gated per area by the build' },
+      { id: 'AUD-14', status: 'confirmed', evidence: 'no analytics', source: 'MASTER-AUDIT-2026-09-19.md', note: 'Error and activity logs hold user text locally; no third-party analytics anywhere' },
+      { id: 'F-01', status: 'remediated', evidence: '465e7cf', source: 'docs/audits/full-audit-2026-10-12.md', note: 'Record ids and colour values are shape-repaired (repairRecordId / repairRecordColor) before any attribute position renders them — the load gate, the importer, notes, archive and bin, and every store the tree walk reaches' },
+      { id: 'F-02', status: 'remediated', evidence: '465e7cf', source: 'docs/audits/full-audit-2026-10-12.md', note: 'Five declarations nothing referenced deleted (triggerFileBackup, formatTime, toggleTimer, undismissOccurrence, cloudText)' },
+      { id: 'F-03', status: 'remediated', evidence: '465e7cf', source: 'docs/audits/full-audit-2026-10-12.md', note: 'Nine unreferenced CSS classes deleted; the pf- census now finds no class left unreferenced by any markup, script or test' },
+      { id: 'F-04', status: 'remediated', evidence: '465e7cf', source: 'docs/audits/full-audit-2026-10-12.md', note: 'The AUD-06 note above said uid() draws 16 bytes; it draws 15 (a 31-character id against the 32-character rule cap)' },
+      { id: 'N-01', status: 'remediated', evidence: '7dfc2d6', source: 'docs/audits/full-audit-2026-10-12.md', note: 'dueAt is shape-checked with the rules own PAYLOAD_RE.due at the load gate, the importer and the entry edges, and escaped at the Due List sink, so the three paths no longer disagree about what a due date is' },
+      { id: 'N-02', status: 'remediated', evidence: '7775e05', source: 'docs/audits/full-audit-2026-10-12.md', note: 'listShown deleted, the last declaration nothing referenced; the six names F-02 and N-02 removed are now pinned absent' },
+      { id: 'N-03', status: 'remediated', evidence: 'a972538', source: 'docs/audits/full-audit-2026-10-12.md', note: 'A forced-colors block gives the status dot and the badge a CanvasText border, so Windows High Contrast Mode no longer erases the two surfaces whose whole meaning was their fill' },
+      { id: 'N-04', status: 'confirmed', evidence: 'build budget', source: 'docs/audits/full-audit-2026-10-12.md', note: 'Every budget sat at 92-96% of its cap; the caps were re-baselined on 2026-10-12 to the measured bundle plus 8%, so the next substantial feature has room and growth still has to spend it' },
+      { id: 'N-05', status: 'remediated', evidence: REGISTER_SELF, source: 'docs/audits/full-audit-2026-10-12.md', note: 'The register carries two sources now, so the 2026-09-26 findings and the ones from this report travel recorded, and the stale size note in AUD-13 is corrected above' }
     ].map(Object.freeze))
   });
   
