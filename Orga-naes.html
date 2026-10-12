@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-zSMY7fsCWGVbqukeNwBS2Rq8/UXwuzhcJTGc0/Q75dQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-PL+CO264CCi1GwheWYpXSDAhgzOEt3ysK/fsqh7MTC8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2526,9 +2526,9 @@
         <option value="nodue">No Due</option>
       </select>
       <button class="pf-undo-btn" id="pf-today-btn" title="Today's Focus"><span data-ic="star"></span></button>
-      <button class="pf-undo-btn pf-btn-rel" id="pf-duelist-btn" title="Tasks by Due Date" ><span data-ic="calendar"></span><span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;"></span></button>
-      <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View"><span data-ic="calendar-week"></span></button>
-      <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner"><span data-ic="planner"></span></button>
+      <button class="pf-undo-btn pf-btn-rel" id="pf-duelist-btn" title="Tasks by Due Date" ><span data-ic="due-date"></span><span class="pf-desktop-badge" id="pf-desktop-badge" style="display:none;"></span></button>
+      <button class="pf-undo-btn" id="pf-calendar-btn" title="Calendar View"><span data-ic="calendar-month"></span></button>
+      <button class="pf-undo-btn" id="pf-weekly-btn" title="Weekly Planner"><span data-ic="planner-week"></span></button>
       <button class="pf-undo-btn" id="pf-notes-btn" title="Notes"><span data-ic="file-text"></span></button>
     </div>
     <div class="pf-tb-group" id="pf-tb-viewtools">
@@ -3009,8 +3009,8 @@
   <nav class="pf-bottom-nav" id="pf-bottom-nav">
     <button class="pf-bottom-nav-btn pf-bottom-active" data-nav="projects" title="Projects"><span data-ic="list"></span><span>Projects</span></button>
     <button class="pf-bottom-nav-btn" data-nav="today" title="Today"><span data-ic="star"></span><span>Today</span></button>
-    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates"><span data-ic="calendar"></span><span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
-    <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar"><span data-ic="calendar-week"></span><span>Calendar</span></button>
+    <button class="pf-bottom-nav-btn" data-nav="duelist" title="Due Dates"><span data-ic="due-date"></span><span>Due Dates</span><span class="pf-bottom-badge" id="pf-bottom-badge" style="display:none;"></span></button>
+    <button class="pf-bottom-nav-btn" data-nav="calendar" title="Calendar"><span data-ic="calendar-month"></span><span>Calendar</span></button>
     <button class="pf-bottom-nav-btn" data-nav="options" title="Options"><span data-ic="menu"></span><span>Options</span></button>
     <div class="pf-connection-dot pf-online" id="pf-connection-dot" title="Online"></div>
   </nav>
@@ -3119,6 +3119,16 @@
     'calendar': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>',
     'calendar-week': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h3M8 18h3M14 15h3"/>',
     'planner': '<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M9 2v4M15 2v4M4 9h16M8 13h8M8 17h5"/>',
+    
+    
+    
+    
+    
+    
+    
+    'due-date': '<path d="M4 6h7M4 12h7M4 18h4"/><circle cx="17" cy="16" r="4.5"/><path d="M17 13.7V16l1.7 1.1"/>',
+    'calendar-month': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/><path d="M7.5 15h.01M12 15h.01M16.5 15h.01M7.5 18h.01M12 18h.01M16.5 18h.01"/>',
+    'planner-week': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M9 11v10M15 11v10"/>',
     'book': '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-4.5"/>',
     'search': '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
     'list': '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
