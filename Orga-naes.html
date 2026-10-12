@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-0qPPcL3PN5vknxvQvva346dowZUaMzzRcOAOcnSnFS0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-1VLAygU1Rh7roIAk5KaNpRIwo8BNLbNvrpT2WqLXcSs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1585,12 +1585,7 @@
     color: var(--text-dim); background: var(--card); border-radius: var(--radius-container); padding: 1px 6px;
   }
   .pf-week-col-today .pf-week-day-badge { color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
-  .pf-week-day-clear {
-    position: absolute; top: 0; left: 2px; font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim);
-    cursor: pointer; padding: 0 3px;
-  }
-  .pf-week-day-clear .pf-ic { width: max(11px, 1em); height: max(11px, 1em); display: block; }
-  .pf-week-day-clear:hover, .pf-week-day-clear:focus-visible { color: var(--danger); }
+  
 
   .pf-week-empty {
     flex: 1; display: flex; align-items: center; justify-content: center;
@@ -1609,7 +1604,6 @@
     .pf-week-task:not(.pf-week-task-done):hover { border-color: var(--hover-border); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
   }
   .pf-week-task-done { opacity: 0.5; text-decoration: line-through; }
-  .pf-week-task-check { margin: 2px 0 0; cursor: pointer; flex-shrink: 0; }
   .pf-week-task-title-wrap { flex: 1; min-width: 0; }
   .pf-week-task-title-wrap.pf-clickable { cursor: pointer; }
   .pf-week-task-title {
@@ -11541,43 +11535,15 @@
       
       
       
-      const clearDayHtml = tasksForBadge.length
-        ? '<span class="pf-week-day-clear" data-day="' + ds + '" role="button" tabindex="0" title="Clear this day" aria-label="Clear ' + DAYS[i] + '">' + pfIcon('trash') + '</span>'
-        : '';
-      header.innerHTML = clearDayHtml + badgeHtml + '<div class="pf-week-col-daynum">' + d.getDate() + '</div>' + DAYS[i];
+      
+      
+      
+      
+      
+      
+      
+      header.innerHTML = badgeHtml + '<div class="pf-week-col-daynum">' + d.getDate() + '</div>' + DAYS[i];
       col.appendChild(header);
-      const dayClearBtn = header.querySelector('.pf-week-day-clear');
-      if (dayClearBtn) {
-        const clearDay = (e) => {
-          e.stopPropagation();
-          const n = (weeklyData[ds] || []).length;
-          if (!n) return;
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          snapshot(true, 'Cleared ' + DAYS[i]);
-          delete weeklyData[ds];
-          saveWeekly(); renderWeeklyPanel();
-          showToast('Cleared ' + n + ' task' + (n > 1 ? 's' : '') + ' from ' + DAYS[i], false, true);
-        };
-        dayClearBtn.addEventListener('click', clearDay);
-        dayClearBtn.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clearDay(e); }
-        });
-      }
       const tasks = weeklyData[ds] || [];
       if (!tasks.length) {
         const empty = document.createElement('div');
@@ -11592,23 +11558,9 @@
         row.draggable = true;
         row.dataset.taskId = t.id;
         row.dataset.day = ds;
-        row.title = t.title + (t.projectTitle ? ' · ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '') + ' • Drag to Backlog to remove, or check it off';
+        row.title = t.title + (t.projectTitle ? ' · ' + t.projectTitle : '') + (t.sourceId ? ' (click to open)' : '') + ' • Drag to the Backlog to take it off this day, or to another day to reschedule';
         row.className = 'pf-week-task' + (accentColor ? ' pf-week-task-accent' : '') + (t.done ? ' pf-week-task-done' : '');
         if (accentColor) row.style.setProperty('--pf-task-accent', accentColor);
-        const check = document.createElement('input');
-        check.type = 'checkbox';
-        check.checked = t.done;
-        check.className = 'pf-week-task-check';
-        check.addEventListener('change', () => {
-          t.done = check.checked;
-          if (t.done) {
-            weeklyData[ds] = (weeklyData[ds] || []).filter(x => x.id !== t.id);
-            saveWeekly(); renderWeeklyPanel();
-            showToast('"' + t.title + '" completed and removed from planner');
-            return;
-          }
-          saveWeekly(); renderWeeklyPanel();
-        });
         const titleWrap = document.createElement('div');
         titleWrap.className = 'pf-week-task-title-wrap' + (t.sourceId ? ' pf-clickable' : '');
         const titleSpan = document.createElement('span');
@@ -11628,7 +11580,6 @@
             jumpToTask(projectId, t.title);
           });
         }
-        row.appendChild(check);
         row.appendChild(titleWrap);
         row.addEventListener('dragstart', (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('application/weekly-task', JSON.stringify({ id: t.id, fromDay: ds })); row.style.opacity = '0.4'; });
         row.addEventListener('dragend', () => { row.style.opacity = ''; row.style.borderTop = ''; row.style.borderBottom = ''; });
