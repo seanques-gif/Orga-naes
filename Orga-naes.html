@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-PL+CO264CCi1GwheWYpXSDAhgzOEt3ysK/fsqh7MTC8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-rGXbbdx3C0hfGTFcUfBURfGAHA4pw7D6kcL5njISKi4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -3855,6 +3855,20 @@
   
   
   
+  
+  
+  
+  
+  
+  function repairRecordDue(value) {
+    const s = (value === null || typeof value === 'undefined') ? '' : String(value);
+    return PAYLOAD_RE.due.test(s) ? s : null;
+  }
+  
+  
+  
+  
+  
   const RECORD_REF_FIELDS = ['id', 'sourceId', 'projectId'];
   function repairRecordRefs(item) {
     if (!item || typeof item !== 'object') return item;
@@ -3868,6 +3882,11 @@
       }
     }
     if ('color' in item) item.color = repairRecordColor(item.color);
+    
+    
+    
+    
+    if ('dueAt' in item) item.dueAt = repairRecordDue(item.dueAt);
     return item;
   }
   
@@ -3885,6 +3904,7 @@
   
   _pf.repairRecordId = repairRecordId;
   _pf.repairRecordColor = repairRecordColor;
+  _pf.repairRecordDue = repairRecordDue;
 
   function cloudCap(val, max) {
     const s = (val === null || typeof val === 'undefined') ? '' : String(val);
@@ -5443,7 +5463,10 @@
         if (!s.title || typeof s.title !== 'string') { s.title = s.title ? String(s.title) : 'Untitled'; repaired++; }
         if (!STATUSES.includes(s.status)) { s.status = 'planned'; repaired++; }
         if (!Array.isArray(s.subtasks)) { s.subtasks = []; }
-        if (s.dueAt && isNaN(Date.parse(s.dueAt))) { s.dueAt = null; repaired++; }
+        
+        
+        
+        if ('dueAt' in s) { const due = repairRecordDue(s.dueAt); if (due !== s.dueAt) { s.dueAt = due; repaired++; } }
         if (s.completedAt && isNaN(Date.parse(s.completedAt))) { s.completedAt = null; repaired++; }
         if (s.createdAt && isNaN(Date.parse(s.createdAt))) { s.createdAt = null; repaired++; }
         s.subtasks = fixSubtasks(s.subtasks, depth + 1).filter(Boolean);
@@ -5462,7 +5485,7 @@
       if (typeof p.x !== 'number') p.x = 0;
       if (typeof p.y !== 'number') p.y = 0;
       if (!Array.isArray(p.subtasks)) { p.subtasks = []; repaired++; }
-      if (p.dueAt && isNaN(Date.parse(p.dueAt))) { p.dueAt = null; repaired++; }
+      if ('dueAt' in p) { const due = repairRecordDue(p.dueAt); if (due !== p.dueAt) { p.dueAt = due; repaired++; } }
       if (p.completedAt && isNaN(Date.parse(p.completedAt))) { p.completedAt = null; repaired++; }
       if (p.createdAt && isNaN(Date.parse(p.createdAt))) { p.createdAt = null; repaired++; }
       if (p.category && typeof p.category !== 'string') { p.category = null; repaired++; }
@@ -5840,6 +5863,10 @@
     if (typeof a.status !== 'string' || !['planned','ongoing','completed'].includes(a.status)) a.status = 'planned';
     if (!Array.isArray(a.subtasks)) a.subtasks = [];
     if ('color' in a) a.color = repairRecordColor(a.color);
+    
+    
+    
+    if ('dueAt' in a) a.dueAt = repairRecordDue(a.dueAt);
     repairRecordTree(a.subtasks);   
     a.archivedAt = repairDateString(a.archivedAt);
     return a;
@@ -5856,6 +5883,8 @@
     if (typeof t.projectId === 'string' && t.projectId) t.projectId = repairRecordId(t.projectId, 'projectId').id || null;
     
     if ('color' in t) t.color = repairRecordColor(t.color);
+    
+    if ('dueAt' in t) t.dueAt = repairRecordDue(t.dueAt);
     if (typeof t.title !== 'string' || !t.title.trim()) t.title = 'Untitled';
     if (t.kind !== 'project' && t.kind !== 'note') {
       if (!t.projectId || typeof t.projectId !== 'string') t.projectId = null;
@@ -5880,6 +5909,10 @@
       const nid = repairRecordId(t.node.id, 'bin');
       if (t.node.id) t.node.id = nid.id || t.id;
       if ('color' in t.node) t.node.color = repairRecordColor(t.node.color);
+      
+      
+      
+      if ('dueAt' in t.node) t.node.dueAt = repairRecordDue(t.node.dueAt);
       if (Array.isArray(t.node.subtasks)) repairRecordTree(t.node.subtasks);
     }
     t.deletedAt = repairDateString(t.deletedAt) || new Date().toISOString();
@@ -10581,7 +10614,11 @@
       row.className = 'pf-due-row'; 
       row.innerHTML = '<span class="pf-status-dot" style="background:var(--' + it.status + ')"></span>' +
         '<span class="pf-ellip-flex" style="font-size: calc(var(--font-size-base) - 2px);">' + escapeHtml(it.title) + path + '</span>' +
-        '<span class="pf-shrink-0" style="font-size: calc(var(--font-size-base) - 3px);' + cls + '">' + it.dueAt + '</span>';
+        
+        
+        
+        
+        '<span class="pf-shrink-0" style="font-size: calc(var(--font-size-base) - 3px);' + cls + '">' + escapeHtml(it.dueAt) + '</span>';
       row.addEventListener('mouseenter', () => { row.style.borderColor = 'var(--accent)'; row.style.transform = 'translateX(2px)'; });
       row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; row.style.transform = ''; });
       row.addEventListener('click', () => {
@@ -13124,7 +13161,11 @@
     if (node.category != null && typeof node.category !== 'string') node.category = null;
     if ('color' in node) node.color = repairRecordColor(node.color);
     if (Array.isArray(node.blockedBy)) node.blockedBy = node.blockedBy.map(v => repairRecordId(v, 'blockedBy').id).filter(Boolean);
-    if (node.dueAt != null && typeof node.dueAt !== 'string') node.dueAt = null;
+    
+    
+    
+    
+    if ('dueAt' in node) node.dueAt = repairRecordDue(node.dueAt);
     if (node.createdAt != null && typeof node.createdAt !== 'string') node.createdAt = null;
     if (node.completedAt != null && typeof node.completedAt !== 'string') node.completedAt = null;
     if (!Array.isArray(node.subtasks)) node.subtasks = [];
