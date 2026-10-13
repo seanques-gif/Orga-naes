@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DqHuaenWuTwbPoWW5Gz3AIo60Cg370484cnL8b91pQM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-sxCH/VM4IecpliGSpNNeHyooAcMvUhHleu6DOJ2awq8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -18715,10 +18715,18 @@ if ('serviceWorker' in navigator) {
       if (_pf.logError) _pf.logError('Firebase check cloud data', err);
     });
   };
-  if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = window._firebasePush;
+  
+  
+  
+  
+  
+  
+  
+  
+  if (typeof window.fsAutoSaveHook === 'undefined' || !window.fsAutoSaveHook) window.fsAutoSaveHook = function() { window._firebasePush(); maybeDailyBackup(); };
   else {
     const _prevHook = window.fsAutoSaveHook;
-    window.fsAutoSaveHook = function() { _prevHook(); window._firebasePush(); };
+    window.fsAutoSaveHook = function() { _prevHook(); window._firebasePush(); maybeDailyBackup(); };
   }
 
   
@@ -18755,8 +18763,17 @@ if ('serviceWorker' in navigator) {
     
     if (notesSnap && notesSnap.notes.length > 0) row.notes = conformed('conformCloudNotes', notesSnap.notes);
     if (notesSnap && Object.keys(notesSnap.tombstones).length > 0) row.noteTombstones = JSON.parse(JSON.stringify(notesSnap.tombstones));
-    backupRef.set(row);
-    localStorage.setItem('pf-firebase-last-backup', today);
+    
+    
+    
+    
+    
+    
+    backupRef.set(row).then(function() {
+      localStorage.setItem('pf-firebase-last-backup', today);
+    }, function(err) {
+      if (_pf.logError) _pf.logError('Firebase daily backup', err);
+    });
     
     
     
@@ -18785,6 +18802,21 @@ if ('serviceWorker' in navigator) {
     if (_fbAutobackup && _fbUser) setTimeout(autoBackupToFirebase, 1000);
   });
   auth.onAuthStateChanged(function(user) { if (user && _fbAutobackup) setTimeout(autoBackupToFirebase, 5000); });
+
+  
+  
+  
+  
+  
+  function maybeDailyBackup() {
+    if (!_fbAutobackup || !_fbUser) return;
+    autoBackupToFirebase();
+  }
+  
+  
+  
+  
+  setInterval(maybeDailyBackup, 60000);
 
   
   
