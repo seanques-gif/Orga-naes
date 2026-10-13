@@ -404,6 +404,13 @@
   #pf-root .pf-resize-handle svg { display: block; }
   #pf-root.pf-resizing { user-select: none; }
 
+  
+  #pf-root { -webkit-user-select: none; user-select: none; }
+  #pf-root [contenteditable="true"],
+  #pf-root input,
+  #pf-root textarea,
+  #pf-root select { -webkit-user-select: text; user-select: text; }
+
   #pf-root .pf-toolbar {
     display: flex; flex-wrap: nowrap; align-items: center; gap: 6px;
     padding: 4px 12px; border-bottom: 1px solid var(--card-border);
