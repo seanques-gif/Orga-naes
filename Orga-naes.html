@@ -2687,10 +2687,10 @@
               <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-pull"  disabled><span class="pf-opt-ico" data-ic="download"></span> Pull</button>
             </div>
             <label class="pf-check-row pf-mt-4">
-              <input type="checkbox" id="pf-firebase-autosync"> Auto-sync on changes
+              <input type="checkbox" id="pf-firebase-autosync"> Sync my changes to the cloud
             </label>
             <label class="pf-check-row">
-              <input type="checkbox" id="pf-firebase-autobackup"> Auto-backup to Firebase (daily)
+              <input type="checkbox" id="pf-firebase-autobackup"> Daily cloud restore point
             </label>
             <button class="pf-undo-btn pf-opt-btn pf-mt-4" id="pf-firebase-backups-btn"  disabled><span class="pf-opt-ico" data-ic="planner"></span> Restore from Backup</button>
             <div class="pf-firebase-backups-list" id="pf-firebase-backups-list" style="display:none;"></div>
@@ -2698,12 +2698,12 @@
             <div class="pf-firebase-backups-list" id="pf-firebase-restore-preview" style="display:none;"></div>
             <button class="pf-undo-btn pf-opt-btn pf-mt-4" id="pf-firebase-purge-trash"  disabled><span class="pf-opt-ico" data-ic="trash"></span> Remove leftover cloud recycle bin</button>
             <div class="pf-firebase-backups-list" id="pf-firebase-purge-report" style="display:none;"></div>
-            <p class="pf-firebase-note">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable.</p>
+            <p class="pf-firebase-note">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable. Syncing keeps the cloud copy current; the daily restore point keeps dated copies you can roll back to.</p>
           </div>
         </div>
 
         <div class="pf-opt-block">
-          <div class="pf-opt-title">Auto-backup</div>
+          <div class="pf-opt-title">Backup to a folder</div>
           <label class="pf-check-row pf-check-row-lg">
             Every
             <input type="number" id="pf-autobackup-min" min="0" max="120" value="0" class="pf-input-num">
@@ -2724,7 +2724,7 @@
           <button class="pf-undo-btn pf-opt-btn" id="pf-activity-btn" ><span class="pf-opt-ico" data-ic="clipboard"></span> Activity Log</button>
           <button class="pf-undo-btn pf-opt-btn" id="pf-archive-btn" ><span class="pf-opt-ico" data-ic="archive"></span> Archive</button>
           <button class="pf-undo-btn pf-opt-btn" id="pf-trash-btn" ><span class="pf-opt-ico" data-ic="trash"></span> Recycle Bin</button>
-          <button class="pf-undo-btn pf-opt-btn" id="pf-snapshots-btn" ><span class="pf-opt-ico" data-ic="clock"></span> Version History</button>
+          <button class="pf-undo-btn pf-opt-btn" id="pf-snapshots-btn" ><span class="pf-opt-ico" data-ic="clock"></span> Version history (this device)</button>
           <button class="pf-undo-btn pf-opt-btn pf-btn-rel" id="pf-error-btn" ><span class="pf-opt-ico" data-ic="alert"></span> Error Log<span class="pf-error-dot pf-error-dot-pos" id="pf-error-dot-btn"></span></button>
         </div>
         <!-- Which navigation surfaces are on screen: both, the list alone, or
