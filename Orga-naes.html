@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-3G8VPbtmSvwniCMg90T2KaOW/xqvjPHM4eyQNhcIvMo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DqHuaenWuTwbPoWW5Gz3AIo60Cg370484cnL8b91pQM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1612,6 +1612,14 @@
     transition: border-color 0.15s, color 0.15s, background 0.15s;
   }
   .pf-week-add-btn:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  
+  .pf-week-add-input {
+    width: 100%; margin-top: auto; padding: 6px 8px; border-radius: 6px;
+    background: var(--card); color: var(--text); border: 1px solid var(--accent);
+    font-family: var(--font-sans); font-size: calc(var(--font-size-base) - 2px);
+    color-scheme: dark;
+  }
+  #pf-root.pf-theme-light .pf-week-add-input { color-scheme: light; }
 
   
   .pf-week-backlog-list {
@@ -3427,6 +3435,12 @@
         archive: archive, trash: trash,
         todayTasks: todayTasks, todayDate: todayDate,
         weeklyData: weeklyData, reminders: reminders,
+        
+        
+        
+        
+        
+        backlogData: backlogData,
         categoryEmojis: categoryEmojis, categoryColors: catColors, snoozePresets: snoozePresets,
         
         
@@ -3459,13 +3473,14 @@
       todayTasks = Array.isArray(aux.todayTasks) ? aux.todayTasks : [];
       todayDate = aux.todayDate || todayDate;
       weeklyData = (aux.weeklyData && typeof aux.weeklyData === 'object') ? aux.weeklyData : {};
+      backlogData = Array.isArray(aux.backlogData) ? aux.backlogData : [];
       reminders = Array.isArray(aux.reminders) ? aux.reminders : [];
       categoryEmojis = (aux.categoryEmojis && typeof aux.categoryEmojis === 'object') ? aux.categoryEmojis : {};
       catColors = (aux.categoryColors && typeof aux.categoryColors === 'object') ? aux.categoryColors : {};
       if (Array.isArray(aux.snoozePresets)) snoozePresets = aux.snoozePresets;
       
       saveCategories(); saveCollapsedCategories(); saveArchive(); saveTrash();
-      saveToday(); saveWeekly(); saveReminders(); saveCatEmojis(); saveCatColors(); saveSnoozePresets();
+      saveToday(); saveWeekly(); saveBacklog(); saveReminders(); saveCatEmojis(); saveCatColors(); saveSnoozePresets();
       renderTrashList(); renderTodayList(); renderWeeklyPanel(); renderSnoozePresetsEditor();
       
       
@@ -11019,7 +11034,10 @@
   let backlogData = [];
   let backlogLoaded = false;
   async function loadBacklog() {
-    try { const res = await safeGet(BACKLOG_KEY, false); if (res && res.value) backlogData = JSON.parse(res.value); } catch (e) { backlogData = []; logError('Load backlog', e); }
+    
+    
+    
+    try { const res = await safeGet(BACKLOG_KEY, false); if (res && res.value) backlogData = repairRecordTree(JSON.parse(res.value)); } catch (e) { backlogData = []; logError('Load backlog', e); }
     backlogLoaded = true;
     _backlogTabStore.recordBase();
   }
@@ -11105,6 +11123,33 @@
   
   
   
+  function findSourceProject(sourceId) {
+    if (!sourceId) return null;
+    return projects.find(pr => pr.id === sourceId || (pr.subtasks && findSubNode(pr.subtasks, sourceId))) || null;
+  }
+  function findSourceNode(sourceId) {
+    const p = findSourceProject(sourceId);
+    if (!p) return null;
+    return p.id === sourceId ? p : findSubNode(p.subtasks, sourceId);
+  }
+  
+  
+  
+  function buildSourceIndex() {
+    const ownerOf = new Map();
+    const nodeOf = new Map();
+    projects.forEach(p => {
+      ownerOf.set(p.id, p); nodeOf.set(p.id, p);
+      (function walk(subs) {
+        subs.forEach(s => { ownerOf.set(s.id, p); nodeOf.set(s.id, s); if (s.subtasks) walk(s.subtasks); });
+      })(p.subtasks || []);
+    });
+    return { ownerOf: ownerOf, nodeOf: nodeOf };
+  }
+  
+  
+  
+  
   
   
   
@@ -11126,13 +11171,10 @@
     }
     targetArr.splice(insertAt, 0, task);
     if (fromDay !== toDay && task.sourceId) {
-      const srcProject = projects.find(pr => pr.id === task.sourceId || (pr.subtasks && findSubNode(pr.subtasks, task.sourceId)));
-      if (srcProject) {
-        const node = srcProject.id === task.sourceId ? srcProject : findSubNode(srcProject.subtasks, task.sourceId);
-        if (node) {
-          if (_weeklyUndoDueAtReverts) _weeklyUndoDueAtReverts.push({ node, prevDueAt: node.dueAt });
-          snapshot(false, 'Moved a planner task'); node.dueAt = toDay; scheduleSave(); render();
-        }
+      const node = findSourceNode(task.sourceId);
+      if (node) {
+        if (_weeklyUndoDueAtReverts) _weeklyUndoDueAtReverts.push({ node, prevDueAt: node.dueAt });
+        snapshot(false, 'Moved a planner task'); node.dueAt = toDay; scheduleSave(); render();
       }
     }
     saveWeekly();
@@ -11315,6 +11357,7 @@
     const prunedTitles = [];      
     const prunedEntries = [];     
     const keptTitles = [];        
+    const carriedEntries = [];    
     const detachEntry = (t) => Object.assign({}, t, { sourceId: null, sourceType: null });
     
     
@@ -11414,25 +11457,33 @@
     
     function carryFinishedEntries() {
       const todayStr = todayLocalStr();
-      let carried = 0;
-      let backlogChanged = false;
       const backlogSourceIds = new Set(backlogData.filter(t => t.sourceId).map(t => t.sourceId));
+      let backlogChanged = false;
       Object.keys(weeklyData).forEach(ds => {
         if (ds >= todayStr) return;
         const stale = weeklyData[ds];
         if (!stale || !stale.length) { delete weeklyData[ds]; return; }
+        const keep = [];
+        let pushed = 0;
         stale.forEach(t => {
-          if (t.sourceId && backlogSourceIds.has(t.sourceId)) return; 
+          
+          
+          
+          if (_passChangesTakenBack.has(t.id)) { keep.push(t); return; }
+          
+          
+          if (t.sourceId && backlogSourceIds.has(t.sourceId)) return;
+          ensurePassSnapshot();          
           backlogData.push(t);
+          carriedEntries.push(t);
           if (t.sourceId) backlogSourceIds.add(t.sourceId);
-          carried++;
+          pushed++;
         });
-        delete weeklyData[ds];
-        changed = true;
-        backlogChanged = true;
+        if (keep.length) weeklyData[ds] = keep; else delete weeklyData[ds];
+        if (stale.length !== keep.length) { changed = true; if (pushed) backlogChanged = true; }
+        carriedCount += pushed;
       });
-      carriedCount += carried;
-  if (backlogChanged) saveBacklog();
+      if (backlogChanged) saveBacklog();
     }
 
     carryFinishedEntries();
@@ -11477,14 +11528,17 @@
     if (changed) {
       saveWeekly();
       if (weeklyPanel && weeklyPanel.style.display !== 'none') renderWeeklyPanel();
-      if (carriedCount) showToast('📥 Moved ' + carriedCount + ' overdue planner task' + (carriedCount > 1 ? 's' : '') + ' to Backlog');
     }
 
     
     
     
     
-    if (relocations.length || prunedTitles.length || keptTitles.length) {
+    
+    
+    
+    
+    if (relocations.length || prunedTitles.length || keptTitles.length || carriedCount) {
       const bits = [];
       if (relocations.length) bits.push(relocations.length === 1
         ? '📅 Moved "' + relocations[0].task.title + '" to ' + formatDateShort(relocations[0].to) + " — its task's due date changed"
@@ -11495,11 +11549,14 @@
       if (keptTitles.length) bits.push(keptTitles.length === 1
         ? '📌 Kept "' + keptTitles[0] + '" — its task is gone, so it is a plain item now'
         : '📌 Kept ' + keptTitles.length + ' planner items whose task is gone — plain items now');
+      if (carriedCount) bits.push('📥 Moved ' + carriedCount + ' overdue planner task' + (carriedCount > 1 ? 's' : '') + ' to Backlog');
       showToast(bits.join(' · '), false, false, () => {
         
         
         
+        
         prunedEntries.forEach(e => _passChangesTakenBack.add(e.id));
+        carriedEntries.forEach(e => _passChangesTakenBack.add(e.id));
         relocations.forEach(r => _movesTakenBack.set(r.task.id, r.to));
         weeklyUndo();
       }, 'Undo');
@@ -11553,6 +11610,41 @@
   }
   _pf.jumpToTask = jumpToTask;
   const WEEK_DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  
+  
+  
+  
+  
+  
+  
+  function openWeekAddInput(col, ds, addBtn) {
+    if (col.querySelector('.pf-week-add-input')) return;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'pf-week-add-input';
+    input.placeholder = 'Task name…';
+    input.setAttribute('aria-label', 'New task for ' + ds);
+    addBtn.style.display = 'none';
+    let settled = false;
+    const finish = (commit) => {
+      if (settled) return;
+      settled = true;
+      const value = String(input.value || '').trim();
+      input.remove();
+      addBtn.style.display = '';
+      if (commit && value) addToWeekDay(ds, value, null, null, null);
+      renderWeeklyPanel();
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); finish(true); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
+    });
+    
+    
+    input.addEventListener('blur', () => finish(true));
+    col.insertBefore(input, addBtn);
+    if (typeof input.focus === 'function') input.focus();
+  }
   function renderWeeklyPanel() {
     const DAYS = WEEK_DAY_LABELS; 
     const grid = document.getElementById('pf-week-grid');
@@ -11579,6 +11671,9 @@
     grid.style.setProperty('--pf-week-cols', String(cols.length));
     grid.innerHTML = '';
     const todayStr = todayLocalStr();
+    
+    
+    const srcIdx = buildSourceIndex();
     for (const i of cols) {
       const d = new Date(start); d.setDate(d.getDate() + i);
       const ds = weekDates[i];
@@ -11610,7 +11705,7 @@
         col.appendChild(empty);
       }
       tasks.forEach((t, idx) => {
-        const srcProject = t.sourceId ? projects.find(pr => pr.id === t.sourceId || (pr.subtasks && (function findIn(subs) { return subs.some(s => s.id === t.sourceId || (s.subtasks && findIn(s.subtasks))); })(pr.subtasks))) : null;
+        const srcProject = t.sourceId ? (srcIdx.ownerOf.get(t.sourceId) || null) : null;
         const accentColor = srcProject && srcProject.color ? srcProject.color : null;
         const row = document.createElement('div');
         row.draggable = true;
@@ -11670,19 +11765,47 @@
           if (weeklyDrop.id === t.id) return;
           moveWeeklyTask(weeklyDrop.id, weeklyDrop.fromDay, ds, t.id, before);
         });
+        
+        
+        
+        
+        
+        
+        row.tabIndex = 0;
+        row.setAttribute('role', 'button');
+        row.setAttribute('aria-label', t.title + (t.projectTitle ? ', ' + t.projectTitle : '') + ', on ' + DAYS[i]
+          + '. [ and ] move it between days, Delete sends it to the Backlog' + (t.sourceId ? ', Enter opens the task' : ''));
+        row.addEventListener('keydown', (e) => {
+          const vis = visibleWeekDays();
+          const pos = vis.indexOf(i);
+          const step = (e.key === ']' || e.key === 'ArrowRight') ? 1 : ((e.key === '[' || e.key === 'ArrowLeft') ? -1 : 0);
+          if (step) {
+            e.preventDefault(); e.stopPropagation();
+            const nextPos = pos + step;
+            if (pos < 0 || nextPos < 0 || nextPos >= vis.length) return;
+            const wd = new Date(start); wd.setDate(wd.getDate() + vis[nextPos]);
+            const targetDay = weekDateStr(wd);
+            if (targetDay < todayStr) { showToast("Can't move tasks to a finished week (they'd just roll forward to today)", true); return; }
+            moveWeeklyTask(t.id, ds, targetDay, null, false);
+            return;
+          }
+          if (e.key === 'Delete' || e.key === 'Backspace') {
+            e.preventDefault(); e.stopPropagation();
+            moveWeeklyTaskToBacklog(t.id, ds);
+            return;
+          }
+          if (e.key === 'Enter' && t.sourceId) {
+            e.preventDefault(); e.stopPropagation();
+            jumpToTask(srcProject ? srcProject.id : t.sourceId, t.title);
+          }
+        });
         col.appendChild(row);
         weeklyTouchDragSupport(row, t, ds);
       });
       const addBtn = document.createElement('button');
       addBtn.textContent = '+ Add task';
       addBtn.className = 'pf-week-add-btn';
-      addBtn.addEventListener('click', () => {
-        const title = prompt('Task name:');
-        if (!title || !title.trim()) return;
-        if (!weeklyData[ds]) weeklyData[ds] = [];
-        weeklyData[ds].push({ id: uid(), title: title.trim(), sourceId: null, sourceType: null, done: false });
-        saveWeekly(); renderWeeklyPanel();
-      });
+      addBtn.addEventListener('click', () => { openWeekAddInput(col, ds, addBtn); });
       col.appendChild(addBtn);
       col.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -11725,7 +11848,9 @@
       });
       grid.appendChild(col);
     }
-    renderBacklogSection(start);
+    
+    
+    renderBacklogSection(start, srcIdx);
   }
   
   
@@ -11735,26 +11860,28 @@
   
   
   let _backlogShowScheduled = false;
-  function backlogSourceNode(t) {
-    if (!t || !t.sourceId) return null;
-    const p = projects.find(pr => pr.id === t.sourceId || (pr.subtasks && findSubNode(pr.subtasks, t.sourceId)));
-    if (!p) return null;
-    return p.id === t.sourceId ? p : findSubNode(p.subtasks, t.sourceId);
-  }
+  function backlogSourceNode(t) { return (t && t.sourceId) ? findSourceNode(t.sourceId) : null; }
   function backlogChipDueAt(t) { const node = backlogSourceNode(t); return node && node.dueAt ? node.dueAt : null; }
   function backlogChipScheduled(t) { const due = backlogChipDueAt(t); return !!due && due >= todayLocalStr(); }
 
   
   
   
-  function renderBacklogSection(weekStart) {
+  function renderBacklogSection(weekStart, srcIdx) {
     const list = document.getElementById('pf-week-backlog-list');
     const countEl = document.getElementById('pf-week-backlog-count');
     const arrangeBtn = document.getElementById('pf-backlog-arrange-btn');
     if (!list) return;
     list.innerHTML = '';
-    const scheduled = backlogData.filter(t => backlogChipScheduled(t));
-    const unscheduled = backlogData.filter(t => !backlogChipScheduled(t));
+    
+    
+    
+    const idx = srcIdx || buildSourceIndex();
+    const todayStr = todayLocalStr();
+    const dueAtOf = (t) => { const n = t.sourceId ? idx.nodeOf.get(t.sourceId) : null; return (n && n.dueAt) ? n.dueAt : null; };
+    const scheduledOf = (t) => { const d = dueAtOf(t); return !!d && d >= todayStr; };
+    const scheduled = backlogData.filter(scheduledOf);
+    const unscheduled = backlogData.filter(t => !scheduledOf(t));
     const shown = _backlogShowScheduled ? backlogData : unscheduled;
     countEl.textContent = backlogData.length ? '(' + unscheduled.length + ')' : '';
     arrangeBtn.disabled = !unscheduled.length;
@@ -11770,9 +11897,9 @@
       list.appendChild(empty);
     }
     shown.forEach(t => {
-      const isScheduled = backlogChipScheduled(t);
-      const chipDueAt = backlogChipDueAt(t);
-      const srcProject = t.sourceId ? projects.find(pr => pr.id === t.sourceId || (pr.subtasks && (function findIn(subs) { return subs.some(s => s.id === t.sourceId || (s.subtasks && findIn(s.subtasks))); })(pr.subtasks))) : null;
+      const isScheduled = scheduledOf(t);
+      const chipDueAt = dueAtOf(t);
+      const srcProject = t.sourceId ? (idx.ownerOf.get(t.sourceId) || null) : null;
       const accentColor = srcProject && srcProject.color ? srcProject.color : null;
       const chip = document.createElement('div');
       chip.draggable = true;
@@ -11783,10 +11910,31 @@
       const check = document.createElement('input');
       check.type = 'checkbox';
       check.className = 'pf-week-backlog-chip-check';
+      check.setAttribute('aria-label', t.sourceId ? 'Complete "' + t.title + '"' : 'Remove "' + t.title + '" from the backlog');
       check.addEventListener('change', () => {
+        
+        
+        
+        
+        
+        
+        
+        if (t.sourceId) {
+          const owner = idx.ownerOf.get(t.sourceId);
+          const node = idx.nodeOf.get(t.sourceId);
+          if (owner && node) {
+            if (node.id === owner.id) cycleProjectStatus(node.id, 'completed');
+            else cycleSubStatus(owner.id, node.id, 'completed');
+            renderWeeklyPanel();
+            return;
+          }
+        }
+        
+        
+        weeklySnapshot();
         backlogData = backlogData.filter(x => x.id !== t.id);
         saveBacklog(); renderBacklogSection(weekStart);
-        showToast('"' + t.title + '" completed and removed from backlog');
+        showToast('Removed "' + t.title + '" from backlog', false, false, weeklyUndo, 'Undo');
       });
       const titleWrap = document.createElement('div');
       titleWrap.className = 'pf-week-backlog-chip-title-wrap' + (t.sourceId ? ' pf-clickable' : '');
@@ -11813,22 +11961,36 @@
           jumpToTask(projectId, t.title);
         });
       }
-      const delBtn = document.createElement('button');
-      delBtn.textContent = '×';
-      delBtn.className = 'pf-week-backlog-chip-del';
-      delBtn.addEventListener('click', () => {
+      
+      
+      
+      const removeChip = () => {
         weeklySnapshot();
         backlogData = backlogData.filter(x => x.id !== t.id);
         
         
         
-        
         if (t.sourceId) {
-          const node = srcProject ? (srcProject.id === t.sourceId ? srcProject : findSubNode(srcProject.subtasks, t.sourceId)) : null;
+          const node = idx.nodeOf.get(t.sourceId);
           if (node && node.dueAt) dismissOccurrence(t.sourceId, node.dueAt);
         }
         saveBacklog(); renderBacklogSection(weekStart);
         showToast('Removed "' + t.title + '" from backlog', false, false, weeklyUndo, 'Undo');
+      };
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '×';
+      delBtn.className = 'pf-week-backlog-chip-del';
+      delBtn.setAttribute('aria-label', 'Remove "' + t.title + '" from the backlog');
+      delBtn.addEventListener('click', removeChip);
+      
+      
+      chip.tabIndex = 0;
+      chip.setAttribute('role', 'button');
+      chip.setAttribute('aria-label', t.title + (t.projectTitle ? ', ' + t.projectTitle : '') + ', in the backlog'
+        + (chipDueAt ? ', due ' + formatDateShort(chipDueAt) : '') + '. Delete removes it' + (t.sourceId ? ', Enter opens the task' : ''));
+      chip.addEventListener('keydown', (e) => {
+        if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopPropagation(); removeChip(); return; }
+        if (e.key === 'Enter' && t.sourceId) { e.preventDefault(); e.stopPropagation(); jumpToTask(srcProject ? srcProject.id : t.sourceId, t.title); }
       });
       chip.appendChild(check);
       chip.appendChild(titleWrap);
@@ -11860,11 +12022,17 @@
     const fromArr = weeklyData[fromDay] || [];
     const idx = fromArr.findIndex(x => x.id === taskId);
     if (idx < 0) return;
+    
+    
+    
+    
+    weeklySnapshot();
     const task = fromArr.splice(idx, 1)[0];
     if (!fromArr.length) delete weeklyData[fromDay];
     backlogData.push(task);
     saveWeekly(); saveBacklog();
     renderWeeklyPanel();
+    showToast('Moved "' + task.title + '" to Backlog', false, false, weeklyUndo, 'Undo');
   }
   
   
@@ -11875,13 +12043,10 @@
     if (!weeklyData[toDay]) weeklyData[toDay] = [];
     weeklyData[toDay].push(task);
     if (task.sourceId) {
-      const srcProject = projects.find(pr => pr.id === task.sourceId || (pr.subtasks && findSubNode(pr.subtasks, task.sourceId)));
-      if (srcProject) {
-        const node = srcProject.id === task.sourceId ? srcProject : findSubNode(srcProject.subtasks, task.sourceId);
-        if (node) {
-          if (_weeklyUndoDueAtReverts) _weeklyUndoDueAtReverts.push({ node, prevDueAt: node.dueAt });
-          snapshot(false, 'Moved a planner task'); node.dueAt = toDay; scheduleSave(); render();
-        }
+      const node = findSourceNode(task.sourceId);
+      if (node) {
+        if (_weeklyUndoDueAtReverts) _weeklyUndoDueAtReverts.push({ node, prevDueAt: node.dueAt });
+        snapshot(false, 'Moved a planner task'); node.dueAt = toDay; scheduleSave(); render();
       }
     }
     saveWeekly(); saveBacklog();
@@ -11919,6 +12084,10 @@
     const todayStr = todayLocalStr();
     const candidateDays = [];
     for (let i = 0; i < 7; i++) {
+      
+      
+      
+      if (!weekDayVisible(i)) continue;
       const d = new Date(start); d.setDate(d.getDate() + i);
       const ds = weekDateStr(d);
       if (ds >= todayStr) candidateDays.push(ds);
@@ -12886,6 +13055,13 @@
       trash: trash,
       today: { date: todayDate, tasks: todayTasks },
       weeklyData: weeklyData,
+      
+      
+      
+      
+      
+      backlog: backlogData,
+      dismissedWeekly: dismissedOccurrences,
       reminders: reminders,
       categoryEmojis: categoryEmojis,
       categoryColors: catColors,
@@ -13151,10 +13327,12 @@
   
   
   
-  var EXTRA_ARRAY_KEYS = ['categories', 'archive', 'trash', 'reminders', 'notes', 'snoozePresets'];
+  
+  
+  var EXTRA_ARRAY_KEYS = ['categories', 'archive', 'trash', 'reminders', 'notes', 'snoozePresets', 'backlog'];
   function extractImportData(parsed) {
     let data = null, importedCategories = [], importedCollapsed = {};
-    let importedArchive = null, importedTrash = null, importedToday = null, importedWeekly = null, importedReminders = null, importedEmojis = null, importedColors = null, importedNotes = null, importedNoteTombstones = null, importedSnoozePresets = null;
+    let importedArchive = null, importedTrash = null, importedToday = null, importedWeekly = null, importedBacklog = null, importedDismissed = null, importedReminders = null, importedEmojis = null, importedColors = null, importedNotes = null, importedNoteTombstones = null, importedSnoozePresets = null;
     
     
     
@@ -13175,6 +13353,8 @@
       if (Array.isArray(parsed.trash)) importedTrash = parsed.trash;
       if (parsed.today && typeof parsed.today === 'object') importedToday = parsed.today;
       if (parsed.weeklyData && typeof parsed.weeklyData === 'object') importedWeekly = parsed.weeklyData;
+      if (Array.isArray(parsed.backlog)) importedBacklog = parsed.backlog;
+      if (parsed.dismissedWeekly && typeof parsed.dismissedWeekly === 'object') importedDismissed = parsed.dismissedWeekly;
       if (Array.isArray(parsed.reminders)) importedReminders = parsed.reminders;
       if (parsed.categoryEmojis && typeof parsed.categoryEmojis === 'object') importedEmojis = parsed.categoryEmojis;
       
@@ -13190,7 +13370,7 @@
       if (Array.isArray(parsed.snoozePresets)) importedSnoozePresets = parsed.snoozePresets;
       if (parsed.noteTombstones && typeof parsed.noteTombstones === 'object') importedNoteTombstones = parsed.noteTombstones;
     }
-    return { data, projectListFound, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets };
+    return { data, projectListFound, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedBacklog, importedDismissed, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets };
   }
 
   
@@ -13361,7 +13541,7 @@
     _pf.backupConflictSummary = backupConflictSummary;
   }
 
-  function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets) {
+  function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedBacklog, importedDismissed, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets) {
     snapshot(true, 'Imported a backup');
     let restoredExtras = 0;
     
@@ -13378,6 +13558,14 @@
     if (Array.isArray(importedTrash)) { trash = repairTrashList(importedTrash).list; saveTrash(); renderTrashList(); restoredExtras++; }
     if (importedToday && Array.isArray(importedToday.tasks)) { todayTasks = repairRecordTree(importedToday.tasks); todayDate = typeof importedToday.date === 'string' ? importedToday.date : todayLocalStr(); saveToday(); renderTodayList(); restoredExtras++; }
     if (importedWeekly) { weeklyData = repairWeeklyData(importedWeekly); saveWeekly(); renderWeeklyPanel(); restoredExtras++; }
+    
+    
+    
+    if (Array.isArray(importedBacklog)) { backlogData = repairRecordTree(importedBacklog); saveBacklog(); restoredExtras++; }
+    
+    
+    
+    if (importedDismissed) { dismissedOccurrences = importedDismissed; saveDismissed(); restoredExtras++; }
     if (Array.isArray(importedReminders)) { reminders = repairRecordTree(importedReminders); saveReminders(); restoredExtras++; }
     if (importedEmojis) { categoryEmojis = importedEmojis; saveCatEmojis(); restoredExtras++; }
     if (importedColors) { catColors = importedColors; saveCatColors(); restoredExtras++; }
@@ -13391,7 +13579,7 @@
       
       if (_pf && typeof _pf.importNotes === 'function') { _pf.importNotes(importedNotes, importedNoteTombstones); restoredExtras++; }
     }
-    importUndoToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/reminders/notes from backup)' : ''));
+    importUndoToast('Imported ' + projects.length + ' projects' + (categories.length ? ' and ' + categories.length + ' categories' : '') + (restoredExtras ? ' (plus trash/today/weekly/backlog/reminders/notes from backup)' : ''));
   }
 
   importInput.addEventListener('change', () => {
@@ -13417,7 +13605,7 @@
       if (schema.version > KNOWN_BACKUP_SCHEMA) { showToast('That backup was made by a newer version of Orga-naes (schema ' + schema.version + '; this app understands ' + KNOWN_BACKUP_SCHEMA + '). Nothing was changed.', true); importInput.value = ''; return; }
       const parsedForImport = schema.version < KNOWN_BACKUP_SCHEMA ? migrateBackupPayload(parsed, schema.version, KNOWN_BACKUP_SCHEMA, BACKUP_MIGRATIONS) : parsed;
       try {
-        const { data, projectListFound, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets } = extractImportData(parsedForImport);
+        const { data, projectListFound, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedBacklog, importedDismissed, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets } = extractImportData(parsedForImport);
         if (projectListFound) {
           
           
@@ -13432,7 +13620,7 @@
             const proceed = await _pf.confirmDialog(conflicts ? 'This backup conflicts with your data' : 'Replace local data?', body, 'Import & replace');
             if (!proceed) { showToast('Import cancelled.'); importInput.value = ''; return; }
           }
-          applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets);
+          applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedBacklog, importedDismissed, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets);
         }
         else if (importHasPreferences(importedCategories, importedCollapsed, importedEmojis, importedColors, importedSnoozePresets)) { applyImportPreferences(importedCategories, importedCollapsed, importedEmojis, importedColors, importedSnoozePresets); }
         else { showToast('No valid project arrays found in JSON.', true); }
@@ -18238,6 +18426,15 @@ if ('serviceWorker' in navigator) {
   function cloudCategoryColors() { return conformed('conformCloudCategoryColors', _pf.getCategoryColors && _pf.getCategoryColors()); }
   function cloudSnoozePresets() { return conformed('conformCloudSnoozePresets', _pf.getSnoozePresets() || []); }
 
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   
   
