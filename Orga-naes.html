@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-sxCH/VM4IecpliGSpNNeHyooAcMvUhHleu6DOJ2awq8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-wXKf+KIc1f3vPeBbLs5NBvmPKOHzdjOn/sjVNF72LuY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -10321,6 +10321,11 @@
     list.innerHTML = snaps.map((snap, i) => {
       const d = new Date(snap.timestamp);
       const projCount = Array.isArray(snap.projects) ? snap.projects.length : 0;
+      
+      
+      
+      
+      const noteCount = Array.isArray(snap.notes) ? snap.notes.length : 0;
       let taskCount = 0;
       if (Array.isArray(snap.projects)) snap.projects.forEach(p => { if (p.subtasks) (function count(s) { s.forEach(t => { taskCount++; if (t.subtasks) count(t.subtasks); }); })(p.subtasks); });
       const timeStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -10328,7 +10333,7 @@
       return '<div class="pf-activity-item" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;">' +
         '<div style="flex:1;min-width:0;">' +
           '<div style="font-size: calc(var(--font-size-base) - 2px);font-weight:600;color:var(--text);">' + timeStr + isLatest + '</div>' +
-          '<div style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);">' + projCount + ' projects · ' + taskCount + ' tasks</div>' +
+          '<div style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);">' + projCount + ' projects · ' + taskCount + ' tasks' + (noteCount ? ' · ' + noteCount + ' notes' : '') + '</div>' +
         '</div>' +
         '<button class="pf-undo-btn" data-snap-idx="' + i + '" style="font-size: calc(var(--font-size-base) - 3px);padding:4px 10px;white-space:nowrap;">Restore</button>' +
       '</div>';
@@ -10345,7 +10350,7 @@
         
         
         const when = new Date(snap.timestamp).toLocaleString();
-        const tail = 'This will replace your current data. (You can undo with Ctrl+Z)';
+        const tail = 'This will replace your current projects' + (Array.isArray(snap.notes) ? ' and notes' : '') + '. (You can undo with Ctrl+Z)';
         const report = (_pf && typeof _pf.backupConflictReport === 'function') ? _pf.backupConflictReport({ projects: snap.projects }) : null;
         const conflicts = (report && _pf && typeof _pf.backupConflictSummary === 'function') ? _pf.backupConflictSummary(report) : '';
         let proceed;
@@ -10359,10 +10364,21 @@
         snapshot();
         const result = validateAndRepair(snap.projects);
         projects = result.projects;
+        
+        
+        
+        
+        
+        
+        
+        const notesBack = (_pf && typeof _pf.restoreNotesSnapshot === 'function' && Array.isArray(snap.notes))
+          ? _pf.restoreNotesSnapshot(snap.notes, snap.noteTombstones, { replace: true })
+          : 0;
         scheduleSave(); render();
         renderSplitList(); renderSplitDetail();
         closeAllModals();
-        showToast('♻️ Restored snapshot from ' + new Date(snap.timestamp).toLocaleTimeString());
+        showToast('♻️ Restored snapshot from ' + new Date(snap.timestamp).toLocaleTimeString()
+          + (notesBack ? ' — ' + notesBack + ' note' + (notesBack === 1 ? '' : 's') + ' back too' : ''));
       });
     });
   }
@@ -16536,8 +16552,13 @@
     if (!notesLoaded) return null;
     return { notes: notes.slice(), tombstones: Object.assign({}, noteTombstones) };
   };
-  _pf.restoreNotesSnapshot = function(snapNotes, snapTombstones) {
-    if (!Array.isArray(snapNotes)) return;
+  
+  
+  
+  
+  _pf.restoreNotesSnapshot = function(snapNotes, snapTombstones, opts) {
+    if (!Array.isArray(snapNotes)) return 0;
+    const replace = !!(opts && opts.replace);
     
     
     
@@ -16545,11 +16566,29 @@
       Object.keys(snapTombstones).forEach(k => { if (!isTombstoned(k) || (noteTombstones[k] || '') < (snapTombstones[k] || '')) noteTombstones[k] = snapTombstones[k]; });
       saveTombstones();
     }
-    if (notesLoaded && notes.length) return; 
-    notes = _normalizeNoteList(snapNotes).filter(n => !isTombstoned(n.id));
+    if (!replace && notesLoaded && notes.length) return 0; 
+    const restored = _normalizeNoteList(snapNotes);
+    
+    
+    
+    
+    
+    
+    
+    
+    if (replace) {
+      restored.forEach(function(n) { if (n && n.id) delete noteTombstones[n.id]; });
+      saveTombstones();
+    }
+    notes = restored.filter(n => !isTombstoned(n.id));
     notesLoaded = true;
     notesLoadedEmpty = false;
+    if (activeNoteId && !noteById(activeNoteId)) activeNoteId = null;
     saveNotes();
+    
+    
+    if (replace) { renderNotesList(); renderNotesEditor(); }
+    return notes.length;
   };
   _pf.clearNotesRuntime = function() {
     notes = []; notesLoaded = true; notesLoadedEmpty = false; activeNoteId = null; notesSelection = [];
