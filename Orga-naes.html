@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-cEFq+1HQyhdowhTxzvXuTM3MRMItdYnO5+yjO2P/aGg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-6JM9x2Z/Eow4NISb2EAXgy1v9d4SfjY086QYlZLcP3Q='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -2172,6 +2172,16 @@
     outline: 2px solid var(--accent); outline-offset: -2px;
   }
   #pf-root .pf-notes-rich .pf-note-table { cursor: text; }
+  
+  #pf-root .pf-note-table.pf-note-table-fixed { table-layout: fixed; }
+  #pf-root .pf-note-table.pf-note-table-fixed th,
+  #pf-root .pf-note-table.pf-note-table-fixed td { min-width: 0; overflow-wrap: break-word; }
+  
+  #pf-root .pf-note-table.pf-col-dragging,
+  #pf-root .pf-note-table.pf-col-dragging th,
+  #pf-root .pf-note-table.pf-col-dragging td {
+    cursor: col-resize; user-select: none;
+  }
 
   
   #pf-root .pf-table-pop {
@@ -16440,6 +16450,40 @@
   
   
   const TABLE_SEP_CELL_RE = /^:?-{1,}:?$/;
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const TABLE_DASH_AUTO = 3;
+  const TABLE_DASH_MIN = 4;
+  const TABLE_DASH_MAX = 60;
+  const TABLE_PX_PER_DASH = 10;
+  const TABLE_COL_MIN_PX = TABLE_DASH_MIN * TABLE_PX_PER_DASH;
+  const TABLE_COL_MAX_PX = TABLE_DASH_MAX * TABLE_PX_PER_DASH;
+  
+  function dashCountToPx(n) {
+    const count = n | 0;
+    if (count <= TABLE_DASH_AUTO) return null;
+    return Math.max(TABLE_COL_MIN_PX, Math.min(TABLE_COL_MAX_PX, count * TABLE_PX_PER_DASH));
+  }
+  
+  
+  function pxToDashCount(px) {
+    const n = Math.round((Number(px) || 0) / TABLE_PX_PER_DASH);
+    return Math.max(TABLE_DASH_MIN, Math.min(TABLE_DASH_MAX, n));
+  }
+  function separatorDashCounts(line) {
+    return splitTableRow(line).map(function(c) { return (c.match(/-/g) || []).length; });
+  }
   function isTableRow(line) {
     const t = String(line == null ? '' : line).trim();
     return t.length >= 2 && t.charAt(0) === '|' && t.charAt(t.length - 1) === '|';
@@ -16475,6 +16519,7 @@
     if (!isTableRow(lines[start])) return null;
     if (start + 1 >= lines.length || !isTableSeparator(lines[start + 1])) return null;
     const header = splitTableRow(lines[start]);
+    const widths = separatorDashCounts(lines[start + 1]).map(dashCountToPx);
     const rows = [];
     let i = start + 2;
     while (i < lines.length && isTableRow(lines[i]) && !isTableSeparator(lines[i])) {
@@ -16483,7 +16528,16 @@
     }
     const width = Math.max(1, header.length);
     const norm = function(cells) { const out = cells.slice(0, width); while (out.length < width) out.push(''); return out; };
-    return { table: { header: norm(header), rows: rows.map(norm) }, next: i };
+    const normW = function(cols) { const out = cols.slice(0, width); while (out.length < width) out.push(null); return out; };
+    return { table: { header: norm(header), rows: rows.map(norm), widths: normW(widths) }, next: i };
+  }
+  
+  
+  
+  
+  
+  function hasExplicitWidths(table) {
+    return !!(table && table.widths && table.widths.some(function(w) { return w != null; }));
   }
   function tableToHtml(table, cls) {
     const cell = function(c, tag) { return '<' + tag + '>' + (c ? mdToHtml(escapeHtml(c)) : '<br>') + '</' + tag + '>'; };
@@ -16491,7 +16545,41 @@
     const body = (table.rows || []).map(function(row) {
       return '<tr>' + row.map(function(c) { return cell(c, 'td'); }).join('') + '</tr>';
     }).join('');
-    return '<table class="pf-note-table' + (cls ? ' ' + cls : '') + '"><tr>' + head + '</tr>' + body + '</table>';
+    const widths = table.widths || [];
+    const fixed = hasExplicitWidths(table);
+    
+    
+    
+    const allSized = fixed && widths.every(function(w) { return w != null; });
+    const total = allSized ? widths.reduce(function(a, b) { return a + Math.round(b); }, 0) : 0;
+    const colgroup = fixed
+      ? '<colgroup>' + widths.map(function(w) {
+          return '<col style="width:' + (w == null ? 'auto' : Math.round(w) + 'px') + '">';
+        }).join('') + '</colgroup>'
+      : '';
+    return '<table class="pf-note-table' + (fixed ? ' pf-note-table-fixed' : '')
+      + (cls ? ' ' + cls : '') + '"' + (allSized ? ' style="width:' + total + 'px"' : '') + '>'
+      + colgroup + '<tr>' + head + '</tr>' + body + '</table>';
+  }
+  
+  
+  
+  
+  function tableWidthsFromDom(tableEl) {
+    const cols = [];
+    (function walk(n) {
+      const kids = n.children || [];
+      for (let i = 0; i < kids.length; i++) {
+        const t = (kids[i].tagName || '').toUpperCase();
+        if (t === 'COL') cols.push(kids[i]);
+        else if (t === 'COLGROUP') walk(kids[i]);
+      }
+    })(tableEl);
+    return cols.map(function(col) {
+      const raw = col.style && col.style.width;
+      const px = raw ? parseFloat(raw) : NaN;
+      return isFinite(px) && px > 0 ? px : null;
+    });
   }
   
   
@@ -16551,7 +16639,16 @@
     rows.forEach(function(tr) { width = Math.max(width, tableRowCells(tr).length); });
     const pad = function(cells) { const o = cells.slice(0, width); while (o.length < width) o.push(''); return o; };
     const line = function(cells) { return '| ' + pad(cells).join(' | ') + ' |'; };
-    const sep = '| ' + pad(new Array(width).fill('---')).join(' | ') + ' |';
+    
+    
+    
+    const widths = tableWidthsFromDom(tableEl);
+    const seps = [];
+    for (let i = 0; i < width; i++) {
+      const px = widths[i];
+      seps.push(px == null ? '---' : new Array(pxToDashCount(px) + 1).join('-'));
+    }
+    const sep = '| ' + pad(seps).join(' | ') + ' |';
     const lines = [line(cellsOf(rows[0])), sep];
     for (let i = 1; i < rows.length; i++) lines.push(line(cellsOf(rows[i])));
     return lines;
@@ -16695,6 +16792,7 @@
       else if (ref) tr.insertBefore(el, ref.nextSibling);
       else tr.appendChild(el);
     });
+    syncColCount(pos.table, where === 'left' ? pos.col : pos.col + 1, 1);
     syncFromRich();
     return pos.table;
   }
@@ -16724,6 +16822,7 @@
       const target = cells[pos.col];
       if (target && target.parentNode) target.parentNode.removeChild(target);
     });
+    syncColCount(pos.table, pos.col, -1);
     syncFromRich();
     return true;
   }
@@ -17168,6 +17267,187 @@
     closeTablePop();
   });
   _pf.registerEscDismissable({ check: function() { return !!tablePopEl; }, run: closeTablePop });
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const RESIZE_EDGE_PX = 5;
+  let colDrag = null;
+  let resizeCursorEl = null;
+  function tableElOf(node) {
+    let n = node;
+    while (n && n !== noteRichEl) {
+      if ((n.tagName || '').toUpperCase() === 'TABLE') {
+        return (n.classList && n.classList.contains('pf-note-table')) ? n : null;
+      }
+      n = n.parentNode;
+    }
+    return null;
+  }
+  
+  
+  function colHandleAt(table, clientX) {
+    const rows = collectRows(table);
+    if (!rows.length) return -1;
+    const cells = tableRowCells(rows[0]);
+    for (let i = 0; i < cells.length; i++) {
+      const box = cells[i].getBoundingClientRect ? cells[i].getBoundingClientRect() : null;
+      if (!box) continue;
+      if (Math.abs(clientX - box.right) <= RESIZE_EDGE_PX) return i;
+    }
+    return -1;
+  }
+  
+  
+  
+  function measuredColWidths(table) {
+    const rows = collectRows(table);
+    const cells = rows.length ? tableRowCells(rows[0]) : [];
+    if (!cells.length) return null;
+    const out = [];
+    for (let i = 0; i < cells.length; i++) {
+      const box = cells[i].getBoundingClientRect ? cells[i].getBoundingClientRect() : null;
+      if (!box || !(box.width > 0)) return null;
+      out.push(Math.max(TABLE_COL_MIN_PX, Math.round(box.width)));
+    }
+    return out;
+  }
+  function colgroupEl(table) {
+    const kids = (table && table.children) || [];
+    for (let i = 0; i < kids.length; i++) {
+      if ((kids[i].tagName || '').toUpperCase() === 'COLGROUP') return kids[i];
+    }
+    return null;
+  }
+  
+  
+  
+  
+  function syncColCount(table, at, delta) {
+    const cg = colgroupEl(table);
+    if (!cg) return;
+    const cols = cg.children || [];
+    if (delta > 0) {
+      const el = document.createElement('col');
+      el.style.width = 'auto';
+      const ref = cols[at] || null;
+      if (ref) cg.insertBefore(el, ref);
+      else cg.appendChild(el);
+    } else if (delta < 0) {
+      const target = cols[at];
+      if (target) cg.removeChild(target);
+    }
+    if (!(cg.children || []).length && cg.parentNode) cg.parentNode.removeChild(cg);
+  }
+  function colgroupOf(table, count) {
+    let cg = colgroupEl(table);
+    if (!cg) {
+      cg = document.createElement('colgroup');
+      table.insertBefore(cg, table.firstChild);
+    }
+    const cols = cg.children || [];
+    while (cols.length > count) cg.removeChild(cols[cols.length - 1]);
+    while (cols.length < count) cg.appendChild(document.createElement('col'));
+    return cg;
+  }
+  
+  
+  
+  function applyColWidths(table, widths) {
+    if (!table || !widths || !widths.length) return false;
+    const cg = colgroupOf(table, widths.length);
+    const cols = cg.children || [];
+    let total = 0;
+    for (let i = 0; i < widths.length; i++) {
+      const px = widths[i];
+      if (px == null) { cols[i].style.width = 'auto'; continue; }
+      const w = Math.max(TABLE_COL_MIN_PX, Math.min(TABLE_COL_MAX_PX, Math.round(px)));
+      cols[i].style.width = w + 'px';
+      total += w;
+    }
+    const anySized = widths.some(function(w) { return w != null; });
+    const allSized = widths.every(function(w) { return w != null; });
+    if (table.classList) table.classList.toggle('pf-note-table-fixed', anySized);
+    table.style.width = allSized ? total + 'px' : '';
+    
+    
+    
+    
+    if (!anySized && cg.parentNode) cg.parentNode.removeChild(cg);
+    return true;
+  }
+  function setResizeCursor(table) {
+    if (resizeCursorEl === table) return;
+    if (resizeCursorEl && resizeCursorEl.style) resizeCursorEl.style.cursor = '';
+    resizeCursorEl = table || null;
+    if (resizeCursorEl && resizeCursorEl.style) resizeCursorEl.style.cursor = 'col-resize';
+  }
+  function endColDrag(commit) {
+    if (!colDrag) return false;
+    const drag = colDrag;
+    colDrag = null;
+    if (drag.table && drag.table.classList) drag.table.classList.remove('pf-col-dragging');
+    setResizeCursor(null);
+    if (commit) syncFromRich();
+    return true;
+  }
+  noteRichEl.addEventListener('mousemove', function (e) {
+    if (colDrag) return;
+    const table = tableElOf(e.target);
+    if (!table || !noteRichEl.contains(table)) { setResizeCursor(null); return; }
+    setResizeCursor(colHandleAt(table, e.clientX) >= 0 ? table : null);
+  });
+  noteRichEl.addEventListener('mouseleave', function () { if (!colDrag) setResizeCursor(null); });
+  noteRichEl.addEventListener('mousedown', function (e) {
+    const table = tableElOf(e.target);
+    if (!table || !noteRichEl.contains(table)) return;
+    const col = colHandleAt(table, e.clientX);
+    if (col < 0) return;
+    const widths = measuredColWidths(table);
+    if (!widths) return;
+    
+    
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+    
+    
+    
+    colDrag = { table: table, col: col, startX: e.clientX, widths: widths, applied: false };
+    if (table.classList) table.classList.add('pf-col-dragging');
+  });
+  document.addEventListener('mousemove', function (e) {
+    if (!colDrag) return;
+    const dx = e.clientX - colDrag.startX;
+    if (!colDrag.applied && !dx) return;
+    if (e.preventDefault) e.preventDefault();
+    const next = colDrag.widths.slice();
+    const want = colDrag.widths[colDrag.col] + dx;
+    next[colDrag.col] = Math.max(TABLE_COL_MIN_PX, Math.min(TABLE_COL_MAX_PX, want));
+    applyColWidths(colDrag.table, next);
+    colDrag.applied = true;
+  });
+  document.addEventListener('mouseup', function () { endColDrag(!!(colDrag && colDrag.applied)); });
+  
+  
+  _pf.noteTableSetWidths = function(cell, widths) {
+    const pos = cellPosition(cell);
+    if (!pos || !widths || !widths.length) return false;
+    const ok = applyColWidths(pos.table, widths);
+    if (ok) syncFromRich();
+    return ok;
+  };
+  _pf.noteTableGetWidths = function(cell) {
+    const pos = cellPosition(cell);
+    return pos ? tableWidthsFromDom(pos.table) : null;
+  };
 
   function renderNoteView() {
     const n = noteById(activeNoteId);
