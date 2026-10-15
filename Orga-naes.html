@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-/FXl1VYF79CkkRvXEYgtBg75zQISva3i/2AUlOXO5kw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-wfI9c2sgLV3VqdZ6lHYKHbSOcwi4e3Wjm1mnAzRnsZM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -9921,7 +9921,15 @@
         const el = document.createElement('div');
         el.className = 'pf-ctx-menu-item';
         el.textContent = '→ Set all ' + STATUS_LABEL[st];
-        el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); snapshot(); splitMultiSelect.forEach(id => { const pr = projects.find(pr => pr.id === id); if (pr) { pr.status = st; pr.completedAt = st === 'completed' ? new Date().toISOString() : null; } }); splitMultiSelect = []; scheduleSave(); render(); renderSplitList(); renderSplitDetail(); showToast('✓ Set ' + count + ' projects to ' + STATUS_LABEL[st]); });
+        
+        
+        
+        
+        
+        
+        
+        
+        el.addEventListener('click', (e) => { e.stopPropagation(); _closeCtx(); snapshot(); splitMultiSelect.forEach(id => { const pr = projects.find(pr => pr.id === id); if (pr) { pr.status = st; pr._manualStatus = true; pr.completedAt = st === 'completed' ? new Date().toISOString() : null; } }); splitMultiSelect = []; scheduleSave(); render(); renderSplitList(); renderSplitDetail(); showToast('✓ Set ' + count + ' projects to ' + STATUS_LABEL[st]); });
         menu.appendChild(el);
       });
       const sep2 = document.createElement('div'); sep2.className = 'pf-ctx-menu-sep'; menu.appendChild(sep2);
@@ -9982,7 +9990,10 @@
       } },
       { icon: 'star', label: 'Add to Today', action: () => { addToToday(p.title, p.id, 'project'); } },
       { icon: 'bell', label: 'Set Reminder', action: () => { promptReminder(p.id, p.title, 'project'); } },
-      { label: '→ ' + STATUS_LABEL[statusNext], action: () => { _lastProjectId = p.id; snapshot(); p.status = statusNext; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
+      
+      
+      
+      { label: '→ ' + STATUS_LABEL[statusNext], action: () => { _lastProjectId = p.id; snapshot(); p.status = statusNext; p._manualStatus = true; p.completedAt = p.status === 'completed' ? new Date().toISOString() : null; scheduleSave(); render(); } },
       { icon: 'clipboard', label: 'Duplicate', action: () => { snapshot(); const dup = JSON.parse(JSON.stringify(p)); dup.id = uid(); dup.title += ' (copy)'; projects.push(dup); scheduleSave(); renderSplitList(); } },
       { icon: 'file', label: 'Copy (paste with Ctrl+V)', action: () => { _taskClipboard = [projectClip(p)]; showToast('"' + p.title + '" copied — click a project/task to paste it (Esc to cancel)'); } },
       { icon: 'scissors', label: 'Cut (move — click a project/task after)', action: () => { _moveClipboard = [moveClipOf(p)]; _moveArmed = true; root.classList.add('pf-move-armed'); showToast('Cut "' + p.title + '" — click a project/task to move it (Esc to cancel)', false, true); } },
