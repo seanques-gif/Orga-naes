@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Qpgi6saAK0mHdnS9RQZ1BoHlXoXPFwkOH1b+N+KxPMI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-cNju1wAbYpQSbJtJVkuq0+BwQxGT4054UUUP/fECWHE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -5661,10 +5661,15 @@
       if (typeof p.expanded === 'undefined') p.expanded = false;
       
       
+      
+      
+      
+      
+      
       if (p.subtasks.length) {
         const allDone = (function check(list) { return list.every(s => s.status === 'completed' && (!s.subtasks || !s.subtasks.length || check(s.subtasks))); })(p.subtasks);
         if (allDone && p.status !== 'completed') { p.status = 'completed'; if (!p.completedAt) p.completedAt = new Date().toISOString(); delete p._manualStatus; repaired++; }
-        else if (!allDone && p.status === 'completed') { p.status = 'ongoing'; p.completedAt = null; delete p._manualStatus; repaired++; }
+        else if (!allDone && p.status === 'completed' && !p._manualStatus) { p.status = 'ongoing'; p.completedAt = null; delete p._manualStatus; repaired++; }
       }
       
       
