@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-wfI9c2sgLV3VqdZ6lHYKHbSOcwi4e3Wjm1mnAzRnsZM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-Qpgi6saAK0mHdnS9RQZ1BoHlXoXPFwkOH1b+N+KxPMI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -18376,6 +18376,10 @@ if ('serviceWorker' in navigator) {
   const COLLAPSED_CAT_KEY = 'project-flow-collapsed-categories';
   
   const PUSH_DEBOUNCE_MS = 3000;
+  
+  
+  
+  const MANUAL_PUSH_WAIT_MS = 8000;
 
   
   
@@ -19147,9 +19151,18 @@ if ('serviceWorker' in navigator) {
     
     
     
-    return Promise.resolve(out).then(function() {
+    const settled = Promise.resolve(out).then(function() {
       setSyncState(_syncPushFailed ? 'failed' : 'idle');
     }, function() { setSyncState('failed'); });
+    
+    
+    
+    
+    
+    _fbPushInFlight = settled;
+    const _clearInFlight = function() { if (_fbPushInFlight === settled) _fbPushInFlight = null; };
+    settled.then(_clearInFlight, _clearInFlight);
+    return settled;
   }
   function _pushSelectiveInner() {
     const projects = _pf.getProjects();
@@ -19683,6 +19696,10 @@ if ('serviceWorker' in navigator) {
   
   
   
+  let _fbPushInFlight = null;
+  
+  
+  
   
   function readSyncSnapshot(projVal, catVal, archVal, notesVal, tombVal) {
     const remoteProjects = fixProjects(projVal);
@@ -19732,9 +19749,22 @@ if ('serviceWorker' in navigator) {
     
     
     
-    const flushed = _fbPushTimer ? (clearTimeout(_fbPushTimer), _fbPushTimer = null, pushSelective()) : null;
+    
+    
+    
+    
+    
+    
+    
+    
+    const flushed = _fbPushTimer
+      ? (clearTimeout(_fbPushTimer), _fbPushTimer = null, pushSelective())
+      : _fbPushInFlight;
     if (flushed && typeof flushed.then === 'function') {
-      flushed.then(_compareCloudThenPush, _compareCloudThenPush);
+      Promise.race([
+        flushed.then(function() {}, function() {}),
+        new Promise(function(r) { setTimeout(r, MANUAL_PUSH_WAIT_MS); })
+      ]).then(_compareCloudThenPush, _compareCloudThenPush);
       return;
     }
     _compareCloudThenPush();
