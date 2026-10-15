@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-lAp7VQbB6OjaWFD3SZ55BICaaEgS3sTyIHubKy/Wtik='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-G/abfy4a9yiQCFnxb0JjcnXnrhx36eHpC3HEZ4/XETc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1787,6 +1787,8 @@
   #pf-root .pf-firebase-section { display: grid; grid-template-columns: 1fr; gap: 6px; }
   #pf-root .pf-firebase-status { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
   #pf-root .pf-firebase-last-sync { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); }
+  
+  #pf-root .pf-firebase-last-sync.pf-sync-failed { color: var(--danger); }
   #pf-root .pf-firebase-backups-list { margin-top: 6px; max-height: 200px; overflow-y: auto; }
   #pf-root .pf-firebase-note { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); margin-top: 4px; }
   #pf-root .pf-firebase-about { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); line-height: 1.6; }
@@ -2783,7 +2785,7 @@
             <div class="pf-firebase-backups-list" id="pf-firebase-restore-preview" style="display:none;"></div>
             <button class="pf-undo-btn pf-opt-btn pf-mt-4" id="pf-firebase-purge-trash"  disabled><span class="pf-opt-ico" data-ic="trash"></span> Remove leftover cloud recycle bin</button>
             <div class="pf-firebase-backups-list" id="pf-firebase-purge-report" style="display:none;"></div>
-            <p class="pf-firebase-note">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable. Syncing keeps the cloud copy current; the daily restore point keeps dated copies you can roll back to.</p>
+            <p class="pf-firebase-note">Sync across all devices (Android, iOS, Desktop). Sign in with Google to enable. Syncing keeps the cloud copy current; the daily restore point keeps dated copies you can roll back to. Every signed-in device receives changes live — the checkbox above controls this device's automatic upload.</p>
           </div>
         </div>
 
@@ -18583,7 +18585,7 @@ if ('serviceWorker' in navigator) {
         _switchingAccount = false;
         if (window._pf) window._pf._signedOutWipe = false;
         localStorage.setItem(LAST_UID_KEY, user.uid);
-        if (_fbAutosync) startListener();
+        startListener();
         if (_pendingSwitchUser && _pendingSwitchUser.uid !== user.uid) {
           const next = _pendingSwitchUser;
           _pendingSwitchUser = null;
@@ -18649,7 +18651,14 @@ if ('serviceWorker' in navigator) {
         if (_pf.logError) _pf.logError('Firebase auto-pull check', err);
       });
     }
-    if (_fbAutosync) startListener();
+    
+    
+    
+    
+    
+    
+    
+    startListener();
   }
 
   function setSignedOut() {
@@ -18710,12 +18719,39 @@ if ('serviceWorker' in navigator) {
 
   const lastSyncEl = document.getElementById('pf-firebase-last-sync');
   let _lastSyncTime = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0');
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  let _syncState = 'idle';
+  let _syncPushFailed = false;
+  function setSyncState(s) { if (_syncState === s) return; _syncState = s; showLastSync(); }
   function updateLastSync() {
     _lastSyncTime = Date.now();
     localStorage.setItem('pf-firebase-last-sync-time', _lastSyncTime.toString());
+    _syncState = 'idle'; 
     showLastSync();
   }
   function showLastSync() {
+    if (_syncState === 'failed') {
+      lastSyncEl.style.display = '';
+      lastSyncEl.textContent = '⚠ Sync failed — will retry';
+      lastSyncEl.classList.add('pf-sync-failed');
+      return;
+    }
+    lastSyncEl.classList.remove('pf-sync-failed');
+    if (_syncState === 'syncing') { lastSyncEl.style.display = ''; lastSyncEl.textContent = 'Syncing…'; return; }
+    if (_syncState === 'pending') { lastSyncEl.style.display = ''; lastSyncEl.textContent = 'Waiting to sync…'; return; }
     if (!_lastSyncTime) { lastSyncEl.style.display = 'none'; return; }
     lastSyncEl.style.display = '';
     const diff = Math.floor((Date.now() - _lastSyncTime) / 1000);
@@ -19018,8 +19054,12 @@ if ('serviceWorker' in navigator) {
   autosyncCb.addEventListener('change', function() {
     _fbAutosync = autosyncCb.checked;
     localStorage.setItem('pf-firebase-autosync', _fbAutosync);
+    
+    
+    
+    
+    
     if (_fbAutosync && _fbUser) startListener();
-    else stopListener();
   });
 
   
@@ -19077,7 +19117,18 @@ if ('serviceWorker' in navigator) {
   
   
   function pushSelective() {
-    try { return _pushSelectiveInner(); } catch (err) { _pf.showToast('⚠ Push failed: ' + (err.message || err), true); if (_pf.logError) _pf.logError('Firebase push', err); return Promise.resolve(); }
+    _fbPushTimer = null; 
+    _syncPushFailed = false;
+    setSyncState('syncing');
+    let out;
+    try { out = _pushSelectiveInner(); } catch (err) { _syncPushFailed = true; _pf.showToast('⚠ Push failed: ' + (err.message || err), true); if (_pf.logError) _pf.logError('Firebase push', err); out = Promise.resolve(); }
+    
+    
+    
+    
+    return Promise.resolve(out).then(function() {
+      setSyncState(_syncPushFailed ? 'failed' : 'idle');
+    }, function() { setSyncState('failed'); });
   }
   function _pushSelectiveInner() {
     const projects = _pf.getProjects();
@@ -19137,12 +19188,14 @@ if ('serviceWorker' in navigator) {
       
       
       pending.push(userRef().set(cloudProjects()).then(noteProjectsLanded, function(err) {
+        _syncPushFailed = true;
         _pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (_pf.logError) _pf.logError('Firebase push (full set)', err);
       }));
       hasChanges = true;
     } else if (hasChanges) {
       pending.push(db.ref('users/' + _fbUser.uid).update(updates).then(noteProjectsLanded, function(err) {
+        _syncPushFailed = true;
         _pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (_pf.logError) _pf.logError('Firebase push (selective)', err);
       }));
@@ -19161,6 +19214,7 @@ if ('serviceWorker' in navigator) {
       pending.push(catRef().set(cloudCategories()).then(function() {
         _lastPushedCatHash = catHash;
       }, function(err) {
+        _syncPushFailed = true;
         _pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
         if (_pf.logError) _pf.logError('Firebase push (categories)', err);
       }));
@@ -19633,8 +19687,10 @@ if ('serviceWorker' in navigator) {
   window._firebasePush = function() {
     if (!_fbAutosync || !_fbUser) return;
     if (!_pfLoaded) return;
-    if (!navigator.onLine) { _fbOfflineQueue = true; return; }
+    if (!navigator.onLine) { _fbOfflineQueue = true; setSyncState('pending'); return; }
     clearTimeout(_fbPushTimer);
+    
+    setSyncState('pending');
     _fbPushTimer = setTimeout(function() {
       pushSelective();
     }, PUSH_DEBOUNCE_MS);
@@ -19642,7 +19698,7 @@ if ('serviceWorker' in navigator) {
   window._firebasePushNow = function() {
     if (!_fbAutosync || !_fbUser) return;
     if (!_pfLoaded) return;
-    if (!navigator.onLine) { _fbOfflineQueue = true; return; }
+    if (!navigator.onLine) { _fbOfflineQueue = true; setSyncState('pending'); return; }
     clearTimeout(_fbPushTimer);
     pushSelective();
   };
