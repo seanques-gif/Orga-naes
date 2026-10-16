@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-l9ZaQKY/OzLqfhrxbkObFX/W6nX3GZPKmAMVXghIFHA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-l2T0Gq+KgtrdecvOdnDPd0M0ydfbN+gsK8Iwm2iqUes='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -19129,6 +19129,14 @@ if ('serviceWorker' in navigator) {
     _lastPushedHash = buildHashMap(projects);
     _lastPushedIdOrder = projects.map(p => p.id);
     _lastPushedCatHash = JSON.stringify(categories);
+    
+    
+    
+    
+    
+    
+    
+    _lastPushedCosmeticsHash = '';
     _lastPushedSnapshot = JSON.stringify(normalizeForSync(projects));
     if (typeof archive !== 'undefined') _lastPushedArchiveHash = JSON.stringify(normalizeForSync(archive, 'archive'));
     
@@ -19175,22 +19183,15 @@ if ('serviceWorker' in navigator) {
     const currentHash = buildHashMap(projects);
     const currentIdOrder = projects.map(p => p.id);
     const orderChanged = JSON.stringify(currentIdOrder) !== JSON.stringify(_lastPushedIdOrder);
+    
+    
+    
+    
+    
+    
+    
     const updates = {};
-    const pending = [];
     let hasChanges = false;
-
-    
-    
-    
-    
-    
-    
-    projects.forEach((p, i) => {
-      if (_lastPushedHash[p.id] !== currentHash[p.id]) {
-        const one = conformed('conformCloudProjects', [p]);
-        if (one.length) { updates['projects/' + i] = one[0]; hasChanges = true; }
-      }
-    });
 
     
     
@@ -19199,6 +19200,23 @@ if ('serviceWorker' in navigator) {
     const currentIds = new Set(projects.map(p => p.id));
     const oldIds = Object.keys(_lastPushedHash);
     const hasDeletion = oldIds.some(id => !currentIds.has(id));
+
+    if (hasDeletion || orderChanged) {
+      
+      
+      
+      
+      
+      updates.projects = cloudProjects();
+      hasChanges = true;
+    } else {
+      projects.forEach((p, i) => {
+        if (_lastPushedHash[p.id] !== currentHash[p.id]) {
+          const one = conformed('conformCloudProjects', [p]);
+          if (one.length) { updates['projects/' + i] = one[0]; hasChanges = true; }
+        }
+      });
+    }
     
     
     
@@ -19214,74 +19232,66 @@ if ('serviceWorker' in navigator) {
     const sentHash = currentHash;
     const sentIdOrder = currentIdOrder;
     const sentSnapshot = JSON.stringify(normalizeForSync(projects));
+
+    const catHash = JSON.stringify(categories);
+    const catChanged = catHash !== _lastPushedCatHash;
+    if (catChanged) updates.categories = cloudCategories();
+
     
     
     
-    function noteProjectsLanded() {
-      _lastPushedHash = sentHash;
-      _lastPushedIdOrder = sentIdOrder;
-      _lastPushedSnapshot = sentSnapshot;
-      updateLastSync();
-    }
-    if (hasDeletion || orderChanged) {
-      
-      
-      pending.push(guardedNodeWrite('/projects', cloudProjects()).then(noteProjectsLanded, function(err) {
-        _syncPushFailed = true;
-        _pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
-        if (_pf.logError) _pf.logError('Firebase push (full set)', err);
-      }));
-      hasChanges = true;
-    } else if (hasChanges) {
-      
-      
-      
+    
+    
+    
+    
+    const cosmetics = cosmeticsPayload();
+    const cosmeticsHash = JSON.stringify(cosmetics);
+    const cosmeticsChanged = cosmeticsHash !== _lastPushedCosmeticsHash;
+    if (cosmeticsChanged) Object.assign(updates, cosmetics);
+
+    if (hasChanges || catChanged) updates.updatedAt = Date.now();
+
+    const pending = [];
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    if (Object.keys(updates).length) {
       pending.push(guardedWrite(
         function() { return db.ref('users/' + _fbUser.uid).update(updates); },
         function() { return restWriteNode('PATCH', '', updates); },
-        'push-projects-selective'
-      ).then(noteProjectsLanded, function(err) {
-        _syncPushFailed = true;
-        _pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
-        if (_pf.logError) _pf.logError('Firebase push (selective)', err);
-      }));
-    }
-
-    
-    const catHash = JSON.stringify(categories);
-    const catChanged = catHash !== _lastPushedCatHash;
-    
-    
-    
-    
-    
-    
-    if (catChanged) {
-      pending.push(guardedNodeWrite('/categories', cloudCategories()).then(function() {
-        _lastPushedCatHash = catHash;
+        'push'
+      ).then(function() {
+        
+        _lastPushedHash = sentHash;
+        _lastPushedIdOrder = sentIdOrder;
+        _lastPushedSnapshot = sentSnapshot;
+        if (catChanged) _lastPushedCatHash = catHash;
+        if (cosmeticsChanged) _lastPushedCosmeticsHash = cosmeticsHash;
+        updateLastSync();
       }, function(err) {
         _syncPushFailed = true;
         _pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
-        if (_pf.logError) _pf.logError('Firebase push (categories)', err);
+        if (_pf.logError) _pf.logError('Firebase push', err);
       }));
     }
-    pending.push(guardedNodeWrite('/categoryEmojis', cloudCategoryEmojis()).catch(function(e) { if (_pf.logError) _pf.logError('Firebase push (categoryEmojis)', e); }));
-    pending.push(guardedNodeWrite('/categoryColors', cloudCategoryColors()).catch(function(e) { if (_pf.logError) _pf.logError('Firebase push (categoryColors)', e); }));
-    pending.push(guardedNodeWrite('/snoozePresets', cloudSnoozePresets()).catch(function(e) { if (_pf.logError) _pf.logError('Firebase push (snoozePresets)', e); }));
 
     let notesPush = Promise.resolve();
     try { notesPush = pushNotesIfNeeded().catch(function(e) { if (_pf.logError) _pf.logError('Firebase push (notes)', e); }); } catch(e) { if (_pf.logError) _pf.logError('Firebase push (notes)', e); }
     pending.push(notesPush);
 
-    if (hasChanges || catChanged) {
-      pending.push(guardedNodeWrite('/updatedAt', Date.now()).catch(function(e) { if (_pf.logError) _pf.logError('Firebase push (updatedAt)', e); }));
-      
-      
-    }
     
     return Promise.all(pending);
   }
   let _lastPushedCatHash = '';
+  
+  
+  let _lastPushedCosmeticsHash = '';
   let _lastPushedArchiveHash = '';
   
   
@@ -19572,6 +19582,17 @@ if ('serviceWorker' in navigator) {
   function cloudCategoryEmojis() { return conformed('conformCloudCategoryEmojis', _pf.getCategoryEmojis()); }
   function cloudCategoryColors() { return conformed('conformCloudCategoryColors', _pf.getCategoryColors && _pf.getCategoryColors()); }
   function cloudSnoozePresets() { return conformed('conformCloudSnoozePresets', _pf.getSnoozePresets() || []); }
+  
+  
+  
+  
+  function cosmeticsPayload() {
+    return {
+      categoryEmojis: cloudCategoryEmojis(),
+      categoryColors: cloudCategoryColors(),
+      snoozePresets: cloudSnoozePresets()
+    };
+  }
 
   
   
@@ -19675,16 +19696,6 @@ if ('serviceWorker' in navigator) {
         cloudWriteTimeout()
       ]);
     }, label);
-  }
-  
-  
-  
-  function guardedNodeWrite(leafPath, value) {
-    return guardedWrite(
-      function() { return db.ref('users/' + _fbUser.uid + leafPath).set(value); },
-      function() { return restWriteNode('PUT', leafPath, value); },
-      'push' + leafPath
-    );
   }
   
   
