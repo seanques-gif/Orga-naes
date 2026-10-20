@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-l2T0Gq+KgtrdecvOdnDPd0M0ydfbN+gsK8Iwm2iqUes='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-mRx4kdeY18OUEtCtqMd4o5W+DEQNlJ5lfFOApgYgDCM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -4845,6 +4845,7 @@
       ['pf-firebase-last-sync-time', 'data', 'last cloud sync stamp'],
       ['pf-firebase-last-backup', 'data', 'last cloud backup stamp'],
       ['pf-firebase-needs-pull', 'data', 'pull marker; re-set by the wipe itself'],
+      ['pf-firebase-push-baseline', 'data', 'durable record of what the cloud holds (the push baseline)'],
       ['pf-notes-history', 'data', 'notes undo history (sessionStorage)'],
       
       
@@ -13685,6 +13686,10 @@
 
   function applyImportData(data, importedCategories, importedCollapsed, importedArchive, importedTrash, importedToday, importedWeekly, importedBacklog, importedDismissed, importedReminders, importedEmojis, importedColors, importedNotes, importedNoteTombstones, importedSnoozePresets) {
     snapshot(true, 'Imported a backup');
+    
+    
+    
+    if (_pf && typeof _pf.markBaselineUnknown === 'function') _pf.markBaselineUnknown();
     let restoredExtras = 0;
     
     
@@ -18219,6 +18224,10 @@ if ('serviceWorker' in navigator) {
   
   
   const NEEDS_PULL_KEY = 'pf-firebase-needs-pull';
+  
+  
+  
+  const BASELINE_KEY = 'pf-firebase-push-baseline';
 
   
   
@@ -18413,7 +18422,7 @@ if ('serviceWorker' in navigator) {
     
     
     if (!_pfKeys) [STORE_KEY, CATEGORIES_KEY, CAT_EMOJI_KEY, ARCHIVE_KEY, TRASH_KEY,
-     'pf-firebase-last-sync-time', ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY,
+     'pf-firebase-last-sync-time', BASELINE_KEY, ACTIVITY_KEY, TODAY_KEY, WEEKLY_KEY,
      REMINDERS_KEY, COLLAPSED_CAT_KEY, SNOOZE_PRESETS_KEY,
      'project-flow-backlog', 'project-flow-streak', 'project-flow-milestones',
      'project-flow-streak-freezes', 'project-flow-errors',
@@ -18627,6 +18636,18 @@ if ('serviceWorker' in navigator) {
       db.ref('users/' + user.uid + '/updatedAt').once('value').then(function(snap) {
         const remoteTime = snap.val() || 0;
         if (remoteTime > lastSync) {
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          hydrateBaseline();
+          if (_baseDirty) return;
           if (_pf && _pf.snapshot) _pf.snapshot();
           Promise.all([
             userRef().once('value'),
@@ -18854,6 +18875,9 @@ if ('serviceWorker' in navigator) {
 
       if (remoteStr === localStr && catsMatch && archMatch && notesMatch) {
         _pf.showToast('✅ Local data already matches the cloud');
+        
+        
+        resetPushBookkeeping(_pf.getProjects(), _pf.getCategories(), _pf.getArchive());
         localStorage.removeItem(NEEDS_PULL_KEY);
         _pf.closeAllModals();
         return;
@@ -19008,6 +19032,7 @@ if ('serviceWorker' in navigator) {
     });
   }
   _pf.runSyncDiagnostics = runSyncDiagnostics;
+  _pf.markBaselineUnknown = markBaselineUnknown;
   const syncDiagBtn = document.getElementById('pf-sync-diag');
   if (syncDiagBtn) syncDiagBtn.addEventListener('click', function() { runSyncDiagnostics(); });
 
@@ -19015,9 +19040,10 @@ if ('serviceWorker' in navigator) {
   function startListener() {
     if (_fbListener || !_fbUser) return;
     if (!_pfLoaded) { setTimeout(startListener, 500); return; }
-    if (!_lastPushedSnapshot) _lastPushedSnapshot = JSON.stringify(normalizeForSync(_pf.getProjects()));
+    hydrateBaseline();
     _fbListenerUserRef = userRef();
     _fbListener = _fbListenerUserRef.on('value', function(snap) {
+      hydrateBaseline(); 
       const val = snap.val();
       if (!val) return;
       const remote = fixProjects(val);
@@ -19026,7 +19052,15 @@ if ('serviceWorker' in navigator) {
       if (remoteStr !== localStr) {
         const localProjects = JSON.parse(localStr);
         const localChanged = localStr !== _lastPushedSnapshot;
-        if (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr) {
+        
+        
+        
+        
+        
+        
+        const couldLoseWork = localProjects.length > 0 && (_baseDirty ||
+          (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr));
+        if (couldLoseWork) {
           showConflictModal(localProjects, remote);
         } else {
           
@@ -19125,6 +19159,119 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  let _baseKnown = false;
+  let _baseDirty = false;
+  
+  
+  
+  function markBaselineUnknown() {
+    _baseDirty = true;
+    
+    
+    
+    
+    
+    
+    
+    
+    _baseKnown = true;
+    
+    
+    
+    
+    
+    try { localStorage.removeItem(BASELINE_KEY); } catch (e) {}
+    if (_pf && typeof _pf.openIDB_KV === 'function') _pf.openIDB_KV().then(function(db) {
+      if (!db) return;
+      try { db.transaction('kv', 'readwrite').objectStore('kv').delete(BASELINE_KEY); } catch (e) {}
+    }).catch(function(e) {});
+    _lastPushedSnapshot = '';
+    _lastPushedHash = {};
+    _lastPushedIdOrder = [];
+    _lastPushedCatHash = '';
+    _lastPushedCosmeticsHash = '';
+    _lastPushedArchiveHash = '';
+    _lastPushedNotesHash = '';
+  }
+  
+  
+  function commitBaseline() {
+    _baseKnown = true;
+    _baseDirty = false;
+    try {
+      const rec = JSON.stringify({ v: 1, s: _lastPushedSnapshot, o: _lastPushedIdOrder, h: _lastPushedHash,
+        c: _lastPushedCatHash, m: _lastPushedCosmeticsHash, a: _lastPushedArchiveHash, n: _lastPushedNotesHash });
+      localStorage.setItem(BASELINE_KEY, rec);
+      
+      
+      
+      if (_pf && typeof _pf.openIDB_KV === 'function') _pf.openIDB_KV().then(function(db) {
+        if (!db) return;
+        try { db.transaction('kv', 'readwrite').objectStore('kv').put({ key: BASELINE_KEY, value: rec }); } catch (e) {}
+      }).catch(function(e) {});
+    } catch (e) { if (_pf && _pf.logError) _pf.logError('Firebase baseline write', e); }
+  }
+  
+  
+  
+  
+  
+  
+  
+  function hydrateBaseline() {
+    if (!_pfLoaded) return;
+    let raw = null;
+    try { raw = localStorage.getItem(BASELINE_KEY); } catch (e) {}
+    if (raw === null) {
+      if (_baseKnown) return; 
+      _baseKnown = true;
+      let lastSave = 0, lastSync = 0;
+      try { lastSave = parseInt(localStorage.getItem('pf-last-save-time') || '0', 10) || 0; } catch (e) {}
+      try { lastSync = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0', 10) || 0; } catch (e) {}
+      let holdingUnpushed = false;
+      
+      
+      
+      
+      
+      
+      
+      try { holdingUnpushed = (_pf.getProjects() || []).length > 0 && (lastSave > lastSync || lastSave === 0); } catch (e) {}
+      if (holdingUnpushed) markBaselineUnknown();
+      else resetPushBookkeeping(_pf.getProjects(), _pf.getCategories(), _pf.getArchive()); 
+      return;
+    }
+    let rec = null;
+    try { rec = JSON.parse(raw); } catch (e) {}
+    if (!rec || rec.v !== 1 || typeof rec.s !== 'string' || !Array.isArray(rec.o) ||
+        !rec.h || typeof rec.h !== 'object' || typeof rec.c !== 'string' ||
+        typeof rec.m !== 'string' || typeof rec.a !== 'string' || typeof rec.n !== 'string') {
+      _baseKnown = true;
+      markBaselineUnknown();
+      return;
+    }
+    _baseDirty = false;
+    _lastPushedSnapshot = rec.s;
+    _lastPushedIdOrder = rec.o;
+    _lastPushedHash = rec.h;
+    _lastPushedCatHash = rec.c;
+    _lastPushedCosmeticsHash = rec.m;
+    _lastPushedArchiveHash = rec.a;
+    _lastPushedNotesHash = rec.n;
+  }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
   function resetPushBookkeeping(projects, categories, archive) {
     _lastPushedHash = buildHashMap(projects);
     _lastPushedIdOrder = projects.map(p => p.id);
@@ -19146,6 +19293,9 @@ if ('serviceWorker' in navigator) {
     
     
     _lastPushedNotesHash = '';
+    
+    
+    commitBaseline();
   }
 
   
@@ -19156,9 +19306,28 @@ if ('serviceWorker' in navigator) {
   
   function pushSelective() {
     _fbPushTimer = null; 
+    hydrateBaseline();
+    
+    
+    
+    if (_baseDirty) {
+      
+      
+      
+      
+      
+      
+      const asked = _compareCloudThenPush().then(
+        function() { return { asked: true }; },
+        function() { return { asked: true }; }
+      );
+      _fbPushInFlight = asked;
+      const clearAsked = function() { if (_fbPushInFlight === asked) _fbPushInFlight = null; };
+      asked.then(clearAsked, clearAsked);
+      return asked;
+    }
     _syncPushFailed = false;
-    setSyncState('syncing');
-    let out;
+    setSyncState('syncing');    let out;
     try { out = _pushSelectiveInner(); } catch (err) { _syncPushFailed = true; _pf.showToast('⚠ Push failed: ' + (err.message || err), true); if (_pf.logError) _pf.logError('Firebase push', err); out = Promise.resolve(); }
     
     
@@ -19273,6 +19442,7 @@ if ('serviceWorker' in navigator) {
         _lastPushedSnapshot = sentSnapshot;
         if (catChanged) _lastPushedCatHash = catHash;
         if (cosmeticsChanged) _lastPushedCosmeticsHash = cosmeticsHash;
+        commitBaseline();
         updateLastSync();
       }, function(err) {
         _syncPushFailed = true;
@@ -19436,11 +19606,13 @@ if ('serviceWorker' in navigator) {
         const remoteNoteTombstones = (tSnap.val() && typeof tSnap.val() === 'object') ? tSnap.val() : {};
         if (notesSignature({ notes: notesSnap.notes, tombstones: notesSnap.tombstones }) === notesSignature({ notes: remoteNotes, tombstones: remoteNoteTombstones })) {
           _lastPushedNotesHash = notesHash; 
+          commitBaseline();
           _notesConflictParkedHash = ''; 
           return undefined;
         }
         if (!localHasNotes && remoteCount > 0 && !_notesPulledThisSession) {
           _lastPushedNotesHash = notesHash; 
+          commitBaseline();
           return undefined;
         }
         
@@ -19453,6 +19625,7 @@ if ('serviceWorker' in navigator) {
         const liveRemote = remoteNotes.filter(function(n) { return n && !remoteNoteTombstones[n.id]; });
         if (!localHasNotes && liveRemote.length > 0 && Object.keys(remoteNoteTombstones).length === 0) {
           _lastPushedNotesHash = notesHash;
+          commitBaseline();
           return undefined;
         }
         
@@ -19506,7 +19679,7 @@ if ('serviceWorker' in navigator) {
         return Promise.all([
           notesRef().set(conformed('conformCloudNotes', notesSnap.notes)),
           noteTombstonesRef().set(JSON.parse(JSON.stringify(notesSnap.tombstones)))
-        ]).then(function() { _lastPushedNotesHash = notesHash; });
+        ]).then(function() { _lastPushedNotesHash = notesHash; commitBaseline(); });
       });
     });
   }
@@ -19862,9 +20035,17 @@ if ('serviceWorker' in navigator) {
       : _fbPushInFlight;
     if (flushed && typeof flushed.then === 'function') {
       Promise.race([
-        flushed.then(function() {}, function() {}),
+        
+        
+        flushed.then(function(r) { return r; }, function() { return null; }),
         new Promise(function(r) { setTimeout(r, MANUAL_PUSH_WAIT_MS); })
-      ]).then(_compareCloudThenPush, _compareCloudThenPush);
+      ]).then(function(r) {
+        
+        
+        
+        if (r && r.asked) return;
+        _compareCloudThenPush();
+      });
       return;
     }
     _compareCloudThenPush();
@@ -19890,10 +20071,12 @@ if ('serviceWorker' in navigator) {
         localArchiveHashNow === _lastPushedArchiveHash &&
         localNotesHashNow === _lastPushedNotesHash) {
       _pf.showToast('✅ Already up to date with cloud');
-      return;
+      return Promise.resolve();
     }
     _pf.showToast('☁ Checking cloud data...');
-    withRetry(function(attempt) {
+    
+    
+    return withRetry(function(attempt) {
       return attempt === 1 ? cloudReads() : restReadResults();
     }, 'push-check').then(function(results) {
       const projVal = results[0].val();
@@ -19909,6 +20092,9 @@ if ('serviceWorker' in navigator) {
       const pushNotesInfo = localNotesSnap ? notesDiff(localNotesSnap, remoteNotes, remoteNoteTombstones) : null;
 
       if (projVal && fullMatch) {
+        
+        
+        resetPushBookkeeping(_pf.getProjects(), _pf.getCategories(), _pf.getArchive());
         _pf.showToast('✅ Already up to date with cloud');
         return;
       }
