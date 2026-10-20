@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-mRx4kdeY18OUEtCtqMd4o5W+DEQNlJ5lfFOApgYgDCM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-SF/CvH/GFRTN0HeqTIFrKqCDe8plEZMNrIw0YQwbXO0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -19061,7 +19061,22 @@ if ('serviceWorker' in navigator) {
         const couldLoseWork = localProjects.length > 0 && (_baseDirty ||
           (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr));
         if (couldLoseWork) {
-          showConflictModal(localProjects, remote);
+          
+          
+          
+          
+          
+          
+          
+          
+          const remoteForModal = remote;
+          cloudReads().then(function(results) {
+            _pendingPullExtras = pullExtrasFrom(results);
+            showConflictModal(localProjects, remoteForModal);
+          }).catch(function() {
+            _pendingPullExtras = null;
+            showConflictModal(localProjects, remoteForModal);
+          });
         } else {
           
           
@@ -19418,7 +19433,21 @@ if ('serviceWorker' in navigator) {
     const cosmeticsChanged = cosmeticsHash !== _lastPushedCosmeticsHash;
     if (cosmeticsChanged) Object.assign(updates, cosmetics);
 
-    if (hasChanges || catChanged) updates.updatedAt = Date.now();
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    const archHash = JSON.stringify(normalizeForSync(_pf.getArchive() || [], 'archive'));
+    const archChanged = archHash !== _lastPushedArchiveHash;
+    if (archChanged) updates.archive = cloudArchive();
+
+    if (hasChanges || catChanged || archChanged) updates.updatedAt = Date.now();
 
     const pending = [];
     
@@ -19442,6 +19471,7 @@ if ('serviceWorker' in navigator) {
         _lastPushedSnapshot = sentSnapshot;
         if (catChanged) _lastPushedCatHash = catHash;
         if (cosmeticsChanged) _lastPushedCosmeticsHash = cosmeticsHash;
+        if (archChanged) _lastPushedArchiveHash = archHash;
         commitBaseline();
         updateLastSync();
       }, function(err) {
@@ -19992,6 +20022,24 @@ if ('serviceWorker' in navigator) {
     const archMatch = JSON.stringify(normalizeForSync(remoteArchive, 'archive')) === JSON.stringify(normalizeForSync(_pf.getArchive() || [], 'archive'));
     return { remoteProjects, localProjects, localStr, remoteStr, remoteCategories, remoteArchive,
       remoteNotes, remoteNoteTombstones, localNotesSnap, notesMatch, catsMatch, archMatch };
+  }
+
+  
+  
+  
+  
+  
+  
+  function pullExtrasFrom(results) {
+    const catVal = results[1].val();
+    const notesVal = results[3].val();
+    const tombVal = results[4].val();
+    return {
+      categories: catVal ? (Array.isArray(catVal) ? catVal : Object.values(catVal)) : [],
+      archive: fixProjects(results[2].val()),
+      notes: notesVal ? (Array.isArray(notesVal) ? notesVal.filter(Boolean) : Object.values(notesVal).filter(Boolean)) : [],
+      noteTombstones: (tombVal && typeof tombVal === 'object') ? tombVal : {}
+    };
   }
 
   window._firebasePull = function() { if (pullBtn) pullBtn.click(); };
