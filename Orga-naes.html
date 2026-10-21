@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-m6rW3tV0LYQaiYArc2+njznOk7KLaqhA7eZuy8sVFCc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DqCZ0thaL8WfBFhYFIGHaDpTs+pF+vABrHHv5cjUQ1k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -6841,9 +6841,26 @@
   
   
   
-  function closeSubSelectBar() {
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function closeSubSelectBar(p) {
     clearSubSelect();
     root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
+    requestAnimationFrame(function() {
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && root.contains(ae)) return;
+      const back = (p && root.querySelector('.pf-node[data-id="' + p.id + '"] .pf-chevron')) || root.querySelector('.pf-chevron');
+      if (back) back.focus({ preventScroll: true });
+    });
   }
   function subSelectOwnerProject(id) { return projects.find(pr => pr.subtasks && findSubNode(pr.subtasks, id)); }
   function subSelectProjectIds() { const ids = new Set(); subMultiSelect.forEach(id => { const pr = subSelectOwnerProject(id); if (pr) ids.add(pr.id); }); return ids; }
@@ -6899,7 +6916,7 @@
         
         
         
-        closeSubSelectBar();
+        closeSubSelectBar(p);
         showToast((clip.length > 1 ? clip.length + ' tasks' : 'Task') + ' copied. Click a project to paste as main task(s), or a task to nest under it');
       } else if (action === 'cut') {
         cutSelection();
@@ -6914,7 +6931,7 @@
             
             
             
-            closeSubSelectBar();
+            closeSubSelectBar(p);
             scheduleSave(); render(); touched.forEach(pr => checkAllCompleted(pr));
           } catch (err) { logError('Bulk set status', err); showToast('⚠ Set status failed. See console', true); }
         });
@@ -6932,7 +6949,7 @@
           snapshot(false, 'Rescheduled tasks in bulk');
           const touched = new Set();
           subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; const s = findSubNode(owner.subtasks, id); if (s) { s.dueAt = val; touched.add(owner); } });
-          closeSubSelectBar(); scheduleSave(); render();
+          closeSubSelectBar(p); scheduleSave(); render();
           touched.forEach(pr => { if (pr._manualStatus) { delete pr._manualStatus; } checkAllCompleted(pr); });
         }
         input.addEventListener('change', commit);
@@ -6944,13 +6961,13 @@
         subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; deleteSubtask(owner.id, id, true); });
         
         
-        closeSubSelectBar(); scheduleSave(); render();
+        closeSubSelectBar(p); scheduleSave(); render();
         
         showToast('Moved ' + deletedIds.length + ' task' + (deletedIds.length === 1 ? '' : 's') + ' to Recycle Bin', false, false, () => {
           deletedIds.forEach(id => { if (typeof restoreFromTrash === 'function') restoreFromTrash(id); });
         }, 'Undo');
       } else if (action === 'clear') {
-        closeSubSelectBar();
+        closeSubSelectBar(p);
       }
     });
     
