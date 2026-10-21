@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-JWLrWTuz8/MWtuLy6VdK0gDTCfJ6nGzqLRN4G5NKn+U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-m6rW3tV0LYQaiYArc2+njznOk7KLaqhA7eZuy8sVFCc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1004,20 +1004,25 @@
   }
   #pf-root .pf-sub-select-bar {
     
-    display: flex; align-items: center; gap: 4px; padding: 8px 10px;
-    background: color-mix(in srgb, var(--card) 97%, transparent);
-    border: 1px solid var(--accent); border-radius: var(--radius-overlay);
+    
+    display: flex; align-items: center; gap: 2px; padding: 6px 8px;
+    background: color-mix(in srgb, var(--card-hover) 97%, transparent);
+    border: 1px solid var(--card-border); border-radius: var(--radius-overlay);
     position: fixed; left: 50%; z-index: var(--z-chrome);
     bottom: calc(var(--selbar-bottom-offset, 78px) + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: var(--shadow-hover);
     max-width: calc(100vw - 20px); overflow-x: auto;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
     animation: pf-selbar-in 0.16s var(--ease-out-strong);
-    
-    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  }
+  
+  @media (max-width: 700px) {
+    #pf-root .pf-sub-select-bar {
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    }
   }
   #pf-root .pf-sub-select-bar::-webkit-scrollbar { display: none; }
   
@@ -1025,18 +1030,31 @@
     bottom: calc(var(--selbar-bottom-offset, 78px) + 58px + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
   }
-  #pf-root .pf-selbar-btn {
-    font-family: inherit; font-size: calc(var(--font-size-base) - 2px); font-weight: 600; color: var(--text);
-    background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid transparent; border-radius: var(--radius-control);
-    padding: 7px 11px; white-space: nowrap; flex-shrink: 0; cursor: pointer;
-    min-width: 0; min-height: 0; line-height: 1.2; transition: background 0.15s, border-color 0.15s;
+  
+  #pf-root .pf-selbar-count { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 2px; flex-shrink: 0; }
+  #pf-root .pf-selbar-num {
+    font-size: calc(var(--font-size-base) - 3px); font-weight: 500; line-height: 1.4;
+    color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-radius: var(--radius-control); padding: 2px 6px;
   }
-  #pf-root .pf-selbar-btn:hover, #pf-root .pf-selbar-btn:focus-visible { background: color-mix(in srgb, var(--accent) 26%, transparent); border-color: var(--accent); }
+  #pf-root .pf-selbar-label { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); white-space: nowrap; }
+  #pf-root .pf-selbar-sep { width: 1px; height: 18px; background: var(--card-border); flex-shrink: 0; }
+  
+  #pf-root .pf-selbar-btn {
+    font-family: inherit; font-size: calc(var(--font-size-base) - 2px); font-weight: 500; color: var(--text);
+    background: transparent; border: 1px solid transparent; border-radius: var(--radius-control);
+    padding: 6px 10px; white-space: nowrap; flex-shrink: 0; cursor: pointer;
+    min-width: 0; min-height: 0; line-height: 1.2; transition: background 0.15s, color 0.15s;
+  }
+  #pf-root .pf-selbar-btn:hover, #pf-root .pf-selbar-btn:focus-visible { background: color-mix(in srgb, var(--text) 7%, transparent); }
   #pf-root .pf-selbar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  #pf-root .pf-selbar-btn.pf-selbar-close { background: transparent; color: var(--text-dim); padding: 7px 8px; font-size: calc(var(--font-size-base) - 1px); }
+  
+  #pf-root .pf-selbar-btn.pf-selbar-danger { color: var(--danger); }
+  #pf-root .pf-selbar-btn.pf-selbar-danger:hover, #pf-root .pf-selbar-btn.pf-selbar-danger:focus-visible { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+  #pf-root .pf-selbar-btn.pf-selbar-close { color: var(--text-dim); padding: 6px 8px; font-size: calc(var(--font-size-base) - 1px); }
   #pf-root .pf-selbar-btn.pf-selbar-close:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
   @media (max-width: 900px) {
-    #pf-root .pf-selbar-btn { font-size: calc(var(--font-size-base) - 1.5px); padding: 8px 10px; }
+    #pf-root .pf-selbar-btn { font-size: calc(var(--font-size-base) - 1.5px); padding: 7px 9px; }
   }
   #pf-root .pf-node.pf-expanded { min-width: 380px; max-width: 500px; }
   @media (hover: hover) and (pointer: fine) {
@@ -6846,14 +6864,22 @@
     
     
     
-    bar.innerHTML = '<span style="font-size: calc(var(--font-size-base) - 3px);color:var(--text-dim);white-space:nowrap;padding:0 4px 0 2px;flex-shrink:0;">' + subMultiSelect.length + ' selected' + (spansMultiple ? ' (' + projectIds.size + ')' : '') + '</span>' +
-      '<span style="width:1px;align-self:stretch;background:var(--card-border);flex-shrink:0;"></span>' +
+    
+    
+    
+    
+    bar.innerHTML = '<span class="pf-selbar-count">' +
+        '<span class="pf-selbar-num">' + subMultiSelect.length + '</span>' +
+        '<span class="pf-selbar-label">selected' + (spansMultiple ? ' · ' + projectIds.size + ' projects' : '') + '</span>' +
+      '</span>' +
+      '<span class="pf-selbar-sep"></span>' +
       '<button class="pf-selbar-btn" data-sub-action="cycle">Status</button>' +
       '<button class="pf-selbar-btn" data-sub-action="due">Due</button>' +
       '<button class="pf-selbar-btn" data-sub-action="copy"' + (spansMultiple ? ' title="Copy to… only works from a single project (narrow your selection to one project)"' : '') + '>Copy to…</button>' +
       '<button class="pf-selbar-btn" data-sub-action="copy-clip" title="Ctrl+C">Copy</button>' +
       '<button class="pf-selbar-btn" data-sub-action="cut" title="Cut (move): click a project/task after cutting">Cut</button>' +
-      '<button class="pf-selbar-btn" data-sub-action="delete" style="color:var(--danger);">Delete</button>' +
+      '<span class="pf-selbar-sep"></span>' +
+      '<button class="pf-selbar-btn pf-selbar-danger" data-sub-action="delete">Delete</button>' +
       '<button class="pf-selbar-btn pf-selbar-close" data-sub-action="clear" title="Clear selection">✕</button>';
     
     
@@ -15881,7 +15907,7 @@
       '<span class="pf-notes-sel-sep"></span>' +
       '<button class="pf-selbar-btn" data-note-action="pin">' + (pins < notesSelection.length ? 'Pin' : 'Unpin') + '</button>' +
       '<button class="pf-selbar-btn" data-note-action="copy">Copy</button>' +
-      '<button class="pf-selbar-btn" data-note-action="delete" style="color:var(--danger);">Delete</button>' +
+      '<button class="pf-selbar-btn pf-selbar-danger" data-note-action="delete">Delete</button>' +
       '<button class="pf-selbar-btn pf-selbar-close" data-note-action="clear" title="Clear selection">✕</button>' +
       '<span class="pf-notes-sel-hint">Ctrl-click for one-by-one · Shift-click for a range</span>';
     bar.setAttribute('aria-label', notesSelection.length + ' notes selected');
