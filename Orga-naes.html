@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DqCZ0thaL8WfBFhYFIGHaDpTs+pF+vABrHHv5cjUQ1k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-iQp8gSjcEVelMYhzCZ7a82Mye8OuLyts2NyS2MWtZN4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -1807,6 +1807,8 @@
   #pf-root .pf-firebase-last-sync { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); }
   
   #pf-root .pf-firebase-last-sync.pf-sync-failed { color: var(--danger); }
+  
+  #pf-root .pf-firebase-last-sync.pf-sync-behind { color: var(--accent); }
   #pf-root .pf-firebase-backups-list { margin-top: 6px; max-height: 200px; overflow-y: auto; }
   #pf-root .pf-firebase-note { font-size: calc(var(--font-size-base) - 4px); color: var(--text-dim); margin-top: 4px; }
   #pf-root .pf-firebase-about { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); line-height: 1.6; }
@@ -18763,6 +18765,12 @@ if ('serviceWorker' in navigator) {
     
     
     startListener();
+    
+    
+    
+    
+    
+    probeCloudAhead();
   }
 
   function setSignedOut() {
@@ -18854,8 +18862,14 @@ if ('serviceWorker' in navigator) {
       return;
     }
     lastSyncEl.classList.remove('pf-sync-failed');
+    lastSyncEl.classList.toggle('pf-sync-behind', _syncState === 'behind');
     if (_syncState === 'syncing') { lastSyncEl.style.display = ''; lastSyncEl.textContent = 'Syncing…'; return; }
     if (_syncState === 'pending') { lastSyncEl.style.display = ''; lastSyncEl.textContent = 'Waiting to sync…'; return; }
+    
+    
+    
+    
+    if (_syncState === 'behind') { lastSyncEl.style.display = ''; lastSyncEl.textContent = '☁ Cloud has newer data'; return; }
     if (!_lastSyncTime) { lastSyncEl.style.display = 'none'; return; }
     lastSyncEl.style.display = '';
     const diff = Math.floor((Date.now() - _lastSyncTime) / 1000);
@@ -18867,6 +18881,50 @@ if ('serviceWorker' in navigator) {
   }
   showLastSync();
   setInterval(showLastSync, 30000);
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  let _probeBusy = false;
+  const PROBE_SKEW_MS = 120000; 
+  function probeCloudAhead() {
+    if (!_fbUser || !_fbAutosync || _probeBusy) return;
+    if (navigator && navigator.onLine === false) return;
+    _probeBusy = true;
+    let req;
+    try { req = db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'); }
+    catch (e) { _probeBusy = false; return; }
+    req.then(function(snap) {
+      _probeBusy = false;
+      const remote = Number(snap.val() || 0) || 0;
+      
+      
+      
+      let last = 0;
+      try { last = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0', 10) || 0; } catch (e) {}
+      if (remote > last + PROBE_SKEW_MS) {
+        
+        
+        if (_syncState === 'idle' || _syncState === 'behind') setSyncState('behind');
+      } else if (_syncState === 'behind') {
+        setSyncState('idle');
+      }
+    }, function() { _probeBusy = false; });
+  }
+  
+  
+  
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) probeCloudAhead(); });
+  window.addEventListener('online', function() { probeCloudAhead(); });
+  setInterval(function() { if (!document.hidden) probeCloudAhead(); }, 300000);
 
   
   
@@ -19096,6 +19154,10 @@ if ('serviceWorker' in navigator) {
   }
   _pf.runSyncDiagnostics = runSyncDiagnostics;
   _pf.markBaselineUnknown = markBaselineUnknown;
+  
+  
+  
+  _pf.probeCloudAhead = probeCloudAhead;
   const syncDiagBtn = document.getElementById('pf-sync-diag');
   if (syncDiagBtn) syncDiagBtn.addEventListener('click', function() { runSyncDiagnostics(); });
 
