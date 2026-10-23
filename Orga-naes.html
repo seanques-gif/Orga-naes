@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-IWyFYmbk0krcbz3uT9Ljcj/yhD/NQQVgREi+QAoumIg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-TLywl1HeReiJ4UWUiCmksY/1ReEdvm8IWlkHvcZuItM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,12 +14,12 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="26f75d740d">
+<meta name="build" content="4e60d50e48">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
      one report instead of failing one wiring at a time. Never hand-edit. -->
-<meta name="orga-required-ids" content="pf-activity-btn,pf-activity-list,pf-activity-panel,pf-archive-btn,pf-archive-count,pf-archive-list,pf-archive-panel,pf-autobackup-dir,pf-autobackup-min,pf-autobackup-path,pf-backlog-arrange-btn,pf-bottom-badge,pf-bottom-nav,pf-cal-detail-list,pf-cal-detail-title,pf-cal-grid,pf-cal-month,pf-cal-next,pf-cal-prev,pf-cal-today-btn,pf-calendar-btn,pf-calendar-panel,pf-category-add-btn,pf-category-add-input,pf-category-btn,pf-category-list,pf-category-popover,pf-color-modal,pf-color-modal-cancel,pf-color-modal-clear,pf-color-modal-ok,pf-color-modal-picker,pf-color-palette,pf-comment-add,pf-comment-input,pf-comment-input-row,pf-comment-list,pf-comment-panel,pf-comment-task-name,pf-confirm-cancel,pf-confirm-message,pf-confirm-modal,pf-confirm-ok,pf-confirm-title,pf-conflict-keep-local,pf-conflict-keep-remote,pf-conflict-local,pf-conflict-modal,pf-conflict-remote,pf-connection-dot,pf-copy-modal,pf-copy-modal-list,pf-copy-modal-title,pf-desktop-badge,pf-display-scale,pf-display-scale-reset,pf-display-scale-val,pf-due-filter,pf-due-panel,pf-due-panel-close,pf-due-table-body,pf-duelist-btn,pf-duelist-list,pf-duelist-panel,pf-error-btn,pf-error-clear-btn,pf-error-copy-btn,pf-error-count,pf-error-dot-btn,pf-error-dot-desktop,pf-error-dot-mobile,pf-error-export-btn,pf-error-list,pf-error-panel,pf-export,pf-export-csv,pf-export-pdf,pf-fab,pf-fab-menu,pf-fab-overlay,pf-firebase-autobackup,pf-firebase-autosync,pf-firebase-backups-btn,pf-firebase-backups-list,pf-firebase-build,pf-firebase-last-sync,pf-firebase-pull,pf-firebase-purge-report,pf-firebase-purge-trash,pf-firebase-push,pf-firebase-restore-preview,pf-firebase-signin,pf-firebase-signout,pf-firebase-status,pf-font-custom,pf-font-family,pf-font-size,pf-font-size-val,pf-history-actions,pf-history-clear,pf-history-count,pf-history-filter,pf-history-filter-clear,pf-history-list,pf-history-live,pf-history-restore,pf-import,pf-import-file,pf-modal-backdrop,pf-nav-divider,pf-new-project,pf-new-project-cat-add,pf-new-project-cat-input,pf-new-project-cat-list,pf-new-project-popover,pf-note-body,pf-note-body-rich,pf-note-copy,pf-note-count,pf-note-del,pf-note-hist,pf-note-list,pf-note-new,pf-note-pin,pf-note-pin-label,pf-note-preview,pf-note-redo,pf-note-table,pf-note-table-tools,pf-note-title,pf-note-undo,pf-note-view,pf-note-view-label,pf-notes-btn,pf-notes-editor-empty,pf-notes-editor-main,pf-notes-fmt-bar,pf-notes-list,pf-notes-nav,pf-notes-panel,pf-notes-resize,pf-notes-search,pf-opt-body,pf-opt-tabs,pf-options-btn,pf-options-btn-desktop,pf-options-panel,pf-overdue-banner,pf-redo,pf-reminder-btn,pf-reminder-cancel,pf-reminder-days,pf-reminder-popover,pf-reminder-save,pf-reminders-btn,pf-reminders-list,pf-reminders-panel,pf-resize-handle,pf-root,pf-save,pf-search,pf-search-clear,pf-search-close,pf-search-toggle,pf-search-wrap,pf-shortcuts-btn,pf-shortcuts-hint,pf-shortcuts-panel,pf-snapshots-btn,pf-snapshots-count,pf-snapshots-list,pf-snapshots-panel,pf-snooze-add,pf-snooze-editor,pf-snooze-reset,pf-split-detail,pf-split-divider,pf-split-list,pf-split-nav,pf-split-view,pf-sr-announcer,pf-stats,pf-theme-auto,pf-toast,pf-today-btn,pf-today-carry-btn,pf-today-clear-btn,pf-today-date,pf-today-due-btn,pf-today-list,pf-today-overdue-btn,pf-today-panel,pf-toolbar,pf-trash-btn,pf-trash-count,pf-trash-empty-btn,pf-trash-list,pf-trash-panel,pf-undo,pf-update-pill,pf-week-backlog-count,pf-week-backlog-list,pf-week-days,pf-week-grid,pf-week-label,pf-week-next,pf-week-prev,pf-week-today,pf-weekly-btn,pf-weekly-panel">
+<meta name="orga-required-ids" content="pf-activity-btn,pf-activity-list,pf-activity-panel,pf-archive-btn,pf-archive-count,pf-archive-list,pf-archive-panel,pf-autobackup-dir,pf-autobackup-min,pf-autobackup-path,pf-backlog-arrange-btn,pf-bottom-badge,pf-bottom-nav,pf-cal-detail-list,pf-cal-detail-title,pf-cal-grid,pf-cal-month,pf-cal-next,pf-cal-prev,pf-cal-today-btn,pf-calendar-btn,pf-calendar-panel,pf-category-add-btn,pf-category-add-input,pf-category-btn,pf-category-list,pf-category-popover,pf-color-modal,pf-color-modal-cancel,pf-color-modal-clear,pf-color-modal-ok,pf-color-modal-picker,pf-color-palette,pf-comment-add,pf-comment-input,pf-comment-input-row,pf-comment-list,pf-comment-panel,pf-comment-task-name,pf-confirm-cancel,pf-confirm-message,pf-confirm-modal,pf-confirm-ok,pf-confirm-title,pf-conflict-keep-local,pf-conflict-keep-remote,pf-conflict-local,pf-conflict-modal,pf-conflict-remote,pf-connection-dot,pf-copy-modal,pf-copy-modal-list,pf-copy-modal-title,pf-desktop-badge,pf-display-scale,pf-display-scale-reset,pf-display-scale-val,pf-due-filter,pf-due-panel,pf-due-panel-close,pf-due-table-body,pf-duelist-btn,pf-duelist-list,pf-duelist-panel,pf-error-btn,pf-error-clear-btn,pf-error-copy-btn,pf-error-count,pf-error-dot-btn,pf-error-dot-desktop,pf-error-dot-mobile,pf-error-export-btn,pf-error-list,pf-error-panel,pf-export,pf-export-csv,pf-export-pdf,pf-fab,pf-fab-menu,pf-fab-overlay,pf-firebase-autobackup,pf-firebase-autosync,pf-firebase-backups-btn,pf-firebase-backups-list,pf-firebase-build,pf-firebase-last-sync,pf-firebase-pull,pf-firebase-purge-report,pf-firebase-purge-trash,pf-firebase-push,pf-firebase-restore-preview,pf-firebase-signin,pf-firebase-signout,pf-firebase-status,pf-font-custom,pf-font-family,pf-font-size,pf-font-size-val,pf-history-actions,pf-history-clear,pf-history-count,pf-history-filter,pf-history-filter-clear,pf-history-list,pf-history-live,pf-history-restore,pf-import,pf-import-file,pf-modal-backdrop,pf-nav-divider,pf-new-project,pf-new-project-cat-add,pf-new-project-cat-input,pf-new-project-cat-list,pf-new-project-popover,pf-note-body,pf-note-body-rich,pf-note-copy,pf-note-count,pf-note-del,pf-note-hist,pf-note-list,pf-note-new,pf-note-pin,pf-note-pin-label,pf-note-preview,pf-note-redo,pf-note-table,pf-note-table-tools,pf-note-title,pf-note-undo,pf-note-view,pf-note-view-label,pf-notes-btn,pf-notes-editor-empty,pf-notes-editor-main,pf-notes-fmt-bar,pf-notes-list,pf-notes-nav,pf-notes-panel,pf-notes-resize,pf-notes-search,pf-opt-body,pf-opt-tabs,pf-options-btn,pf-options-btn-desktop,pf-options-panel,pf-overdue-banner,pf-redo,pf-reminder-btn,pf-reminder-cancel,pf-reminder-days,pf-reminder-popover,pf-reminder-save,pf-reminders-btn,pf-reminders-list,pf-reminders-panel,pf-resize-handle,pf-root,pf-save,pf-search,pf-search-clear,pf-search-close,pf-search-toggle,pf-search-wrap,pf-shortcuts-btn,pf-shortcuts-hint,pf-shortcuts-panel,pf-snapshots-btn,pf-snapshots-count,pf-snapshots-list,pf-snapshots-panel,pf-snooze-add,pf-snooze-editor,pf-snooze-reset,pf-split-detail,pf-split-divider,pf-split-list,pf-split-nav,pf-split-view,pf-sr-announcer,pf-stats,pf-sync-diag,pf-sync-diag-out,pf-theme-auto,pf-toast,pf-today-btn,pf-today-carry-btn,pf-today-clear-btn,pf-today-date,pf-today-due-btn,pf-today-list,pf-today-overdue-btn,pf-today-panel,pf-toolbar,pf-trash-btn,pf-trash-count,pf-trash-empty-btn,pf-trash-list,pf-trash-panel,pf-undo,pf-update-pill,pf-week-backlog-count,pf-week-backlog-list,pf-week-days,pf-week-grid,pf-week-label,pf-week-next,pf-week-prev,pf-week-today,pf-weekly-btn,pf-weekly-panel">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -1815,6 +1815,8 @@
   
   #pf-root .pf-firebase-build { font-size: calc(var(--font-size-base) - 5px); color: var(--text-dim); opacity: 0.75; font-family: var(--font-mono); user-select: text; letter-spacing: 0.02em; }
   
+  #pf-root .pf-sync-diag-out { font-size: calc(var(--font-size-base) - 5px); color: var(--text-dim); font-family: var(--font-mono); user-select: text; white-space: pre-wrap; word-break: break-word; margin-top: 6px; padding: 6px 8px; border: 1px solid var(--card-border); border-radius: var(--radius-control); background: color-mix(in srgb, var(--card-hover) 97%, transparent); max-height: 220px; overflow-y: auto; }
+  
   #pf-root .pf-firebase-last-sync.pf-sync-failed { color: var(--danger); }
   
   #pf-root .pf-firebase-last-sync.pf-sync-behind { color: var(--accent); }
@@ -2800,6 +2802,11 @@
                  can keep serving an older shell for a while, so "it still does
                  not sync" has to be answerable as "you are not running it yet". -->
             <div class="pf-firebase-build" id="pf-firebase-build"></div>
+            <!-- Reachable, not console-only: the diagnostic used to be exposed as
+                 window._pf.runSyncDiagnostics() with no control in the shell, so
+                 on a phone (where this app actually lives) nobody could run it. -->
+            <button class="pf-undo-btn pf-opt-btn pf-mt-4" id="pf-sync-diag"><span class="pf-opt-ico" data-ic="clipboard"></span> Run sync test</button>
+            <div class="pf-sync-diag-out" id="pf-sync-diag-out" style="display:none;"></div>
             <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signin" ><span class="pf-opt-ico" data-ic="key"></span> Sign in with Google</button>
             <button class="pf-undo-btn pf-opt-btn" id="pf-firebase-signout"  style="display:none"><span class="pf-opt-ico" data-ic="exit"></span> Sign Out</button>
             <div class="pf-opt-grid">
@@ -19387,6 +19394,19 @@ if ('serviceWorker' in navigator) {
           else if (out.steps.some(function(s) { return s.name === 'verdict'; })) _pf.showToast('⚠ ' + out.steps.find(function(s) { return s.name === 'verdict'; }).detail, true);
           else _pf.showToast('✅ Sync test passed: SDK and REST reads both work');
         }
+        
+        
+        
+        
+        try {
+          const outEl = document.getElementById('pf-sync-diag-out');
+          if (outEl) {
+            outEl.textContent = out.steps.map(function(s) {
+              return (s.ok === false ? '✗ ' : '· ') + s.name + ': ' + s.detail;
+            }).join('\n');
+            outEl.style.display = '';
+          }
+        } catch (e) {}
         resolve(out);
       });
     });
