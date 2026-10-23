@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-iQp8gSjcEVelMYhzCZ7a82Mye8OuLyts2NyS2MWtZN4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-1/Vl6gEpHAlia/jj89nhlo7Bh6MGE2ccN1YxqIpOscw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -18770,11 +18770,15 @@ if ('serviceWorker' in navigator) {
     
     
     
-    probeCloudAhead();
+    
+    probeCloudAhead({ quiet: true });
   }
 
   function setSignedOut() {
     _fbUser = null;
+    
+    
+    _behindNotified = false;
     statusEl.textContent = 'Not signed in';
     statusEl.style.color = 'var(--text-dim)';
     signinBtn.style.display = '';
@@ -18893,11 +18897,37 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  
+  
   let _probeBusy = false;
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  let _behindNotified = false;
+  function announceBehind() {
+    if (_behindNotified) return;
+    
+    
+    const modal = document.getElementById('pf-conflict-modal');
+    if (modal && modal.classList.contains('pf-conflict-open')) return;
+    _behindNotified = true;
+    if (_pf && _pf.showToast) _pf.showToast('☁ Cloud has newer data — open Options → Cloud sync to pull it');
+  }
   const PROBE_SKEW_MS = 120000; 
-  function probeCloudAhead() {
-    if (!_fbUser || !_fbAutosync || _probeBusy) return;
+  function probeCloudAhead(opts) {
+    if (!_fbUser || _probeBusy) return;
     if (navigator && navigator.onLine === false) return;
+    const quiet = !!(opts && opts.quiet);
     _probeBusy = true;
     let req;
     try { req = db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'); }
@@ -18914,6 +18944,10 @@ if ('serviceWorker' in navigator) {
         
         
         if (_syncState === 'idle' || _syncState === 'behind') setSyncState('behind');
+        
+        
+        
+        if (!quiet) announceBehind();
       } else if (_syncState === 'behind') {
         setSyncState('idle');
       }
