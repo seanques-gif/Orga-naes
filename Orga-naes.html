@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-phOtvvsNvxAU+NXxQlbcRlZlQXUo8Yti7tLYqfwRL+I='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-l8do8UB0oCRnjEhU+3Onvn50EXSD4Vu/LsMjUAx71js='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -19176,38 +19176,41 @@ if ('serviceWorker' in navigator) {
         return;
       }
 
-      if (remoteStr !== localStr) {
-        
-        
-        
-        
-        
-        if (_pf && _pf.snapshot) _pf.snapshot();
-        _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, notes: remoteNotes, noteTombstones: remoteNoteTombstones };
-        showConflictModal(localProjects, remoteProjects);
-        localStorage.removeItem(NEEDS_PULL_KEY);
-        return;
-      }
-
+      
+      
+      
+      
+      
       
       
       
       
       const pulledNotesInfo = localNotesSnap ? notesDiff(localNotesSnap, remoteNotes, remoteNoteTombstones) : null;
-      if (pulledNotesInfo && pulledNotesInfo.conflict) {
+      const notesConflict = !!(pulledNotesInfo && pulledNotesInfo.conflict);
+      const localChanged = localStr !== _lastPushedSnapshot;
+      
+      
+      
+      
+      const couldLoseProjects = remoteStr !== localStr && localProjects.length > 0 && (_baseDirty ||
+        (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr));
+      if (couldLoseProjects || notesConflict) {
         if (_pf && _pf.snapshot) _pf.snapshot();
         _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, notes: remoteNotes, noteTombstones: remoteNoteTombstones };
-        showConflictModal(localProjects, remoteProjects, pulledNotesInfo);
+        showConflictModal(localProjects, remoteProjects, notesConflict ? pulledNotesInfo : null);
         localStorage.removeItem(NEEDS_PULL_KEY);
         return;
       }
 
+      
       
       
       
       
       
       const updated = [];
+      const preMutationRemote = JSON.parse(JSON.stringify(remoteProjects));
+      if (remoteStr !== localStr) { _pf.setProjects(remoteProjects); updated.push('projects'); }
       if (!catsMatch) { _pf.setCategories(remoteCategories); _pf.saveCategories(); updated.push('categories'); }
       if (!archMatch) { _pf.setArchive(remoteArchive); updated.push('archive'); }
       if (!notesMatch && localNotesSnap) {
@@ -19235,7 +19238,7 @@ if ('serviceWorker' in navigator) {
       
       
       
-      resetPushBookkeeping(_pf.getProjects(), _pf.getCategories(), _pf.getArchive());
+      resetPushBookkeeping(remoteStr !== localStr ? preMutationRemote : _pf.getProjects(), _pf.getCategories(), _pf.getArchive());
       _pf.scheduleSave(); _pf.render(); _pf.renderSplitList();
       updateLastSync();
       localStorage.removeItem(NEEDS_PULL_KEY);
