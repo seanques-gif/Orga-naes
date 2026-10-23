@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-yqduGaVtXnfd1obFcXurct+LQngntSK2/EM828uIFzM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-phOtvvsNvxAU+NXxQlbcRlZlQXUo8Yti7tLYqfwRL+I='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -18033,6 +18033,11 @@ if ('serviceWorker' in navigator) {
   let _fbListenerStampRef = null;
   let _fbListenerStamp = null;
   let _stampWakeTimer = null;
+  let _fbListenerNotesRef = null, _fbListenerNotes = null;
+  let _fbListenerTombsRef = null, _fbListenerTombs = null;
+  let _fbListenerArchRef = null, _fbListenerArch = null;
+  let _remoteNotesSeen = null, _remoteTombsSeen = null;
+  let _remoteNotesTimer = null, _remoteNotesRetry = false;
   
   
   
@@ -18975,7 +18980,6 @@ if ('serviceWorker' in navigator) {
     if (reason === 'declined') _pf.showToast('☁ Cloud has newer data — open Options → Cloud sync to pull it');
     else _pf.showToast('⚠ Newer data is in the cloud but could not be fetched — open Options → Cloud sync to retry', true);
   }
-  const PROBE_SKEW_MS = 120000; 
   
   
   
@@ -19012,7 +19016,16 @@ if ('serviceWorker' in navigator) {
       
       let last = 0;
       try { last = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0', 10) || 0; } catch (e) {}
-      if (remote > last + PROBE_SKEW_MS) {
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      if (remote > last) {
         
         
         if (_syncState === 'idle' || _syncState === 'behind') setSyncState('behind');
@@ -19414,6 +19427,30 @@ if ('serviceWorker' in navigator) {
     
     
     
+    _fbListenerNotesRef = notesRef();
+    _fbListenerNotes = _fbListenerNotesRef.on('value', function(snap) {
+      const v = snap.val();
+      _remoteNotesSeen = v ? (Array.isArray(v) ? v.filter(Boolean) : Object.values(v).filter(Boolean)) : [];
+      scheduleRemoteNotesApply();
+    });
+    _fbListenerTombsRef = noteTombstonesRef();
+    _fbListenerTombs = _fbListenerTombsRef.on('value', function(snap) {
+      const v = snap.val();
+      _remoteTombsSeen = (v && typeof v === 'object') ? v : {};
+      scheduleRemoteNotesApply();
+    });
+    _fbListenerArchRef = archiveRef();
+    _fbListenerArch = _fbListenerArchRef.on('value', function(snap) {
+      applyRemoteArchive(fixProjects(snap.val()));
+    });
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -19429,6 +19466,63 @@ if ('serviceWorker' in navigator) {
     });
   }
 
+  
+  
+  
+  
+  
+  
+  
+  function scheduleRemoteNotesApply() {
+    if (_remoteNotesTimer) clearTimeout(_remoteNotesTimer);
+    _remoteNotesTimer = setTimeout(applyRemoteNotes, 250);
+  }
+  function applyRemoteNotes() {
+    _remoteNotesTimer = null;
+    if (_remoteNotesSeen === null || _remoteTombsSeen === null) return;
+    const localSnap = (_pf.getNotesSnapshot && _pf.getNotesSnapshot()) || null;
+    if (!localSnap) {
+      
+      
+      if (!_remoteNotesRetry && _pf.notesReady && typeof _pf.notesReady.then === 'function') {
+        _remoteNotesRetry = true;
+        const again = function() { _remoteNotesRetry = false; applyRemoteNotes(); };
+        _pf.notesReady.then(again, again);
+      }
+      return;
+    }
+    if (notesSignature({ notes: _remoteNotesSeen, tombstones: _remoteTombsSeen }) === notesSignature(localSnap)) {
+      
+      _lastPushedNotesHash = JSON.stringify(pfSnapNotes()) + '|' + JSON.stringify(pfSnapTombs());
+      return;
+    }
+    const localHash = JSON.stringify(localSnap.notes) + '|' + JSON.stringify(localSnap.tombstones);
+    if (localHash !== _lastPushedNotesHash) return;
+    
+    
+    _pf.mergeCloudNotes(_remoteNotesSeen, _remoteTombsSeen);
+    _notesPulledThisSession = true;
+    _lastPushedNotesHash = JSON.stringify(pfSnapNotes()) + '|' + JSON.stringify(pfSnapTombs());
+    _pf.scheduleSave(); _pf.render();
+    updateLastSync();
+    _pf.showToast('☁ Synced from cloud');
+  }
+  function applyRemoteArchive(remoteArchive) {
+    const local = _pf.getArchive() || [];
+    const remoteStr = JSON.stringify(normalizeForSync(remoteArchive, 'archive'));
+    const localStr = JSON.stringify(normalizeForSync(local, 'archive'));
+    if (remoteStr === localStr) {
+      _lastPushedArchiveHash = remoteStr;
+      return;
+    }
+    if (localStr !== _lastPushedArchiveHash) return; 
+    _pf.setArchive(remoteArchive);
+    _lastPushedArchiveHash = remoteStr;
+    _pf.scheduleSave(); _pf.render(); _pf.renderSplitList();
+    updateLastSync();
+    _pf.showToast('☁ Synced from cloud');
+  }
+
   function stopListener() {
     
     
@@ -19436,12 +19530,21 @@ if ('serviceWorker' in navigator) {
     if (_fbListenerUserRef && _fbListener) _fbListenerUserRef.off('value', _fbListener);
     if (_fbListenerCatRef) _fbListenerCatRef.off('value');
     if (_fbListenerStampRef && _fbListenerStamp) _fbListenerStampRef.off('value', _fbListenerStamp);
+    if (_fbListenerNotesRef && _fbListenerNotes) _fbListenerNotesRef.off('value', _fbListenerNotes);
+    if (_fbListenerTombsRef && _fbListenerTombs) _fbListenerTombsRef.off('value', _fbListenerTombs);
+    if (_fbListenerArchRef && _fbListenerArch) _fbListenerArchRef.off('value', _fbListenerArch);
     if (_stampWakeTimer) { clearTimeout(_stampWakeTimer); _stampWakeTimer = null; }
+    if (_remoteNotesTimer) { clearTimeout(_remoteNotesTimer); _remoteNotesTimer = null; }
+    _remoteNotesSeen = null;
+    _remoteTombsSeen = null;
     _fbListener = null;
     _fbListenerUserRef = null;
     _fbListenerCatRef = null;
     _fbListenerStampRef = null;
     _fbListenerStamp = null;
+    _fbListenerNotesRef = null; _fbListenerNotes = null;
+    _fbListenerTombsRef = null; _fbListenerTombs = null;
+    _fbListenerArchRef = null; _fbListenerArch = null;
   }
 
   autosyncCb.addEventListener('change', function() {
