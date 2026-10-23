@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-TLywl1HeReiJ4UWUiCmksY/1ReEdvm8IWlkHvcZuItM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-6EDMyN7kEPXE0Iqvq+u24IHXVbM71MLoIdkqj2+RHJo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="4e60d50e48">
+<meta name="build" content="1b9254a23f">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -19025,8 +19025,22 @@ if ('serviceWorker' in navigator) {
     };
     const guard = setTimeout(release, PROBE_READ_TIMEOUT_MS);
     let req;
-    try { req = db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'); }
-    catch (e) { release(); return; }
+    try {
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      req = hotFallback(
+        function() { return db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'); },
+        function() { return restOnceNode('/updatedAt'); }
+      );
+    } catch (e) { release(); return; }
     req.then(function(snap) {
       if (settled) return;
       release();
@@ -19360,7 +19374,7 @@ if ('serviceWorker' in navigator) {
               } else {
                 const cnt = res.body ? (Array.isArray(res.body) ? res.body.filter(Boolean).length : Object.keys(res.body).length) : 0;
                 step('rest-read', true, 'projects=' + cnt);
-                if (sdkCount < 0 && cnt > 0) step('verdict', false, 'SDK is blocked but REST works — update to the latest build (REST fallback fix) or check for websocket-blocking extensions');
+                if (sdkCount < 0 && cnt > 0) step('verdict', false, 'the realtime socket is blocked but REST works (the cloud holds ' + cnt + ' project(s) this device can reach). Live updates are off; the automatic check now falls back to REST, so catching up works but is a poll rather than instant. A websocket-blocking extension, proxy or firewall is the usual cause.');
               }
             }).catch(function(err) {
               step('rest-read', false, (err && err.message) || 'network error');
