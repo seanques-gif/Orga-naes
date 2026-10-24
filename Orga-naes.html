@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-vwZjVZjrCTkT/iLkaNE98x0PlBJ7m/zQxzje74eoFbs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-xVlF0+UyoLLcvZUboEoXEbseTU324fTjcLM9KH2Ha7U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="e8b62ef54f">
+<meta name="build" content="2aaa260dd0">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -18952,7 +18952,7 @@ if ('serviceWorker' in navigator) {
     
     _lastProbeRemote = 0;
     _behindDeclinedAt = 0;
-    _declineNextStamp = false;
+    _pendingRemoteRev = 0;
     
     
     if (_autoPullTimer) { clearTimeout(_autoPullTimer); _autoPullTimer = null; }
@@ -19142,7 +19142,12 @@ if ('serviceWorker' in navigator) {
   
   
   
-  let _declineNextStamp = false;
+  
+  
+  
+  
+  
+  let _pendingRemoteRev = 0;
   
   
   
@@ -19248,9 +19253,6 @@ if ('serviceWorker' in navigator) {
         
         
         if (_syncState === 'idle' || _syncState === 'behind') setSyncState('behind');
-        
-        
-        if (_declineNextStamp) { _declineNextStamp = false; _behindDeclinedAt = remote; }
         _lastProbeRemote = remote;
         
         
@@ -19538,7 +19540,7 @@ if ('serviceWorker' in navigator) {
       if (couldLoseProjects || notesConflict) {
         if (_pf && _pf.snapshot) _pf.snapshot();
         _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, notes: remoteNotes, noteTombstones: remoteNoteTombstones };
-        showConflictModal(localProjects, remoteProjects, notesConflict ? pulledNotesInfo : null);
+        showConflictModal(localProjects, remoteProjects, notesConflict ? pulledNotesInfo : null, stampVal);
         localStorage.removeItem(NEEDS_PULL_KEY);
         return;
       }
@@ -22039,8 +22041,10 @@ if ('serviceWorker' in navigator) {
     
     
     
-    if (_lastProbeRemote) _behindDeclinedAt = _lastProbeRemote;
-    else _declineNextStamp = true;
+    
+    
+    _behindDeclinedAt = _pendingRemoteRev || _lastProbeRemote || -1;
+    _pendingRemoteRev = 0;
   }
   if (_pf && _pf.registerEscDismissable) {
     _pf.registerEscDismissable({
@@ -22057,9 +22061,15 @@ if ('serviceWorker' in navigator) {
   const _conflictX = document.getElementById('pf-conflict-x');
   if (_conflictX) _conflictX.addEventListener('click', dismissConflictModal);
   
-  function showConflictModal(local, remote, notesInfo) {
+  
+  
+  
+  
+  
+  function showConflictModal(local, remote, notesInfo, rev) {
     _pendingRemote = remote;
     _pendingNotesInfo = notesInfo || null;
+    _pendingRemoteRev = rev || 0;
     
     
     
