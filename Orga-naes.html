@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-4qx6BEktbs9axYeycvZAAM3vliXNzKftpXpxDsZOI1s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-PmDnOdMtEZLImkHOramixnuyLUuiSgYlqfoi9uiy3Nk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="bfeaddc6bc">
+<meta name="build" content="11fe50d3b3">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -20058,6 +20058,11 @@ if ('serviceWorker' in navigator) {
   function commitBaseline() {
     _baseKnown = true;
     _baseDirty = false;
+    
+    
+    
+    
+    _behindDeclinedAt = 0;
     try {
       const rec = JSON.stringify({ v: 1, s: _lastPushedSnapshot, o: _lastPushedIdOrder, h: _lastPushedHash,
         c: _lastPushedCatHash, m: _lastPushedCosmeticsHash, a: _lastPushedArchiveHash, n: _lastPushedNotesHash });
@@ -20218,6 +20223,23 @@ if ('serviceWorker' in navigator) {
   
   function pushSelective() {
     _fbPushTimer = null; 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    if (_behindDeclinedAt) { setSyncState('behind'); return Promise.resolve(); }
     hydrateBaseline();
     
     
