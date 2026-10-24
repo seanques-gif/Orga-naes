@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-8OaelU8BkiLpKCCf8u/h6PQzCOzjhpgmjYWn14EImzM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-gtv3CSN9z+Vsn46R7GqAkjB8+DK4cdCmgq2soTsETOY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="1105895f8e">
+<meta name="build" content="4988948cf6">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -4883,6 +4883,7 @@
       ['project-flow-autobackup-last', 'data', 'last auto-backup stamp'],
       ['pf-firebase-last-uid', 'data', 'last signed-in uid'],
       ['pf-firebase-last-sync-time', 'data', 'last cloud sync stamp'],
+      ['pf-firebase-cloud-rev', 'data', 'the cloud stamp this device last agreed with (staleness check)'],
       ['pf-firebase-last-backup', 'data', 'last cloud backup stamp'],
       ['pf-firebase-needs-pull', 'data', 'pull marker; re-set by the wipe itself'],
       ['pf-firebase-push-baseline', 'data', 'durable record of what the cloud holds (the push baseline)'],
@@ -18749,7 +18750,19 @@ if ('serviceWorker' in navigator) {
     if (!isReload && elapsed > 3600000) {
       db.ref('users/' + user.uid + '/updatedAt').once('value').then(function(snap) {
         const remoteTime = snap.val() || 0;
-        if (remoteTime > lastSync) {
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        const rev = readCloudRev();
+        const moved = rev === null ? remoteTime > lastSync : remoteTime !== rev;
+        if (remoteTime && moved) {
           
           
           
@@ -18795,6 +18808,7 @@ if ('serviceWorker' in navigator) {
             resetPushBookkeeping(_pf.getProjects(), _pf.getCategories(), _pf.getArchive());
             _pf.scheduleSave(); _pf.render(); _pf.renderSplitList();
             updateLastSync();
+            rememberCloudRev(remoteTime);
             localStorage.removeItem(NEEDS_PULL_KEY);
             _pf.showToast('☁ Auto-pulled latest data from cloud');
           }).catch(function(err) {
@@ -18827,6 +18841,13 @@ if ('serviceWorker' in navigator) {
     
     
     _behindNotified = false;
+    
+    
+    
+    
+    _lastContentCheck = 0;
+    _listenerAdoptedAt = 0;
+    try { localStorage.removeItem(CLOUD_REV_KEY); } catch (e) {}
     
     _lastProbeRemote = 0;
     _behindDeclinedAt = 0;
@@ -18962,7 +18983,50 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  const CLOUD_REV_KEY = 'pf-firebase-cloud-rev';
+  function readCloudRev() {
+    try {
+      const v = localStorage.getItem(CLOUD_REV_KEY);
+      return (v === null || v === '') ? null : (parseInt(v, 10) || 0);
+    } catch (e) { return null; }
+  }
+  function rememberCloudRev(v) {
+    try { localStorage.setItem(CLOUD_REV_KEY, String(Number(v) || 0)); } catch (e) {}
+  }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   let _probeBusy = false;
+  
+  
+  
+  
+  
+  
+  let _listenerAdoptedAt = 0;
+  const LISTENER_ADOPT_WINDOW_MS = 10000;
   let _behindNotified = false;
   
   
@@ -19048,8 +19112,6 @@ if ('serviceWorker' in navigator) {
       
       
       
-      let last = 0;
-      try { last = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0', 10) || 0; } catch (e) {}
       
       
       
@@ -19059,7 +19121,29 @@ if ('serviceWorker' in navigator) {
       
       
       
-      if (remote > last) {
+      const rev = readCloudRev();
+      
+      
+      
+      
+      
+      
+      let changed;
+      if (rev === null) {
+        let last = 0;
+        try { last = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0', 10) || 0; } catch (e) {}
+        changed = remote > last;
+      } else {
+        changed = remote !== rev;
+      }
+      if (changed) {
+        if (Date.now() - _listenerAdoptedAt < LISTENER_ADOPT_WINDOW_MS) {
+          
+          
+          rememberCloudRev(remote);
+          if (_syncState === 'behind') setSyncState('idle');
+          return;
+        }
         
         
         if (_syncState === 'idle' || _syncState === 'behind') setSyncState('behind');
@@ -19084,8 +19168,14 @@ if ('serviceWorker' in navigator) {
         } else {
           scheduleAutoPull();
         }
-      } else if (_syncState === 'behind') {
-        setSyncState('idle');
+      } else {
+        if (_syncState === 'behind') setSyncState('idle');
+        
+        
+        
+        
+        
+        verifyByContent();
       }
     }, function() { release(); });
   }
@@ -19100,6 +19190,10 @@ if ('serviceWorker' in navigator) {
   let _autoPullTimer = null;
   function scheduleAutoPull() {
     if (_autoPullTimer) return;
+    
+    
+    
+    if (!_lastProbeRemote) return;
     _autoPullTimer = setTimeout(function() {
       _autoPullTimer = null;
       if (!_fbUser) return;
@@ -19107,6 +19201,11 @@ if ('serviceWorker' in navigator) {
       
       
       if (_lastProbeRemote && _lastProbeRemote === _behindDeclinedAt) return;
+      
+      
+      
+      
+      if (_lastProbeRemote && readCloudRev() === _lastProbeRemote) return;
       const el = document.getElementById('pf-conflict-modal');
       if (el && el.classList.contains('pf-conflict-open')) return;
       pullFromCloud({ quiet: true });
@@ -19115,9 +19214,46 @@ if ('serviceWorker' in navigator) {
   
   
   
-  document.addEventListener('visibilitychange', function() { if (!document.hidden) probeCloudAhead(); });
-  window.addEventListener('online', function() { probeCloudAhead(); });
-  setInterval(function() { if (!document.hidden) probeCloudAhead(); }, 300000);
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const CONTENT_CHECK_GAP_MS = 900000;
+  let _lastContentCheck = 0;
+  function verifyByContent() {
+    if (!_fbUser) return;
+    
+    
+    
+    
+    
+    
+    if (!_sdkTimedOutThisSession) return;
+    if (Date.now() - _lastContentCheck < CONTENT_CHECK_GAP_MS) return;
+    _lastContentCheck = Date.now();
+    scheduleAutoPull();
+  }
+  
+  
+  
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) return;
+    probeCloudAhead();
+  });
+  window.addEventListener('online', function() { probeCloudAhead(); verifyByContent(); });
+  setInterval(function() {
+    if (document.hidden) return;
+    probeCloudAhead();
+  }, 300000);
 
   
   
@@ -19154,7 +19290,26 @@ if ('serviceWorker' in navigator) {
     
     
     const notesSettled = (_pf && _pf.notesReady && typeof _pf.notesReady.then === 'function') ? _pf.notesReady.catch(function() {}) : Promise.resolve();
-    withRetry(function(attempt) {
+    
+    
+    
+    
+    
+    let stampVal = 0;
+    let stampOk = false;
+    
+    
+    
+    
+    const commitRev = function() { if (stampOk) rememberCloudRev(stampVal); };
+    let stampReady = Promise.resolve();
+    try {
+      stampReady = hotFallback(
+        function() { return db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'); },
+        function() { return restOnceNode('/updatedAt'); }
+      ).then(function(s) { stampVal = Number((s && s.val && s.val()) || 0) || 0; stampOk = true; }, function() { stampOk = false; });
+    } catch (e) { stampOk = false; }
+    Promise.all([withRetry(function(attempt) {
       
       
       
@@ -19162,12 +19317,17 @@ if ('serviceWorker' in navigator) {
       return notesSettled.then(function() {
         return attempt === 1 ? cloudReads() : restReadResults();
       });
-    }, 'pull').then(function(results) {
+    }, 'pull'), stampReady]).then(function(both) {
+      const results = both[0];
       const projVal = results[0].val();
       const catVal = results[1].val();
       const archVal = results[2].val();
       const notesVal = results[3].val();
       const tombVal = results[4].val();
+      
+      
+      
+      
       if (!projVal && !catVal && !notesVal) {
         
         
@@ -19177,6 +19337,10 @@ if ('serviceWorker' in navigator) {
         
         
         if (!quiet) _pf.showToast('⚠ Cloud is empty for account ' + _fbUser.uid + ' — your data may live under a different Google account', true);
+        
+        
+        
+        commitRev();
         return;
       }
 
@@ -19205,6 +19369,13 @@ if ('serviceWorker' in navigator) {
         
         
         resetPushBookkeeping(_pf.getProjects(), _pf.getCategories(), _pf.getArchive());
+        
+        
+        
+        
+        
+        _lastPushedNotesHash = JSON.stringify(pfSnapNotes()) + '|' + JSON.stringify(pfSnapTombs());
+        commitRev();
         localStorage.removeItem(NEEDS_PULL_KEY);
         if (!quiet) _pf.closeAllModals();
         return;
@@ -19275,6 +19446,7 @@ if ('serviceWorker' in navigator) {
       resetPushBookkeeping(remoteStr !== localStr ? preMutationRemote : _pf.getProjects(), _pf.getCategories(), _pf.getArchive());
       _pf.scheduleSave(); _pf.render(); _pf.renderSplitList();
       updateLastSync();
+      commitRev();
       localStorage.removeItem(NEEDS_PULL_KEY);
       
       
@@ -19377,25 +19549,54 @@ if ('serviceWorker' in navigator) {
         try { lsSave = parseInt(localStorage.getItem('pf-last-save-time') || '0', 10) || 0; } catch (e) {}
         try { lsSync = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0', 10) || 0; } catch (e) {}
         const remoteStamp = Number(res[0].val() || 0) || 0;
-        const behind = remoteStamp > lsSync;
+        
+        
+        
+        
+        
+        const rev = readCloudRev();
+        
+        
+        const revMoved = rev === null ? remoteStamp > lsSync : remoteStamp !== rev;
+        
+        
+        
         
         
         
         
         const localNow = _pf.getProjects() || [];
         const localStr = JSON.stringify(normalizeForSync(localNow));
-        const remoteStr = JSON.stringify(normalizeForSync(fixProjects(res[1] && res[1][0] ? res[1][0].val() : null)));
+        const remoteNow = fixProjects(res[1] && res[1][0] ? res[1][0].val() : null);
+        const remoteStr = JSON.stringify(normalizeForSync(remoteNow));
+        const contentSame = localStr === remoteStr;
+        const behind = revMoved || !contentSame;
         const localChanged = localStr !== _lastPushedSnapshot;
         const wouldAsk = localNow.length > 0 && !!(_baseDirty ||
           (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr));
         const when = function(t) { return t ? new Date(t).toISOString().slice(5, 19).replace('T', ' ') : 'never'; };
         step('auto-path', !behind || !wouldAsk,
-          'cloud=' + when(remoteStamp) + ' lastSync=' + when(lsSync) + ' lastSave=' + when(lsSave) +
-          ' listener=' + (_fbListener ? 'attached' : 'NOT attached') +
+          'cloud=' + when(remoteStamp) + ' seen=' + (rev === null ? 'never' : when(rev)) +
+          ' lastSync=' + when(lsSync) + ' lastSave=' + when(lsSave) +
+          
+          
+          
+          ' listener=' + (_fbListener ? (_sdkTimedOutThisSession ? 'attached, socket dead (receiving nothing)' : 'attached') : 'NOT attached') +
           ' baseline=' + (_baseDirty ? 'unknown' : 'known') +
           ' → ' + (!behind ? 'in step'
             : (wouldAsk ? 'behind, but adopting would discard work this device has not pushed — it will ask'
               : 'behind, will adopt on its own')));
+        
+        
+        
+        
+        
+        step('content', contentSame || revMoved,
+          contentSame
+            ? 'local and cloud hold the same ' + localNow.length + ' project(s)'
+            : 'local ' + localNow.length + ' vs cloud ' + remoteNow.length + ' project(s) — ' +
+              (revMoved ? 'the stamp moved, so a pull is already on its way'
+                : 'the stamp did NOT move, so only the 15-minute content backstop can see this; press Pull to take it now'));
       }, function() {
         step('auto-path', false, 'the cloud could not be reached over either transport, so nothing can be compared');
       });
@@ -19491,6 +19692,7 @@ if ('serviceWorker' in navigator) {
           const preMutationRemote = JSON.parse(JSON.stringify(remote));
           _pf.setProjects(remote);
           _pf.scheduleSave(); _pf.render();
+          _listenerAdoptedAt = Date.now();
           updateLastSync();
           
           
@@ -19598,6 +19800,7 @@ if ('serviceWorker' in navigator) {
     _notesPulledThisSession = true;
     _lastPushedNotesHash = JSON.stringify(pfSnapNotes()) + '|' + JSON.stringify(pfSnapTombs());
     _pf.scheduleSave(); _pf.render();
+    _listenerAdoptedAt = Date.now();
     updateLastSync();
     _pf.showToast('☁ Synced from cloud');
   }
@@ -19613,6 +19816,7 @@ if ('serviceWorker' in navigator) {
     _pf.setArchive(remoteArchive);
     _lastPushedArchiveHash = remoteStr;
     _pf.scheduleSave(); _pf.render(); _pf.renderSplitList();
+    _listenerAdoptedAt = Date.now();
     updateLastSync();
     _pf.showToast('☁ Synced from cloud');
   }
@@ -19968,6 +20172,11 @@ if ('serviceWorker' in navigator) {
     const archChanged = archHash !== _lastPushedArchiveHash;
     if (archChanged) updates.archive = cloudArchive();
 
+    
+    
+    
+    
+    
     if (hasChanges || catChanged || archChanged) updates.updatedAt = Date.now();
 
     const pending = [];
@@ -19995,6 +20204,10 @@ if ('serviceWorker' in navigator) {
         if (archChanged) _lastPushedArchiveHash = archHash;
         commitBaseline();
         updateLastSync();
+        
+        
+        
+        if (updates.updatedAt) rememberCloudRev(updates.updatedAt);
       }, function(err) {
         _syncPushFailed = true;
         _pf.showToast('⚠ Push failed: ' + (err && err.message ? err.message : 'unknown error'), true);
@@ -20237,17 +20450,19 @@ if ('serviceWorker' in navigator) {
         
         
         
+        const notesStamp = Date.now();
         return db.ref('users/' + _fbUser.uid).update({
           notes: conformed('conformCloudNotes', notesSnap.notes),
           noteTombstones: JSON.parse(JSON.stringify(notesSnap.tombstones)),
-          updatedAt: Date.now()
-        }).then(function() { _lastPushedNotesHash = notesHash; commitBaseline(); });
+          updatedAt: notesStamp
+        }).then(function() { _lastPushedNotesHash = notesHash; commitBaseline(); rememberCloudRev(notesStamp); });
       });
     });
   }
 
   
   function sdkWriteAll() {
+    const stamp = Date.now();
     return Promise.all([
       userRef().set(cloudProjects()),
       catRef().set(cloudCategories()),
@@ -20256,8 +20471,8 @@ if ('serviceWorker' in navigator) {
       snoozePresetsRef().set(cloudSnoozePresets()),
       archiveRef().set(cloudArchive()),
       pushNotesIfNeeded().catch(function(e) { if (_pf.logError) _pf.logError('Firebase push (notes)', e); }),
-      db.ref('users/' + _fbUser.uid + '/updatedAt').set(Date.now())
-    ]);
+      db.ref('users/' + _fbUser.uid + '/updatedAt').set(stamp)
+    ]).then(function() { rememberCloudRev(stamp); });
   }
   
   
@@ -20345,6 +20560,9 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  let _lastBuiltStamp = 0;
   function buildCloudPayload() {
     const payload = {
       projects: cloudProjects(),
@@ -20355,6 +20573,7 @@ if ('serviceWorker' in navigator) {
       archive: cloudArchive(),
       updatedAt: Date.now()
     };
+    _lastBuiltStamp = payload.updatedAt;
     const snap = (_pf && typeof _pf.getNotesSnapshot === 'function') ? _pf.getNotesSnapshot() : null;
     if (snap && (snap.notes.length > 0 || Object.keys(snap.tombstones).length > 0 || _notesPulledThisSession)) {
       payload.notes = conformed('conformCloudNotes', snap.notes);
@@ -20376,6 +20595,10 @@ if ('serviceWorker' in navigator) {
         return r.json();
       }).then(function(body) {
         if (body && body.error) throw new Error('Cloud write denied: ' + body.error);
+        
+        
+        
+        rememberCloudRev(_lastBuiltStamp);
       });
     });
   }
