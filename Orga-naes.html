@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-MDAT640c8A3BWkXhy5fobZAHllGYZnlxfrvy+4Cj4PM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-4qx6BEktbs9axYeycvZAAM3vliXNzKftpXpxDsZOI1s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="1a1b4e5a21">
+<meta name="build" content="bfeaddc6bc">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -20154,6 +20154,36 @@ if ('serviceWorker' in navigator) {
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  function localOnlyProjects(remoteProjects, localProjects) {
+    const inCloud = {};
+    (remoteProjects || []).forEach(function(p) { if (p && p.id) inCloud[p.id] = 1; });
+    const kept = (localProjects || []).filter(function(p) {
+      if (!p || !p.id || inCloud[p.id]) return false;
+      return _baseDirty || !_lastPushedHash[p.id];
+    });
+    
+    
+    
+    
+    return kept.length ? fixProjects(JSON.parse(JSON.stringify(kept))) : [];
+  }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
   function resetPushBookkeeping(projects, categories, archive) {
     _lastPushedHash = buildHashMap(projects);
     _lastPushedIdOrder = projects.map(p => p.id);
@@ -22188,11 +22218,19 @@ if ('serviceWorker' in navigator) {
     
     
     
+    
+    
+    
+    
     const noteStakes = notesAtStake(_pendingNotesInfo);
     const noteWarn = noteStakes
       ? ' That includes ' + noteStakes + ' note' + (noteStakes > 1 ? 's' : '') + ' changed on both sides — your local' + (noteStakes > 1 ? ' copies are' : ' copy is') + ' lost.'
       : '';
-    pfConfirm('Use cloud data', 'This will replace your local data with the cloud version. Any local-only changes will be lost.' + noteWarn, 'Use cloud').then(function(ok) { if (!ok) return;
+    const keepLocalOnly = _pendingRemote ? localOnlyProjects(_pendingRemote, _pf.getProjects()) : [];
+    const keepWarn = keepLocalOnly.length
+      ? ' The ' + keepLocalOnly.length + ' project' + (keepLocalOnly.length > 1 ? 's' : '') + ' that exist' + (keepLocalOnly.length > 1 ? '' : 's') + ' only on this device will be kept and uploaded.'
+      : ' Any local-only changes will be lost.';
+    pfConfirm('Use cloud data', 'This will replace your local data with the cloud version.' + keepWarn + noteWarn, 'Use cloud').then(function(ok) { if (!ok) return;
     const remoteToApply = _pendingRemote;
     const extrasToApply = _pendingPullExtras;
     dismissConflictModal();
@@ -22214,7 +22252,12 @@ if ('serviceWorker' in navigator) {
       
       const preMutationProjects = JSON.parse(JSON.stringify(remoteToApply));
 
-      _pf.setProjects(remoteToApply);
+      
+      
+      
+      
+      
+      _pf.setProjects(keepLocalOnly.length ? preMutationProjects.concat(keepLocalOnly) : remoteToApply);
       if (extrasToApply) {
         if (extrasToApply.categories) { _pf.setCategories(extrasToApply.categories); _pf.saveCategories(); }
         _pf.setArchive(extrasToApply.archive);
