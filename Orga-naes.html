@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-H4A4aWmpgxsSWdUxuHTo5do4sjqEOqFYEIHTxFo/IBo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-MDAT640c8A3BWkXhy5fobZAHllGYZnlxfrvy+4Cj4PM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="09f89f4f58">
+<meta name="build" content="1a1b4e5a21">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -3299,6 +3299,89 @@
     }
     return;   
   }
+  
+  // SECTION: BOOT GUARD
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  var PF_BOOT_GUARD_MS = (typeof window._pfBootGuardMs === 'number') ? window._pfBootGuardMs : 8000;
+  var _pfBootGuardState = 'armed';
+  var _pfBootGuardTimer = null;
+  var _pfBootGuardPanel = null;
+  var _pfBootGuardError = '';
+  function _pfBootGuardNote(m) { if (!_pfBootGuardError && m) _pfBootGuardError = String(m).slice(0, 300); }
+  try {
+    
+    
+    window.addEventListener('error', function (e) { _pfBootGuardNote(e && (e.message || (e.error && e.error.message))); });
+    window.addEventListener('unhandledrejection', function (e) { var r = e && e.reason; _pfBootGuardNote(r && (r.message || r)); });
+  } catch (e) {}
+  function _pfBootGuardShow() {
+    if (_pfBootGuardPanel || _pfBootGuardState === 'done') return;
+    _pfBootGuardState = 'failed';
+    try {
+      var mk = function (tag, text, css) {
+        var el = document.createElement(tag);
+        if (text) el.textContent = text;
+        if (css) el.style.cssText = css;
+        return el;
+      };
+      var wrap = mk('div', '', 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:#161a1f;color:#e6edf3;font:var(--font-size-base,14px)/1.55 system-ui,sans-serif;text-align:center;');
+      wrap.id = 'pf-boot-guard';
+      wrap.setAttribute('role', 'alertdialog');
+      var box = mk('div', '', 'max-width:460px;');
+      box.appendChild(mk('div', 'Orga-naes did not finish starting', 'font-size:calc(var(--font-size-base,14px) + 3px);font-weight:600;margin-bottom:10px;'));
+      box.appendChild(mk('div', 'Nothing has been lost. Your projects are still on this device. The page never finished loading its own code.', 'opacity:.78;margin-bottom:16px;'));
+      if (_pfBootGuardError) {
+        box.appendChild(mk('pre', _pfBootGuardError, 'white-space:pre-wrap;word-break:break-word;text-align:left;font:calc(var(--font-size-base,14px) - 2px)/1.5 monospace;background:#0e1116;border:1px solid #2a323c;border-radius:8px;padding:10px;margin:0 0 16px;max-height:160px;overflow:auto;'));
+      }
+      var btn = mk('button', 'Reload', 'font:inherit;font-weight:600;padding:9px 20px;border-radius:8px;border:1px solid #2a323c;background:#22303c;color:#e6edf3;cursor:pointer;');
+      btn.id = 'pf-boot-guard-reload';
+      btn.addEventListener('click', function () { window.location.reload(); });
+      box.appendChild(btn);
+      wrap.appendChild(box);
+      (document.body || document.documentElement).appendChild(wrap);
+      _pfBootGuardPanel = wrap;
+      try { btn.focus(); } catch (e2) {}
+    } catch (e3) {
+      
+      
+    }
+  }
+  function _pfBootGuardDone() {
+    _pfBootGuardState = 'done';
+    if (_pfBootGuardTimer) { clearTimeout(_pfBootGuardTimer); _pfBootGuardTimer = null; }
+    if (_pfBootGuardPanel && _pfBootGuardPanel.parentNode) _pfBootGuardPanel.parentNode.removeChild(_pfBootGuardPanel);
+    _pfBootGuardPanel = null;
+  }
+  
+  
+  
+  
+  
+  window._pfBootGuard = { state: function () { return _pfBootGuardState; }, done: _pfBootGuardDone };
+  _pfBootGuardTimer = setTimeout(_pfBootGuardShow, PF_BOOT_GUARD_MS);
   // SUBSECTION: SVG Icon System (D10 — SVG chrome, emoji stays for user content)
   
   
@@ -22488,6 +22571,18 @@ if ('serviceWorker' in navigator) {
       hide();
     }, true);
   })();
+
+  
+  // SECTION: BOOT GUARD — the end of the bundle
+  
+  
+  
+  
+  
+  
+  
+  _pfBootGuardDone();
+
 
 })();
 </script>
