@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-6EDMyN7kEPXE0Iqvq+u24IHXVbM71MLoIdkqj2+RHJo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-8OaelU8BkiLpKCCf8u/h6PQzCOzjhpgmjYWn14EImzM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="1b9254a23f">
+<meta name="build" content="1105895f8e">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -19322,42 +19322,7 @@ if ('serviceWorker' in navigator) {
             const p = snap.val();
             const n = p ? (Array.isArray(p) ? p.filter(Boolean).length : Object.keys(p).length) : 0;
             step('sdk-read', true, 'projects=' + n);
-            
-            
-            
-            
-            
-            
-            
-            return Promise.race([db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'), cloudReadTimeout()])
-              .then(function(stampSnap) {
-                let lsSave = 0, lsSync = 0;
-                try { lsSave = parseInt(localStorage.getItem('pf-last-save-time') || '0', 10) || 0; } catch (e) {}
-                try { lsSync = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0', 10) || 0; } catch (e) {}
-                const remoteStamp = Number(stampSnap.val() || 0) || 0;
-                const behind = remoteStamp > lsSync;
-                
-                
-                
-                
-                const localNow = _pf.getProjects() || [];
-                const localStr = JSON.stringify(normalizeForSync(localNow));
-                const remoteStr = JSON.stringify(normalizeForSync(fixProjects(p)));
-                const localChanged = localStr !== _lastPushedSnapshot;
-                const wouldAsk = localNow.length > 0 && !!(_baseDirty ||
-                  (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr));
-                const when = function(t) { return t ? new Date(t).toISOString().slice(5, 19).replace('T', ' ') : 'never'; };
-                step('auto-path', !behind || !wouldAsk,
-                  'cloud=' + when(remoteStamp) + ' lastSync=' + when(lsSync) + ' lastSave=' + when(lsSave) +
-                  ' listener=' + (_fbListener ? 'attached' : 'NOT attached') +
-                  ' baseline=' + (_baseDirty ? 'unknown' : 'known') +
-                  ' → ' + (!behind ? 'in step'
-                    : (wouldAsk ? 'behind, but adopting would discard work this device has not pushed — it will ask'
-                      : 'behind, will adopt on its own')));
-              }, function() {
-                step('auto-path', false, 'the account stamp could not be read, so the automatic check cannot compare anything');
-              })
-              .then(function() { return n; });
+            return n;
           })
           .catch(function(err) {
             step('sdk-read', false, (err && err.message) || 'read failed');
@@ -19394,7 +19359,47 @@ if ('serviceWorker' in navigator) {
             }
           })
         : Promise.resolve();
-      chain.catch(function() {}).then(function() {
+      
+      
+      
+      
+      
+      
+      
+      const autoPath = !_fbUser ? Promise.resolve() : Promise.all([
+        hotFallback(
+          function() { return db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'); },
+          function() { return restOnceNode('/updatedAt'); }
+        ),
+        cloudReads()
+      ]).then(function(res) {
+        let lsSave = 0, lsSync = 0;
+        try { lsSave = parseInt(localStorage.getItem('pf-last-save-time') || '0', 10) || 0; } catch (e) {}
+        try { lsSync = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0', 10) || 0; } catch (e) {}
+        const remoteStamp = Number(res[0].val() || 0) || 0;
+        const behind = remoteStamp > lsSync;
+        
+        
+        
+        
+        const localNow = _pf.getProjects() || [];
+        const localStr = JSON.stringify(normalizeForSync(localNow));
+        const remoteStr = JSON.stringify(normalizeForSync(fixProjects(res[1] && res[1][0] ? res[1][0].val() : null)));
+        const localChanged = localStr !== _lastPushedSnapshot;
+        const wouldAsk = localNow.length > 0 && !!(_baseDirty ||
+          (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr));
+        const when = function(t) { return t ? new Date(t).toISOString().slice(5, 19).replace('T', ' ') : 'never'; };
+        step('auto-path', !behind || !wouldAsk,
+          'cloud=' + when(remoteStamp) + ' lastSync=' + when(lsSync) + ' lastSave=' + when(lsSave) +
+          ' listener=' + (_fbListener ? 'attached' : 'NOT attached') +
+          ' baseline=' + (_baseDirty ? 'unknown' : 'known') +
+          ' → ' + (!behind ? 'in step'
+            : (wouldAsk ? 'behind, but adopting would discard work this device has not pushed — it will ask'
+              : 'behind, will adopt on its own')));
+      }, function() {
+        step('auto-path', false, 'the cloud could not be reached over either transport, so nothing can be compared');
+      });
+      chain.catch(function() {}).then(function() { return autoPath; }).then(function() {
         if (_fbUser && !out.steps.some(function(s) { return s.name === 'verdict'; })) {
           const sdk = out.steps.find(function(s) { return s.name === 'sdk-read'; });
           const rest = out.steps.find(function(s) { return s.name === 'rest-read'; });
