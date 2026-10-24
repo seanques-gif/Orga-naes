@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-gtv3CSN9z+Vsn46R7GqAkjB8+DK4cdCmgq2soTsETOY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-H4A4aWmpgxsSWdUxuHTo5do4sjqEOqFYEIHTxFo/IBo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="4988948cf6">
+<meta name="build" content="09f89f4f58">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -19175,7 +19175,10 @@ if ('serviceWorker' in navigator) {
         
         
         
-        verifyByContent();
+        
+        
+        
+        verifyByContent(remote);
       }
     }, function() { release(); });
   }
@@ -19188,12 +19191,30 @@ if ('serviceWorker' in navigator) {
   
   const AUTO_PULL_DELAY_MS = 1200;
   let _autoPullTimer = null;
-  function scheduleAutoPull() {
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function scheduleAutoPull(opts) {
+    const fromContent = !!(opts && opts.fromContent);
     if (_autoPullTimer) return;
-    
-    
-    
-    if (!_lastProbeRemote) return;
+    if (!_lastProbeRemote && !fromContent) return;
     _autoPullTimer = setTimeout(function() {
       _autoPullTimer = null;
       if (!_fbUser) return;
@@ -19201,11 +19222,7 @@ if ('serviceWorker' in navigator) {
       
       
       if (_lastProbeRemote && _lastProbeRemote === _behindDeclinedAt) return;
-      
-      
-      
-      
-      if (_lastProbeRemote && readCloudRev() === _lastProbeRemote) return;
+      if (!fromContent && _lastProbeRemote && readCloudRev() === _lastProbeRemote) return;
       const el = document.getElementById('pf-conflict-modal');
       if (el && el.classList.contains('pf-conflict-open')) return;
       pullFromCloud({ quiet: true });
@@ -19229,7 +19246,7 @@ if ('serviceWorker' in navigator) {
   
   const CONTENT_CHECK_GAP_MS = 900000;
   let _lastContentCheck = 0;
-  function verifyByContent() {
+  function verifyByContent(premise) {
     if (!_fbUser) return;
     
     
@@ -19238,9 +19255,29 @@ if ('serviceWorker' in navigator) {
     
     
     if (!_sdkTimedOutThisSession) return;
+    
+    
+    
+    
+    
+    
+    if (typeof premise !== 'number') return;
+    
+    
+    
+    
+    
+    if (_fbPushTimer || _fbPushInFlight) return;
     if (Date.now() - _lastContentCheck < CONTENT_CHECK_GAP_MS) return;
+    
+    
+    
+    
     _lastContentCheck = Date.now();
-    scheduleAutoPull();
+    
+    
+    _lastProbeRemote = premise;
+    scheduleAutoPull({ fromContent: true });
   }
   
   
@@ -19249,7 +19286,11 @@ if ('serviceWorker' in navigator) {
     if (document.hidden) return;
     probeCloudAhead();
   });
-  window.addEventListener('online', function() { probeCloudAhead(); verifyByContent(); });
+  
+  
+  
+  
+  window.addEventListener('online', function() { probeCloudAhead(); });
   setInterval(function() {
     if (document.hidden) return;
     probeCloudAhead();
@@ -19392,13 +19433,7 @@ if ('serviceWorker' in navigator) {
       
       const pulledNotesInfo = localNotesSnap ? notesDiff(localNotesSnap, remoteNotes, remoteNoteTombstones) : null;
       const notesConflict = !!(pulledNotesInfo && pulledNotesInfo.conflict);
-      const localChanged = localStr !== _lastPushedSnapshot;
-      
-      
-      
-      
-      const couldLoseProjects = remoteStr !== localStr && localProjects.length > 0 && (_baseDirty ||
-        (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr));
+      const couldLoseProjects = wouldDiscardLocalWork(localStr, remoteStr, localProjects.length);
       if (couldLoseProjects || notesConflict) {
         if (_pf && _pf.snapshot) _pf.snapshot();
         _pendingPullExtras = { categories: remoteCategories, archive: remoteArchive, notes: remoteNotes, noteTombstones: remoteNoteTombstones };
@@ -19565,15 +19600,14 @@ if ('serviceWorker' in navigator) {
         
         
         
+        
         const localNow = _pf.getProjects() || [];
         const localStr = JSON.stringify(normalizeForSync(localNow));
         const remoteNow = fixProjects(res[1] && res[1][0] ? res[1][0].val() : null);
         const remoteStr = JSON.stringify(normalizeForSync(remoteNow));
         const contentSame = localStr === remoteStr;
         const behind = revMoved || !contentSame;
-        const localChanged = localStr !== _lastPushedSnapshot;
-        const wouldAsk = localNow.length > 0 && !!(_baseDirty ||
-          (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr));
+        const wouldAsk = wouldDiscardLocalWork(localStr, remoteStr, localNow.length);
         const when = function(t) { return t ? new Date(t).toISOString().slice(5, 19).replace('T', ' ') : 'never'; };
         step('auto-path', !behind || !wouldAsk,
           'cloud=' + when(remoteStamp) + ' seen=' + (rev === null ? 'never' : when(rev)) +
@@ -19655,15 +19689,15 @@ if ('serviceWorker' in navigator) {
       const remoteStr = JSON.stringify(normalizeForSync(remote));
       if (remoteStr !== localStr) {
         const localProjects = JSON.parse(localStr);
-        const localChanged = localStr !== _lastPushedSnapshot;
         
         
         
         
         
         
-        const couldLoseWork = localProjects.length > 0 && (_baseDirty ||
-          (localChanged && _lastPushedSnapshot && _lastPushedSnapshot !== remoteStr));
+        
+        
+        const couldLoseWork = wouldDiscardLocalWork(localStr, remoteStr, localProjects.length);
         if (couldLoseWork) {
           
           
@@ -20001,6 +20035,31 @@ if ('serviceWorker' in navigator) {
     _lastPushedCosmeticsHash = rec.m;
     _lastPushedArchiveHash = rec.a;
     _lastPushedNotesHash = rec.n;
+  }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function wouldDiscardLocalWork(localStr, remoteStr, localCount) {
+    if (!(localCount > 0)) return false;
+    if (localStr === remoteStr) return false;
+    return _baseDirty || localStr !== _lastPushedSnapshot;
   }
 
   
