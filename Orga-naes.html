@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-8FiJei5i4oXaWRgB8llz0q0MCmZ6JIqi8RfBAUi7Zjg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-F7PUAOqwGgUGuO5C9ac0AqDcF41/rt8rbmTSruCSdgQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="b5de4e4512">
+<meta name="build" content="f2cc1c2726">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -4749,9 +4749,11 @@
     { check: () => !!root.querySelector('.pf-dep-dropdown'), run: () => { const dd = root.querySelector('.pf-dep-dropdown'); if (dd) dd.remove(); } },
     { check: () => _splitCatMultiSelect.length, run: () => { _splitCatMultiSelect = []; renderSplitList(); } },
     { check: () => splitMultiSelect.length, run: () => { splitMultiSelect = []; renderSplitList(); renderSplitDetail(); } },
-    { key: 'modals', check: () => todayPanel && todayPanel.style.display !== 'none', run: () => { closeAllModals(); } },
-    { key: 'modals', check: () => duelistPanel && duelistPanel.style.display !== 'none', run: () => { closeAllModals(); } },
-    { key: 'modals', check: () => calendarPanel && calendarPanel.style.display !== 'none', run: () => { closeAllModals(); } },
+    
+    
+    
+    
+
     { check: () => _duelistReturnOnEsc, run: () => { _duelistReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderDueList(); openModal(duelistPanel, 'flex'); showToast('Press Esc to exit Tasks by Due Date'); } },
     { check: () => _weeklyReturnOnEsc, run: () => { _weeklyReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderWeeklyPanel(); openModal(weeklyPanel, 'flex'); showToast('Press Esc to exit Weekly Planner'); } },
     { check: () => _todayReturnOnEsc, run: () => { _todayReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderTodayList(); openModal(todayPanel, 'flex'); showToast('Press Esc to exit Today\'s Focus'); } },
@@ -4794,10 +4796,11 @@
   
   
   
-  (function auditEscCoverage() {
+  function auditEscCoverage() {
     try {
       const KNOWN_EXCEPTIONS = [
         'pf-conflict-modal',   
+        'pf-confirm-modal',    
         'pf-search-wrap',      
         'pf-emoji-picker',     
         'pf-status-menu',      
@@ -4810,11 +4813,21 @@
       const uncovered = modalLikeEls.filter(function(el) {
         return !ALL_MODALS.includes(el) && !KNOWN_EXCEPTIONS.includes(el.id);
       });
+      
+      
+      _pf._escAudit = uncovered.length;
       if (uncovered.length) {
         console.warn('[Orga-naes] Escape-key audit: element(s) named like a modal/panel/popover aren\'t in ALL_MODALS and aren\'t a known exception — Escape may not close them. Add to ALL_MODALS, call window._pf.registerEscDismissable(), or add to KNOWN_EXCEPTIONS in auditEscCoverage() if handled elsewhere:', uncovered.map(function(el) { return '#' + el.id; }));
       }
-    } catch (e) {}
-  })();
+    } catch (e) { _pf._escAudit = null; }
+  }
+  
+  
+  
+  
+  
+  
+  setTimeout(auditEscCoverage, 0);
   
   
   
