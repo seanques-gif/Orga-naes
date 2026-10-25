@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-GwfvJmJcvod8QIH5MdqqwyfMXSQkptep3BIKtLsghPo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-P4/EcNNBUR9VGxtSk60lZN94vjM5u7qDUAWxvDuW1No='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="cad8641f6f">
+<meta name="build" content="edd2ec822c">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -15696,6 +15696,13 @@
   let activeNoteId = null;
   let notesSearch = '';
   let notesSaveTimer = null;
+  
+  
+  
+  
+  
+  
+  let notesCommitTimer = null;
   let notesSelection = [];   
   let lastClickedNoteId = null; 
   
@@ -16509,9 +16516,9 @@
     si.focus();
     try { si.select(); } catch (e) {}
   };
-  noteTitleEl.addEventListener('input', () => { clearTimeout(notesSaveTimer); notesSaveTimer = setTimeout(commitNoteField, 350); });
+  noteTitleEl.addEventListener('input', () => { clearTimeout(notesCommitTimer); notesCommitTimer = setTimeout(commitNoteField, 350); });
   noteTitleEl.addEventListener('blur', commitNoteField);
-  noteBodyEl.addEventListener('input', () => { updateNoteCount(); clearTimeout(notesSaveTimer); notesSaveTimer = setTimeout(commitNoteField, 350); });
+  noteBodyEl.addEventListener('input', () => { updateNoteCount(); clearTimeout(notesCommitTimer); notesCommitTimer = setTimeout(commitNoteField, 350); });
   noteBodyEl.addEventListener('blur', commitNoteField);
 
   
@@ -17882,6 +17889,14 @@
   
   
   _pf.mergeCloudNotes = function (cloudNotes, cloudTombstones) {
+    
+    
+    
+    
+    
+    
+    
+    commitNoteField();
     ++loadEpoch; 
     const clean = Array.isArray(cloudNotes)
       ? cloudNotes.filter(n => n && typeof n === 'object' && typeof n.id === 'string')
@@ -17995,6 +18010,10 @@
   
   
   function _applyExternalNotes(list) {
+    
+    
+    
+    commitNoteField();
     ++loadEpoch;   
     const seen = new Set();
     const next = [];
