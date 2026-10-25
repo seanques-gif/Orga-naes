@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-dp4uFuO4sdYVEBX993QJAdpPpxZDoOlHWOBwiJ/zM6Y='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-CXoyqmEufkeoeon3ryt3mfJjHZYWT32NkT5zFAPdhpw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="dbb00089a6">
+<meta name="build" content="92bcf7c554">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -18794,13 +18794,15 @@ if ('serviceWorker' in navigator) {
                        
       try { clearLocalUserData(); } catch (e) {}
       _pf.snapshot && _pf.snapshot();
-      Promise.all([
-        userRef().once('value'),
-        catRef().once('value'),
-        archiveRef().once('value'),
-        notesRef().once('value'),
-        noteTombstonesRef().once('value')
-      ]).then(function(results) {
+      
+      
+      
+      
+      
+      
+      
+      
+      cloudReads().then(function(results) {
         const projVal = results[0].val();
         const catVal = results[1].val();
         const archVal = results[2].val();
