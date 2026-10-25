@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-nBGwkOIIil1TfuP69UR2q4ewmwaSGP07OPnYSJVvp6c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-JQIM04o3AoN519fnAJicYnO/IuDhEINLu+HJCTz7d24='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="7a0836279d">
+<meta name="build" content="b80a1377de">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -15982,6 +15982,19 @@
     return (n.title || '').toLowerCase().includes(t) || (n.body || '').toLowerCase().includes(t);
   }
 
+  
+  
+  
+  
+  
+  
+  function confirmDeleteNote(message) {
+    if (_pf && typeof _pf.confirmDialog === 'function') {
+      return _pf.confirmDialog('Move to Recycle Bin?', message, 'Move to Bin');
+    }
+    return Promise.resolve(typeof confirm === 'function' ? confirm(message) : false);
+  }
+
   function renderNotesList() {
     syncNotesNav();
     
@@ -16055,8 +16068,7 @@
         const id = el.getAttribute('data-note-del');
         const n = noteById(id);
         if (!n) return;
-        if (!confirm('Move note "' + (n.title || 'Untitled') + '" to the Recycle Bin?')) return;
-        deleteNoteById(id); 
+        confirmDeleteNote('"' + (n.title || 'Untitled') + '" will be moved to the Recycle Bin.').then(ok => { if (ok) deleteNoteById(id); }); 
       });
     });
     renderNotesSelBar();
@@ -16088,14 +16100,18 @@
         } else if (action === 'copy') {
           copyTextToClipboard(allText, notesSelection.length + (notesSelection.length === 1 ? ' note' : ' notes') + ' copied');
         } else if (action === 'delete') {
-          if (!confirm('Move ' + notesSelection.length + ' note' + (notesSelection.length === 1 ? '' : 's') + ' to the Recycle Bin?')) return;
+          
+          
           const ids = notesSelection.slice();
-          ids.forEach(id => deleteNoteById(id, { silent: true }));
-          notesSelection = [];
-          renderNotesList(); renderNotesEditor();
-          showToast('Moved ' + ids.length + ' note' + (ids.length === 1 ? '' : 's') + ' to Recycle Bin', false, false, () => {
-            ids.forEach(id => { if (typeof _pf.restoreFromTrash === 'function') _pf.restoreFromTrash(id); });
-          }, 'Undo');
+          confirmDeleteNote(ids.length + ' note' + (ids.length === 1 ? ' will be' : 's will be') + ' moved to the Recycle Bin.').then(ok => {
+            if (!ok) return;
+            ids.forEach(id => deleteNoteById(id, { silent: true }));
+            notesSelection = [];
+            renderNotesList(); renderNotesEditor();
+            showToast('Moved ' + ids.length + ' note' + (ids.length === 1 ? '' : 's') + ' to Recycle Bin', false, false, () => {
+              ids.forEach(id => { if (typeof _pf.restoreFromTrash === 'function') _pf.restoreFromTrash(id); });
+            }, 'Undo');
+          });
         } else if (action === 'clear') {
           notesSelection = []; renderNotesList();
         }
@@ -16248,9 +16264,9 @@
   _pf.fmtNoteDate = fmtNoteDate;
 
   function deleteActiveNote() {
-    if (!noteById(activeNoteId)) return;
-    if (!confirm('Move this note to the Recycle Bin?')) return;
-    deleteNoteById(activeNoteId); 
+    const id = activeNoteId;
+    if (!noteById(id)) return;
+    confirmDeleteNote('This note will be moved to the Recycle Bin.').then(ok => { if (ok) deleteNoteById(id); }); 
   }
 
   function togglePin() {
