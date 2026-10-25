@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-q8VQcDNelv9/+PBrfVIjpNaoVogx5ZtHc9E1SvJUh40='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-yxegYPtBvOY8RCaPi+5APEX6WjiEHphrQeFak/YllaQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="8a1c392aa3">
+<meta name="build" content="e9f58cb62e">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -4085,7 +4085,6 @@
     color: /^#[0-9a-fA-F]{3,8}$/,
     recurrence: /^(daily|weekdays|weekly|biweekly|monthly)$/
   };
-  const PAYLOAD_RECURRENCE = ['daily', 'weekdays', 'weekly', 'biweekly', 'monthly'];
 
   
   
@@ -5382,7 +5381,6 @@
 
   async function loadSize() { root.style.width = '100vw'; root.style.height = '100vh'; }
 
-  const THEME_KEY = 'project-flow-theme';
   
   
   
@@ -9740,7 +9738,6 @@
       const catEmoji = categoryEmojis[cat] || '';
       catLabel.textContent = (catEmoji ? catEmoji + ' ' : '') + (cat === '__uncategorized__' ? 'Uncategorized' : cat) + ' (' + group.length + ')';
       catLabel.style.cursor = 'pointer';
-      const _catColor = cat === '__uncategorized__' ? 'var(--text-dim)' : categoryColor(cat);
       catLabel.style.borderLeft = 'none';
       catLabel.addEventListener('click', (e) => {
         if (e.ctrlKey || e.metaKey) {
@@ -10035,8 +10032,6 @@
     const botSpacer = document.createElement('div'); botSpacer.className = 'pf-virt-spacer-bot';
     
     const allItems = Array.from(items);
-    const parents = allItems.map(el => el.parentNode);
-    const nexts = allItems.map(el => el.nextSibling);
     function applyVirtual() {
       const scrollTop = splitList.scrollTop;
       const viewH = splitList.clientHeight;
@@ -11166,7 +11161,6 @@
     if (!items.length) { listEl.innerHTML = '<div class="pf-activity-empty">No tasks due on this date.</div>'; return; }
     listEl.innerHTML = items.map((item, i) => {
       const col = item.status === 'completed' ? 'var(--completed)' : item.status === 'ongoing' ? 'var(--ongoing)' : 'var(--planned)';
-      const statusLabel = STATUS_LABEL[item.status] || 'Planned';
       return '<div class="pf-activity-item pf-cal-task-item" data-cal-project="' + (item.projectId || '') + '">' +
         '<span class="pf-cal-task-dot" style="background:' + col + '"></span>' +
         '<span class="pf-cal-task-title">' + escapeHtml(item.title) + '</span>' +
