@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-JQIM04o3AoN519fnAJicYnO/IuDhEINLu+HJCTz7d24='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-8URiu7gdlZrSF5tL1MyDemk35cq7zAnkNNzjIUG6XYI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="b80a1377de">
+<meta name="build" content="13831ecdef">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -21355,8 +21355,16 @@ if ('serviceWorker' in navigator) {
       return r.json();
     });
   }
+  
+  
+  
+  
+  
+  function readBackups() {
+    return hotFallback(function() { return db.ref('users/' + _fbUser.uid + '/backups').once('value'); }, readBackupsViaRest);
+  }
   function cleanupOldBackups() {
-    hotFallback(function() { return db.ref('users/' + _fbUser.uid + '/backups').once('value'); }, readBackupsViaRest)
+    readBackups()
       .then(function(snap) {
         const val = snap && snap.val();
         if (!val) return;
@@ -21851,23 +21859,32 @@ if ('serviceWorker' in navigator) {
   function disableBackupsBtn() { backupsBtn.disabled = true; }
   auth.onAuthStateChanged(function(u) { if (u) enableBackupsBtn(); else disableBackupsBtn(); });
 
+  
+  
+  function backupNote(text) {
+    backupsList.innerHTML = '<div style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);padding:6px;">' + text + '</div>';
+  }
+
   backupsBtn.addEventListener('click', function() {
     if (!_fbUser) return;
     if (backupsList.style.display !== 'none') { backupsList.style.display = 'none'; return; }
     backupsList.style.display = 'block';
-    backupsList.innerHTML = '<div style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);padding:6px;">Loading backups...</div>';
-    db.ref('users/' + _fbUser.uid + '/backups').once('value').then(function(snap) {
-      const val = snap.val();
-      if (!val) { backupsList.innerHTML = '<div style="font-size: calc(var(--font-size-base) - 4px);color:var(--text-dim);padding:6px;">No backups found.</div>'; return; }
+    backupNote('Loading backups...');
+    readBackups().then(function(snap) {
+      const val = snap && snap.val();
+      if (!val) { backupNote('No backups found.'); return; }
       const keys = Object.keys(val).sort().reverse();
       backupsList.innerHTML = keys.map(function(k) {
         const b = val[k];
         const projCount = b.projects ? (Array.isArray(b.projects) ? b.projects.length : Object.keys(b.projects).length) : 0;
         const date = new Date(b.timestamp || 0);
-        const label = k + ' &middot; ' + projCount + ' projects &middot; ' + date.toLocaleTimeString();
+        
+        
+        const kEsc = pfRestoreEsc(k);
+        const label = kEsc + ' &middot; ' + projCount + ' projects &middot; ' + date.toLocaleTimeString();
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px;border-bottom:1px solid var(--card-border);gap:8px;">' +
           '<span style="font-size: calc(var(--font-size-base) - 4px);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + label + '</span>' +
-          '<button class="pf-undo-btn pf-backup-restore-btn" data-backup-key="' + k + '" style="font-size: calc(var(--font-size-base) - 5px);padding:3px 8px;flex-shrink:0;">Restore</button></div>';
+          '<button class="pf-undo-btn pf-backup-restore-btn" data-backup-key="' + kEsc + '" style="font-size: calc(var(--font-size-base) - 5px);padding:3px 8px;flex-shrink:0;">Restore</button></div>';
       }).join('');
       backupsList.querySelectorAll('.pf-backup-restore-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -21880,6 +21897,11 @@ if ('serviceWorker' in navigator) {
           renderRestorePreview(buildRestorePreview(val[key] || {}), key);
         });
       });
+    }, function(err) {
+      
+      
+      backupNote('Could not load backups. Check your connection, then try again.');
+      if (_pf.logError) _pf.logError('Firebase backup list', err);
     });
   });
 
