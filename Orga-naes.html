@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-yxegYPtBvOY8RCaPi+5APEX6WjiEHphrQeFak/YllaQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-x8+Y3IAH9SuOKepKTHyFpYW8lfrdNemBldv/OaqsvAk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="e9f58cb62e">
+<meta name="build" content="40b1e22481">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -4738,7 +4738,24 @@
   
   let _overlayCounter = 0;
   const _overlayStamps = {};
-  function _markOverlayOpen(key) { _overlayStamps[key] = ++_overlayCounter; }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const _overlayEls = {};
+  function _markOverlayOpen(key, el) {
+    _overlayStamps[key] = ++_overlayCounter;
+    if (el) _overlayEls[key] = el;
+  }
   const _escDismissables = [
     
     
@@ -4766,16 +4783,49 @@
 
     { check: () => _duelistReturnOnEsc, run: () => { _duelistReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderDueList(); openModal(duelistPanel, 'flex'); showToast('Press Esc to exit Tasks by Due Date'); } },
     { check: () => _weeklyReturnOnEsc, run: () => { _weeklyReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderWeeklyPanel(); openModal(weeklyPanel, 'flex'); showToast('Press Esc to exit Weekly Planner'); } },
-    { check: () => _todayReturnOnEsc, run: () => { _todayReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderTodayList(); openModal(todayPanel, 'flex'); showToast('Press Esc to exit Today\'s Focus'); } },
+    { check: () => _todayReturnOnEsc, run: () => { _todayReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderTodayList(); openModal(todayPanel, 'flex'); showToast("Press Esc to exit Today's Focus"); } },
     { check: () => _calendarReturnOnEsc, run: () => { _calendarReturnOnEsc = false; if (searchTerm) _clearSearch(); _refreshView(); renderCalendar(); openModal(calendarPanel, 'flex'); showToast('Press Esc to exit Calendar'); } },
     { check: () => subMultiSelect.length, run: () => { clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); } },
     { key: 'modals', check: () => ALL_MODALS.some(m => m && m.style.display !== 'none'), run: () => { closeAllModals(); } },
     { key: 'detail', check: () => root.classList.contains('pf-detail-open'), run: () => { _goBackToProjects(); } },
     { low: true, check: () => true, run: () => { closeAllModals(); } }
   ];
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  function _topTrappingEl() {
+    let best = null;
+    for (const d of _escDismissables) {
+      
+      
+      
+      
+      
+      const el = _overlayEls[d.key] || (d.el ? d.el() : null);
+      if (!el || (el.style && el.style.display === 'none')) continue;
+      if (!d.check()) continue;
+      const stamp = _overlayStamps[d.key] || 0;
+      if (!best || stamp > best.stamp) best = { stamp: stamp, el: el };
+    }
+    return best ? best.el : null;
+  }
   function handleEscape() {
-    // Tier 1: always-topmost transient popovers, in their original order —
-    // these sit visually above everything else the instant they're open,
+    
+    
     
     
     for (const d of _escDismissables) {
@@ -5439,7 +5489,7 @@
     closeAllModals();
     el.style.display = displayValue;
     modalBackdrop.style.display = 'block';
-    _markOverlayOpen('modals');
+    _markOverlayOpen('modals', el);
     
     
     
@@ -14767,6 +14817,62 @@
     }
     return null;
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const FOCUSABLE = 'a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])';
+  
+  
+  
+  
+  
+  
+  function _shownIn(el, box) {
+    for (let n = el; n; n = n.parentNode) {
+      if (n.style && n.style.display === 'none') return false;
+      if (n === box) return true;
+    }
+    return true;
+  }
+  function _trapTab(e) {
+    if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
+    const active = document.activeElement;
+    
+    
+    
+    
+    if (active && (active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+    const box = _topTrappingEl();
+    if (!box) return;
+    const found = box.querySelectorAll(FOCUSABLE);
+    const list = [];
+    for (let i = 0; i < found.length; i++) {
+      const el = found[i];
+      if (!el.disabled && _shownIn(el, box)) list.push(el);
+    }
+    
+    
+    if (!list.length) { e.preventDefault(); return; }
+    const first = list[0], last = list[list.length - 1];
+    if (!box.contains(active)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); return; }
+    if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+  }
+  document.addEventListener('keydown', _trapTab, true);
+
   function isModalHeader(target, modal) {
     const firstChild = modal.children[0];
     if (!firstChild) return false;
@@ -14908,6 +15014,10 @@
     if (_pf && _pf.registerEscDismissable) {
       _pf.registerEscDismissable({
         key: 'confirm-dialog',
+        
+        
+        
+        el: () => document.getElementById('pf-confirm-modal'),
         check: function() { const m = document.getElementById('pf-confirm-modal'); return !!(m && m.classList.contains('pf-conflict-open')); },
         run: function() { settleConfirmDialog(false); }
       });
@@ -22206,6 +22316,10 @@ if ('serviceWorker' in navigator) {
   if (_pf && _pf.registerEscDismissable) {
     _pf.registerEscDismissable({
       key: 'conflict',
+      
+      
+      
+      el: () => document.getElementById('pf-conflict-modal'),
       check: () => document.getElementById('pf-conflict-modal').classList.contains('pf-conflict-open'),
       run: dismissConflictModal
     });
