@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-P4/EcNNBUR9VGxtSk60lZN94vjM5u7qDUAWxvDuW1No='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-/To3zDhPFa5/QmqaTIxlQcp1k+NFXG5bl9fEUHhAG8E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="edd2ec822c">
+<meta name="build" content="485d74fb0a">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -5118,11 +5118,18 @@
       catch (e) { lsQuotaErr = e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014; }
     }
     let idbOk = false;
-    try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); tx.objectStore('kv').put({ key: key, value: value }); idbOk = true; } } catch (e) { if (typeof logError === 'function') logError('IndexedDB write (' + key + ')', e); }
+    
+    
+    
+    
+    
+    
+    
+    try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); const req = tx.objectStore('kv').put({ key: key, value: value }); idbOk = await new Promise(r => { req.onsuccess = () => r(true); req.onerror = () => r(false); }); } } catch (e) { if (typeof logError === 'function') logError('IndexedDB write (' + key + ')', e); }
     if (!lsOk && !idbOk) { showToast('⚠ Storage full: data may not persist. Export your data soon.', true); if (typeof logError === 'function') logError('Storage write failed (' + key + ')', new Error('Both localStorage and IndexedDB unavailable')); }
     else if (!lsOk && idbOk) { showToast('⚠ localStorage full, using IndexedDB fallback', true); }
     else if (lsQuotaErr && idbOk) {  }
-    return true;
+    return lsOk || idbOk;
   }
 
   // SUBSECTION: IndexedDB Mirror & Auto-Backup
