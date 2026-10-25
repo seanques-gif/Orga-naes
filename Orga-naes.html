@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="c1322289f2">
+<meta name="build" content="0cff8f551c">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -483,7 +483,7 @@
   }
   #pf-root .pf-new-btn:hover { filter: brightness(1.15); }
   #pf-root .pf-undo-btn {
-    background: transparent; color: var(--text-dim); font-weight: 500; font-size: clamp(11px, 1.6vw, 14px);
+    background: transparent; color: var(--text-dim); font-weight: 500; font-size: var(--font-size-base);
     padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 8px); border-radius: var(--radius-control); border: none;
     min-width: clamp(20px, 3.5vw, 26px); min-height: clamp(20px, 3.5vw, 26px);
     display: inline-flex; align-items: center; justify-content: center; gap: 4px;
@@ -1102,7 +1102,7 @@
     padding: 0 0 0 4px; opacity: 1; transition: color 0.15s; flex-shrink: 0;
   }
   #pf-root .pf-node-del:hover { color: var(--danger); }
-  #pf-root .pf-badge { font-size: clamp(9px, 1.4vw, 11px); font-weight: 600; padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 9px); border-radius: 100px; border: 1px solid transparent; cursor: pointer; letter-spacing: 0.2px; white-space: nowrap; margin-top: 0; line-height: 1.2; align-self: center; transition: transform 0.15s, filter 0.15s, background 0.3s var(--ease-console), color 0.3s var(--ease-console); flex-shrink: 0; }
+  #pf-root .pf-badge { font-size: max(9px, calc(var(--font-size-base) - 3px)); font-weight: 600; padding: clamp(2px, 0.5vw, 4px) clamp(5px, 1vw, 9px); border-radius: 100px; border: 1px solid transparent; cursor: pointer; letter-spacing: 0.2px; white-space: nowrap; margin-top: 0; line-height: 1.2; align-self: center; transition: transform 0.15s, filter 0.15s, background 0.3s var(--ease-console), color 0.3s var(--ease-console); flex-shrink: 0; }
   @media (hover: hover) and (pointer: fine) {
     #pf-root .pf-badge:hover { transform: scale(1.05); filter: brightness(1.15); }
   }
@@ -1160,7 +1160,7 @@
   #pf-root .pf-sub-comment:hover { border-color: var(--hover-border); }
   #pf-root .pf-sub-comment.pf-comment-set { opacity: 1; color: var(--depth3); border-color: color-mix(in srgb, var(--depth3) 55%, transparent); background: color-mix(in srgb, var(--depth3) 16%, transparent); font-weight: 600; }
   #pf-root .pf-sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; cursor: pointer; border: 1.5px solid var(--planned); transition: background 0.3s var(--ease-console), border-color 0.3s var(--ease-console); align-self: center; }
-  #pf-root .pf-sub-dates { display: inline-flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; font-size: clamp(9px, 1.3vw, 12px); margin-left: auto; height: 20px; }
+  #pf-root .pf-sub-dates { display: inline-flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; font-size: max(9px, calc(var(--font-size-base) - 2px)); margin-left: auto; height: 20px; }
   #pf-root .pf-sub-dates .pf-due-chip { text-align: center; justify-content: center; }
   #pf-root .pf-subrow-title { font-size: calc(var(--font-size-base) - 1px); flex: 1; outline: none; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
   #pf-root .pf-subrow-title:focus { white-space: normal; overflow: visible; }
@@ -1218,7 +1218,7 @@
   #pf-root .pf-color-custom-row input[type="color"] { width: 32px; height: 32px; border: none; cursor: pointer; border-radius: 6px; background: none; padding: 0; }
   #pf-root .pf-color-custom-label { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
   #pf-root .pf-color-modal-btns { display: flex; gap: 8px; }
-  #pf-root .pf-header-meta { display: inline-flex; align-items: center; gap: clamp(3px, 0.7vw, 6px); flex-shrink: 0; font-size: clamp(9px, 1.4vw, 12px); }
+  #pf-root .pf-header-meta { display: inline-flex; align-items: center; gap: clamp(3px, 0.7vw, 6px); flex-shrink: 0; font-size: max(9px, calc(var(--font-size-base) - 2px)); }
   #pf-root .pf-due-wrap { display: inline-flex; align-items: center; flex-shrink: 0; }
 
   #pf-root .pf-due-chip {
