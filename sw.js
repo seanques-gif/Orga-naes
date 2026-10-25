@@ -81,39 +81,32 @@ self.addEventListener('activate', (e) => {
 //
 // Network-first fixes both: every reload gets the newest HTML the server has
 // (keeping the SW script itself byte-identical so no new install is needed),
-// and the cache is only used when the device is offline. A failed network
-// response (5xx) falls back to cache too, so a broken deploy can't blank the
-// app. Firebase/API calls are unaffected (excluded below, as before).
+// and the cache is only used when the network cannot answer. Firebase/API calls
+// are unaffected (excluded below, as before).
+//
+// "Cannot answer" means TWO things, and this file only ever implemented one: a
+// REJECTED request fell back to cache, while a 5xx was handed straight to the
+// page — so a broken deploy showed the user the server's error page, the one
+// thing an offline-first shell exists to prevent. A 5xx is a broken deploy, not
+// a new version.
+//
+// One helper for every branch: the navigate and asset branches were byte-
+// identical duplicates, so the rule was stated twice and could drift once.
+function networkFirst(request) {
+  return fetch(request)
+    .then((resp) => {
+      if (resp && resp.ok && fillable(request.url)) {
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then((c) => c.put(request, clone));
+      }
+      if (resp && resp.status >= 500) return caches.match(request).then((hit) => hit || resp);
+      return resp;
+    })
+    .catch(() => caches.match(request));
+}
 self.addEventListener('fetch', (e) => {
   if (e.request.url.includes('firebase') || e.request.url.includes('googleapis')) return;
-  if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request)
-        .then((resp) => {
-          if (resp && resp.ok && fillable(e.request.url)) {
-            const clone = resp.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
-          }
-          return resp;
-        })
-        .catch(() => caches.match(e.request))
-    );
-    return;
-  }
-  // Everything else (icons, manifest, same-origin assets): network-first with
-  // cache fallback. Precached assets make offline launches work; a 5xx also
-  // falls back to the cached copy so a partial deploy can't break the UI.
-  e.respondWith(
-    fetch(e.request)
-      .then((resp) => {
-        if (resp && resp.ok && fillable(e.request.url)) {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
-        }
-        return resp;
-      })
-      .catch(() => caches.match(e.request))
-  );
+  e.respondWith(networkFirst(e.request));
 });
 
 self.addEventListener('message', (e) => {
