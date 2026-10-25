@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-LE0fjZvArKy07xiqxIi7E0+9jhC/AYztcboBkdpihEE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-6MqEUEiEGbuIn4XqVEKy5j4C+oZ+lN+p06t1+uEOvx0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="0cff8f551c">
+<meta name="build" content="4d1c0bf671">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -3252,6 +3252,8 @@
     align-items: center; justify-content: center; padding: 16px;
   }
   .pf-conflict-modal.pf-conflict-open { display: flex; }
+  
+  .pf-conflict-modal.pf-conflict-under { visibility: hidden; }
   .pf-conflict-title { font-size: var(--font-size-base); font-weight: 700; color: var(--text); margin-bottom: 10px; text-align: center; flex: 0 0 auto; }
   
   .pf-conflict-cols { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
@@ -22084,7 +22086,20 @@ if ('serviceWorker' in navigator) {
   
   function pfConfirm(title, message, okLabel) {
     if (_pf && typeof _pf.confirmDialog === 'function') {
-      return _pf.confirmDialog(title, message, okLabel);
+      
+      
+      
+      
+      
+      
+      
+      const under = document.getElementById('pf-conflict-modal');
+      const suspended = !!(under && under.classList.contains('pf-conflict-open'));
+      if (suspended) under.classList.add('pf-conflict-under');
+      return _pf.confirmDialog(title, message, okLabel).then(function (ok) {
+        if (suspended) under.classList.remove('pf-conflict-under');
+        return ok;
+      });
     }
     return Promise.resolve(false);
   }
