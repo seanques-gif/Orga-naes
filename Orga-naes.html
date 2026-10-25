@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="f24f1fe74c">
+<meta name="build" content="c1322289f2">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -344,6 +344,7 @@
     --waiting: #b39dff;
     --waiting-bg: color-mix(in srgb, var(--waiting) 12%, transparent);
     --danger: #ff5c5c;
+    --warning: #e8a33d;
     --accent: #2fd4ff;
     --accent-contrast: #04141b;
     --depth0: #2fd4ff;
@@ -398,6 +399,7 @@
     --waiting: #6a4fd0;
     --waiting-bg: color-mix(in srgb, var(--waiting) 12%, transparent);
     --danger: #c0392b;
+    --warning: #b06a00;
     --accent: #0a7499; 
     --accent-contrast: #ffffff;
     --depth0: #0a7499;
@@ -1070,7 +1072,7 @@
   #pf-root.pf-paste-armed .pf-node-header:hover { outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: var(--radius-container) var(--radius-container) 0 0; }
   #pf-root.pf-paste-armed .pf-subrow:hover { outline: 2px dashed var(--accent); outline-offset: -2px; }
   #pf-root.pf-move-armed .pf-node-header, #pf-root.pf-move-armed .pf-subrow { cursor: move; }
-  #pf-root.pf-move-armed .pf-node-header:hover, #pf-root.pf-move-armed .pf-subrow:hover { outline: 2px dashed var(--warning, #e8a33d); outline-offset: -2px; }
+  #pf-root.pf-move-armed .pf-node-header:hover, #pf-root.pf-move-armed .pf-subrow:hover { outline: 2px dashed var(--warning); outline-offset: -2px; }
 
   #pf-root .pf-node-header { display: flex; align-items: center; gap: clamp(4px, 1vw, 8px); padding: clamp(6px, 1.5vw, 12px) clamp(8px, 1.5vw, 14px); cursor: pointer; flex-wrap: nowrap; }
   #pf-root .pf-chevron {
@@ -2289,7 +2291,7 @@
   #pf-root .pf-note-link-chip {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: calc(var(--font-size-base) - 2px);
-    padding: 2px 8px; border-radius: var(--radius-chip, 999px);
+    padding: 2px 8px; border-radius: var(--radius-pill);
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
     cursor: pointer;
