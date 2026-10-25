@@ -38,6 +38,10 @@ AUDIT-CANONICAL.md
 # shipped register against — so the record cannot drift from what shipped.
 MASTER-AUDIT-*.md
 PWA-AUDIT-REPORT-*.md
+# Dated review passes (REVIEW-YYYY-MM-DD.md). Local records like the audits
+# above: an untracked one nothing ignores is published by the next `git add`,
+# which is exactly what the published-set gate refuses.
+/REVIEW-*.md
 /docs/audits/
 
 # AI skills doc (previously only in local .git/info/exclude, which doesn't travel)
