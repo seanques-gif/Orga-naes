@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-8URiu7gdlZrSF5tL1MyDemk35cq7zAnkNNzjIUG6XYI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-XrkOmA/K4xlo68HE/ItyjrdLo263wUK+D6SGKbqMrHY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="13831ecdef">
+<meta name="build" content="d0e05049a9">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -18360,6 +18360,17 @@ if ('serviceWorker' in navigator) {
   
   
   
+  function readLeaf(node) {
+    return hotFallback(
+      function() { return db.ref('users/' + _fbUser.uid + '/' + node).once('value'); },
+      function() { return restOnceNode('/' + node); }
+    );
+  }
+  
+  
+  
+  
+  
   
   
   
@@ -18875,10 +18886,10 @@ if ('serviceWorker' in navigator) {
         
         
         
-        Promise.race([snoozePresetsRef().once('value'), cloudReadTimeout()]).then(function(pSnap) {
+        readLeaf('snoozePresets').then(function(pSnap) {
           const pv = pSnap.val();
           _pf.setSnoozePresets(pv ? (Array.isArray(pv) ? pv : Object.values(pv)) : null);
-        }).catch(function() {});
+        }, function() {});
         
         
         
@@ -19291,10 +19302,7 @@ if ('serviceWorker' in navigator) {
       
       
       
-      req = hotFallback(
-        function() { return db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'); },
-        function() { return restOnceNode('/updatedAt'); }
-      );
+      req = readLeaf('updatedAt');
     } catch (e) { release(); return; }
     req.then(function(snap) {
       if (settled) return;
@@ -19533,10 +19541,7 @@ if ('serviceWorker' in navigator) {
     const commitRev = function() { if (stampOk) rememberCloudRev(stampVal); };
     let stampReady = Promise.resolve();
     try {
-      stampReady = hotFallback(
-        function() { return db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'); },
-        function() { return restOnceNode('/updatedAt'); }
-      ).then(function(s) { stampVal = Number((s && s.val && s.val()) || 0) || 0; stampOk = true; }, function() { stampOk = false; });
+      stampReady = readLeaf('updatedAt').then(function(s) { stampVal = Number((s && s.val && s.val()) || 0) || 0; stampOk = true; }, function() { stampOk = false; });
     } catch (e) { stampOk = false; }
     Promise.all([withRetry(function(attempt) {
       
@@ -19578,20 +19583,20 @@ if ('serviceWorker' in navigator) {
       const remoteCategories = S.remoteCategories, remoteArchive = S.remoteArchive, remoteNotes = S.remoteNotes, remoteNoteTombstones = S.remoteNoteTombstones;
       const localNotesSnap = S.localNotesSnap, notesMatch = S.notesMatch, catsMatch = S.catsMatch, archMatch = S.archMatch;
 
-      db.ref('users/' + _fbUser.uid + '/categoryEmojis').once('value').then(function(emojiSnap) {
+      readLeaf('categoryEmojis').then(function(emojiSnap) {
         if (emojiSnap.val()) _pf.setCategoryEmojis(emojiSnap.val());
-      });
+      }, function() {});
       
       
-      db.ref('users/' + _fbUser.uid + '/categoryColors').once('value').then(function(colourSnap) {
+      readLeaf('categoryColors').then(function(colourSnap) {
         if (colourSnap.val()) _pf.setCategoryColors(colourSnap.val());
-      });
+      }, function() {});
       
       
-      Promise.race([snoozePresetsRef().once('value'), cloudReadTimeout()]).then(function(pSnap) {
+      readLeaf('snoozePresets').then(function(pSnap) {
         const pv = pSnap.val();
         if (pv) _pf.setSnoozePresets(Array.isArray(pv) ? pv : Object.values(pv));
-      }).catch(function() {});
+      }, function() {});
 
       if (remoteStr === localStr && catsMatch && archMatch && notesMatch) {
         if (!quiet) _pf.showToast('✅ Local data already matches the cloud');
@@ -19762,10 +19767,7 @@ if ('serviceWorker' in navigator) {
       
       
       const autoPath = !_fbUser ? Promise.resolve() : Promise.all([
-        hotFallback(
-          function() { return db.ref('users/' + _fbUser.uid + '/updatedAt').once('value'); },
-          function() { return restOnceNode('/updatedAt'); }
-        ),
+        readLeaf('updatedAt'),
         cloudReads()
       ]).then(function(res) {
         let lsSave = 0, lsSync = 0;
