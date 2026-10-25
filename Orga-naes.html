@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-oerUpApprwPhHWFsARfWF5PJG1HI/0nhJPePWAulYPU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-q8VQcDNelv9/+PBrfVIjpNaoVogx5ZtHc9E1SvJUh40='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="dcd53a8641">
+<meta name="build" content="24773652b0">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -4106,11 +4106,18 @@
 
   
   
-  function payloadReport() { return { changes: [] }; }
-  function payloadNote(report, path, what) { if (report && report.changes.length < 40) report.changes.push(path + ' ' + what); }
+  
+  
+  
+  function payloadReport() { return { changes: [], total: 0 }; }
+  function payloadNote(report, path, what) {
+    if (!report) return;
+    report.total = (report.total || 0) + 1;
+    if (report.changes.length < 40) report.changes.push(path + ' ' + what);
+  }
   function payloadSummary(report) {
-    const n = report ? report.changes.length : 0;
-    return { count: n, first: n ? report.changes[0] : '', all: n ? report.changes.join('; ') : '' };
+    const n = report ? (report.total || 0) : 0, c = report ? report.changes : [];
+    return { count: n, all: c.length ? c.join('; ') + (n > c.length ? '; …and ' + (n - c.length) + ' more' : '') : '' };
   }
 
   
@@ -4354,10 +4361,12 @@
 
     
     
+    
+    
     const blocked = Array.isArray(s.blockedBy) ? s.blockedBy : (s.blockedBy && typeof s.blockedBy === 'object' ? Object.values(s.blockedBy) : []);
-    const blockedIds = blocked.map((v) => repairRecordId(v, path + '.blockedBy')).filter((r) => r.id).map((r) => r.id);
-    if (blockedIds.length !== blocked.filter(Boolean).length) payloadNote(report, path + '.blockedBy', 'had entries that are not record ids and they were dropped');
-    out.blockedBy = blockedIds;
+    const repairedBlocked = blocked.filter(Boolean).map((v) => repairRecordId(v, path + '.blockedBy'));
+    if (repairedBlocked.some((r) => r.changed)) payloadNote(report, path + '.blockedBy', 'had ids the rules do not accept, repaired or dropped');
+    out.blockedBy = repairedBlocked.filter((r) => r.id).map((r) => r.id);
 
     const comments = Array.isArray(s.comments) ? s.comments : (s.comments && typeof s.comments === 'object' ? Object.values(s.comments) : []);
     out.comments = comments.filter(Boolean).map((c, i) => {
