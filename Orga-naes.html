@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="24773652b0">
+<meta name="build" content="8a1c392aa3">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -129,7 +129,7 @@
   
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; padding-top: env(safe-area-inset-top, 0px); background: #1e1e1e; margin: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; padding-top: env(safe-area-inset-top, 0px); background: var(--bg-boot); margin: 0; }
   @media all and (display-mode: standalone) { html, body { min-height: 100vh; min-height: -webkit-fill-available; } }
   @media (max-width: 900px) { html, body { overflow: hidden; } }
 
@@ -294,6 +294,8 @@
     --radius-pill: 100px;
     --shadow-carried: 0 20px 50px rgba(0,0,0,0.55);
     --shadow-hover: 0 6px 18px rgba(0,0,0,0.45);
+    
+    --bg-boot: #0a0d11;
 
     
     --space-xxs: 2px;
@@ -1253,7 +1255,6 @@
   }
   #pf-root .pf-recur-dropdown button:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
   #pf-root .pf-recur-dropdown button.pf-recur-active { color: var(--accent); font-weight: 600; }
-  #pf-root .pf-split-list-item.pf-dragging { opacity: 0.4; }
   #pf-root .pf-split-drop-indicator {
     height: 2px; background: var(--accent); border-radius: 6px; margin: 0 8px;
     pointer-events: none; animation: pf-drop-indicator-pulse 0.6s var(--ease-out-strong) infinite alternate;
@@ -3264,6 +3265,10 @@
   .pf-conflict-btns button { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--sub-bg); color: var(--text); font-size: calc(var(--font-size-base) - 2px); font-weight: 600; cursor: pointer; flex: 1; }
   .pf-conflict-btns button.pf-conflict-primary { background: var(--accent); color: var(--accent-contrast, #fff); border-color: var(--accent); }
   @media print {
+    
+    html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+    #pf-root .pf-bottom-nav, #pf-root .pf-split-nav { display: none !important; }
+    
     #pf-root { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
     #pf-root .pf-toolbar, #pf-root .pf-resize-handle, #pf-root .pf-toast,
     #pf-root .pf-modal-backdrop,
