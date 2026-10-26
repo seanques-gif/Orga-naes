@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-TyRsVl9A7vgIy8gPjFgZP+JDyF0PCJAi4h0FeK6ULKc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-piISVWtmgz7hbSevn5t1q9xnExyeWztSGy2NisvMBtg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="a70595a579">
+<meta name="build" content="f7663dad3e">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -21976,16 +21976,27 @@ if ('serviceWorker' in navigator) {
       ? (clearTimeout(_fbPushTimer), _fbPushTimer = null, pushSelective())
       : _fbPushInFlight;
     if (flushed && typeof flushed.then === 'function') {
+      
+      const waitMs = (window._pf && window._pf._manualPushWaitMs) || MANUAL_PUSH_WAIT_MS;
+      
+      
+      const WAIT_EXPIRED = {};
       Promise.race([
         
         
         flushed.then(function(r) { return r; }, function() { return null; }),
-        new Promise(function(r) { setTimeout(r, MANUAL_PUSH_WAIT_MS); })
+        new Promise(function(r) { setTimeout(function() { r(WAIT_EXPIRED); }, waitMs); })
       ]).then(function(r) {
         
         
-        
         if (r && r.asked) return;
+        
+        
+        
+        
+        
+        
+        if (r === WAIT_EXPIRED && _fbPushInFlight) { _pf.showToast('⏳ Still syncing — the push will finish on its own'); return; }
         _compareCloudThenPush();
       });
       return;
