@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-IQKJt01DvJ0zXIC75dQs1p0QJymiIHzCs6J1xB4niLg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-uIlHV1UJouKE1OjzDff8vmyjUo0G0nYjxiPzKlxoS6U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="99d49e6cd4">
+<meta name="build" content="7ade906969">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -1215,7 +1215,17 @@
   @media (max-width: 900px) {
     #pf-root .pf-selbar-btn { font-size: calc(var(--font-size-base) - 1.5px); padding: 7px 9px; }
   }
-  #pf-root .pf-node.pf-expanded { min-width: 380px; max-width: 500px; }
+  
+
+
+
+
+
+
+
+
+
+
   @media (hover: hover) and (pointer: fine) {
     
 
@@ -2406,7 +2416,14 @@
     border: 1.5px solid var(--text-dim); cursor: pointer; display: inline-flex;
     align-items: center; justify-content: center; transition: border-color 0.15s, background 0.15s;
   }
-  #pf-root .pf-notes-check:hover, #pf-root .pf-notes-check:focus-visible { border-color: var(--accent); outline: none; }
+  
+
+
+
+
+
+  #pf-root .pf-notes-check:hover { border-color: var(--accent); }
+  #pf-root .pf-notes-check:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
   #pf-root .pf-notes-item-checked { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--sub-bg)); }
   #pf-root .pf-notes-item-checked .pf-notes-check { background: var(--accent); border-color: var(--accent); }
   #pf-root .pf-notes-item-checked .pf-notes-check::after {
@@ -5286,7 +5303,12 @@
       
       
       const el = _overlayEls[d.key] || (d.el ? d.el() : null);
-      if (!el || (el.style && el.style.display === 'none')) continue;
+      
+      
+      
+      
+      
+      if (!el || el.hidden === true || (el.style && el.style.display === 'none')) continue;
       if (!d.check()) continue;
       const stamp = _overlayStamps[d.key] || 0;
       if (!best || stamp > best.stamp) best = { stamp: stamp, el: el };
@@ -5638,9 +5660,55 @@
       } catch (e) { if (typeof logError === 'function') logError('IndexedDB open (kv)', e); resolve(null); }
     });
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const MIRROR_V = 2;
+  function _idbGet(key) {
+    return openIDB_KV().then(function(db) {
+      if (!db) return null;
+      return new Promise(function(resolve) {
+        try {
+          const tx = db.transaction('kv','readonly');
+          const req = tx.objectStore('kv').get(key);
+          req.onsuccess = function() { resolve(req.result || null); };
+          req.onerror = function() { resolve(null); };
+        } catch (e) { resolve(null); }
+      });
+    }).catch(function() { return null; });
+  }
   async function safeGet(key, shared) {
-    if (hasStorage()) { try { const v = localStorage.getItem(key); if (v !== null) return { value: v }; } catch (e) {} }
-    try { const db = await openIDB_KV(); if (!db) return null; return await new Promise(resolve => { const tx = db.transaction('kv','readonly'); const req = tx.objectStore('kv').get(key); req.onsuccess = () => resolve(req.result ? { value: req.result.value } : null); req.onerror = () => resolve(null); }); } catch (e) { return null; }
+    let lsVal = null;
+    if (hasStorage()) { try { lsVal = localStorage.getItem(key); } catch (e) {} }
+    const rec = await _idbGet(key);
+    const recVal = (rec && typeof rec.value === 'string') ? rec.value : null;
+    
+    
+    if (rec && rec.v === MIRROR_V && recVal !== null) return { value: recVal };
+    if (lsVal !== null) return { value: lsVal };
+    
+    
+    return recVal !== null ? { value: recVal } : null;
   }
   function _checkStorageQuota() {
     try {
@@ -5668,7 +5736,11 @@
     
     
     
-    try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); const req = tx.objectStore('kv').put({ key: key, value: value }); idbOk = await new Promise(r => { req.onsuccess = () => r(true); req.onerror = () => r(false); }); } } catch (e) { if (typeof logError === 'function') logError('IndexedDB write (' + key + ')', e); }
+    
+    
+    
+    
+    try { const db = await openIDB_KV(); if (db) { const tx = db.transaction('kv','readwrite'); const req = tx.objectStore('kv').put({ key: key, value: value, v: lsOk ? 1 : MIRROR_V }); idbOk = await new Promise(r => { req.onsuccess = () => r(true); req.onerror = () => r(false); }); } } catch (e) { if (typeof logError === 'function') logError('IndexedDB write (' + key + ')', e); }
     if (!lsOk && !idbOk) { showToast('⚠ Storage full: data may not persist. Export your data soon.', true); if (typeof logError === 'function') logError('Storage write failed (' + key + ')', new Error('Both localStorage and IndexedDB unavailable')); }
     else if (!lsOk && idbOk) { showToast('⚠ localStorage full, using IndexedDB fallback', true); }
     else if (lsQuotaErr && idbOk) {  }
@@ -9827,7 +9899,12 @@
   function navInlineRename(row, p) {
     const label = row ? row.querySelector('.branched-menu__label') : null;
     if (!label || label.contentEditable === 'true') return;
-    clearTimeout(window._splitSelectTimer);   
+    
+    
+    
+    
+    
+    clearTimeout(_splitSelectTimer);
     label.contentEditable = 'true';
     if (typeof label.focus === 'function') label.focus();
     try {
@@ -14062,6 +14139,12 @@
     try { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories)); } catch (e) {}
     try { localStorage.setItem('project-flow-cat-emojis', JSON.stringify(categoryEmojis)); } catch(e) {}
     try { localStorage.setItem('project-flow-category-colors', JSON.stringify(catColors)); } catch(e) {}
+    
+    
+    
+    
+    
+    if (typeof _pf.flushNotesForUnload === 'function') { try { _pf.flushNotesForUnload(); } catch (e) {} }
   });
 
   const importInput = document.getElementById('pf-import-file');
@@ -15310,10 +15393,20 @@
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
   function _shownIn(el, box) {
     for (let n = el; n; n = n.parentNode) {
-      if (n.style && n.style.display === 'none') return false;
       if (n === box) return true;
+      if (n.hidden === true) return false;
+      if (n.style && n.style.display === 'none') return false;
     }
     return true;
   }
@@ -16527,6 +16620,16 @@
     try { const res = await safeGet(NOTES_KEY, false); if (epoch !== loadEpoch) return; if (res && res.value) notes = _normalizeNoteList(JSON.parse(res.value)); } catch (e) { notes = []; logError('Load notes', e); }
     try { const res2 = await safeGet(NOTES_TOMB_KEY, false); if (epoch !== loadEpoch) return; if (res2 && res2.value) noteTombstones = JSON.parse(res2.value) || {}; } catch (e) { noteTombstones = {}; }
     if (epoch !== loadEpoch) return; 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    notes = notes.filter(function(n) { return !isTombstoned(n.id); });
     notesLoaded = true;
     _notesTabStore.recordBase();        
     _noteTombsTabStore.recordBase();
@@ -16558,6 +16661,21 @@
       if (typeof _maybeSaveSnapshot === 'function') { try { _maybeSaveSnapshot(); } catch (e) {} }
     }, 350);
   }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  function flushNotesForUnload() {
+    try { commitNoteField(); } catch (e) {}   
+    clearTimeout(notesSaveTimer);             
+    try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch (e) {}
+  }
+  _pf.flushNotesForUnload = flushNotesForUnload;
 
   function fmtNoteDate(iso) {
     if (!iso) return '';
@@ -16828,6 +16946,13 @@
   function deleteNoteById(id, opts) {
     const n = noteById(id);
     if (!n) return false;
+    
+    
+    
+    
+    
+    
+    commitNoteField();
     notesSnapshotPush();
     if (typeof logActivity === 'function') logActivity('Deleted note "' + (n.title || 'Untitled') + '"');
     notes = notes.filter(x => x.id !== id);
@@ -16858,6 +16983,14 @@
   }
 
   function togglePin() {
+    
+    
+    
+    
+    
+    
+    
+    commitNoteField();
     const n = noteById(activeNoteId);
     if (!n) return;
     notesSnapshotPush();
@@ -21080,7 +21213,15 @@ if ('serviceWorker' in navigator) {
     
     
     
-    if (hasChanges || catChanged || archChanged) updates.updatedAt = Date.now();
+    
+    
+    
+    
+    
+    
+    
+    
+    if (hasChanges || catChanged || archChanged || cosmeticsChanged) updates.updatedAt = Date.now();
 
     const pending = [];
     
