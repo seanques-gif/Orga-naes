@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-HMMkK/AqSS1aHGfbM/n7BcXz1sEiK4VrqBrfuH4CoDM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-4g6WbkeOBtcI/HauDMWEMdJscocnAq1xPZjAqlD7Ano='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="3e3f69f89a">
+<meta name="build" content="a1ce7b393a">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -8574,6 +8574,14 @@
     let cursorEl = null;
     
     
+    
+    
+    
+    
+    
+    let keyboardPick = false;
+    
+    
     function cursorRow() {
       const rows = rowsAt();
       let at = -1;
@@ -8623,7 +8631,8 @@
       cursorEl = row.el;
       if (typeof row.el.focus === 'function') row.el.focus();
       if (activate === false || row.kind === 'head') return;
-      select(valueOf(row.item), row.item);
+      keyboardPick = true;
+      try { select(valueOf(row.item), row.item); } finally { keyboardPick = false; }
     }
     nav.addEventListener('keydown', onNavKey);
 
@@ -8634,6 +8643,17 @@
       if (picked) cursorEl = picked.el;
       paint();
       if (typeof cb.onSelect === 'function') cb.onSelect(value, item);
+      
+      
+      
+      
+      if (keyboardPick) {
+        const again = findRow(value);
+        if (again && again.el && again.el !== cursorEl) {
+          cursorEl = again.el;
+          if (typeof again.el.focus === 'function') again.el.focus();
+        }
+      }
     }
     function toggleSection(i) {
       const isOpen = !open.has(i);
@@ -14155,14 +14175,32 @@
   }
   function doFallbackDownload(json, filename) {
     const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+    let url;
+    try { url = URL.createObjectURL(blob); } catch (err) {
+      
+      
+      showToast('⚠ Could not prepare the backup file', true);
+      logError('Auto-backup download', err);
+      return;
+    }
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+    
+    
+    
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    try { a.click(); } finally { a.remove(); }
+    
+    
+    
+    
+    setTimeout(function() { try { URL.revokeObjectURL(url); } catch (e) {} }, 60000);
     safeSet(AUTOBACKUP_LAST_KEY, new Date().toISOString(), false);
-    showToast('Auto-backup saved.');
+    
+    
+    showToast('Auto-backup downloaded.');
   }
   function startAutoBackup() {
     clearInterval(autoBackupTimer);
@@ -14307,6 +14345,11 @@
     _pf.readBackupSchema = readBackupSchema;
     _pf.migrateBackupPayload = migrateBackupPayload;
     _pf.KNOWN_BACKUP_SCHEMA = KNOWN_BACKUP_SCHEMA;
+    
+    
+    
+    
+    _pf.doAutoBackup = function() { return doAutoBackup(); };
   }
 
   
