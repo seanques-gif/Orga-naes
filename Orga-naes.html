@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-t4FGxIeDLp7pw4JIMNlPenn8jnn2SWUvvxmlWiqGoO8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-0301hNJ7Jj6EaBVr94Yyy3vhzDxyJK5AKoHNO5tTpB8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="397bbce03b">
+<meta name="build" content="d5fdb09893">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -16469,7 +16469,12 @@
     if (!n || typeof n !== 'object' || typeof n.id !== 'string' || !n.id) return null;
     const rid = repairRecordId(n.id, 'note');
     if (!rid.id) return null;
-    return { id: rid.id, title: String(n.title || '').slice(0, 120), body: String(n.body || '').slice(0, 100000), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || n.createdAt || new Date().toISOString() };
+    
+    
+    
+    
+    
+    return { id: rid.id, title: String(n.title || '').slice(0, 120), body: String(n.body || ''), pinned: !!n.pinned, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || n.createdAt || new Date().toISOString() };
   }
   function _normalizeNoteList(list) { return (Array.isArray(list) ? list : []).map(_normalizeNote).filter(Boolean); }
 
@@ -17056,7 +17061,12 @@
     const n = noteById(activeNoteId);
     if (!n) return;
     const title = noteTitleEl.value.replace(/\s+/g, ' ').trim().slice(0, 120);
-    const body = noteBodyEl.value.slice(0, 100000);
+    
+    
+    
+    const rawBody = noteBodyEl.value;
+    const storedBodyLen = String(n.body || '').length;
+    const body = rawBody.length > 100000 ? rawBody.slice(0, Math.max(100000, storedBodyLen)) : rawBody;
     if (title !== (n.title || '') || body !== (n.body || '')) {
       notesSnapshotPush();
       n.title = title; n.body = body; n.updatedAt = new Date().toISOString();
