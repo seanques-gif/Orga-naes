@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-uxblVnqzQGdwimG6Dmtpl7tk4mwgExwF7lye+thFsEY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-iq7NVaEB01kn7n7HJkUWOhgk1x+mYdzCUlrLRpuNcnA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="65908ffd92">
+<meta name="build" content="587edfc4bb">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -21350,7 +21350,12 @@ if ('serviceWorker' in navigator) {
     }
 
     let notesPush = Promise.resolve();
-    try { notesPush = pushNotesIfNeeded().catch(function(e) { if (_pf.logError) _pf.logError('Firebase push (notes)', e); }); } catch(e) { if (_pf.logError) _pf.logError('Firebase push (notes)', e); }
+    
+    
+    
+    
+    const notesFailed = function(e) { _syncPushFailed = true; _pf.showToast('⚠ Notes push failed: ' + (e && e.message ? e.message : 'unknown error'), true); if (_pf.logError) _pf.logError('Firebase push (notes)', e); };
+    try { notesPush = pushNotesIfNeeded().catch(notesFailed); } catch(e) { notesFailed(e); }
     pending.push(notesPush);
 
     
