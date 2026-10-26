@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-4g6WbkeOBtcI/HauDMWEMdJscocnAq1xPZjAqlD7Ano='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-m74g451MMlwbdeNXo+PHk+NnpFnG0sHXtDAbu555oXs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="a1ce7b393a">
+<meta name="build" content="07b8c76f91">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -8574,14 +8574,6 @@
     let cursorEl = null;
     
     
-    
-    
-    
-    
-    
-    let keyboardPick = false;
-    
-    
     function cursorRow() {
       const rows = rowsAt();
       let at = -1;
@@ -8631,8 +8623,7 @@
       cursorEl = row.el;
       if (typeof row.el.focus === 'function') row.el.focus();
       if (activate === false || row.kind === 'head') return;
-      keyboardPick = true;
-      try { select(valueOf(row.item), row.item); } finally { keyboardPick = false; }
+      select(valueOf(row.item), row.item);
     }
     nav.addEventListener('keydown', onNavKey);
 
@@ -8643,17 +8634,6 @@
       if (picked) cursorEl = picked.el;
       paint();
       if (typeof cb.onSelect === 'function') cb.onSelect(value, item);
-      
-      
-      
-      
-      if (keyboardPick) {
-        const again = findRow(value);
-        if (again && again.el && again.el !== cursorEl) {
-          cursorEl = again.el;
-          if (typeof again.el.focus === 'function') again.el.focus();
-        }
-      }
     }
     function toggleSection(i) {
       const isOpen = !open.has(i);
@@ -8709,6 +8689,21 @@
       
       
       itemEl: function(value) { const row = findRow(value); return row ? row.el : null; },
+      
+      
+      
+      
+      valueOfEl: function(el) {
+        if (!el) return null;
+        for (let i = 0; i < items.length; i++) {
+          if (heads[i] === el) return valueOf(items[i]);
+          const kids = kidsOf(items[i]);
+          const rows = rowsBySection[i] || [];
+          if (!kids) continue;
+          for (let k = 0; k < rows.length; k++) if (rows[k] === el) return kids[k].value;
+        }
+        return null;
+      },
       refresh: function() { if (activeSection >= 0) placeMarker(true); },
       state: function() {
         return { open: Array.from(open).sort(function(a, b) { return a - b; }), active: active, markerShown: markerShown, count: items.length };
@@ -9563,10 +9558,24 @@
     const shape = projectsNavShape();
     if (shape !== projectsNavSig) {
       projectsNavSig = shape;
+      
+      
+      
+      
+      
+      
+      
+      
+      const focusedValue = (projectsNav.valueOfEl && document.activeElement)
+        ? projectsNav.valueOfEl(document.activeElement) : null;
       projectsNav.update({ items: projectNavItems() });
       decorateProjectsNavCats();
       decorateProjectsNavProjects();
       projectsNav.setActive(projectsView);
+      if (focusedValue) {
+        const row = projectsNav.itemEl(focusedValue);
+        if (row && typeof row.focus === 'function') row.focus();
+      }
     }
     const labels = projectsNavCountLabels();
     Object.keys(labels).forEach(function(v) { setProjectsNavLabel(v, labels[v]); });
