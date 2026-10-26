@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-iq7NVaEB01kn7n7HJkUWOhgk1x+mYdzCUlrLRpuNcnA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-y5tGqbKYjyuPAzBa85/W020Dm41a7muQpdTJ/Z7AwjA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="587edfc4bb">
+<meta name="build" content="2085d7f07d">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -19762,7 +19762,7 @@ if ('serviceWorker' in navigator) {
     const lastSync = parseInt(localStorage.getItem('pf-firebase-last-sync-time') || '0');
     const elapsed = Date.now() - lastSync;
     if (!isReload && elapsed > 3600000) {
-      db.ref('users/' + user.uid + '/updatedAt').once('value').then(function(snap) {
+      readLeaf('updatedAt').then(function(snap) {
         const remoteTime = snap.val() || 0;
         
         
@@ -19790,13 +19790,13 @@ if ('serviceWorker' in navigator) {
           hydrateBaseline();
           if (_baseDirty) return;
           if (_pf && _pf.snapshot) _pf.snapshot();
-          Promise.all([
-            userRef().once('value'),
-            catRef().once('value'),
-            archiveRef().once('value'),
-            notesRef().once('value'),
-            noteTombstonesRef().once('value')
-          ]).then(function(results) {
+          
+          
+          
+          
+          
+          
+          cloudReads().then(function(results) {
             const projVal = results[0].val();
             const catVal = results[1].val();
             const archVal = results[2].val();
