@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="d5fdb09893">
+<meta name="build" content="0c738aa5d8">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -3758,16 +3758,36 @@
 
     #pf-root { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
     #pf-root .pf-toolbar, #pf-root .pf-resize-handle, #pf-root .pf-toast,
-    #pf-root .pf-modal-backdrop,
+    
+
+
+
+    #pf-root .pf-modal-layer, #pf-root .pf-modal-backdrop,
+    #pf-root .pf-options-panel, #pf-root .pf-activity-panel,
+    #pf-root .pf-due-panel, #pf-root .pf-shortcuts-panel,
+    #pf-root .pf-reminder-popover,
     #pf-root .pf-split-list, #pf-root .pf-split-divider,
     #pf-root .pf-add-sub, #pf-root .pf-sub-add, #pf-root .pf-sub-del,
     #pf-root .pf-sub-edit, #pf-root .pf-node-del, #pf-root .pf-sub-handle,
     #pf-root .pf-dep-chip, #pf-root .pf-recur-chip, #pf-root .pf-sub-comment,
     #pf-root .pf-carry-bar, #pf-root .pf-carry-ghost,
     #pf-root button { display: none !important; }
+    
+
+
+
+
+
+
+    #pf-root:not(.pf-detail-open) .pf-split-list { display: block !important; overflow: visible !important; }
+    #pf-root:not(.pf-detail-open) .pf-split-list-item { background: #fff !important; opacity: 1 !important; break-inside: avoid; }
+    #pf-root:not(.pf-detail-open) .pf-split-list * { color: #000 !important; }
     #pf-root .pf-split-view { display: block !important; overflow: visible !important; }
     #pf-root .pf-split-detail { display: block !important; overflow: visible !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
-    #pf-root .pf-node { position: static !important; width: 100% !important; max-width: 100% !important; margin-bottom: 16px; break-inside: avoid; border: 1px solid #ccc !important; background: #fff !important; }
+    
+
+
+    #pf-root .pf-node { position: static !important; width: 100% !important; max-width: 100% !important; margin-bottom: 16px; break-inside: avoid; border: 1px solid #ccc !important; background: #fff !important; transform: none !important; }
     #pf-root .pf-node-header { background: #f5f5f5 !important; }
     #pf-root .pf-node-title { color: #000 !important; }
     #pf-root .pf-sublist { display: block !important; overflow: visible !important; }
