@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-uIlHV1UJouKE1OjzDff8vmyjUo0G0nYjxiPzKlxoS6U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-R8Ih4zPDRJfGRq3sGZN1Tm+tYYrw1BIbq7UOHP7OsnI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="7ade906969">
+<meta name="build" content="9745897d77">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -6529,6 +6529,15 @@
       pick: spec.pick || function(payload) { return payload; },
       unpick: spec.unpick || function(value) { return value; },
       merge: spec.merge || null,          
+      
+      
+      
+      
+      
+      
+      
+      
+      flush: spec.flush || null,
       onDropped: spec.onDropped || null,  
       onWipe: spec.onWipe || null,        
       base: null,
@@ -6712,6 +6721,7 @@
       if (had) showToast('⚠ Signed out in another tab — ' + store.label + ' cleared here too');
       return;
     }
+    if (store.flush) { try { store.flush(); } catch (err) { logError('Cross-tab sync (' + store.label + ': flush)', err); } }
     if (raw === store.serialize(store.get())) { store.recordBase(raw); return; }   
     let value = null, baseValue = null;
     try { value = JSON.parse(raw); }
@@ -18810,6 +18820,10 @@
     
     
     ready: function() { return notesLoaded; },
+    
+    
+    
+    flush: commitNoteField,
     set: _applyExternalNotes,
     persist: function() { saveNotes(); },
     onWipe: function() { notesHistoryReset(); },   
