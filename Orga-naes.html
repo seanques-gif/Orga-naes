@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-hP5roPvX4snlk5uVPZBn5a4qJugoEIRtr5mUTxDicuk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-9/M4FTp+UMYlloTYc84OcCZHQXRoksmjEOoxl5S1GFI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="90029473b4">
+<meta name="build" content="7074475cdb">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -14862,6 +14862,25 @@
     
     
     runWeeklySync();
+
+    
+    
+    
+    
+    
+    
+    (function launchAction() {
+      const TARGET = { new: 'pf-new-project', today: 'pf-today-btn', notes: 'pf-notes-btn' };
+      const m = /[?&]action=([a-z-]+)/.exec(location.search || '');
+      
+      
+      const target = m ? TARGET[m[1]] : '';
+      if (typeof target !== 'string') return;
+      try { history.replaceState(null, '', location.pathname + (location.hash || '')); } catch (e) {}
+      
+      
+      try { const el = document.getElementById(target); if (el) el.click(); } catch (e) { console.warn('launch action failed:', e); }
+    })();
   });
 
   
