@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-DRUFRKlrcbO4cpZkGzt6X5ijAm9TGYXl+tVt92TZoHI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-R9xCEFVrUK8tKOTReRaIeGPxDCXX5GJKUZSjhYry8GE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="d498a4e2b2">
+<meta name="build" content="c95d885cca">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -7420,6 +7420,7 @@
   const RECUR_OPTIONS = [
     { value: null, label: 'None' },
     { value: 'daily', label: '🔁 Daily' },
+    { value: 'weekdays', label: '🔁 Weekdays' },
     { value: 'weekly', label: '🔁 Weekly' },
     { value: 'biweekly', label: '🔁 Every 2 weeks' },
     { value: 'monthly', label: '🔁 Monthly' }
