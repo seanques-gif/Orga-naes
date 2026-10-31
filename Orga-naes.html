@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-fGkbVj9OABwzQ4J1XNwPe+VHHL2CCoJHWfnYMjGWmcg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-hP5roPvX4snlk5uVPZBn5a4qJugoEIRtr5mUTxDicuk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,12 +14,12 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="2f744e7186">
+<meta name="build" content="90029473b4">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
      one report instead of failing one wiring at a time. Never hand-edit. -->
-<meta name="orga-required-ids" content="pf-activity-btn,pf-activity-list,pf-activity-panel,pf-archive-btn,pf-archive-count,pf-archive-list,pf-archive-panel,pf-autobackup-dir,pf-autobackup-min,pf-autobackup-path,pf-backlog-arrange-btn,pf-bottom-badge,pf-bottom-nav,pf-cal-detail-list,pf-cal-detail-title,pf-cal-grid,pf-cal-month,pf-cal-next,pf-cal-prev,pf-cal-today-btn,pf-calendar-btn,pf-calendar-panel,pf-category-add-btn,pf-category-add-input,pf-category-btn,pf-category-list,pf-category-popover,pf-color-modal,pf-color-modal-cancel,pf-color-modal-clear,pf-color-modal-ok,pf-color-modal-picker,pf-color-palette,pf-comment-add,pf-comment-input,pf-comment-input-row,pf-comment-list,pf-comment-panel,pf-comment-task-name,pf-confirm-cancel,pf-confirm-message,pf-confirm-modal,pf-confirm-ok,pf-confirm-title,pf-conflict-keep-local,pf-conflict-keep-remote,pf-conflict-local,pf-conflict-modal,pf-conflict-remote,pf-conflict-x,pf-connection-dot,pf-copy-modal,pf-copy-modal-list,pf-copy-modal-title,pf-desktop-badge,pf-display-scale,pf-display-scale-reset,pf-display-scale-val,pf-due-filter,pf-due-panel,pf-due-panel-close,pf-due-table-body,pf-duelist-btn,pf-duelist-list,pf-duelist-panel,pf-error-btn,pf-error-clear-btn,pf-error-copy-btn,pf-error-count,pf-error-dot-btn,pf-error-dot-desktop,pf-error-dot-mobile,pf-error-export-btn,pf-error-list,pf-error-panel,pf-export,pf-export-csv,pf-export-pdf,pf-fab,pf-fab-menu,pf-fab-overlay,pf-firebase-autobackup,pf-firebase-autosync,pf-firebase-backups-btn,pf-firebase-backups-list,pf-firebase-build,pf-firebase-last-sync,pf-firebase-pull,pf-firebase-purge-report,pf-firebase-purge-trash,pf-firebase-push,pf-firebase-restore-preview,pf-firebase-signin,pf-firebase-signout,pf-firebase-status,pf-font-custom,pf-font-family,pf-font-size,pf-font-size-val,pf-history-actions,pf-history-clear,pf-history-count,pf-history-filter,pf-history-filter-clear,pf-history-list,pf-history-live,pf-history-restore,pf-import,pf-import-file,pf-modal-backdrop,pf-nav-divider,pf-new-project,pf-new-project-cat-add,pf-new-project-cat-input,pf-new-project-cat-list,pf-new-project-popover,pf-note-body,pf-note-body-rich,pf-note-copy,pf-note-count,pf-note-del,pf-note-hist,pf-note-list,pf-note-new,pf-note-pin,pf-note-pin-label,pf-note-preview,pf-note-redo,pf-note-table,pf-note-table-tools,pf-note-title,pf-note-undo,pf-note-view,pf-note-view-label,pf-notes-btn,pf-notes-editor-empty,pf-notes-editor-main,pf-notes-fmt-bar,pf-notes-list,pf-notes-nav,pf-notes-panel,pf-notes-resize,pf-notes-search,pf-opt-body,pf-opt-tabs,pf-options-btn,pf-options-btn-desktop,pf-options-panel,pf-redo,pf-reminder-btn,pf-reminder-cancel,pf-reminder-days,pf-reminder-popover,pf-reminder-save,pf-reminders-btn,pf-reminders-list,pf-reminders-panel,pf-resize-handle,pf-root,pf-save,pf-search,pf-search-clear,pf-search-close,pf-search-toggle,pf-search-wrap,pf-shortcuts-btn,pf-shortcuts-hint,pf-shortcuts-panel,pf-snapshots-btn,pf-snapshots-count,pf-snapshots-list,pf-snapshots-panel,pf-snooze-add,pf-snooze-editor,pf-snooze-reset,pf-split-detail,pf-split-divider,pf-split-list,pf-split-nav,pf-split-view,pf-sr-announcer,pf-stats,pf-sync-diag,pf-sync-diag-out,pf-theme-auto,pf-toast,pf-today-btn,pf-today-carry-btn,pf-today-clear-btn,pf-today-date,pf-today-due-btn,pf-today-list,pf-today-overdue-btn,pf-today-panel,pf-toolbar,pf-trash-btn,pf-trash-count,pf-trash-empty-btn,pf-trash-list,pf-trash-panel,pf-undo,pf-update-pill,pf-week-backlog-count,pf-week-backlog-list,pf-week-days,pf-week-grid,pf-week-label,pf-week-next,pf-week-prev,pf-week-today,pf-weekly-btn,pf-weekly-panel">
+<meta name="orga-required-ids" content="pf-activity-btn,pf-activity-list,pf-activity-panel,pf-archive-btn,pf-archive-count,pf-archive-list,pf-archive-panel,pf-autobackup-dir,pf-autobackup-min,pf-autobackup-path,pf-backlog-arrange-btn,pf-bottom-badge,pf-bottom-nav,pf-cal-detail-list,pf-cal-detail-title,pf-cal-grid,pf-cal-month,pf-cal-next,pf-cal-prev,pf-cal-today-btn,pf-calendar-btn,pf-calendar-panel,pf-category-add-btn,pf-category-add-input,pf-category-btn,pf-category-list,pf-category-popover,pf-color-modal,pf-color-modal-cancel,pf-color-modal-clear,pf-color-modal-ok,pf-color-modal-picker,pf-color-palette,pf-comment-add,pf-comment-input,pf-comment-input-row,pf-comment-list,pf-comment-panel,pf-comment-task-name,pf-confirm-cancel,pf-confirm-message,pf-confirm-modal,pf-confirm-ok,pf-confirm-title,pf-conflict-keep-local,pf-conflict-keep-remote,pf-conflict-local,pf-conflict-modal,pf-conflict-remote,pf-conflict-x,pf-connection-dot,pf-copy-modal,pf-copy-modal-list,pf-copy-modal-title,pf-desktop-badge,pf-display-scale,pf-display-scale-reset,pf-display-scale-val,pf-due-filter,pf-duelist-btn,pf-duelist-list,pf-duelist-panel,pf-error-btn,pf-error-clear-btn,pf-error-copy-btn,pf-error-count,pf-error-dot-btn,pf-error-dot-desktop,pf-error-dot-mobile,pf-error-export-btn,pf-error-list,pf-error-panel,pf-export,pf-export-csv,pf-export-pdf,pf-fab,pf-fab-menu,pf-fab-overlay,pf-firebase-autobackup,pf-firebase-autosync,pf-firebase-backups-btn,pf-firebase-backups-list,pf-firebase-build,pf-firebase-last-sync,pf-firebase-pull,pf-firebase-purge-report,pf-firebase-purge-trash,pf-firebase-push,pf-firebase-restore-preview,pf-firebase-signin,pf-firebase-signout,pf-firebase-status,pf-font-custom,pf-font-family,pf-font-size,pf-font-size-val,pf-history-actions,pf-history-clear,pf-history-count,pf-history-filter,pf-history-filter-clear,pf-history-list,pf-history-live,pf-history-restore,pf-import,pf-import-file,pf-modal-backdrop,pf-nav-divider,pf-new-project,pf-new-project-cat-add,pf-new-project-cat-input,pf-new-project-cat-list,pf-new-project-popover,pf-note-body,pf-note-body-rich,pf-note-copy,pf-note-count,pf-note-del,pf-note-hist,pf-note-list,pf-note-new,pf-note-pin,pf-note-pin-label,pf-note-preview,pf-note-redo,pf-note-table,pf-note-table-tools,pf-note-title,pf-note-undo,pf-note-view,pf-note-view-label,pf-notes-btn,pf-notes-editor-empty,pf-notes-editor-main,pf-notes-fmt-bar,pf-notes-list,pf-notes-nav,pf-notes-panel,pf-notes-resize,pf-notes-search,pf-opt-body,pf-opt-tabs,pf-options-btn,pf-options-btn-desktop,pf-options-panel,pf-redo,pf-reminder-btn,pf-reminder-cancel,pf-reminder-days,pf-reminder-popover,pf-reminder-save,pf-reminders-btn,pf-reminders-list,pf-reminders-panel,pf-resize-handle,pf-root,pf-save,pf-search,pf-search-clear,pf-search-close,pf-search-toggle,pf-search-wrap,pf-shortcuts-btn,pf-shortcuts-hint,pf-shortcuts-panel,pf-snapshots-btn,pf-snapshots-count,pf-snapshots-list,pf-snapshots-panel,pf-snooze-add,pf-snooze-editor,pf-snooze-reset,pf-split-detail,pf-split-divider,pf-split-list,pf-split-nav,pf-split-view,pf-sr-announcer,pf-stats,pf-sync-diag,pf-sync-diag-out,pf-theme-auto,pf-toast,pf-today-btn,pf-today-carry-btn,pf-today-clear-btn,pf-today-date,pf-today-due-btn,pf-today-list,pf-today-overdue-btn,pf-today-panel,pf-toolbar,pf-trash-btn,pf-trash-count,pf-trash-empty-btn,pf-trash-list,pf-trash-panel,pf-undo,pf-update-pill,pf-week-backlog-count,pf-week-backlog-list,pf-week-days,pf-week-grid,pf-week-label,pf-week-next,pf-week-prev,pf-week-today,pf-weekly-btn,pf-weekly-panel">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -1030,7 +1030,6 @@
   @media (max-width: 600px) {
     #pf-root .pf-activity-panel,
     #pf-root .pf-category-popover,
-    #pf-root .pf-due-panel,
     #pf-root .pf-reminder-popover {
       max-height: 85vh; overflow-y: auto; max-width: 95vw; width: 95vw;
     }
@@ -1540,34 +1539,6 @@
     display: none;
   }
 
-  #pf-root .pf-due-panel {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: min(380px, 90vw);
-    max-height: min(70vh, 600px);
-    z-index: var(--z-float);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  #pf-root .pf-due-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--card-border); flex-shrink: 0; }
-  #pf-root .pf-due-panel-title { font-family: var(--font-sans); font-weight: 600; font-size: calc(var(--font-size-base) - 1px); }
-  #pf-root .pf-due-panel-close { background: transparent; color: var(--text-dim); font-size: calc(var(--font-size-base) + 2px); width: 22px; height: 22px; border-radius: var(--radius-control); }
-  #pf-root .pf-due-panel-close:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
-  #pf-root .pf-due-table { width: 100%; border-collapse: collapse; font-size: calc(var(--font-size-base) - 2px); }
-  #pf-root .pf-due-table thead { position: sticky; top: 0; background: var(--header-bg); }
-  #pf-root .pf-due-table th { text-align: left; padding: 8px 12px; font-size: calc(var(--font-size-base) - 3.5px); color: var(--text-dim); font-weight: 600; border-bottom: 1px solid var(--card-border); }
-  #pf-root .pf-due-table td { padding: 7px 12px; border-bottom: 1px solid var(--card-border); color: var(--text); vertical-align: middle; }
-  #pf-root .pf-due-table tr:hover td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
-  #pf-root .pf-due-table .pf-due-row-clickable { cursor: pointer; }
-  #pf-root .pf-due-table .pf-due-row-clickable:hover td { background: color-mix(in srgb, var(--text) 5%, transparent); }
-  #pf-root .pf-due-table .pf-due-row-overdue td:last-child { color: var(--danger); font-weight: 600; }
-  #pf-root .pf-due-table .pf-due-row-soon td:last-child { color: var(--ongoing); font-weight: 600; }
-  #pf-root .pf-due-empty { padding: 24px 12px; text-align: center; color: var(--text-dim); font-size: calc(var(--font-size-base) - 2px); }
-  #pf-root .pf-due-path { color: var(--text-dim); font-size: calc(var(--font-size-base) - 4px); display: block; }
-
   #pf-root .pf-reminder-popover {
     position: fixed;
     top: 50%;
@@ -1930,7 +1901,6 @@
   #pf-root .pf-category-popover,
   #pf-root .pf-color-modal,
   #pf-root .pf-comment-panel,
-  #pf-root .pf-due-panel,
   #pf-root .pf-options-panel,
   #pf-root .pf-reminder-popover,
   #pf-root .pf-shortcuts-panel {
@@ -3198,16 +3168,6 @@
   </div>
   <div class="pf-modal-layer" id="pf-modal-layer">
   <div class="pf-modal-backdrop" id="pf-modal-backdrop"></div>
-  <div class="pf-due-panel" id="pf-due-panel" style="display:none">
-    <div class="pf-due-panel-head">
-      <span class="pf-due-panel-title">Tasks by due date</span>
-      <button class="pf-due-panel-close" id="pf-due-panel-close" title="Close">&times;</button>
-    </div>
-    <table class="pf-due-table">
-      <thead><tr><th>Task</th><th>Due date</th></tr></thead>
-      <tbody id="pf-due-table-body"></tbody>
-    </table>
-  </div>
   <div class="pf-reminder-popover" id="pf-reminder-popover" style="display:none">
     <div class="pf-reminder-title">Due-date reminder</div>
     <label class="pf-reminder-label">Flag tasks as "soon" when due within
@@ -3763,7 +3723,7 @@
 
     #pf-root .pf-modal-layer, #pf-root .pf-modal-backdrop,
     #pf-root .pf-options-panel, #pf-root .pf-activity-panel,
-    #pf-root .pf-due-panel, #pf-root .pf-shortcuts-panel,
+    #pf-root .pf-shortcuts-panel,
     #pf-root .pf-reminder-popover,
     #pf-root .pf-split-list, #pf-root .pf-split-divider,
     #pf-root .pf-add-sub, #pf-root .pf-sub-add, #pf-root .pf-sub-del,
@@ -6015,8 +5975,6 @@
   async function loadCatColors() { try { const res = await safeGet(CAT_COLOR_KEY, false); if (res && res.value) catColors = JSON.parse(res.value) || {}; } catch (e) { catColors = {}; } }
   function saveCatColors() { safeSet(CAT_COLOR_KEY, JSON.stringify(catColors), false); }
   const modalBackdrop = document.getElementById('pf-modal-backdrop');
-  const duePanel = document.getElementById('pf-due-panel');
-  const duePanelClose = document.getElementById('pf-due-panel-close');
   const reminderBtn = document.getElementById('pf-reminder-btn');
   const reminderPopover = document.getElementById('pf-reminder-popover');
   const reminderInput = document.getElementById('pf-reminder-days');
@@ -6043,7 +6001,7 @@
   const remindersPanel = document.getElementById('pf-reminders-panel');
   const copyModal = document.getElementById('pf-copy-modal');
   const errorPanel = document.getElementById('pf-error-panel');
-  const ALL_MODALS = [duePanel, reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, notesPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, remindersPanel, copyModal, errorPanel];
+  const ALL_MODALS = [reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, notesPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, remindersPanel, copyModal, errorPanel];
   window._pf._markOverlayOpen = _markOverlayOpen;
   function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
   function openModal(el, displayValue) {
@@ -6123,49 +6081,6 @@
       try { const res = await safeGet(KEY, false); if (res && res.value) { const s = JSON.parse(res.value); if (s && s.w) panel.style.width = s.w; if (s && s.h) panel.style.height = s.h; } } catch (e) {}
     })();
   });
-
-  function collectDueItems() {
-    const items = [];
-    function walk(list, projectTitle, projectId) {
-      list.forEach(s => {
-        if (s.dueAt && s.status !== 'completed') {
-          items.push({ id: s.id, projectId: projectId, title: s.title, dueAt: s.dueAt, projectTitle: projectTitle, isProject: false });
-        }
-        if (s.subtasks && s.subtasks.length) walk(s.subtasks, projectTitle, projectId);
-      });
-    }
-    projects.forEach(p => {
-      if (p.dueAt && p.status !== 'completed') {
-        items.push({ id: p.id, projectId: p.id, title: p.title, dueAt: p.dueAt, projectTitle: null, isProject: true });
-      }
-      walk(p.subtasks, p.title, p.id);
-    });
-    items.sort((a, b) => a.dueAt.localeCompare(b.dueAt));
-    return items;
-  }
-
-  function renderDuePanel() {
-    const tbody = document.getElementById('pf-due-table-body');
-    if (!tbody) return;
-    const items = collectDueItems();
-    if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="2" class="pf-due-empty">No upcoming due dates. Set one from any task\u2019s calendar icon.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = items.map(it => {
-      const cls = dueStatusClass(it.dueAt, false);
-      const rowCls = cls === 'pf-due-overdue' ? 'pf-due-row-overdue' : (cls === 'pf-due-soon' ? 'pf-due-row-soon' : '');
-      const path = it.projectTitle ? '<span class="pf-due-path">' + escapeHtml(it.projectTitle) + '</span>' : '';
-      return '<tr class="' + rowCls + ' pf-due-row-clickable" data-project-id="' + it.projectId + '" data-title="' + escapeHtml(it.title) + '" title="Click to open"><td>' + escapeHtml(it.title) + path + '</td><td>' + formatDateShort(it.dueAt) + '</td></tr>';
-    }).join('');
-    tbody.querySelectorAll('tr[data-project-id]').forEach(row => {
-      row.addEventListener('click', () => {
-        jumpToTask(row.dataset.projectId, row.dataset.title);
-      });
-    });
-  }
-
-  if (duePanelClose) duePanelClose.addEventListener('click', closeAllModals);
 
   reminderBtn.addEventListener('click', () => {
     _exitMultiSelectMode();
@@ -9056,7 +8971,7 @@
   function render() {
     autoPopulateToday();
     if (calendarPanel.style.display !== 'none') { renderCalendar(); }
-    renderStats(); renderDuePanel(); renderSplitList(); renderSplitDetail();
+    renderStats(); renderSplitList(); renderSplitDetail();
     document.getElementById('pf-export').disabled = !projects.length;
   }
   const searchInput = document.getElementById('pf-search');
