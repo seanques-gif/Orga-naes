@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-R9xCEFVrUK8tKOTReRaIeGPxDCXX5GJKUZSjhYry8GE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-fGkbVj9OABwzQ4J1XNwPe+VHHL2CCoJHWfnYMjGWmcg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="c95d885cca">
+<meta name="build" content="2f744e7186">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -7331,11 +7331,14 @@
   }
   function cycleSubStatus(projectId, subId, targetStatus) { snapshot(); const p = projects.find(p => p.id === projectId); const s = findSubNode(p.subtasks, subId); if (s.status !== 'completed' && (targetStatus || 'completed') === 'completed' && getUnresolvedBlockers(p, s).length > 0) { showToast('🚫 Blocked: complete dependencies first', true); return; } const oldStatus = s.status; s.status = targetStatus || STATUSES[(STATUSES.indexOf(s.status) + 1) % STATUSES.length]; if (s.status === oldStatus) return; if (navigator.vibrate) navigator.vibrate(10); s.completedAt = s.status === 'completed' ? new Date().toISOString() : null; logActivity('"' + s.title + '" in "' + p.title + '": ' + STATUS_LABEL[oldStatus] + ' → ' + STATUS_LABEL[s.status]); scheduleSave(); render(); _flashStatusTransition('[data-sub-id="' + subId + '"]'); animateProgressRing(projectId, s.status === 'completed'); if (s.status === 'completed') { onTaskCompleted(false); setTimeout(() => { if (handleRecurrence(s)) { scheduleSave(); render(); showToast('🔁 "' + s.title + '" reset for next cycle'); } }, 1200); } if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); }
   _pf.deleteSubtask = deleteSubtask; 
-  function deleteSubtask(projectId, subId, skipConfirm) {
+  function deleteSubtask(projectId, subId, skipConfirm, batch) {
     const p = projects.find(p => p.id === projectId);
     const s = findSubNode(p.subtasks, subId);
     if (!skipConfirm && !confirm('Delete subtask "' + (s ? s.title : '') + '"?')) return;
-    snapshot(false, 'Deleted a task');
+    
+    
+    
+    if (!batch) snapshot(false, 'Deleted a task');
     const arr = findSubParentArray(p.subtasks, subId);
     
     const indexPath = (function trace(list, path) { for (let i = 0; i < list.length; i++) { const item = list[i]; if (item.id === subId) return { path: path, index: i }; if (item.subtasks && item.subtasks.length) { const hit = trace(item.subtasks, path.concat(item.id)); if (hit) return hit; } } return null; })(p.subtasks, []);
@@ -7344,7 +7347,7 @@
     if (arr) { const idx = arr.findIndex(s => s.id === subId); if (idx > -1) arr.splice(idx, 1); }
     (function cleanBlockedBy(list) { list.forEach(t => { if (t.blockedBy) t.blockedBy = t.blockedBy.filter(bid => bid !== subId); if (t.subtasks && t.subtasks.length) cleanBlockedBy(t.subtasks); }); })(p.subtasks);
     if (p._manualStatus) { delete p._manualStatus; }
-    checkAllCompleted(p); scheduleSave(); render();
+    checkAllCompleted(p); if (!batch) { scheduleSave(); render(); }
     if (!skipConfirm) {
       
       showToast('"' + (s ? s.title : 'Subtask') + '" moved to Recycle Bin', false, false, () => {
@@ -7763,7 +7766,7 @@
         if (!confirm('Move ' + subMultiSelect.length + ' task(s) to the Recycle Bin?')) return;
         snapshot();
         const deletedIds = subMultiSelect.slice();
-        subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; deleteSubtask(owner.id, id, true); });
+        subMultiSelect.forEach(id => { const owner = subSelectOwnerProject(id); if (!owner) return; deleteSubtask(owner.id, id, true, true); });
         
         
         closeSubSelectBar(p); scheduleSave(); render();
