@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-9/M4FTp+UMYlloTYc84OcCZHQXRoksmjEOoxl5S1GFI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-w1LJjTgAp/mI2fyR35LTK3zULB2ppKYjafxsCkvydqk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="9d9587b7f5">
+<meta name="build" content="52d263bed9">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -10319,6 +10319,33 @@
         saveCategories(); scheduleSave(); renderCategoryList(); render();
       });
     }
+    
+    
+    
+    
+    
+    
+    
+    if (searchTerm && _pf && typeof _pf.searchNotes === 'function') {
+      const noteHits = _pf.searchNotes(searchTerm);
+      if (noteHits.length) {
+        const noteHead = document.createElement('div');
+        noteHead.className = 'pf-split-list-cat';
+        noteHead.textContent = 'Notes (' + noteHits.length + ')';
+        splitList.appendChild(noteHead);
+        const noteWrap = document.createElement('div');
+        noteWrap.className = 'pf-cat-items-wrap';
+        noteHits.forEach(n => {
+          const row = document.createElement('div');
+          row.className = 'pf-split-list-item';
+          row.dataset.noteId = n.id;
+          row.innerHTML = '<span class="pf-split-list-title">' + (n.pinned ? '📌 ' : '') + escapeHtml(n.title) + '</span>';
+          row.addEventListener('click', () => { _pf.openNoteFromProject(n.id); });
+          noteWrap.appendChild(row);
+        });
+        splitList.appendChild(noteWrap);
+      }
+    }
     const grouped = splitGroupedByCat();
     
     const extraCats = Object.keys(grouped).filter(c => c !== '__uncategorized__' && !categories.includes(c));
@@ -16691,6 +16718,21 @@
   _pf.openNoteFromProject = function(noteId) {
     openNotesPanel();
     setTimeout(function() { selectNote(noteId); }, 0);
+  };
+  
+  
+  
+  
+  
+  _pf.searchNotes = function(term, limit) {
+    const q = String(term || '').toLowerCase();
+    if (!q || !notesLoaded) return [];
+    return notes.filter(function(n) {
+      return !noteTombstones[n.id] &&
+        ((n.title || '').toLowerCase().indexOf(q) !== -1 || (n.body || '').toLowerCase().indexOf(q) !== -1);
+    }).slice(0, limit || 5).map(function(n) {
+      return { id: n.id, title: n.title || 'Untitled', pinned: !!n.pinned };
+    });
   };
 
   let loadEpoch = 0; 
