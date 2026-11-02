@@ -4,7 +4,7 @@
 // used to be hand-written and went stale for five days. Do not hand-edit:
 // `npm run build` writes it, and the determinism gate + test suite both fail
 // when it does not match the artifact.
-const CACHE_VERSION = '8b154652e2369a96';
+const CACHE_VERSION = '1f01b0d6c225c976';
 // RELEASE_MANIFEST is BUILD-OWNED like CACHE_VERSION: the full sha256 of the
 // artifact this worker was built beside, and the revision that built it. It
 // lives here because the artifact cannot contain its own hash, and sw.js is
@@ -15,7 +15,7 @@ const CACHE_VERSION = '8b154652e2369a96';
 // stops being an ancestor of the current HEAD. JSON on one line so the app
 // parses it with JSON.parse. Check mode refuses a manifest whose artifact
 // does not match the build, or whose head this repository cannot vouch for.
-const RELEASE_MANIFEST = {"artifact":"8b154652e2369a9609b3a998c7c8b1e7cb99f568a176720b42ae563cd4b42e29","head":"ec006743f13e1f792099db74af2e0a949f147fb1"};
+const RELEASE_MANIFEST = {"artifact":"1f01b0d6c225c9763780cd00d619083fef42b02bb88fd6749c7bcd960f0e8095","head":"ec006743f13e1f792099db74af2e0a949f147fb1"};
 const CACHE_NAME = 'orga-naes-' + CACHE_VERSION;
 const ASSETS = [
   './Orga-naes.html',
@@ -92,6 +92,18 @@ self.addEventListener('activate', (e) => {
 //
 // One helper for every branch: the navigate and asset branches were byte-
 // identical duplicates, so the rule was stated twice and could drift once.
+// The second helper is the one thing the fallback cannot do for itself: a 5xx
+// installs no new worker, so `updatefound` never fires and the page cannot tell
+// it is running a cached copy. Announcing is best-effort — a worker that cannot
+// reach a window must still answer with the shell it has, so neither an absent
+// matchAll nor a rejected one may turn a good cache hit into a failed fetch.
+function tellClients(msg) {
+  if (!self.clients || !self.clients.matchAll) return;
+  self.clients.matchAll({ type: 'window' }).then(
+    (cs) => cs.forEach((c) => c.postMessage(msg)),
+    function () {}
+  );
+}
 function networkFirst(request) {
   return fetch(request)
     .then((resp) => {
@@ -99,7 +111,12 @@ function networkFirst(request) {
         const clone = resp.clone();
         caches.open(CACHE_NAME).then((c) => c.put(request, clone));
       }
-      if (resp && resp.status >= 500) return caches.match(request).then((hit) => hit || resp);
+      if (resp && resp.status >= 500) {
+        return caches.match(request).then((hit) => {
+          if (hit) tellClients('stale-shell');
+          return hit || resp;
+        });
+      }
       return resp;
     })
     .catch(() => caches.match(request));
