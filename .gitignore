@@ -114,6 +114,10 @@ design-samples/
 pre-slim-backup.bundle
 backup-before-history-scrub.bundle
 
+# EGM review artifacts — local-only scratch for the Elephant-Goldfish review
+# process; never ships.
+egm-review/
+
 # Git hooks (commit-msg footer blocker per AGENTS.md rule 7). Wired in via
 # repo-local core.hooksPath; auto-installed into fresh clones by the global
 # ~/.git-templates init template. Local tooling — never ships.
