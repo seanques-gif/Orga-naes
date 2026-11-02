@@ -100,6 +100,7 @@ firebase-debug.log
 # ignored files).
 /Orga-naes.html.bak-*
 /HANDOFF.md
+/HANDOFF-ARCHIVE-*.md
 /NEXT-PLAN.md
 /PRODUCT.md
 /REDESIGN-FINDINGS.md
