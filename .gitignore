@@ -90,6 +90,8 @@ tests/baselines/current/
 # too, so deletion, not ignoring, is what keeps them out of snapshots.
 firebase-debug.log
 .firebase/
+# Weekly guard / local verify logs (scripts/weekly-guard.ps1). Local-only.
+/logs/
 # Local source for the faces embedded into the artifact (AUD-08): the .woff2
 # files plus fonts.json, read by scripts/gen-embedded-fonts.mjs at build time.
 /fonts/
