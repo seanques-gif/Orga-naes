@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-ogPr/SW8BsERYM/q0hAE6OqjBi/SKpPlZUOvRXaiW8w='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-LxhSMBkSNs+VFOGjdSiJiuwCP19kkaXTMnNAAkpImw8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="a0ef2ad898">
+<meta name="build" content="065445e99a">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -7202,6 +7202,7 @@
     if (targetProject._manualStatus) { delete targetProject._manualStatus; }
     checkAllCompleted(targetProject);
     logActivity('Copied ' + nodes.length + ' task(s) from "' + sourceProject.title + '" to "' + targetProject.title + '"');
+    consumeSelection();
     scheduleSave(); render();
     showToast((nodes.length > 1 ? nodes.length + ' tasks' : '"' + nodes[0].title + '"') + ' copied to "' + targetProject.title + '"', false, true);
   }
@@ -7234,6 +7235,7 @@
     if (sourceProject._manualStatus) { delete sourceProject._manualStatus; }
     checkAllCompleted(targetProject); checkAllCompleted(sourceProject);
     logActivity((nodes.length > 1 ? nodes.length + ' tasks' : '"' + nodes[0].title + '"') + ' moved from "' + sourceProject.title + '" to "' + targetProject.title + '"');
+    consumeSelection();
     scheduleSave(); render();
     showToast((nodes.length > 1 ? nodes.length + ' tasks' : '"' + nodes[0].title + '"') + ' moved to "' + targetProject.title + '"', false, true);
   }
@@ -7307,7 +7309,7 @@
           '<span class="pf-metric pf-hint pf-shrink-0">' + countLabel + '</span>';
         row.addEventListener('mouseenter', () => { row.style.borderColor = 'var(--hover-border)'; });
         row.addEventListener('mouseleave', () => { row.style.borderColor = 'var(--card-border)'; });
-        row.addEventListener('click', () => { closeAllModals(); copySubtasksToProject(sourceProject, subtaskIds, pr.id); clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove()); });
+        row.addEventListener('click', () => { closeAllModals(); copySubtasksToProject(sourceProject, subtaskIds, pr.id); });
         list.appendChild(row);
       });
     }
@@ -7582,6 +7584,18 @@
   
   
   
+  function consumeSelection() {
+    clearSubSelect();
+    splitMultiSelect = [];
+    root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
+  }
+  
+  
+  
+  
+  
+  
+  
   
   
   
@@ -7755,7 +7769,7 @@
     if (!targetId) { roots.forEach(n => p.subtasks.push(n)); }
     else if (zone === 'nest') { const targetNode = findSubNode(p.subtasks, targetId); if (!targetNode.subtasks) targetNode.subtasks = []; roots.forEach(n => targetNode.subtasks.push(n)); targetNode.expanded = true; }
     else { const destArr = findSubParentArray(p.subtasks, targetId); const tIdx = destArr.findIndex(s => s.id === targetId); destArr.splice(zone === 'before' ? tIdx : tIdx + 1, 0, ...roots); }
-    draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; subMultiSelect = []; clearIndicators(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); render();
+    draggingSubId = null; draggingProjectId = null; _draggingSubIds = []; consumeSelection(); clearIndicators(); if (p._manualStatus) { delete p._manualStatus; } checkAllCompleted(p); scheduleSave(); render();
   }
 
   function renderSubtaskRows(container, p, list, depth) { list.forEach(s => { const row = subtaskEl(p, s, depth); container.appendChild(row); if (s.expanded && s.subtasks && s.subtasks.length) { const nestedWrap = document.createElement('div'); nestedWrap.className = 'pf-sublist-nested'; const { color } = levelMarkerFor(depth + 1); nestedWrap.style.setProperty('--rail-color', color); container.appendChild(nestedWrap); renderSubtaskRows(nestedWrap, p, s.subtasks, depth + 1); const nestedAddBtn = document.createElement('button'); nestedAddBtn.className = 'pf-add-sub'; nestedAddBtn.textContent = '+ Add subtask'; nestedAddBtn.addEventListener('click', (e) => { e.stopPropagation(); addSubtask(p.id, s.id); }); nestedWrap.appendChild(nestedAddBtn); } }); }
@@ -7984,8 +7998,6 @@
     if (!source) return;
     if (copy) { copySubtasksToProject(source, ids, targetProjectId); }
     else { moveSubtasksToProject(source, ids, targetProjectId); }
-    clearSubSelect();
-    root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
   }
 
   function endTouchCarry() {
@@ -8754,10 +8766,8 @@
     
     
     
-    clearSubSelect();
-    splitMultiSelect = [];
+    consumeSelection();
     renderSplitList(); renderSplitDetail();
-    root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
     
     
     
@@ -8792,7 +8802,7 @@
     _moveClipboard = null;
     _pasteArmed = false; root.classList.remove('pf-paste-armed');
     _moveArmed = false; root.classList.remove('pf-move-armed');
-    clearSubSelect(); splitMultiSelect = []; root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
+    consumeSelection();
     scheduleSave(); render();
     logActivity('Moved ' + movedCount + ' task(s) to "' + label + '"');
   }
@@ -8895,10 +8905,10 @@
     if (targetProject._manualStatus) { delete targetProject._manualStatus; }
     checkAllCompleted(targetProject);
     logActivity('Copied ' + clones.length + ' task(s) to "' + targetProject.title + '"');
+    _pasteArmed = false; root.classList.remove('pf-paste-armed');
+    consumeSelection();
     scheduleSave(); render();
     showToast((clones.length > 1 ? clones.length + ' tasks' : '"' + clones[0].title + '"') + ' copied to "' + targetProject.title + '"', false, true);
-    _pasteArmed = false; root.classList.remove('pf-paste-armed');
-    clearSubSelect(); splitMultiSelect = []; root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
   }
   function pasteClipboardUnder(targetProject, targetSub) {
     if (!_taskClipboard || !_taskClipboard.length) return;
@@ -8915,10 +8925,10 @@
     if (targetProject._manualStatus) { delete targetProject._manualStatus; }
     checkAllCompleted(targetProject);
     logActivity('Copied ' + clones.length + ' task(s) under "' + targetSub.title + '"');
+    _pasteArmed = false; root.classList.remove('pf-paste-armed');
+    consumeSelection();
     scheduleSave(); render();
     showToast((clones.length > 1 ? clones.length + ' tasks' : '"' + clones[0].title + '"') + ' pasted under "' + targetSub.title + '"', false, true);
-    _pasteArmed = false; root.classList.remove('pf-paste-armed');
-    clearSubSelect(); splitMultiSelect = []; root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
   }
   function matchesDueFilter(p) {
     if (dueFilter === 'all') return true;
@@ -10545,7 +10555,6 @@
             if (sourceProject) {
               if (copyDrop) { copySubtasksToProject(sourceProject, subIds, p.id); }
               else { moveSubtasksToProject(sourceProject, subIds, p.id); }
-              clearSubSelect(); root.querySelectorAll('.pf-sub-select-bar').forEach(el => el.remove());
             }
             return;
           }
