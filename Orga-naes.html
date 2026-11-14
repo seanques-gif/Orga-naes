@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-LRKc2LXYoHqQWd//f71r4tXKUoye3NSpbq5vNlGa5SU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-bHFFctM74i+8uhjoHEL37S0ghNZv6s7X7b07Mq1gqbE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com; frame-src 'self' https://*.firebaseapp.com; worker-src 'self'; upgrade-insecure-requests">
 
 <title>Orga-naes</title>
 <meta name="version" content="1.0.0">
@@ -14,7 +14,7 @@
      a service-worker cache makes genuinely unanswerable from the outside.
      Baked by the build from the source bytes: any source change changes it, and
      a rebuild of the same sources does not. Never hand-edit. -->
-<meta name="build" content="0ec66b4c04">
+<meta name="build" content="801c65915a">
 <!-- Baked by the build: every id the shell declares AND the app wires with a
      literal lookup (declared ∩ looked-up), as a comma-separated list. Module 03
      asserts each one is present at boot, so a partial or stale shell is named in
@@ -211,7 +211,7 @@
       width: 56px; height: 44px; padding: 0; cursor: pointer; border-radius: var(--radius-container); transition: color 0.15s, background 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .pf-bottom-nav-btn span { font-size: max(9px, calc(var(--font-size-base) - 5px)); font-weight: 500; }
+    .pf-bottom-nav-btn span { font-size: max(11px, calc(var(--font-size-base) - 3px)); font-weight: 500; }
     .pf-bottom-nav-btn.pf-bottom-active { color: var(--accent); opacity: 1; background: color-mix(in srgb, var(--accent) 15%, transparent); font-weight: 700; }
     .pf-bottom-nav-btn:active { background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: var(--radius-container); }
     .pf-bottom-badge {
@@ -411,7 +411,7 @@
     height: 100vh;
     height: 100dvh;
     min-height: 320px;
-    min-width: 340px;
+    min-width: min(340px, 100vw);
     max-width: 100%;
     width: 100vw;
     border-radius: 0;
@@ -571,10 +571,10 @@
     align-items: center; gap: 4px; white-space: nowrap; cursor: pointer;
     color: var(--text-dim); transition: color 0.12s, background 0.12s;
   }
-  #pf-root .pf-stat b { color: var(--text); font-weight: 700; font-size: calc(var(--font-size-base) - 4px); }
+  #pf-root .pf-stat b { color: var(--text); font-weight: 700; font-size: max(11px, calc(var(--font-size-base) - 4px)); }
   
 
-  #pf-root .pf-stat span { font-size: max(9px, calc(var(--font-size-base) - 6px)); }
+  #pf-root .pf-stat span { font-size: max(11px, calc(var(--font-size-base) - 6px)); }
   
 
 
@@ -712,6 +712,7 @@
     cursor: pointer; padding: 0 4px; flex-shrink: 0; line-height: 1; border-radius: 6px;
     transition: color 0.12s, background 0.12s;
   }
+  #pf-root .pf-split-list-ctx { min-width: 24px; min-height: 24px; display: inline-flex; align-items: center; justify-content: center; }
   #pf-root .pf-sub-ctx-btn:hover,
   #pf-root .pf-split-list-ctx:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
 
@@ -905,9 +906,9 @@
 
   @media (max-width: 500px) {
     #pf-root .pf-split-list-item { padding: 8px 10px; gap: 6px; }
-    #pf-root#pf-root .pf-split-list-title { font-size: calc(var(--font-size-base) - 1px); } 
-    #pf-root#pf-root .pf-split-list-progress { font-size: calc(var(--font-size-base) - 3px); } 
-    #pf-root .pf-split-list-due { font-size: max(9px, calc(var(--font-size-base) - 5px)); }
+    #pf-root#pf-root .pf-split-list-title { font-size: max(12px, calc(var(--font-size-base) - 1px)); } 
+    #pf-root#pf-root .pf-split-list-progress { font-size: max(10px, calc(var(--font-size-base) - 3px)); } 
+    #pf-root .pf-split-list-due { font-size: max(11px, calc(var(--font-size-base) - 5px)); }
     #pf-root .pf-node { max-width: 100%; }
     #pf-root .pf-node-header { padding: 8px; gap: 6px; flex-wrap: nowrap; }
     
@@ -919,7 +920,7 @@
     #pf-root .pf-split-detail { padding: 8px; }
     #pf-root .pf-sublist { padding: 8px 0 8px 14px; }
     #pf-root .pf-node-desc-row { padding: 0 12px 6px 14px; }
-    #pf-root .pf-split-collapse-btn { font-size: max(9px, calc(var(--font-size-base) - 5px)); padding: 2px 6px; }
+    #pf-root .pf-split-collapse-btn { font-size: max(11px, calc(var(--font-size-base) - 5px)); padding: 2px 6px; }
     #pf-root .pf-split-sort { display: none !important; }
   }
 
@@ -1008,10 +1009,10 @@
   #pf-root .pf-split-delete-bar button[data-action="delete"] { color: var(--danger); border-color: var(--danger); }
   #pf-root .pf-split-delete-bar button[data-action="delete"]:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
   #pf-root .pf-split-delete-bar span { font-size: calc(var(--font-size-base) - 3px); color: var(--text-dim); }
-  #pf-root .pf-split-list-title { flex: 1; font-size: calc(var(--font-size-base) - 2px); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
+  #pf-root .pf-split-list-title { flex: 1; font-size: max(12px, calc(var(--font-size-base) - 2px)); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
   #pf-root .pf-split-list-item.pf-split-active .pf-split-list-title { font-weight: 500; color: var(--accent); }
-  #pf-root .pf-split-list-progress { font-size: max(9px, calc(var(--font-size-base) - 5.5px)); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 36px; text-align: center; display: inline-block; }
-  #pf-root .pf-split-list-due { font-size: max(9px, calc(var(--font-size-base) - 5.5px)); color: var(--text-dim); flex-shrink: 0; display: inline-flex; align-items: center; gap: var(--space-xs); width: 58px; text-align: right; }
+  #pf-root .pf-split-list-progress { font-size: max(10px, calc(var(--font-size-base) - 5.5px)); color: var(--text-dim); font-weight: 600; flex-shrink: 0; width: 36px; text-align: center; display: inline-block; }
+  #pf-root .pf-split-list-due { font-size: max(11px, calc(var(--font-size-base) - 5.5px)); color: var(--text-dim); flex-shrink: 0; display: inline-flex; align-items: center; gap: var(--space-xs); width: 58px; text-align: right; }
   #pf-root .pf-split-list-due.pf-overdue { color: var(--danger); font-weight: 600; }
   #pf-root .pf-split-list-edit { display: none; }
   #pf-root .pf-split-list-move { background: transparent; border: none; color: var(--text-dim); font-size: max(9px, calc(var(--font-size-base) - 6px)); cursor: pointer; padding: 0 2px; flex-shrink: 0; display: none; line-height: 1; }
@@ -1072,7 +1073,7 @@
   #pf-root .pf-split-sort select {
     font-size: max(10px, calc(var(--font-size-base) - 5px)); background: var(--card); color: var(--text);
     border: 1px solid var(--card-border); border-radius: var(--radius-control); padding: 0 6px; outline: none; cursor: pointer; transition: border-color 0.15s;
-    height: 20px; line-height: 1; box-sizing: border-box;
+    height: 24px; line-height: 1; box-sizing: border-box;
   }
   #pf-root .pf-split-sort select option {
     background: var(--card); color: var(--text);
@@ -1080,9 +1081,9 @@
   #pf-root .pf-split-sort select:hover { border-color: var(--accent); }
   #pf-root .pf-split-collapse-btn {
     background: transparent; border: 1px solid var(--card-border); color: var(--text-dim);
-    font-size: max(10px, calc(var(--font-size-base) - 5px)); padding: 0 8px; border-radius: var(--radius-control); cursor: pointer; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+    font-size: max(11px, calc(var(--font-size-base) - 5px)); padding: 0 8px; border-radius: var(--radius-control); cursor: pointer; font-weight: 600; white-space: nowrap; flex-shrink: 0;
     transition: color var(--dur-state) var(--ease-console), border-color var(--dur-state) var(--ease-console), background var(--dur-state) var(--ease-console);
-    height: 20px; box-sizing: border-box; line-height: 1;
+    height: 24px; box-sizing: border-box; line-height: 1;
   }
   #pf-root #pf-split-collapse-all { margin-right: auto; }
   #pf-root .pf-split-collapse-btn:hover { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
@@ -1517,7 +1518,7 @@
   #pf-root .pf-toast-undo:hover { background: color-mix(in srgb, var(--accent) 85%, #000); }
   #pf-root .pf-toast.pf-toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #pf-root .pf-toast.pf-toast-error { border-color: color-mix(in srgb, var(--danger) 50%, transparent); color: var(--danger); }
-  #pf-root .pf-empty { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--text-dim); font-size: calc(var(--font-size-base) - 1px); width: 260px; z-index: calc(var(--z-base) + 1); pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  #pf-root .pf-empty { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--text-dim); font-size: max(12px, calc(var(--font-size-base) - 1px)); width: 260px; z-index: calc(var(--z-base) + 1); pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 10px; }
   #pf-root .pf-empty .pf-ic-empty { width: 44px; height: 44px; color: color-mix(in srgb, var(--text-dim) 55%, transparent); }
   #pf-root .pf-empty .pf-ic-empty svg { width: 100%; height: 100%; }
   #pf-root .pf-empty b { color: var(--text); }
@@ -1747,7 +1748,6 @@
   }
   .pf-week-col-today {
     background: color-mix(in srgb, var(--accent) 6%, transparent); border-color: var(--accent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 15%, transparent);
   }
   .pf-week-col-dragover { border-color: var(--accent) !important; }
   .pf-week-col-dragover-blocked { border-color: var(--danger) !important; cursor: not-allowed; }
@@ -2198,7 +2198,7 @@
 
 
 
-  #pf-root .pf-cat-add { background: transparent; border: none; color: var(--text-dim); cursor: pointer; margin-right: 4px; padding: 0 2px; border-radius: 6px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+  #pf-root .pf-cat-add { background: transparent; border: none; color: var(--text-dim); cursor: pointer; margin-right: 4px; padding: 0 2px; border-radius: 6px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; }
   #pf-root .pf-cat-add .pf-ic { width: calc(var(--font-size-base) + 2px); height: calc(var(--font-size-base) + 2px); vertical-align: middle; }
   #pf-root .pf-ext-inline { cursor: pointer; display: inline-flex; align-items: center; }
 
@@ -2673,7 +2673,9 @@
 
   #pf-root button:focus-visible,
   #pf-root .pf-node-title:focus-visible,
-  #pf-root .pf-subrow-title:focus-visible {
+  #pf-root .pf-subrow-title:focus-visible,
+  #pf-root .pf-split-sort select:focus-visible,
+  #pf-root .pf-due-filter:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
@@ -3130,6 +3132,7 @@
 
 <!-- SECTION: HTML SHELL — application root, toolbar, panels, and modals -->
 <div id="pf-root">
+  <h1 class="pf-sr-only">Orga-naes</h1>
   <div class="pf-toolbar" id="pf-toolbar">
     <div class="pf-title"><span class="pf-dot"></span>Orga-naes</div>
     <button class="pf-new-btn" id="pf-new-project" title="New project">+</button>
@@ -3412,7 +3415,7 @@
     <div class="pf-options-title">Reminders</div>
     <div class="pf-rem-list" id="pf-reminders-list"></div>
   </div>
-  <div class="pf-activity-panel" id="pf-calendar-panel" style="display:none;">
+  <div class="pf-activity-panel" id="pf-calendar-panel" style="display:none;" aria-label="Calendar">
     <div class="pf-cal-layout">
       <div class="pf-cal-left">
         <div class="pf-cal-head">
@@ -3452,7 +3455,7 @@
     </div>
     <div class="pf-activity-list pf-scroll-x pf-min-h-0 pf-pad-4" id="pf-duelist-list"></div>
   </div>
-  <div class="pf-activity-panel" id="pf-weekly-panel" style="display:none;">
+  <div class="pf-activity-panel" id="pf-weekly-panel" style="display:none;" aria-label="Weekly planner">
     <div class="pf-week-head">
       <button class="pf-undo-btn pf-cal-nav" id="pf-week-prev">◀</button>
       <span class="pf-cal-month" id="pf-week-label"></span>
@@ -6007,12 +6010,65 @@
   const errorPanel = document.getElementById('pf-error-panel');
   const ALL_MODALS = [reminderPopover, categoryPopover, newProjectPopover, optionsPanel, shortcutsPanel, activityPanel, todayPanel, duelistPanel, calendarPanel, weeklyPanel, notesPanel, archivePanel, trashPanel, commentPanel, colorModal, snapshotsPanel, remindersPanel, copyModal, errorPanel];
   window._pf._markOverlayOpen = _markOverlayOpen;
-  function closeAllModals() { ALL_MODALS.forEach(m => { m.style.display = 'none'; }); modalBackdrop.style.display = 'none'; }
+  
+  
+  
+  
+  let _modalOpener = null, _modalBg = [];
+  document.addEventListener('focusin', function(e) {
+    const t = e.target;
+    if (t && t !== document.body && !(t.closest && t.closest('#pf-modal-layer'))) _modalOpener = t;
+  }, true);
+  function _hideModalBackground(on) {
+    if (on) {
+      if (_modalBg.length) return;
+      ['pf-toolbar', 'pf-bottom-nav', 'pf-split-view', 'pf-update-pill', 'pf-resize-handle'].forEach(function(id) {
+        const n = document.getElementById(id);
+        if (n && !n.hasAttribute('inert')) { n.setAttribute('inert', ''); n.setAttribute('aria-hidden', 'true'); _modalBg.push(n); }
+      });
+      return;
+    }
+    _modalBg.forEach(function(n) { n.removeAttribute('inert'); n.removeAttribute('aria-hidden'); });
+    _modalBg = [];
+  }
+  function _nameModal(el) {
+    if (!el) return;
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    if (el.hasAttribute('aria-labelledby') || el.hasAttribute('aria-label')) return;
+    const title = el.querySelector('.pf-options-title, .pf-panel-title-lg, .pf-notes-title, .pf-category-title, .pf-reminder-title, .pf-cal-month');
+    if (title) {
+      if (!title.id) title.id = (el.id || 'pf-modal') + '-title';
+      el.setAttribute('aria-labelledby', title.id);
+    } else {
+      el.setAttribute('aria-label', 'Dialog');
+    }
+  }
+  function _focusModal(el) {
+    const target = el.querySelector('.pf-panel-close') || el.querySelector('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (target && typeof target.focus === 'function') target.focus();
+  }
+  function closeAllModals(keepFocus) {
+    const wasOpen = ALL_MODALS.some(m => m && m.style.display !== 'none');
+    ALL_MODALS.forEach(m => { m.style.display = 'none'; });
+    modalBackdrop.style.display = 'none';
+    _hideModalBackground(false);
+    if (wasOpen && keepFocus !== true && _modalOpener && _modalOpener.isConnected !== false && typeof _modalOpener.focus === 'function') {
+      try { _modalOpener.focus(); } catch (e) {  }
+    }
+  }
   function openModal(el, displayValue) {
-    closeAllModals();
+    if (!ALL_MODALS.some(m => m && m.style.display !== 'none')) {
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && !el.contains(ae)) _modalOpener = ae;
+    }
+    closeAllModals(true);
     el.style.display = displayValue;
     modalBackdrop.style.display = 'block';
     _markOverlayOpen('modals', el);
+    _nameModal(el);
+    _focusModal(el);
+    _hideModalBackground(true);
     
     
     
@@ -10260,6 +10316,7 @@
 
   function renderSplitList() {
     splitList.innerHTML = '';
+    splitList.removeAttribute('aria-activedescendant');
     syncProjectsNav();
     const sortBar = document.createElement('div');
     sortBar.className = 'pf-split-sort';
@@ -10527,6 +10584,11 @@
         item.addEventListener('dblclick', (e) => { e.stopPropagation(); _inlineRename(item, p); });
         if (!window.matchMedia('(pointer: coarse)').matches) item.draggable = true;
         item.dataset.projectId = p.id;
+        item.id = 'pf-proj-' + p.id;
+        item.setAttribute('role', 'option');
+        item.setAttribute('aria-selected', isActive || isMulti ? 'true' : 'false');
+        item.setAttribute('aria-label', (p.title || 'Untitled project') + ', ' + (p.status || 'ongoing'));
+        if (isActive) splitList.setAttribute('aria-activedescendant', item.id);
         item.addEventListener('dragstart', (e) => {
           e.dataTransfer.effectAllowed = 'move';
           const ids = splitMultiSelect.length && splitMultiSelect.includes(p.id) ? splitMultiSelect : [p.id];
@@ -14917,9 +14979,15 @@
     const toolbar = root.querySelector('.pf-toolbar');
     if (toolbar) { toolbar.setAttribute('role', 'toolbar'); toolbar.setAttribute('aria-label', 'Project actions'); }
     const splitView = root.querySelector('.pf-split-view');
-    if (splitView) splitView.setAttribute('role', 'main');
+    if (splitView) { splitView.setAttribute('role', 'main'); splitView.setAttribute('aria-label', 'Projects'); }
     const splitList = root.querySelector('.pf-split-list');
-    if (splitList) { splitList.setAttribute('role', 'listbox'); splitList.setAttribute('aria-label', 'Project list'); }
+    if (splitList) { splitList.setAttribute('role', 'listbox'); splitList.setAttribute('aria-label', 'Project list'); splitList.setAttribute('aria-multiselectable', 'true'); }
+    
+    
+    root.querySelectorAll('.pf-options-panel, .pf-activity-panel, .pf-shortcuts-panel, .pf-category-popover, .pf-reminder-popover').forEach(function(panel) {
+      const title = panel.querySelector('.pf-options-title, .pf-panel-title-lg, .pf-notes-title, .pf-category-title, .pf-reminder-title, .pf-cal-month');
+      if (title && !title.hasAttribute('role')) { title.setAttribute('role', 'heading'); title.setAttribute('aria-level', '2'); }
+    });
     const newBtn = document.getElementById('pf-new-project');
     if (newBtn) newBtn.setAttribute('aria-label', 'Create new project');
     const undoB = document.getElementById('pf-undo');
